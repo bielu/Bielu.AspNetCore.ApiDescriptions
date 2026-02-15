@@ -232,18 +232,10 @@ public class AsyncApiDocumentGenerationTests
         document.ShouldNotBeNull();
         
         // Check for any parsing errors
-        // Note: Empty channels object triggers a false positive error in ByteBard 2.1.3-beta.13
         if (diagnostic?.Errors != null && diagnostic.Errors.Any())
         {
-            // Filter out the known false positive for empty channels in beta version
-            var unexpectedErrors = diagnostic.Errors.Where(e => 
-                !e.Message.Contains("'channels' in 'document' object is REQUIRED")).ToList();
-            
-            if (unexpectedErrors.Any())
-            {
-                var errors = string.Join(Environment.NewLine, unexpectedErrors.Select(e => e.Message));
-                Assert.Fail($"AsyncAPI V2 document has validation errors: {errors}");
-            }
+            var errors = string.Join(Environment.NewLine, diagnostic.Errors.Select(e => e.Message));
+            Assert.Fail($"AsyncAPI V2 document has validation errors: {errors}");
         }
     }
 

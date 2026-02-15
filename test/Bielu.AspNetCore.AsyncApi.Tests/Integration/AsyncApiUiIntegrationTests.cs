@@ -386,15 +386,11 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         var criticalErrors = pageErrors.Where(e => !e.Contains("favicon")).ToList();
         criticalErrors.ShouldBeEmpty("UI should render multi-server document without errors");
         
-        // NOTE: Temporarily disabled due to ByteBard.AsyncAPI.NET.Readers 2.1.3-beta.13 false positive
-        // The reader reports an error for V2 documents with empty channels, even though the JSON structure
-        // is correct per the AsyncAPI spec. The React component uses this reader and displays the error.
-        // This is expected to be fixed in a future release.
         // Check for schema validation error in rendered content
-        //var pageContent = await page.ContentAsync();
-        //pageContent.ShouldNotContain("Error: There are errors in your Asyncapi document",
-        //    Case.Insensitive,
-        //    "UI should not display AsyncAPI schema validation errors");
+        var pageContent = await page.ContentAsync();
+        pageContent.ShouldNotContain("Error: There are errors in your Asyncapi document",
+            Case.Insensitive,
+            "UI should not display AsyncAPI schema validation errors");
 
         await page.CloseAsync();
     }
@@ -450,23 +446,19 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         var criticalErrors = pageErrors.Where(e => !e.Contains("favicon")).ToList();
         criticalErrors.ShouldBeEmpty("UI should render AsyncAPI 3.0 document without errors");
         
-        // NOTE: Temporarily disabled due to ByteBard.AsyncAPI.NET.Readers 2.1.3-beta.13 false positive
-        // The reader reports an error for V2 documents with empty channels. This test generates a V3  
-        // document which should not have this issue, but the React component may still report it.
-        // This is expected to be fixed in a future release.
         // Check for schema validation error in rendered content
-        //var pageContent = await page.ContentAsync();
-        //
-        //// Extract and display detailed error information if present
-        //var errorInfoMessage = await ExtractAsyncApiErrorDetails(page);
-        //var diagnosticInfo = $"\n\nDiagnostic Information:" +
-        //                    $"\n- Console messages: {string.Join("; ", consoleMessages)}" +
-        //                    $"\n- Page errors: {string.Join("; ", pageErrors)}" +
-        //                    $"\n- AsyncAPI error details: {errorInfoMessage}";
-        //
-        //pageContent.ShouldNotContain("Error: There are errors in your Asyncapi document",
-        //    Case.Insensitive,
-        //    $"UI should not display AsyncAPI schema validation errors for v3.{diagnosticInfo}");
+        var pageContent = await page.ContentAsync();
+        
+        // Extract and display detailed error information if present
+        var errorInfoMessage = await ExtractAsyncApiErrorDetails(page);
+        var diagnosticInfo = $"\n\nDiagnostic Information:" +
+                            $"\n- Console messages: {string.Join("; ", consoleMessages)}" +
+                            $"\n- Page errors: {string.Join("; ", pageErrors)}" +
+                            $"\n- AsyncAPI error details: {errorInfoMessage}";
+        
+        pageContent.ShouldNotContain("Error: There are errors in your Asyncapi document",
+            Case.Insensitive,
+            $"UI should not display AsyncAPI schema validation errors for v3.{diagnosticInfo}");
 
         await page.CloseAsync();
     }
@@ -619,15 +611,11 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         // The div should have some content if the React component rendered
         innerHTML.ShouldNotBeNullOrEmpty("AsyncAPI React component should render some content");
         
-        // NOTE: Temporarily disabled due to ByteBard.AsyncAPI.NET.Readers 2.1.3-beta.13 false positive
-        // The reader reports an error for V2 documents with empty channels, even though the JSON structure
-        // is correct per the AsyncAPI spec. The React component uses this reader and displays the error.
-        // This is expected to be fixed in a future release.
         // Check for AsyncAPI schema validation error message from React component
         // The UI renders "Error: There are errors in your Asyncapi document" when schema is invalid
-        //innerHTML.ShouldNotContain("Error: There are errors in your Asyncapi document", 
-        //    Case.Insensitive, 
-        //    "AsyncAPI document should not have schema validation errors");
+        innerHTML.ShouldNotContain("Error: There are errors in your Asyncapi document", 
+            Case.Insensitive, 
+            "AsyncAPI document should not have schema validation errors");
 
         await page.CloseAsync();
     }
