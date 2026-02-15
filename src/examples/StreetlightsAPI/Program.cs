@@ -71,7 +71,7 @@ namespace StreetlightsAPI
                     .AddOperationBinding("postBind",
                         new HttpOperationBinding()
                         {
-                            Method = "POST", Type = HttpOperationBinding.HttpOperationType.Response
+                            Method = "POST"
                         });
             });
 

@@ -757,8 +757,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
                         options.AddOperationBinding("httpPost",
                             new ByteBard.AsyncAPI.Bindings.Http.HttpOperationBinding
                             {
-                                Method = "POST",
-                                Type = ByteBard.AsyncAPI.Bindings.Http.HttpOperationBinding.HttpOperationType.Request
+                                Method = "POST"
                             });
                         
                         // Add AMQP channel binding
