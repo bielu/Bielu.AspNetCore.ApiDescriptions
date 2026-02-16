@@ -16,7 +16,9 @@ internal static class AsyncApiSerializationHelper
 {
     /// <summary>
     /// Serializes an AsyncAPI V2 document to JSON, ensuring all required properties are present.
-    /// AsyncAPI 2.x specification requires 'channels' to be present (can be an empty object).
+    /// AsyncAPI 2.x specification requires 'channels' to be present. An empty channels object will
+    /// be added during serialization, but note that AsyncAPI 2.x validation requires at least one
+    /// channel to be defined for a valid document.
     /// </summary>
     /// <param name="document">The AsyncAPI document to serialize.</param>
     /// <returns>JSON string with all required AsyncAPI 2.x properties.</returns>
@@ -47,7 +49,9 @@ internal static class AsyncApiSerializationHelper
 
     /// <summary>
     /// Ensures that AsyncAPI 2.x required properties are present in the JSON.
-    /// The AsyncAPI 2.x specification requires 'channels' to be present (can be empty object {}).
+    /// The AsyncAPI 2.x specification requires 'channels' to be present. This method adds an
+    /// empty channels object if missing, but note that for a valid AsyncAPI 2.x document,
+    /// at least one channel must be defined.
     /// </summary>
     /// <param name="json">The JSON string to process.</param>
     /// <returns>JSON string with required properties ensured.</returns>

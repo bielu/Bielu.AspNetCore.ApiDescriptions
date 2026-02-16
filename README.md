@@ -182,6 +182,40 @@ builder.Services.AddAsyncApi(options =>
 });
 ```
 
+## Version-Specific Requirements
+
+### AsyncAPI 2.x
+
+When using AsyncAPI 2.x specification (`AsyncApiVersion.AsyncApi2_0`), **at least one channel must be defined**. The AsyncAPI 2.x specification requires the `channels` field to be present and non-empty.
+
+If your application doesn't define any channels (e.g., for documentation purposes only), you have two options:
+
+1. **Use AsyncAPI 3.x** (recommended) - AsyncAPI 3.x does not require channels:
+   ```csharp
+   builder.Services.AddAsyncApi(options =>
+   {
+       options.AsyncApiVersion = AsyncApiVersion.AsyncApi3_0; // Default
+       options.WithInfo("My API", "1.0.0");
+       // No channels required
+   });
+   ```
+
+2. **Define at least one channel** for AsyncAPI 2.x:
+   ```csharp
+   builder.Services.AddAsyncApi(options =>
+   {
+       options.AsyncApiVersion = AsyncApiVersion.AsyncApi2_0;
+       options.WithInfo("My API", "1.0.0");
+       // Must have at least one channel defined via attributes
+   });
+   ```
+
+> ⚠️ **Note:** Documents generated with AsyncAPI 2.x without any channels will fail validation. This is a requirement of the AsyncAPI 2.x specification, not a limitation of this library.
+
+### AsyncAPI 3.x
+
+AsyncAPI 3.x (default) does not require channels. This version is recommended for most new projects as it provides more flexibility and supports the latest AsyncAPI features including AsyncAPI 3.1 schema generation.
+
 ## Protocol Bindings
 
 Bindings describe protocol-specific information. Apply them to channels and operations using the `BindingsRef` property:
