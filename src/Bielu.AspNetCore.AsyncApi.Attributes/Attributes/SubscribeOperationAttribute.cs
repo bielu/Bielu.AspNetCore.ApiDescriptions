@@ -4,7 +4,7 @@ public class SubscribeOperationAttribute : OperationAttribute
 {
     public SubscribeOperationAttribute(Type messagePayloadType, params string[] tags)
     {
-        OperationType = OperationType.Publish;
+        OperationType = OperationType.Subscribe;
         MessagePayloadType = messagePayloadType;
         Tags = tags;
     }

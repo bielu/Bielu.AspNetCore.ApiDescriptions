@@ -432,6 +432,8 @@ public class AsyncApiSchemaValidationTests
                     services.AddControllers(); // Required for ApplicationPartManager
                     services.AddAsyncApi(options =>
                     {
+                        options.AddServer("smtp-server", "localhost", "smtp");
+                        options.AddServer("websocket-server", "localhost", "ws");
                         configureOptions?.Invoke(options);
                     });
                     services.AddRouting();

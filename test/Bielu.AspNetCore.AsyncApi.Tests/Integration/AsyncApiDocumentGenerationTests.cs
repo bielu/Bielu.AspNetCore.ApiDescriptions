@@ -141,6 +141,7 @@ public class AsyncApiDocumentGenerationTests
         // Act
         var response = await client.GetAsync(GetDocumentRoute(TestDocumentName));
         var content = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"[DEBUG_LOG] Generated JSON: {content}");
 
         // Assert - Parse with ByteBard.AsyncAPI.NET reader to validate schema
         var reader = new AsyncApiStringReader();
@@ -153,7 +154,7 @@ public class AsyncApiDocumentGenerationTests
         if (diagnostic?.Errors != null && diagnostic.Errors.Any())
         {
             var errors = string.Join(Environment.NewLine, diagnostic.Errors.Select(e => e.Message));
-            Assert.Fail($"AsyncAPI document has validation errors: {errors}");
+            Assert.Fail($"AsyncAPI document has validation errors: {errors}. Generated JSON: {content}");
         }
     }
 
@@ -296,6 +297,8 @@ public class AsyncApiDocumentGenerationTests
                             options.AsyncApiVersion = version.Value;
                         }
                         options.AddServer("test-server", "localhost:5000", "http");
+                        options.AddServer("smtp-server", "localhost:25", "smtp");
+                        options.AddServer("websocket-server", "localhost:8080", "ws");
                         options.WithInfo("Test API", "1.0.0");
                         options.WithDescription("Test API for integration tests");
                     });

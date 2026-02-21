@@ -129,6 +129,11 @@ internal sealed class AsyncApiDocumentService(
                 foreach (var member in members)
                 {
                     var channelAttr = member.GetCustomAttribute<ChannelAttribute>(inherit: true);
+                    if (channelAttr is null && member is MethodInfo)
+                    {
+                        channelAttr = type.GetCustomAttribute<ChannelAttribute>(inherit: true);
+                    }
+
                     if (channelAttr is null)
                         continue;
 
@@ -300,7 +305,7 @@ internal sealed class AsyncApiDocumentService(
 
         // Process MessagePayloadType if present
         var operationMessageKeys = new List<string>(messageKeys);
-        if (opAttr.MessagePayloadType is not null)
+        if (operationMessageKeys.Count == 0 && opAttr.MessagePayloadType is not null)
         {
             var payloadSchema = await _componentService.GetOrCreateSchemaAsync(
                 document,
@@ -395,7 +400,7 @@ internal sealed class AsyncApiDocumentService(
         var partAssemblies = AppDomain.CurrentDomain.GetAssemblies()  .Where(a => a.FullName != (this).GetType().Assembly.FullName && !a.IsDynamic && 
             a.GetReferencedAssemblies().Any(x=>x.Name == targetAssemblyName.Name));
         var entry = Assembly.GetEntryAssembly();
-        return partAssemblies.Concat(entry is not null ? [entry] : []);
+        return partAssemblies.Concat(entry is not null ? [entry] : []).Distinct();
     }
 
     private static IEnumerable<Type> SafeGetTypes(Assembly asm)
