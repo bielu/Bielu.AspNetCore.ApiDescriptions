@@ -1,11 +1,15 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 
 namespace Bielu.AspNetCore.AsyncApi.Tests.LibraryChannels
 {
     public interface IStreetlightMessageBus
     {
-        void PublishLightMeasurement(ExternalEvent lightMeasuredEvent);
+        /// <summary>
+/// Publishes a light measurement event to the message bus.
+/// </summary>
+/// <param name="lightMeasuredEvent">The external event containing the light measurement details.</param>
+void PublishLightMeasurement(ExternalEvent lightMeasuredEvent);
     }
 
     [AsyncApi]
@@ -15,6 +19,10 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.LibraryChannels
 
       
 
+        /// <summary>
+        /// Publishes an external light measurement event to the configured message channel.
+        /// </summary>
+        /// <param name="lightMeasuredEvent">The external event containing the light measurement data to publish.</param>
         [Channel(SubscribeLightMeasuredTopic, Servers = new[] { "test-server" }, BindingsRef = "amqpDev")]
         [SubscribeOperation(typeof(ExternalEvent), "External", Summary = "Subscribe to external events.")]
         public void PublishLightMeasurement(ExternalEvent lightMeasuredEvent)
