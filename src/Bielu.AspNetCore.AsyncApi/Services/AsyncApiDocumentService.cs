@@ -1,4 +1,3 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -101,6 +100,11 @@ internal sealed class AsyncApiDocumentService(
         return GetAsyncApiDocumentAsync(serviceProvider, httpRequest: null, cancellationToken);
     }
 
+    /// <summary>
+    /// Scans candidate assemblies for types marked with AsyncApiAttribute and uses ChannelAttribute, MessageAttribute and OperationAttribute on those types and their members to populate the document's components, channels, messages, and operations.
+    /// </summary>
+    /// <param name="document">The AsyncApiDocument to populate; its Components, Schemas, and Messages collections will be created or updated.</param>
+    /// <param name="cancellationToken">Token to observe for cancellation of async operations.</param>
     private async Task PopulateFromAttributeProjectAsync(
         AsyncApiDocument document,
         IServiceProvider scopedServiceProvider,
@@ -282,7 +286,20 @@ internal sealed class AsyncApiDocumentService(
         return messageKeys;
     }
 
-    private async Task ApplyOperationsFromAttributes(
+    /// <summary>
+/// Adds AsyncAPI operations to the document for each OperationAttribute found on the given member.
+/// </summary>
+/// <remarks>
+/// Creates operation IDs when missing, ensures payload schemas and message entries exist when a MessagePayloadType is provided (avoiding duplicates), applies tags, sets the operation action and channel reference, and attaches message references to the operation.
+/// </remarks>
+/// <param name="document">The AsyncAPI document to modify.</param>
+/// <param name="channel">The channel to which the operations belong.</param>
+/// <param name="member">The reflected member (type or method) that declares OperationAttribute instances.</param>
+/// <param name="messageKeys">Existing message keys already associated with the channel; used as the initial set of messages for each operation.</param>
+/// <param name="scopedServiceProvider">Scoped service provider used to resolve services during schema creation.</param>
+/// <param name="schemaTransformers">Schema transformers applied when creating or retrieving payload schemas.</param>
+/// <param name="cancellationToken">Cancellation token to observe while performing async operations.</param>
+private async Task ApplyOperationsFromAttributes(
     AsyncApiDocument document,
     AsyncApiChannel channel,
     MemberInfo member,
@@ -394,6 +411,10 @@ internal sealed class AsyncApiDocumentService(
         return char.ToLowerInvariant(value[0]) + value.Substring(1);
     }
 
+    /// <summary>
+    /// Collects assemblies to scan for AsyncApiAttribute usage.
+    /// </summary>
+    /// <returns>A sequence of distinct assemblies that reference the AsyncApiAttribute assembly, excluding the executing assembly and any dynamic assemblies; includes the entry assembly if present.</returns>
     private IEnumerable<Assembly> GetCandidateAssembliesForAttributeScan()
     {
         var targetAssemblyName = typeof(AsyncApiAttribute).Assembly.GetName();
@@ -403,6 +424,11 @@ internal sealed class AsyncApiDocumentService(
         return partAssemblies.Concat(entry is not null ? [entry] : []).Distinct();
     }
 
+    /// <summary>
+    /// Gets the types declared in the given assembly, excluding any types that failed to load.
+    /// </summary>
+    /// <param name="asm">The assembly to retrieve types from.</param>
+    /// <returns>An enumeration of loaded <see cref="Type"/> objects; types that could not be loaded are omitted.</returns>
     private static IEnumerable<Type> SafeGetTypes(Assembly asm)
     {
         try { return asm.GetTypes(); }
