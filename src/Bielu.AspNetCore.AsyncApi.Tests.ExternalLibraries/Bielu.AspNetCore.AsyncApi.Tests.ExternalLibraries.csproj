@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ByteBard.AsyncAPI.NET" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="Microsoft.Playwright" />
+        <PackageReference Include="NSubstitute" />
+        <PackageReference Include="Shouldly" />
+        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.runner.visualstudio">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="ByteBard.AsyncAPI.NET.Readers" />
+        <PackageReference Include="ByteBard.AsyncAPI.NET.Bindings" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
+        <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
+        <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.UI\Bielu.AspNetCore.AsyncApi.UI.csproj" />
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Tests.Shared.LibraryChannels\Bielu.AspNetCore.AsyncApi.Tests.Shared.LibraryChannels.csproj" />
+    </ItemGroup>
+
+</Project>

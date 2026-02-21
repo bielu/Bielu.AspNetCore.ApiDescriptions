@@ -9,6 +9,8 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Tests/Bielu.AspNetCore.AsyncApi.Tests.csproj" />
+    <Project Path="Bielu.AspNetCore.AsyncApi.Tests.ExternalLibraries/Bielu.AspNetCore.AsyncApi.Tests.ExternalLibraries.csproj" />
+    <Project Path="Bielu.AspNetCore.AsyncApi.Tests.Shared.LibraryChannels/Bielu.AspNetCore.AsyncApi.Tests.Shared.LibraryChannels.csproj" />
   </Folder>
   <Folder Name="/Solution Files/">
     <File Path="../.dockerignore" />

@@ -391,15 +391,11 @@ internal sealed class AsyncApiDocumentService(
 
     private IEnumerable<Assembly> GetCandidateAssembliesForAttributeScan()
     {
-        var partAssemblies = applicationPartManager.ApplicationParts
-            .Select(p => p.GetType().Assembly)
-            .Distinct();
-
+        var targetAssemblyName = typeof(AsyncApiAttribute).Assembly.GetName();
+        var partAssemblies = AppDomain.CurrentDomain.GetAssemblies()  .Where(a => a.FullName != (this).GetType().Assembly.FullName && !a.IsDynamic && 
+            a.GetReferencedAssemblies().Any(x=>x.Name == targetAssemblyName.Name));
         var entry = Assembly.GetEntryAssembly();
-
-        return partAssemblies
-            .Concat(entry is not null ? new[] { entry } : Array.Empty<Assembly>())
-            .Distinct();
+        return partAssemblies.Concat(entry is not null ? [entry] : []);
     }
 
     private static IEnumerable<Type> SafeGetTypes(Assembly asm)

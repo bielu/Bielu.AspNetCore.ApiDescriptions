@@ -143,7 +143,7 @@ public class PushNotification
 /// Sample class with channel parameters.
 /// </summary>
 [AsyncApi]
-[Channel("users/{userId}/events", Description = "User-specific events channel")]
+[Channel("users_userId_events", Description = "User-specific events channel")]
 [ChannelParameter("userId", typeof(string), Description = "The user identifier")]
 public class UserEventHandler
 {
