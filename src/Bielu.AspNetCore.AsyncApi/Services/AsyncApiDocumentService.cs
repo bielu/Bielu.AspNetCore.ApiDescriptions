@@ -157,7 +157,7 @@ internal sealed class AsyncApiDocumentService(
 
     private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr)
     {
-        var sanitizedKey = SanitizeChannelKey( channelAttr.Name);
+        var sanitizedKey = SanitizeKey(channelAttr.Name);
         if (channelAttr.BindingsRef != null && document.Channels.TryGetValue(channelAttr.BindingsRef, out var existingChannelByRef))
         {
             return existingChannelByRef;
@@ -194,9 +194,10 @@ internal sealed class AsyncApiDocumentService(
             }
         }
     }
-    private static string SanitizeChannelKey(string channelKey)
+    private static string SanitizeKey(string key)
     {
-        return channelKey.Replace("/", string.Empty);
+        if (string.IsNullOrWhiteSpace(key)) return key;
+        return System.Text.RegularExpressions.Regex.Replace(key, @"[^a-zA-Z0-9\.\-_]", string.Empty);
     }
     private static void ApplyChannelServersFromAttributes(AsyncApiChannel channel, ChannelAttribute channelAttr)
     {
@@ -205,7 +206,7 @@ internal sealed class AsyncApiDocumentService(
 
         foreach (var serverKey in channelAttr.Servers.Where(s => !string.IsNullOrWhiteSpace(s)))
         {
-            var sanitizedServerKey = SanitizeChannelKey(serverKey);
+            var sanitizedServerKey = SanitizeKey(serverKey);
         
             // Avoid duplicates using reflection to check reference ID
             var alreadyExists = channel.Servers.Any(s =>
