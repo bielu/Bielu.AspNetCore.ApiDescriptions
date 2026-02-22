@@ -8,6 +8,7 @@ using System.Reflection;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
 using Bielu.AspNetCore.AsyncApi.Transformers;
+using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -276,12 +277,12 @@ internal sealed class AsyncApiDocumentService(
                 Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
             };
 
-            channel.Messages[messageKey] = message;
-
             if (!document.Components.Messages.ContainsKey(messageKey))
             {
                 document.Components.Messages[messageKey] = message;
             }
+
+            channel.Messages[messageKey] = new AsyncApiMessageReference($"#/components/messages/{messageKey}");
         }
 
         return messageKeys;
@@ -355,12 +356,12 @@ private async Task ApplyOperationsFromAttributes(
                     Title = messageKey,
                     Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
                 };
+                document.Components.Messages[messageKey] = message;
+            }
 
-                channel.Messages[messageKey] = message;
-                if (!document.Components.Messages.ContainsKey(messageKey))
-                {
-                    document.Components.Messages[messageKey] = message;
-                }
+            if (!channel.Messages.ContainsKey(messageKey))
+            {
+                channel.Messages[messageKey] = new AsyncApiMessageReference($"#/components/messages/{messageKey}");
             }
 
             operationMessageKeys.Add(messageKey);
@@ -368,6 +369,7 @@ private async Task ApplyOperationsFromAttributes(
 
         var op = new AsyncApiOperation
         {
+            Title = opId,
             Summary = opAttr.Summary,
             Description = opAttr.Description,
         };
@@ -399,8 +401,8 @@ private async Task ApplyOperationsFromAttributes(
             var channelKey = SanitizeKey(channel.Address!);
             foreach (var msgKey in operationMessageKeys)
             {
-                // AsyncAPI v3 requires messages to be referenced from the channel, not from components
-                var messageRef = new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{msgKey}");
+                // Reference from operation to component (works better with ByteBard validator)
+                var messageRef = new AsyncApiMessageReference($"#/components/messages/{msgKey}");
                 op.Messages.Add(messageRef);
             }
         }
@@ -606,7 +608,14 @@ private async Task ApplyOperationsFromAttributes(
             var result = new Dictionary<string, AsyncApiServer>();
             var index = 0;
             foreach (var address in addresses)
-                result[$"server{index++}"] = new AsyncApiServer { Host = address };
+            {
+                var sanitizedAddress = address;
+                if (address.Contains("://"))
+                {
+                    sanitizedAddress = address.Split("://")[1];
+                }
+                result[$"server{index++}"] = new AsyncApiServer { Host = sanitizedAddress };
+            }
             return result;
         }
         return new Dictionary<string, AsyncApiServer>();
