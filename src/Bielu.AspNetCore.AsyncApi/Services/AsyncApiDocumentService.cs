@@ -120,6 +120,7 @@ internal sealed class AsyncApiDocumentService(
         {
             foreach (var type in SafeGetTypes(asm))
             {
+                if(type is null) continue;
                 var asyncApiAttr = type.GetCustomAttribute<AsyncApiAttribute>(inherit: true);
                 if (asyncApiAttr is null)
                     continue;
@@ -433,10 +434,10 @@ private async Task ApplyOperationsFromAttributes(
     /// </summary>
     /// <param name="asm">The assembly to retrieve types from.</param>
     /// <returns>An enumeration of loaded <see cref="Type"/> objects; types that could not be loaded are omitted.</returns>
-    private static IEnumerable<Type> SafeGetTypes(Assembly asm)
+    private static IEnumerable<Type?> SafeGetTypes(Assembly asm)
     {
         try { return asm.GetTypes(); }
-        catch (ReflectionTypeLoadException ex) { return ex.Types.Where(t => t is not null)!; }
+        catch (ReflectionTypeLoadException ex) { return ex.Types.Where(t => t is not null) ?? Enumerable.Empty<Type>(); }
     }
 
     private static bool TryGet(object target, string propertyName, out object? value)
