@@ -66,12 +66,14 @@ internal sealed class AsyncApiDocumentService(
 
         var document = new AsyncApiDocument
         {
+            Id = $"urn:{SanitizeKey(documentName)}",
             Info = GetAsyncApiInfo(),
             Servers = GetAsyncApiServers(httpRequest),
             Components = new AsyncApiComponents { Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>() },
             Channels = new Dictionary<string, AsyncApiChannel>(StringComparer.Ordinal),
             Operations = new Dictionary<string, AsyncApiOperation>(StringComparer.Ordinal)
         };
+        document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.0.0";
         ApplyBindingsFromOptions(document);
 
         await PopulateFromAttributeProjectAsync(document, scopedServiceProvider, schemaTransformers, cancellationToken);
@@ -92,6 +94,16 @@ internal sealed class AsyncApiDocumentService(
                 StringComparer.Ordinal);
         }
 
+        // AsyncAPI 2.x requires at least one channel; per requirement, throw if none are defined
+        if (_options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
+        {
+            var hasChannels = document.Channels is not null && document.Channels.Count > 0;
+            if (!hasChannels)
+            {
+                throw new InvalidOperationException("AsyncAPI 2.x requires at least one channel. No channels were discovered for this document.");
+            }
+        }
+
         return document;
     }
 
@@ -105,7 +117,9 @@ internal sealed class AsyncApiDocumentService(
     /// Scans candidate assemblies for types marked with AsyncApiAttribute and uses ChannelAttribute, MessageAttribute and OperationAttribute on those types and their members to populate the document's components, channels, messages, and operations.
     /// </summary>
     /// <param name="document">The AsyncApiDocument to populate; its Components, Schemas, and Messages collections will be created or updated.</param>
+    /// <param name="schemaTransformers"></param>
     /// <param name="cancellationToken">Token to observe for cancellation of async operations.</param>
+    /// <param name="scopedServiceProvider"></param>
     private async Task PopulateFromAttributeProjectAsync(
         AsyncApiDocument document,
         IServiceProvider scopedServiceProvider,
@@ -399,8 +413,8 @@ private async Task ApplyOperationsFromAttributes(
             var channelKey = SanitizeKey(channel.Address!);
             foreach (var msgKey in operationMessageKeys)
             {
-                // Reference from operation to component (works better with ByteBard validator)
-                var messageRef = new AsyncApiMessageReference($"#/components/messages/{msgKey}");
+                // Reference from operation to channel's message to satisfy subset rule
+                var messageRef = new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{msgKey}");
                 op.Messages.Add(messageRef);
             }
         }

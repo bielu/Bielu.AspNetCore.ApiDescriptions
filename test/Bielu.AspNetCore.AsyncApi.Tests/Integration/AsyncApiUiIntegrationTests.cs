@@ -388,9 +388,15 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         
         // Check for schema validation error in rendered content
         var pageContent = await page.ContentAsync();
+        
+        // Extract and display detailed error information if present
+        var errorInfoMessage = await ExtractAsyncApiErrorDetails(page);
+        var diagnosticInfo = $"\n\nDiagnostic Information:" +
+                            $"\n- AsyncAPI error details: {errorInfoMessage}";
+
         pageContent.ShouldNotContain("Error: There are errors in your Asyncapi document",
             Case.Insensitive,
-            "UI should not display AsyncAPI schema validation errors");
+            $"UI should not display AsyncAPI schema validation errors.{diagnosticInfo}");
 
         await page.CloseAsync();
     }
