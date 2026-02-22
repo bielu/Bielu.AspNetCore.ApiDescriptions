@@ -240,9 +240,9 @@ internal sealed class AsyncApiDocumentService(
         foreach (var msgAttr in messageAttrs)
         {
             var payloadType = msgAttr.PayloadType;
-            var messageKey = msgAttr.MessageId
+            var messageKey = SanitizeKey(msgAttr.MessageId
                              ?? msgAttr.Name
-                             ?? ToCamelCase(payloadType.Name);
+                             ?? ToCamelCase(payloadType.Name));
 
             messageKeys.Add(messageKey);
 
@@ -257,7 +257,7 @@ internal sealed class AsyncApiDocumentService(
                 parameterDescription: null,
                 cancellationToken: cancellationToken);
 
-            var schemaKey = ToCamelCase(payloadType.Name);
+            var schemaKey = SanitizeKey(ToCamelCase(payloadType.Name));
             if (!document.Components.Schemas.ContainsKey(schemaKey))
             {
                 document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
@@ -314,7 +314,11 @@ private async Task ApplyOperationsFromAttributes(
         var opId = opAttr.OperationId;
         if (string.IsNullOrWhiteSpace(opId))
         {
-            opId = $"{member.DeclaringType?.Name ?? "Type"}_{member.Name}_{opAttr.OperationType}";
+            opId = SanitizeKey($"{member.DeclaringType?.Name ?? "Type"}_{member.Name}_{opAttr.OperationType}");
+        }
+        else
+        {
+            opId = SanitizeKey(opId);
         }
 
         if (document.Operations.ContainsKey(opId))
@@ -332,7 +336,7 @@ private async Task ApplyOperationsFromAttributes(
                 parameterDescription: null,
                 cancellationToken: cancellationToken);
 
-            var schemaKey = ToCamelCase(opAttr.MessagePayloadType.Name);
+            var schemaKey = SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
             if (!document.Components.Schemas.ContainsKey(schemaKey))
             {
                 document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
@@ -341,8 +345,8 @@ private async Task ApplyOperationsFromAttributes(
                 };
             }
 
-            var messageKey = ToCamelCase(opAttr.MessagePayloadType.Name);
-            if (!channel.Messages.ContainsKey(messageKey))
+            var messageKey = SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
+            if (!document.Components.Messages.ContainsKey(messageKey))
             {
                 var message = new AsyncApiMessage
                 {
@@ -371,7 +375,7 @@ private async Task ApplyOperationsFromAttributes(
             ? AsyncApiAction.Send
             : AsyncApiAction.Receive;
 
-        op.Channel = new AsyncApiChannelReference($"#/channels/{SanitizeChannelKey(channel.Address!)}");
+        op.Channel = new AsyncApiChannelReference($"#/channels/{SanitizeKey(channel.Address!)}");
 
         if (opAttr.Tags is { Length: > 0 })
         {
@@ -391,7 +395,7 @@ private async Task ApplyOperationsFromAttributes(
         if (operationMessageKeys.Count > 0)
         {
             op.Messages ??= new List<AsyncApiMessageReference>();
-            var channelKey = SanitizeChannelKey(channel.Address!);
+            var channelKey = SanitizeKey(channel.Address!);
             foreach (var msgKey in operationMessageKeys)
             {
                 // AsyncAPI v3 requires messages to be referenced from the channel, not from components
@@ -535,7 +539,7 @@ private async Task ApplyOperationsFromAttributes(
                         bindings.Add(binding);
                     }
 
-                    var key = SanitizeChannelKey(kvp.Key);
+                    var key = SanitizeKey(kvp.Key);
                     document.Components.ChannelBindings[key] = bindings;
                           
                     // Apply bindings to the actual channel if it exists
@@ -554,7 +558,11 @@ private async Task ApplyOperationsFromAttributes(
         // Use configured servers from options if available
         if (_options.Servers.Count > 0)
         {
-            return new Dictionary<string, AsyncApiServer>(_options.Servers);
+            foreach (var kvp in _options.Servers)
+            {
+                servers[SanitizeKey(kvp.Key)] = kvp.Value;
+            }
+            return servers;
         }
 
         // Fall back to HTTP request if provided
