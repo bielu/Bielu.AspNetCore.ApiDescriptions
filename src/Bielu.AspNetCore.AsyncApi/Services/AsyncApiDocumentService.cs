@@ -212,11 +212,8 @@ internal sealed class AsyncApiDocumentService(
             // Avoid duplicates using reflection to check reference ID
             var alreadyExists = channel.Servers.Any(s =>
             {
-                if (TryGet(s, "Reference", out var refObj) && refObj != null)
-                {
-                    if (TryGet(refObj, "Id", out var idObj) && idObj is string id)
-                        return string.Equals(id, sanitizedServerKey, StringComparison.OrdinalIgnoreCase);
-                }
+                if (s is { Reference.Reference: not null } serverRef)
+                    return string.Equals(serverRef.Reference.Reference, $"#/servers/{sanitizedServerKey}", StringComparison.OrdinalIgnoreCase);
                 return false;
             });
 
@@ -369,7 +366,7 @@ private async Task ApplyOperationsFromAttributes(
 
         var op = new AsyncApiOperation
         {
-            Title = opId,
+            Title = opAttr.Title ?? opId,
             Summary = opAttr.Summary,
             Description = opAttr.Description,
         };
