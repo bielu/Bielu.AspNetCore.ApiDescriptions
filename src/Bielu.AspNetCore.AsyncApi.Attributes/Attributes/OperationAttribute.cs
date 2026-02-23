@@ -26,6 +26,10 @@ public abstract class OperationAttribute : Attribute
     /// CommonMark syntax can be used for rich text representation.
     /// </summary>
     public string? Description { get; set; }
+    /// <summary>
+    /// A short title for the operation.
+    /// </summary>
+    public string? Title { get; set; }
 
     /// <summary>
     /// The name of an operation bindings item to reference.

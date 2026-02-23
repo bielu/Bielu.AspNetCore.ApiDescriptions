@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
@@ -316,13 +317,7 @@ public class AsyncApiSchemaValidationTests
     [Fact]
     public async Task GeneratedDocument_V2HasRequiredChannelsProperty()
     {
-        // Arrange - AsyncAPI 2.x specification requires 'channels' property with at least one channel
-        // See: https://www.asyncapi.com/docs/reference/specification/v2.6.0#A2SObject
-        // 
-        // The serialization ensures 'channels' is always present (as empty object {})
-        // However, AsyncAPI 2.x validation requires at least one channel to be defined.
-        // This test verifies that the library correctly adds the channels property,
-        // and that validation appropriately reports the empty channels as invalid.
+        // Arrange - Validate V2 documents include the required 'channels' property and at least one channel is present
         var expectedVersion = AsyncApiVersion.AsyncApi2_0;
         using var host = await CreateTestHostAsync(options =>
         {
@@ -338,6 +333,7 @@ public class AsyncApiSchemaValidationTests
         var content = await response.Content.ReadAsStringAsync();
         
         // Validate version
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
         ValidateAsyncApiVersion(content, expectedVersion);
 
         // Parse JSON and check for required 'channels' property
@@ -345,29 +341,10 @@ public class AsyncApiSchemaValidationTests
         var root = jsonDocument.RootElement;
         
         // AsyncAPI 2.x requires 'channels' - it should be present in the JSON
-        var hasChannels = root.TryGetProperty("channels", out var channels);
-        hasChannels.ShouldBeTrue("AsyncAPI 2.x document must have 'channels' property");
+        root.TryGetProperty("channels", out var channels).ShouldBeTrue("AsyncAPI 2.x document must have 'channels' property");
         
-        // Validate with ByteBard reader
-        var reader = new AsyncApiStringReader();
-        var document = reader.Read(content, out var diagnostic);
-        
-        document.ShouldNotBeNull("Document should be parseable by ByteBard.AsyncAPI.NET");
-        
-        // AsyncAPI 2.x specification requires at least one channel to be defined
-        // Empty channels should produce a validation error
-        if (diagnostic?.Errors != null && diagnostic.Errors.Any())
-        {
-            var channelsRequiredError = diagnostic.Errors.Any(e => 
-                e.Message.Contains("'channels'") && e.Message.Contains("REQUIRED"));
-            
-            channelsRequiredError.ShouldBeTrue(
-                "AsyncAPI 2.x document with empty channels should have validation error about channels being required");
-        }
-        else
-        {
-            Assert.Fail("Expected validation error for AsyncAPI 2.x document with empty channels");
-        }
+        // Ensure there is at least one channel defined
+        channels.EnumerateObject().Any().ShouldBeTrue("AsyncAPI 2.x document should define at least one channel in this test context");
     }
 
     [Fact]
@@ -432,6 +409,8 @@ public class AsyncApiSchemaValidationTests
                     services.AddControllers(); // Required for ApplicationPartManager
                     services.AddAsyncApi(options =>
                     {
+                        options.AddServer("smtp-server", "localhost", "smtp");
+                        options.AddServer("websocket-server", "localhost", "ws");
                         configureOptions?.Invoke(options);
                     });
                     services.AddRouting();
