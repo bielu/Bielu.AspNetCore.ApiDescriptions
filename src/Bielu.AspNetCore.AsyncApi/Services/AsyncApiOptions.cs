@@ -183,6 +183,12 @@ public sealed class AsyncApiOptions
     /// <param name="url">The server URL.</param>
     /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    private static string SanitizeKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return key;
+        return System.Text.RegularExpressions.Regex.Replace(key, @"[^a-zA-Z0-9\.\-_]", string.Empty);
+    }
+
     public AsyncApiOptions AddServer(string name, string url, string protocol, string pathName = null)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -191,8 +197,9 @@ public sealed class AsyncApiOptions
 
         // Extract host from URL (remove protocol prefix if present)
         var host = url.Contains("://") ? url.Split("://")[1] : url;
+        var sanitizedName = SanitizeKey(name);
 
-        Servers[name] = new AsyncApiServer { Host = host, PathName = pathName, Protocol = protocol };
+        Servers[sanitizedName] = new AsyncApiServer { Host = host, PathName = pathName, Protocol = protocol };
         return this;
     }
     public AsyncApiOptions AddServer(string name, string url, string protocol, Action<AsyncApiServer> configure)
@@ -209,8 +216,10 @@ public sealed class AsyncApiOptions
             PathName = null, 
             Protocol = protocol 
         };
-    
-        configure(server);Servers[name] = server;
+        var sanitizedName = SanitizeKey(name);
+        
+        configure(server);
+        Servers[sanitizedName] = server;
         return this;
     }
     /// <summary>

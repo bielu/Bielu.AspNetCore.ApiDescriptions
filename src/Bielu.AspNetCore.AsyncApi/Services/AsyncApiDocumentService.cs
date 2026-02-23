@@ -73,7 +73,7 @@ internal sealed class AsyncApiDocumentService(
             Channels = new Dictionary<string, AsyncApiChannel>(StringComparer.Ordinal),
             Operations = new Dictionary<string, AsyncApiOperation>(StringComparer.Ordinal)
         };
-        document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.0.0";
+        document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.1.0";
         ApplyBindingsFromOptions(document);
 
         await PopulateFromAttributeProjectAsync(document, scopedServiceProvider, schemaTransformers, cancellationToken);
@@ -160,7 +160,7 @@ internal sealed class AsyncApiDocumentService(
                     var channel = GetOrCreateChannel(document, channelAttr);
 
                     ApplyChannelParametersFromAttributes(channel, member);
-                    ApplyChannelServersFromAttributes(channel, channelAttr);
+                    ApplyChannelServersFromAttributes(document, channel, channelAttr);
 
                     var messageRefs = await ApplyChannelMessagesFromAttributesAsync(
                         document, channel, member, scopedServiceProvider, schemaTransformers, cancellationToken);
@@ -215,7 +215,7 @@ internal sealed class AsyncApiDocumentService(
         if (string.IsNullOrWhiteSpace(key)) return key;
         return System.Text.RegularExpressions.Regex.Replace(key, @"[^a-zA-Z0-9\.\-_]", string.Empty);
     }
-    private static void ApplyChannelServersFromAttributes(AsyncApiChannel channel, ChannelAttribute channelAttr)
+    private static void ApplyChannelServersFromAttributes(AsyncApiDocument document, AsyncApiChannel channel, ChannelAttribute channelAttr)
     {
         if (channelAttr.Servers.Length == 0)
             return;
@@ -223,20 +223,38 @@ internal sealed class AsyncApiDocumentService(
         foreach (var serverKey in channelAttr.Servers.Where(s => !string.IsNullOrWhiteSpace(s)))
         {
             var sanitizedServerKey = SanitizeKey(serverKey);
-        
-            // Avoid duplicates using reflection to check reference ID
+
+            // Only add if it exists in root servers to avoid reference errors
+            if (document.Servers == null || !document.Servers.ContainsKey(sanitizedServerKey))
+            {
+                continue;
+            }
+
+            // Avoid duplicates by checking the reference string
             var alreadyExists = channel.Servers.Any(s =>
             {
                 if (s is { Reference.Reference: not null } serverRef)
-                    return string.Equals(serverRef.Reference.Reference, $"#/servers/{sanitizedServerKey}", StringComparison.OrdinalIgnoreCase);
+                {
+                    var reference = serverRef.Reference.Reference;
+                    return reference.EndsWith(sanitizedServerKey, StringComparison.OrdinalIgnoreCase);
+                }
                 return false;
             });
 
             if (alreadyExists)
                 continue;
 
-            // Use proper AsyncAPI 3.0 reference format: #/servers/serverName
-            channel.Servers.Add(new AsyncApiServerReference($"#/servers/{sanitizedServerKey}"));
+            // Use correct reference format based on version to avoid ByteBard V2 serializer bug
+            // V2 needs FragmentId to be the bare key, which we get with #key
+            // V3 needs the full JSON pointer #/servers/key
+            if (document.Asyncapi.StartsWith("2."))
+            {
+                channel.Servers.Add(new AsyncApiServerReference($"#{sanitizedServerKey}"));
+            }
+            else
+            {
+                channel.Servers.Add(new AsyncApiServerReference($"#/servers/{sanitizedServerKey}"));
+            }
         }
     }
 
