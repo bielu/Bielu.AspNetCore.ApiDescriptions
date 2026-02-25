@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Helpers;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
 using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI;
@@ -66,7 +67,7 @@ internal sealed class AsyncApiDocumentService(
 
         var document = new AsyncApiDocument
         {
-            Id = $"urn:{SanitizeKey(documentName)}",
+            Id = $"urn:{AsyncApiNamingHelper.SanitizeKey(documentName)}",
             Info = GetAsyncApiInfo(),
             Servers = GetAsyncApiServers(httpRequest),
             Components = new AsyncApiComponents { Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>() },
@@ -173,7 +174,7 @@ internal sealed class AsyncApiDocumentService(
 
     private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr)
     {
-        var sanitizedKey = SanitizeKey(channelAttr.Name);
+        var sanitizedKey = AsyncApiNamingHelper.SanitizeKey(channelAttr.Name);
         if (channelAttr.BindingsRef != null && document.Channels.TryGetValue(channelAttr.BindingsRef, out var existingChannelByRef))
         {
             return existingChannelByRef;
@@ -210,11 +211,6 @@ internal sealed class AsyncApiDocumentService(
             }
         }
     }
-    private static string SanitizeKey(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key)) return key;
-        return System.Text.RegularExpressions.Regex.Replace(key, @"[^a-zA-Z0-9\.\-_]", string.Empty);
-    }
     private static void ApplyChannelServersFromAttributes(AsyncApiDocument document, AsyncApiChannel channel, ChannelAttribute channelAttr)
     {
         if (channelAttr.Servers.Length == 0)
@@ -222,7 +218,7 @@ internal sealed class AsyncApiDocumentService(
 
         foreach (var serverKey in channelAttr.Servers.Where(s => !string.IsNullOrWhiteSpace(s)))
         {
-            var sanitizedServerKey = SanitizeKey(serverKey);
+            var sanitizedServerKey = AsyncApiNamingHelper.SanitizeKey(serverKey);
 
             // Only add if it exists in root servers to avoid reference errors
             if (document.Servers == null || !document.Servers.ContainsKey(sanitizedServerKey))
@@ -272,7 +268,7 @@ internal sealed class AsyncApiDocumentService(
         foreach (var msgAttr in messageAttrs)
         {
             var payloadType = msgAttr.PayloadType;
-            var messageKey = SanitizeKey(msgAttr.MessageId
+            var messageKey = AsyncApiNamingHelper.SanitizeKey(msgAttr.MessageId
                              ?? msgAttr.Name
                              ?? ToCamelCase(payloadType.Name));
 
@@ -289,7 +285,7 @@ internal sealed class AsyncApiDocumentService(
                 parameterDescription: null,
                 cancellationToken: cancellationToken);
 
-            var schemaKey = SanitizeKey(ToCamelCase(payloadType.Name));
+            var schemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(payloadType.Name));
             if (!document.Components.Schemas.ContainsKey(schemaKey))
             {
                 document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
@@ -346,11 +342,11 @@ private async Task ApplyOperationsFromAttributes(
         var opId = opAttr.OperationId;
         if (string.IsNullOrWhiteSpace(opId))
         {
-            opId = SanitizeKey($"{member.DeclaringType?.Name ?? "Type"}_{member.Name}_{opAttr.OperationType}");
+            opId = AsyncApiNamingHelper.SanitizeKey($"{member.DeclaringType?.Name ?? "Type"}_{member.Name}_{opAttr.OperationType}");
         }
         else
         {
-            opId = SanitizeKey(opId);
+            opId = AsyncApiNamingHelper.SanitizeKey(opId);
         }
 
         if (document.Operations.ContainsKey(opId))
@@ -368,7 +364,7 @@ private async Task ApplyOperationsFromAttributes(
                 parameterDescription: null,
                 cancellationToken: cancellationToken);
 
-            var schemaKey = SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
+            var schemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
             if (!document.Components.Schemas.ContainsKey(schemaKey))
             {
                 document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
@@ -377,7 +373,7 @@ private async Task ApplyOperationsFromAttributes(
                 };
             }
 
-            var messageKey = SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
+            var messageKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
             if (!document.Components.Messages.ContainsKey(messageKey))
             {
                 var message = new AsyncApiMessage
@@ -408,7 +404,7 @@ private async Task ApplyOperationsFromAttributes(
             ? AsyncApiAction.Send
             : AsyncApiAction.Receive;
 
-        op.Channel = new AsyncApiChannelReference($"#/channels/{SanitizeKey(channel.Address!)}");
+        op.Channel = new AsyncApiChannelReference($"#/channels/{AsyncApiNamingHelper.SanitizeKey(channel.Address!)}");
 
         if (opAttr.Tags is { Length: > 0 })
         {
@@ -428,7 +424,7 @@ private async Task ApplyOperationsFromAttributes(
         if (operationMessageKeys.Count > 0)
         {
             op.Messages ??= new List<AsyncApiMessageReference>();
-            var channelKey = SanitizeKey(channel.Address!);
+            var channelKey = AsyncApiNamingHelper.SanitizeKey(channel.Address!);
             foreach (var msgKey in operationMessageKeys)
             {
                 // Reference from operation to channel's message to satisfy subset rule
@@ -572,7 +568,7 @@ private async Task ApplyOperationsFromAttributes(
                         bindings.Add(binding);
                     }
 
-                    var key = SanitizeKey(kvp.Key);
+                    var key = AsyncApiNamingHelper.SanitizeKey(kvp.Key);
                     document.Components.ChannelBindings[key] = bindings;
                           
                     // Apply bindings to the actual channel if it exists
@@ -593,7 +589,7 @@ private async Task ApplyOperationsFromAttributes(
         {
             foreach (var kvp in _options.Servers)
             {
-                servers[SanitizeKey(kvp.Key)] = kvp.Value;
+                servers[AsyncApiNamingHelper.SanitizeKey(kvp.Key)] = kvp.Value;
             }
             return servers;
         }

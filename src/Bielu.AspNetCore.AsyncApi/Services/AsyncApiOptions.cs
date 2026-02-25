@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Transformers;
+using Bielu.AspNetCore.AsyncApi.Helpers;
 using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
@@ -183,12 +184,6 @@ public sealed class AsyncApiOptions
     /// <param name="url">The server URL.</param>
     /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    private static string SanitizeKey(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key)) return key;
-        return System.Text.RegularExpressions.Regex.Replace(key, @"[^a-zA-Z0-9\.\-_]", string.Empty);
-    }
-
     public AsyncApiOptions AddServer(string name, string url, string protocol, string pathName = null)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -197,7 +192,7 @@ public sealed class AsyncApiOptions
 
         // Extract host from URL (remove protocol prefix if present)
         var host = url.Contains("://") ? url.Split("://")[1] : url;
-        var sanitizedName = SanitizeKey(name);
+        var sanitizedName = AsyncApiNamingHelper.SanitizeKey(name);
 
         Servers[sanitizedName] = new AsyncApiServer { Host = host, PathName = pathName, Protocol = protocol };
         return this;
@@ -216,7 +211,7 @@ public sealed class AsyncApiOptions
             PathName = null, 
             Protocol = protocol 
         };
-        var sanitizedName = SanitizeKey(name);
+        var sanitizedName = AsyncApiNamingHelper.SanitizeKey(name);
         
         configure(server);
         Servers[sanitizedName] = server;
