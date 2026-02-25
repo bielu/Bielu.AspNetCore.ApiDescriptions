@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
+using Bielu.AspNetCore.AsyncApi.Tests.LibraryChannels;
 using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Readers;
 using Microsoft.AspNetCore.Builder;
@@ -71,7 +72,7 @@ public class AsyncApiDocumentGenerationTests
         // Parse with ByteBard reader to verify structure
         var reader = new AsyncApiStringReader();
         var document = reader.Read(content, out var diagnostic);
-        
+        var forceReference = new ExternaltMessageBus();
         document.ShouldNotBeNull();
         
         // Check for any parsing errors
