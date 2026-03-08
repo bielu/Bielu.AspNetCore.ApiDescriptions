@@ -101,7 +101,7 @@ namespace StreetlightsAPI
 
             logger.LogInformation("AsyncAPI doc available at: {URL}",
                 $"{addresses.FirstOrDefault()}/asyncapi/asyncapi.json");
-            logger.LogInformation("AsyncAPI UI available at: {URL}", $"{addresses.FirstOrDefault()}/asyncapi/ui/");
+            logger.LogInformation("AsyncAPI UI available at: {URL}", $"{addresses.FirstOrDefault()}/asyncapi");
         }
     }
 }

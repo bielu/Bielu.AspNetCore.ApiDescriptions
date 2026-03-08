@@ -44,7 +44,7 @@ dotnet add package Bielu.AspNetCore.AsyncApi.UI
 
 ## Getting Started
 
-See the [StreetlightsAPI example](./examples/StreetlightsAPI) for a complete working example.
+See the [StreetlightsAPI example](./src/examples/StreetlightsAPI) for a complete working example.
 
 ### 1. Configure Services
 
@@ -110,7 +110,7 @@ public class StreetlightMessageBus : IStreetlightMessageBus
 Once configured, access your AsyncAPI document:
 
 - **JSON Document**: `GET /asyncapi/asyncapi.json`
-- **AsyncAPI UI**: `GET /asyncapi/ui/`
+- **AsyncAPI UI**: `GET /asyncapi/`
 
 ```json
 {
@@ -140,8 +140,8 @@ The main types provided by this library are:
 | Type | Description |
 |------|-------------|
 | `AsyncApiOptions` | Options for configuring AsyncAPI document generation |
-| `IDocumentTransformer` | Interface for transformers that modify the generated AsyncAPI document |
-| `ISchemaTransformer` | Interface for transformers that modify generated schemas |
+| `IAsyncApiDocumentTransformer` | Interface for transformers that modify the generated AsyncAPI document |
+| `IAsyncApiSchemaTransformer` | Interface for transformers that modify generated schemas |
 | `AsyncApiAttribute` | Marks a class for scanning by the AsyncAPI generator |
 | `ChannelAttribute` | Defines a channel on a method |
 | `SubscribeOperationAttribute` | Defines a subscribe operation on a channel |

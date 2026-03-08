@@ -9,7 +9,7 @@ public static class EndpointRouteBuilderExtensions
 {
     public static IEndpointRouteBuilder MapAsyncApiUi(
         this IEndpointRouteBuilder endpoints,
-        string path = "/async-api")
+        string path = "/asyncapi")
     {
         var basePath = path.TrimEnd('/');
         var fileProvider = new EmbeddedFileProvider(
