@@ -110,7 +110,7 @@ public class StreetlightMessageBus : IStreetlightMessageBus
 Once configured, access your AsyncAPI document:
 
 - **JSON Document**: `GET /asyncapi/asyncapi.json`
-- **AsyncAPI UI**: `GET /asyncapi/`
+- **AsyncAPI UI**: `GET /asyncapi`
 
 ```json
 {
