@@ -100,7 +100,7 @@ namespace StreetlightsAPI
             var addresses = app.ServerFeatures.Get<IServerAddressesFeature>().Addresses;
 
             logger.LogInformation("AsyncAPI doc available at: {URL}",
-                $"{addresses.FirstOrDefault()}/asyncapi/asyncapi.json");
+                $"{addresses.FirstOrDefault()}/asyncapi/v1.json");
             logger.LogInformation("AsyncAPI UI available at: {URL}", $"{addresses.FirstOrDefault()}/asyncapi");
         }
     }
