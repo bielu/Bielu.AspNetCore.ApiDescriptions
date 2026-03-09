@@ -81,7 +81,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/async-api");
+        var response = await client.GetAsync("/asyncapi");
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -100,7 +100,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/async-api");
+        var response = await client.GetAsync("/asyncapi");
         var content = await response.Content.ReadAsStringAsync();
 
         // Assert
@@ -138,7 +138,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         });
 
         // Act - Navigate to the UI page
-        var htmlResponse = await page.GotoAsync($"{_baseUrl}/async-api", new PageGotoOptions
+        var htmlResponse = await page.GotoAsync($"{_baseUrl}/asyncapi", new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
             Timeout = 30000
@@ -199,7 +199,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         });
 
         // Act
-        await page.GotoAsync($"{_baseUrl}/async-api", new PageGotoOptions
+        await page.GotoAsync($"{_baseUrl}/asyncapi", new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
             Timeout = 30000
@@ -303,7 +303,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         };
 
         // Act - Navigate to the UI page
-        var response = await page.GotoAsync($"{_baseUrl}/async-api", new PageGotoOptions
+        var response = await page.GotoAsync($"{_baseUrl}/asyncapi", new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
             Timeout = 30000
@@ -371,7 +371,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var response = await page.GotoAsync($"{_baseUrl}/async-api", new PageGotoOptions
+        var response = await page.GotoAsync($"{_baseUrl}/asyncapi", new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
             Timeout = 30000
@@ -437,7 +437,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var response = await page.GotoAsync($"{_baseUrl}/async-api", new PageGotoOptions
+        var response = await page.GotoAsync($"{_baseUrl}/asyncapi", new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
             Timeout = 30000
@@ -512,7 +512,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var response = await page.GotoAsync($"{_baseUrl}/async-api", new PageGotoOptions
+        var response = await page.GotoAsync($"{_baseUrl}/asyncapi", new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
             Timeout = 30000
@@ -600,7 +600,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         var page = await _browser!.NewPageAsync();
 
         // Act
-        await page.GotoAsync($"{_baseUrl}/async-api", new PageGotoOptions
+        await page.GotoAsync($"{_baseUrl}/asyncapi", new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
             Timeout = 30000
@@ -648,7 +648,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         var page = await _browser!.NewPageAsync();
 
         // Act
-        await page.GotoAsync($"{_baseUrl}/async-api", new PageGotoOptions
+        await page.GotoAsync($"{_baseUrl}/asyncapi", new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
             Timeout = 30000
@@ -691,7 +691,7 @@ public class AsyncApiUiIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var response = await page.GotoAsync($"{_baseUrl}/async-api", new PageGotoOptions
+        var response = await page.GotoAsync($"{_baseUrl}/asyncapi", new PageGotoOptions
         {
             WaitUntil = WaitUntilState.NetworkIdle,
             Timeout = 30000
