@@ -48,6 +48,36 @@ internal static class AsyncApiSerializationHelper
     }
 
     /// <summary>
+    /// Serializes an AsyncAPI V3 document to JSON.
+    /// Uses StringWriter to avoid streaming issues with IIS in-process mode
+    /// where writing directly to the response PipeWriter can cause truncated output.
+    /// </summary>
+    /// <param name="document">The AsyncAPI document to serialize.</param>
+    /// <returns>JSON string representation of the document.</returns>
+    public static string SerializeV3ToJson(AsyncApiDocument document)
+    {
+        using var stringWriter = new StringWriter();
+        var jsonWriter = new AsyncApiJsonWriter(stringWriter);
+        document.SerializeV3(jsonWriter);
+        return stringWriter.ToString();
+    }
+
+    /// <summary>
+    /// Serializes an AsyncAPI V3 document to YAML.
+    /// Uses StringWriter to avoid streaming issues with IIS in-process mode
+    /// where writing directly to the response PipeWriter can cause truncated output.
+    /// </summary>
+    /// <param name="document">The AsyncAPI document to serialize.</param>
+    /// <returns>YAML string representation of the document.</returns>
+    public static string SerializeV3ToYaml(AsyncApiDocument document)
+    {
+        using var stringWriter = new StringWriter();
+        var yamlWriter = new AsyncApiYamlWriter(stringWriter, null);
+        document.SerializeV3(yamlWriter);
+        return stringWriter.ToString();
+    }
+
+    /// <summary>
     /// Ensures that AsyncAPI 2.x required properties are present in the JSON.
     /// The AsyncAPI 2.x specification requires 'channels' to be present. This method adds an
     /// empty channels object if missing, but note that for a valid AsyncAPI 2.x document,

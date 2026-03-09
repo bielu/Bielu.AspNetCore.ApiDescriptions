@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using Bielu.AspNetCore.AsyncApi.Buffers;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI;
-using ByteBard.AsyncAPI.Writers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -75,15 +73,7 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     }
                     else
                     {
-                        using var textWriter = new Utf8BufferTextWriter(System.Globalization.CultureInfo.InvariantCulture);
-                        textWriter.SetWriter(context.Response.BodyWriter);
-
-                        AsyncApiWriterBase asyncApiWriter = isYaml
-                            ? new AsyncApiYamlWriter(textWriter, null)
-                            : new AsyncApiJsonWriter(textWriter);
-
-                        document.SerializeV3(asyncApiWriter);
-                        await context.Response.BodyWriter.FlushAsync(context.RequestAborted);
+                        await SerializeV3(context, document, isYaml);
                     }
                 }
             }).ExcludeFromDescription();
@@ -104,6 +94,29 @@ public static class AsyncApiEndpointRouteBuilderExtensions
         else
         {
             serialized = AsyncApiSerializationHelper.SerializeV2ToJson(document);
+        }
+
+        await context.Response.WriteAsync(serialized, context.RequestAborted);
+    }
+
+    /// <summary>
+    /// Serializes an AsyncAPI V3 document to the response.
+    /// Uses StringWriter to serialize the document to a string first, then writes atomically
+    /// to the response. This avoids streaming issues with IIS in-process mode where writing
+    /// directly to the response PipeWriter via Utf8BufferTextWriter can cause truncated output
+    /// due to buffer flush ordering issues.
+    /// </summary>
+    private static async Task SerializeV3(HttpContext context, ByteBard.AsyncAPI.Models.AsyncApiDocument document, bool isYaml)
+    {
+        string serialized;
+
+        if (isYaml)
+        {
+            serialized = AsyncApiSerializationHelper.SerializeV3ToYaml(document);
+        }
+        else
+        {
+            serialized = AsyncApiSerializationHelper.SerializeV3ToJson(document);
         }
 
         await context.Response.WriteAsync(serialized, context.RequestAborted);
