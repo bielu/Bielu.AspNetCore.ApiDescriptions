@@ -26,6 +26,8 @@
     </ItemGroup>
     <ItemGroup>
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Tests" />
+      <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Merger" />
+      <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Cli" />
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Attributes\" />
