@@ -267,11 +267,14 @@ CLI options:
 
 ### Option 3: Using MSBuild Targets
 
-Add the MSBuild targets package for automatic build-time generation:
+Add the MSBuild targets package for automatic build-time generation. This package provides MSBuild `.props` and `.targets` files that invoke the `dotnet asyncapi` CLI tool (Option 2) after each build:
 
 ```bash
 dotnet add package Bielu.AspNetCore.AsyncApi.ApiDescription.Server
+dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli
 ```
+
+> **Note:** The `Bielu.AspNetCore.AsyncApi.ApiDescription.Server` package depends on the `dotnet asyncapi` CLI tool being installed. Install the CLI tool globally or as a local tool before building.
 
 Configure your `.csproj`:
 
