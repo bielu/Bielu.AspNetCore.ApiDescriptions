@@ -14,8 +14,8 @@
     2. Add PackageReference to Bielu.AspNetCore.AsyncApi.ApiDescription.Server
     3. Configure properties in your .csproj (see .props file for available options)
 
-    To use standalone with dotnet-asyncapi CLI tool:
-    1. Install the dotnet-asyncapi tool: dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli
+    To use standalone with dotnet asyncapi CLI tool:
+    1. Install the dotnet asyncapi tool: dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli
     2. Add PackageReference to Bielu.AspNetCore.AsyncApi.ApiDescription.Server
     3. The target below will invoke the CLI tool after build
   -->
@@ -44,9 +44,9 @@
     <Message Text="Generating AsyncAPI documents..." Importance="high" />
     <Message Text="Output directory: $(_AsyncApiOutputDir)" Importance="normal" />
 
-    <!-- Try to invoke the dotnet-asyncapi tool -->
+    <!-- Try to invoke the dotnet asyncapi tool -->
     <Exec
-      Command="dotnet dotnet-asyncapi $(_AsyncApiToolArgs)"
+      Command="dotnet asyncapi $(_AsyncApiToolArgs)"
       WorkingDirectory="$(OutputPath)"
       IgnoreExitCode="false"
       ConsoleToMSBuild="true"
@@ -61,7 +61,7 @@
 
     <Warning
       Condition="'$(_AsyncApiExitCode)' != '0'"
-      Text="AsyncAPI document generation failed with exit code $(_AsyncApiExitCode). Ensure the dotnet-asyncapi tool is installed: dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli" />
+      Text="AsyncAPI document generation failed with exit code $(_AsyncApiExitCode). Ensure the dotnet asyncapi tool is installed: dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli" />
 
   </Target>
 

@@ -242,7 +242,7 @@ AsyncAPI documents will be generated during `dotnet build` using the `IDocumentP
 
 ### Option 2: Using the AsyncAPI CLI Tool
 
-Install the `dotnet-asyncapi` CLI tool for more control:
+Install the `dotnet asyncapi` CLI tool for more control:
 
 ```bash
 dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli
@@ -251,7 +251,7 @@ dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli
 Generate documents from a built project:
 
 ```bash
-dotnet-asyncapi getdocument \
+dotnet asyncapi getdocument \
     --assembly MyApp \
     --assembly-path bin/Debug/net10.0/MyApp.dll \
     --output ./docs \

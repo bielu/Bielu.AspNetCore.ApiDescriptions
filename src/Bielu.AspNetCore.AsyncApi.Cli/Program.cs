@@ -5,7 +5,7 @@ using System.Reflection;
 using Bielu.AspNetCore.AsyncApi.Cli.Commands;
 
 // Parse command line arguments
-// Usage: dotnet-asyncapi getdocument --assembly <name> --assembly-path <path> --output <dir> --project <name> [--document <name>] [--file-list <path>] [--file-name <name>]
+// Usage: dotnet asyncapi getdocument --assembly <name> --assembly-path <path> --output <dir> --project <name> [--document <name>] [--file-list <path>] [--file-name <name>]
 
 if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
 {
@@ -104,7 +104,7 @@ static void PrintUsage()
 {
     Console.WriteLine("Bielu.AspNetCore.AsyncApi CLI - Generate AsyncAPI documents from ASP.NET Core applications");
     Console.WriteLine();
-    Console.WriteLine("Usage: dotnet-asyncapi getdocument [options]");
+    Console.WriteLine("Usage: dotnet asyncapi getdocument [options]");
     Console.WriteLine();
     Console.WriteLine("Options:");
     Console.WriteLine("  --assembly <name>        The assembly name to load (required)");
