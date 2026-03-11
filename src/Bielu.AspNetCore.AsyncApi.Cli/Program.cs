@@ -115,19 +115,24 @@ static int RunMerge(string[] args)
         switch (args[i])
         {
             case "--source":
-                mergeContext.Sources.Add(args[++i]);
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --source requires a value."); return 1; }
+                mergeContext.Sources.Add(args[i]);
                 break;
             case "--output":
-                mergeContext.OutputPath = args[++i];
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --output requires a value."); return 1; }
+                mergeContext.OutputPath = args[i];
                 break;
             case "--prefix":
-                mergeContext.Prefixes.Add(args[++i]);
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --prefix requires a value."); return 1; }
+                mergeContext.Prefixes.Add(args[i]);
                 break;
             case "--title":
-                mergeContext.Title = args[++i];
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --title requires a value."); return 1; }
+                mergeContext.Title = args[i];
                 break;
             case "--version":
-                mergeContext.Version = args[++i];
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --version requires a value."); return 1; }
+                mergeContext.Version = args[i];
                 break;
             default:
                 Console.Error.WriteLine($"Unknown argument for merge: {args[i]}");
