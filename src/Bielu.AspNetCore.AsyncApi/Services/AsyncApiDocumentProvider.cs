@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Writers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace Bielu.AspNetCore.AsyncApi.Services;
+namespace Microsoft.Extensions.ApiDescriptions;
 
 /// <summary>
 /// Provides an implementation of <see cref="IDocumentProvider"/> to use for build-time generation of AsyncApi documents.

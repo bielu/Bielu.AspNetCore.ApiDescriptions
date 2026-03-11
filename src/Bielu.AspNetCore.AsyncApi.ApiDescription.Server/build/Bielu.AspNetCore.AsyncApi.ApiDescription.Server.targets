@@ -1,0 +1,68 @@
+<Project>
+
+  <!--
+    MSBuild targets for Bielu.AspNetCore.AsyncApi.ApiDescription.Server.
+    Generates AsyncAPI documents at build time by invoking the target application
+    and resolving the IDocumentProvider service.
+
+    This works by using Microsoft.Extensions.ApiDescription.Server's `dotnet getdocument`
+    tool or our own Bielu.AspNetCore.AsyncApi.Cli tool to boot the application,
+    discover registered AsyncAPI documents, and write them to disk.
+
+    To use with Microsoft.Extensions.ApiDescription.Server (recommended):
+    1. Add PackageReference to Microsoft.Extensions.ApiDescription.Server
+    2. Add PackageReference to Bielu.AspNetCore.AsyncApi.ApiDescription.Server
+    3. Configure properties in your .csproj (see .props file for available options)
+
+    To use standalone with dotnet asyncapi CLI tool:
+    1. Install the dotnet asyncapi tool: dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli
+    2. Add PackageReference to Bielu.AspNetCore.AsyncApi.ApiDescription.Server
+    3. The target below will invoke the CLI tool after build
+  -->
+
+  <Target
+    Name="GenerateAsyncApiDocuments"
+    AfterTargets="Build"
+    Condition="'$(AsyncApiGenerateDocumentsOnBuild)' == 'true'"
+    DependsOnTargets="Build">
+
+    <PropertyGroup>
+      <_AsyncApiOutputDir>$([System.IO.Path]::GetFullPath('$(AsyncApiDocumentsDirectory)'))</_AsyncApiOutputDir>
+      <_AsyncApiAssemblyName>$(AssemblyName)</_AsyncApiAssemblyName>
+      <_AsyncApiAssemblyPath>$([System.IO.Path]::Combine('$(OutputPath)', '$(AssemblyName).dll'))</_AsyncApiAssemblyPath>
+      <_AsyncApiProjectName>$(MSBuildProjectName)</_AsyncApiProjectName>
+      <_AsyncApiFileListPath>$([System.IO.Path]::Combine('$(IntermediateOutputPath)', 'asyncapi-documents.cache'))</_AsyncApiFileListPath>
+    </PropertyGroup>
+
+    <!-- Build the dotnet-getdocument arguments -->
+    <PropertyGroup>
+      <_AsyncApiToolArgs>getdocument --assembly "$(_AsyncApiAssemblyName)" --assembly-path "$(_AsyncApiAssemblyPath)" --output "$(_AsyncApiOutputDir)" --project "$(_AsyncApiProjectName)" --file-list "$(_AsyncApiFileListPath)"</_AsyncApiToolArgs>
+      <_AsyncApiToolArgs Condition="'$(AsyncApiDocumentName)' != ''">$(_AsyncApiToolArgs) --document "$(AsyncApiDocumentName)"</_AsyncApiToolArgs>
+      <_AsyncApiToolArgs Condition="'$(AsyncApiFileName)' != ''">$(_AsyncApiToolArgs) --file-name "$(AsyncApiFileName)"</_AsyncApiToolArgs>
+    </PropertyGroup>
+
+    <Message Text="Generating AsyncAPI documents..." Importance="high" />
+    <Message Text="Output directory: $(_AsyncApiOutputDir)" Importance="normal" />
+
+    <!-- Try to invoke the dotnet asyncapi tool -->
+    <Exec
+      Command="dotnet asyncapi $(_AsyncApiToolArgs)"
+      WorkingDirectory="$(OutputPath)"
+      IgnoreExitCode="false"
+      ConsoleToMSBuild="true"
+      ContinueOnError="ErrorAndContinue">
+      <Output TaskParameter="ExitCode" PropertyName="_AsyncApiExitCode" />
+    </Exec>
+
+    <Message
+      Condition="'$(_AsyncApiExitCode)' == '0'"
+      Text="AsyncAPI document generation completed successfully."
+      Importance="high" />
+
+    <Warning
+      Condition="'$(_AsyncApiExitCode)' != '0'"
+      Text="AsyncAPI document generation failed with exit code $(_AsyncApiExitCode). Ensure the dotnet asyncapi tool is installed: dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli" />
+
+  </Target>
+
+</Project>

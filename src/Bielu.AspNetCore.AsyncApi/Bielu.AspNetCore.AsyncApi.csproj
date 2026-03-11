@@ -25,6 +25,9 @@
         </PackageReference>
     </ItemGroup>
     <ItemGroup>
+      <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Tests" />
+    </ItemGroup>
+    <ItemGroup>
       <Folder Include="Attributes\" />
     </ItemGroup>
     <ItemGroup>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.ApiDescription.Server</RootNamespace>
+        <AssemblyName>Bielu.AspNetCore.AsyncApi.ApiDescription.Server</AssemblyName>
+
+        <!-- This is a tools package, not a runtime dependency -->
+        <IsPackable>true</IsPackable>
+        <PackageId>Bielu.AspNetCore.AsyncApi.ApiDescription.Server</PackageId>
+        <Description>MSBuild targets for generating AsyncAPI documents at build time from ASP.NET Core applications.</Description>
+
+        <!-- Don't produce a lib output that consumers reference at runtime -->
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <!-- Suppress warning about package having no assemblies -->
+        <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>
+    </PropertyGroup>
+
+    <!-- Include the MSBuild .props and .targets in the package -->
+    <ItemGroup>
+        <None Include="build\**" Pack="true" PackagePath="build" />
+    </ItemGroup>
+
+</Project>

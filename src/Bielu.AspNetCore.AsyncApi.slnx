@@ -9,6 +9,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Tests/Bielu.AspNetCore.AsyncApi.Tests.csproj" />
+    <Project Path="../test/Bielu.AspNetCore.AsyncApi.Cli.Tests/Bielu.AspNetCore.AsyncApi.Cli.Tests.csproj" />
     <Project Path="Bielu.AspNetCore.AsyncApi.Tests.ExternalLibraries/Bielu.AspNetCore.AsyncApi.Tests.ExternalLibraries.csproj" />
     <Project Path="Bielu.AspNetCore.AsyncApi.Tests.Shared.LibraryChannels/Bielu.AspNetCore.AsyncApi.Tests.Shared.LibraryChannels.csproj" />
   </Folder>
@@ -22,6 +23,10 @@
     <File Path="../LICENSE" />
     <File Path="../README.md" />
     <File Path="../version.props" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="./Bielu.AspNetCore.AsyncApi.Cli/Bielu.AspNetCore.AsyncApi.Cli.csproj" />
+    <Project Path="./Bielu.AspNetCore.AsyncApi.ApiDescription.Server/Bielu.AspNetCore.AsyncApi.ApiDescription.Server.csproj" />
   </Folder>
   <Project Path="./Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.UI/Bielu.AspNetCore.AsyncApi.UI.csproj" />
