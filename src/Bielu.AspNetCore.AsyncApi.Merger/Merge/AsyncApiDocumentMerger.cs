@@ -127,6 +127,7 @@ public sealed class AsyncApiDocumentMerger
 
         var merged = new AsyncApiDocument
         {
+            Asyncapi = ResolveAsyncApiSpecVersion(documents, options),
             Info = options.Info ?? firstDoc.Info ?? new AsyncApiInfo { Title = "Merged AsyncAPI", Version = "1.0.0" },
             DefaultContentType = options.DefaultContentType ?? firstDoc.DefaultContentType,
             Servers = new Dictionary<string, AsyncApiServer>(),
@@ -231,5 +232,33 @@ public sealed class AsyncApiDocumentMerger
     private static string GetMergedKey(string prefix, string key)
     {
         return string.IsNullOrEmpty(prefix) ? key : $"{prefix}_{key}";
+    }
+
+    /// <summary>
+    /// Resolves the AsyncAPI spec version for the merged document.
+    /// If configured explicitly via options, that value is used.
+    /// Otherwise, the highest version found across all source documents is used.
+    /// Falls back to "3.0.0" if no version could be determined.
+    /// </summary>
+    internal static string ResolveAsyncApiSpecVersion(IReadOnlyList<(AsyncApiDocument Document, AsyncApiDocumentSource Source)> documents, AsyncApiMergeOptions options)
+    {
+        if (!string.IsNullOrEmpty(options.AsyncApiSpecVersion))
+        {
+            return options.AsyncApiSpecVersion;
+        }
+
+        Version? highest = null;
+        foreach (var (document, _) in documents)
+        {
+            if (!string.IsNullOrEmpty(document.Asyncapi) && Version.TryParse(document.Asyncapi, out var parsed))
+            {
+                if (highest is null || parsed > highest)
+                {
+                    highest = parsed;
+                }
+            }
+        }
+
+        return highest?.ToString(3) ?? "3.0.0";
     }
 }

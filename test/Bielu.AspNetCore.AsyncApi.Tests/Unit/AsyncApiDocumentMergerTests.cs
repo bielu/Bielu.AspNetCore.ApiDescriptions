@@ -13,10 +13,11 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Unit;
 /// </summary>
 public class AsyncApiDocumentMergerTests
 {
-    private static AsyncApiDocument CreateDocument(string title, string version, Dictionary<string, AsyncApiChannel>? channels = null, Dictionary<string, AsyncApiServer>? servers = null, Dictionary<string, AsyncApiOperation>? operations = null)
+    private static AsyncApiDocument CreateDocument(string title, string version, Dictionary<string, AsyncApiChannel>? channels = null, Dictionary<string, AsyncApiServer>? servers = null, Dictionary<string, AsyncApiOperation>? operations = null, string? asyncapiSpecVersion = null)
     {
         return new AsyncApiDocument
         {
+            Asyncapi = asyncapiSpecVersion ?? string.Empty,
             Info = new AsyncApiInfo { Title = title, Version = version },
             Channels = channels ?? new Dictionary<string, AsyncApiChannel>(),
             Servers = servers ?? new Dictionary<string, AsyncApiServer>(),
@@ -482,5 +483,88 @@ public class AsyncApiDocumentMergerTests
         merged.Components.Messages.Count.ShouldBe(2);
         merged.Components.Messages.ShouldContainKey("UserSignedUp");
         merged.Components.Messages.ShouldContainKey("OrderPlaced");
+    }
+
+    [Fact]
+    public void MergeDocuments_UsesHighestSpecVersionAcrossDocuments()
+    {
+        // Arrange
+        var doc1 = CreateDocument("Service A", "1.0.0", asyncapiSpecVersion: "2.6.0");
+        var doc2 = CreateDocument("Service B", "2.0.0", asyncapiSpecVersion: "3.0.0");
+
+        var input = new List<(AsyncApiDocument Document, string? KeyPrefix)>
+        {
+            (doc1, null),
+            (doc2, null)
+        };
+
+        // Act
+        var merged = AsyncApiDocumentMerger.MergeDocuments(input);
+
+        // Assert
+        merged.Asyncapi.ShouldBe("3.0.0");
+    }
+
+    [Fact]
+    public void MergeDocuments_WithExplicitSpecVersion_UsesConfiguredVersion()
+    {
+        // Arrange
+        var doc1 = CreateDocument("Service A", "1.0.0", asyncapiSpecVersion: "3.0.0");
+        var doc2 = CreateDocument("Service B", "2.0.0", asyncapiSpecVersion: "3.0.0");
+
+        var sources = new List<(AsyncApiDocument, AsyncApiDocumentSource)>
+        {
+            (doc1, new AsyncApiDocumentSource { Uri = "" }),
+            (doc2, new AsyncApiDocumentSource { Uri = "" })
+        };
+        var options = new AsyncApiMergeOptions { AsyncApiSpecVersion = "2.6.0" };
+
+        // Act
+        var merged = AsyncApiDocumentMerger.ResolveAsyncApiSpecVersion(sources, options);
+
+        // Assert
+        merged.ShouldBe("2.6.0");
+    }
+
+    [Fact]
+    public void MergeDocuments_WithNoSpecVersions_FallsBackToDefault()
+    {
+        // Arrange - documents with no spec version set
+        var doc1 = CreateDocument("Service A", "1.0.0");
+        var doc2 = CreateDocument("Service B", "2.0.0");
+
+        var input = new List<(AsyncApiDocument Document, string? KeyPrefix)>
+        {
+            (doc1, null),
+            (doc2, null)
+        };
+
+        // Act
+        var merged = AsyncApiDocumentMerger.MergeDocuments(input);
+
+        // Assert - falls back to 3.0.0
+        merged.Asyncapi.ShouldBe("3.0.0");
+    }
+
+    [Fact]
+    public void MergeDocuments_HighestVersionFromMultipleV2Documents()
+    {
+        // Arrange
+        var doc1 = CreateDocument("Service A", "1.0.0", asyncapiSpecVersion: "2.0.0");
+        var doc2 = CreateDocument("Service B", "2.0.0", asyncapiSpecVersion: "2.6.0");
+        var doc3 = CreateDocument("Service C", "3.0.0", asyncapiSpecVersion: "2.3.0");
+
+        var input = new List<(AsyncApiDocument Document, string? KeyPrefix)>
+        {
+            (doc1, null),
+            (doc2, null),
+            (doc3, null)
+        };
+
+        // Act
+        var merged = AsyncApiDocumentMerger.MergeDocuments(input);
+
+        // Assert
+        merged.Asyncapi.ShouldBe("2.6.0");
     }
 }

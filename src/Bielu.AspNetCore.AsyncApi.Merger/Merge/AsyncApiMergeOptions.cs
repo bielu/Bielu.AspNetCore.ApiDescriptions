@@ -22,6 +22,12 @@ public sealed class AsyncApiMergeOptions
     public AsyncApiInfo? Info { get; set; }
 
     /// <summary>
+    /// Gets or sets the AsyncAPI specification version for the merged document (e.g. "3.0.0", "2.6.0").
+    /// If not set, the highest version found across all source documents will be used.
+    /// </summary>
+    public string? AsyncApiSpecVersion { get; set; }
+
+    /// <summary>
     /// Gets or sets the default content type for the merged document.
     /// </summary>
     public string? DefaultContentType { get; set; }
