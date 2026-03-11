@@ -23,6 +23,10 @@
     <File Path="../README.md" />
     <File Path="../version.props" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="./Bielu.AspNetCore.AsyncApi.Cli/Bielu.AspNetCore.AsyncApi.Cli.csproj" />
+    <Project Path="./Bielu.AspNetCore.AsyncApi.ApiDescription.Server/Bielu.AspNetCore.AsyncApi.ApiDescription.Server.csproj" />
+  </Folder>
   <Project Path="./Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.UI/Bielu.AspNetCore.AsyncApi.UI.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi/Bielu.AspNetCore.AsyncApi.csproj" />

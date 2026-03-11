@@ -1,0 +1,26 @@
+<Project>
+
+  <!--
+    MSBuild properties for Bielu.AspNetCore.AsyncApi.ApiDescription.Server.
+    These properties configure build-time AsyncAPI document generation.
+    Users can override these in their project files.
+  -->
+
+  <PropertyGroup>
+    <!-- Enable/disable AsyncAPI document generation on build. Default: true -->
+    <AsyncApiGenerateDocuments Condition="'$(AsyncApiGenerateDocuments)' == ''">true</AsyncApiGenerateDocuments>
+
+    <!-- Enable/disable AsyncAPI document generation on build. Default: same as AsyncApiGenerateDocuments -->
+    <AsyncApiGenerateDocumentsOnBuild Condition="'$(AsyncApiGenerateDocumentsOnBuild)' == ''">$(AsyncApiGenerateDocuments)</AsyncApiGenerateDocumentsOnBuild>
+
+    <!-- Output directory for generated AsyncAPI documents. Default: $(OutputPath) -->
+    <AsyncApiDocumentsDirectory Condition="'$(AsyncApiDocumentsDirectory)' == ''">$(OutputPath)</AsyncApiDocumentsDirectory>
+
+    <!-- Specific document name to generate. If empty, all documents are generated. -->
+    <AsyncApiDocumentName Condition="'$(AsyncApiDocumentName)' == ''"></AsyncApiDocumentName>
+
+    <!-- Override the output file name (without extension). Default: project name -->
+    <AsyncApiFileName Condition="'$(AsyncApiFileName)' == ''"></AsyncApiFileName>
+  </PropertyGroup>
+
+</Project>

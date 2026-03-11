@@ -3,7 +3,7 @@
 
 using ByteBard.AsyncAPI;
 
-namespace Bielu.AspNetCore.AsyncApi.Services;
+namespace Microsoft.Extensions.ApiDescriptions;
 
 /// <summary>
 /// Represents a provider for AsyncApi documents to support build-time generation.

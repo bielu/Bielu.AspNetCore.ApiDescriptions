@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.Cli</RootNamespace>
+        <AssemblyName>Bielu.AspNetCore.AsyncApi.Cli</AssemblyName>
+
+        <!-- .NET Tool packaging -->
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>dotnet-asyncapi</ToolCommandName>
+        <PackageId>Bielu.AspNetCore.AsyncApi.Cli</PackageId>
+        <Description>CLI tool for generating AsyncAPI documents at build time from ASP.NET Core applications.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+</Project>
