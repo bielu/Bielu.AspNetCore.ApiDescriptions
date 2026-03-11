@@ -91,8 +91,12 @@ internal sealed class GetDocumentCommandWorker
     /// <summary>
     /// Resolves the <see cref="IServiceProvider"/> from the target application by
     /// looking for well-known host builder patterns: CreateHostBuilder, CreateWebHostBuilder.
-    /// Falls back to invoking the entry point directly for minimal API / WebApplication patterns.
     /// </summary>
+    /// <remarks>
+    /// For minimal API / WebApplication patterns, use <c>Microsoft.Extensions.ApiDescription.Server</c>
+    /// package instead, which has access to internal <c>HostFactoryResolver</c> APIs needed to
+    /// properly boot the application.
+    /// </remarks>
     private IServiceProvider? ResolveServiceProvider(Assembly assembly, Type entryPointType, AssemblyName assemblyName)
     {
         var args = new[] { $"--{HostDefaults.ApplicationKey}={assemblyName}" };
@@ -111,7 +115,26 @@ internal sealed class GetDocumentCommandWorker
             return host.Services;
         }
 
-        // Try pattern: public static IHost BuildWebHost(string[] args) or CreateWebHostBuilder
+        // Try pattern: public static IHost BuildWebHost(string[] args)
+        var buildWebHost = entryPointType.GetMethod("BuildWebHost",
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+            null, [typeof(string[])], null);
+
+        if (buildWebHost != null)
+        {
+            _writeInfo("Found BuildWebHost method, using it to build the host.");
+            var webHost = buildWebHost.Invoke(null, [args]);
+            if (webHost != null)
+            {
+                var servicesProp = webHost.GetType().GetProperty("Services");
+                if (servicesProp != null)
+                {
+                    return servicesProp.GetValue(webHost) as IServiceProvider;
+                }
+            }
+        }
+
+        // Try pattern: public static IWebHostBuilder CreateWebHostBuilder(string[] args)
         var createWebHostBuilder = entryPointType.GetMethod("CreateWebHostBuilder",
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
             null, [typeof(string[])], null);
@@ -122,7 +145,6 @@ internal sealed class GetDocumentCommandWorker
             var webHostBuilder = createWebHostBuilder.Invoke(null, [args]);
             if (webHostBuilder != null)
             {
-                // Call .Build() on the web host builder via reflection
                 var buildMethod = webHostBuilder.GetType().GetMethod("Build");
                 if (buildMethod != null)
                 {
@@ -136,66 +158,12 @@ internal sealed class GetDocumentCommandWorker
             }
         }
 
-        // Try invoking the entry point directly (minimal API / WebApplication pattern)
-        _writeInfo("Attempting to resolve host by invoking the entry point directly.");
-        return ResolveFromEntryPoint(assembly, args);
-    }
-
-    /// <summary>
-    /// Attempts to resolve the service provider by invoking the entry point and
-    /// intercepting the host before it starts listening. This handles the minimal
-    /// API / WebApplication pattern.
-    /// </summary>
-    private IServiceProvider? ResolveFromEntryPoint(Assembly assembly, string[] args)
-    {
-        IHost? resolvedHost = null;
-        var entryPoint = assembly.EntryPoint;
-        if (entryPoint == null)
-        {
-            return null;
-        }
-
-        // For minimal API apps, we need to run the entry point in a separate thread
-        // and intercept the host. We use a technique where we override the server
-        // so the app doesn't actually listen.
-        var hostTcs = new TaskCompletionSource<IHost>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                // The entry point for minimal APIs calls WebApplication.Build() and Run().
-                // We invoke it and capture exceptions.
-                var parameters = entryPoint.GetParameters();
-                if (parameters.Length == 0)
-                {
-                    entryPoint.Invoke(null, null);
-                }
-                else
-                {
-                    entryPoint.Invoke(null, [args]);
-                }
-            }
-            catch (Exception ex)
-            {
-                hostTcs.TrySetException(ex);
-            }
-        });
-
-        thread.IsBackground = true;
-        thread.Start();
-
-        // Wait a reasonable time for the host to be resolved
-        // For minimal APIs, we can search the DI container for IDocumentProvider
-        // after the services are registered
-        if (!hostTcs.Task.Wait(TimeSpan.FromSeconds(30)))
-        {
-            _writeWarning("Entry point invocation timed out. The application may use an unsupported hosting pattern.");
-        }
-
-        // Search loaded assemblies for the service provider
-        // In minimal API scenarios, the host should be accessible
-        return resolvedHost?.Services;
+        _writeError("Unable to resolve host from the entry point. " +
+                     "The CLI tool supports applications that expose a 'CreateHostBuilder(string[])', " +
+                     "'CreateWebHostBuilder(string[])', or 'BuildWebHost(string[])' method. " +
+                     "For minimal API / WebApplication patterns, use 'Microsoft.Extensions.ApiDescription.Server' " +
+                     "package instead, which provides full support via the 'dotnet getdocument' tool.");
+        return null;
     }
 
     private static void ConfigureHostBuilder(IHostBuilder hostBuilder)

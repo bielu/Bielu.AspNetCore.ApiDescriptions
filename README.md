@@ -216,6 +216,80 @@ If your application doesn't define any channels (e.g., for documentation purpose
 
 AsyncAPI 3.x (default) does not require channels. This version is recommended for most new projects as it provides more flexibility and supports the latest AsyncAPI features including AsyncAPI 3.1 schema generation.
 
+## Build-Time Document Generation
+
+You can generate AsyncAPI documents at build time, which is useful for CI pipelines, source control tracking, and distributing API specs without launching the app.
+
+### Option 1: Using Microsoft.Extensions.ApiDescription.Server (Recommended)
+
+The `Bielu.AspNetCore.AsyncApi` library is compatible with `Microsoft.Extensions.ApiDescription.Server`, which uses the built-in `dotnet getdocument` tool:
+
+```bash
+dotnet add package Microsoft.Extensions.ApiDescription.Server
+```
+
+Then configure your `.csproj`:
+
+```xml
+<PropertyGroup>
+    <OpenApiGenerateDocuments>true</OpenApiGenerateDocuments>
+    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)</OpenApiDocumentsDirectory>
+    <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
+</PropertyGroup>
+```
+
+AsyncAPI documents will be generated during `dotnet build` using the `IDocumentProvider` interface registered by `AddAsyncApi()`.
+
+### Option 2: Using the AsyncAPI CLI Tool
+
+Install the `dotnet-asyncapi` CLI tool for more control:
+
+```bash
+dotnet tool install -g Bielu.AspNetCore.AsyncApi.Cli
+```
+
+Generate documents from a built project:
+
+```bash
+dotnet-asyncapi getdocument \
+    --assembly MyApp \
+    --assembly-path bin/Debug/net10.0/MyApp.dll \
+    --output ./docs \
+    --project MyApp
+```
+
+CLI options:
+- `--assembly <name>` - Assembly name to load (required)
+- `--output <dir>` - Output directory for generated documents (required)
+- `--project <name>` - Project name for file naming
+- `--document <name>` - Generate only the specified document
+- `--file-name <name>` - Override file name (without extension)
+
+### Option 3: Using MSBuild Targets
+
+Add the MSBuild targets package for automatic build-time generation:
+
+```bash
+dotnet add package Bielu.AspNetCore.AsyncApi.ApiDescription.Server
+```
+
+Configure your `.csproj`:
+
+```xml
+<PropertyGroup>
+    <AsyncApiGenerateDocumentsOnBuild>true</AsyncApiGenerateDocumentsOnBuild>
+    <AsyncApiDocumentsDirectory>$(MSBuildProjectDirectory)/docs</AsyncApiDocumentsDirectory>
+</PropertyGroup>
+```
+
+Available MSBuild properties:
+| Property | Default | Description |
+|----------|---------|-------------|
+| `AsyncApiGenerateDocumentsOnBuild` | `true` | Enable/disable document generation on build |
+| `AsyncApiDocumentsDirectory` | `$(OutputPath)` | Output directory for generated documents |
+| `AsyncApiDocumentName` | (empty) | Generate only the specified document |
+| `AsyncApiFileName` | (empty) | Override output file name |
+
 ## Protocol Bindings
 
 Bindings describe protocol-specific information. Apply them to channels and operations using the `BindingsRef` property:
