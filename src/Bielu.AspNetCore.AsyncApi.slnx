@@ -29,6 +29,7 @@
     <Project Path="./Bielu.AspNetCore.AsyncApi.ApiDescription.Server/Bielu.AspNetCore.AsyncApi.ApiDescription.Server.csproj" />
   </Folder>
   <Project Path="./Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
+  <Project Path="./Bielu.AspNetCore.AsyncApi.Merger/Bielu.AspNetCore.AsyncApi.Merger.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.UI/Bielu.AspNetCore.AsyncApi.UI.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi/Bielu.AspNetCore.AsyncApi.csproj" />
 </Solution>

@@ -213,6 +213,78 @@ public class AsyncApiEndpointTests
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    [Fact]
+    public async Task MapAsyncApi_ReturnsETagHeader()
+    {
+        // Arrange
+        using var host = await CreateTestHostAsync();
+        var client = host.GetTestClient();
+
+        // Act
+        var response = await client.GetAsync(GetDocumentRoute(AsyncApiGeneratorConstants.DefaultDocumentName));
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Headers.ETag.ShouldNotBeNull();
+        response.Headers.ETag.Tag.ShouldNotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task MapAsyncApi_WithMatchingETag_Returns304NotModified()
+    {
+        // Arrange
+        using var host = await CreateTestHostAsync();
+        var client = host.GetTestClient();
+
+        // First request to get the ETag
+        var firstResponse = await client.GetAsync(GetDocumentRoute(AsyncApiGeneratorConstants.DefaultDocumentName));
+        firstResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var etag = firstResponse.Headers.ETag;
+        etag.ShouldNotBeNull();
+
+        // Act - second request with If-None-Match header
+        var request = new HttpRequestMessage(HttpMethod.Get, GetDocumentRoute(AsyncApiGeneratorConstants.DefaultDocumentName));
+        request.Headers.IfNoneMatch.Add(etag);
+        var secondResponse = await client.SendAsync(request);
+
+        // Assert
+        secondResponse.StatusCode.ShouldBe(HttpStatusCode.NotModified);
+    }
+
+    [Fact]
+    public async Task MapAsyncApi_WithNonMatchingETag_Returns200()
+    {
+        // Arrange
+        using var host = await CreateTestHostAsync();
+        var client = host.GetTestClient();
+
+        // Act - request with a non-matching ETag
+        var request = new HttpRequestMessage(HttpMethod.Get, GetDocumentRoute(AsyncApiGeneratorConstants.DefaultDocumentName));
+        request.Headers.TryAddWithoutValidation("If-None-Match", "\"nonexistent-etag\"");
+        var response = await client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Headers.ETag.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task MapAsyncApi_ConsecutiveRequests_ReturnSameETag()
+    {
+        // Arrange
+        using var host = await CreateTestHostAsync();
+        var client = host.GetTestClient();
+
+        // Act
+        var response1 = await client.GetAsync(GetDocumentRoute(AsyncApiGeneratorConstants.DefaultDocumentName));
+        var response2 = await client.GetAsync(GetDocumentRoute(AsyncApiGeneratorConstants.DefaultDocumentName));
+
+        // Assert - same document should produce same ETag
+        response1.Headers.ETag.ShouldNotBeNull();
+        response2.Headers.ETag.ShouldNotBeNull();
+        response1.Headers.ETag.Tag.ShouldBe(response2.Headers.ETag.Tag);
+    }
+
     private static async Task<IHost> CreateTestHostAsync(
         Action<AsyncApiOptions>? configureOptions = null,
         Func<string, string>? configureEndpoint = null)

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
+using System.Text;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI;
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 
 namespace Bielu.AspNetCore.AsyncApi.Extensions;
 
@@ -56,6 +59,34 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     var documentOptions = options.Get(lowercasedDocumentName);
 
                     var isYaml = UseYaml(pattern);
+
+                    // Serialize the document
+                    string serialized;
+                    if (documentOptions.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
+                    {
+                        serialized = isYaml
+                            ? AsyncApiSerializationHelper.SerializeV2ToYaml(document)
+                            : AsyncApiSerializationHelper.SerializeV2ToJson(document);
+                    }
+                    else
+                    {
+                        serialized = isYaml
+                            ? AsyncApiSerializationHelper.SerializeV3ToYaml(document)
+                            : AsyncApiSerializationHelper.SerializeV3ToJson(document);
+                    }
+
+                    // Compute ETag from serialized content
+                    var etag = ComputeETag(serialized);
+                    context.Response.Headers.ETag = etag;
+
+                    // Check If-None-Match for conditional request support
+                    if (context.Request.Headers.TryGetValue(HeaderNames.IfNoneMatch, out var ifNoneMatch) &&
+                        ifNoneMatch.ToString().Trim() == etag)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status304NotModified;
+                        return;
+                    }
+
                     string contentType = isYaml ? "text/plain+yaml;charset=utf-8" : "application/json;charset=utf-8";
                     context.Response.ContentType = contentType;
 
@@ -65,61 +96,19 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                         return;
                     }
 
-                    // For V2, we need to ensure required properties are present in the output
-                    // The AsyncAPI 2.x specification requires 'channels' to be present (can be empty object)
-                    if (documentOptions.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
-                    {
-                        await SerializeV2WithRequiredProperties(context, document, isYaml);
-                    }
-                    else
-                    {
-                        await SerializeV3(context, document, isYaml);
-                    }
+                    await context.Response.WriteAsync(serialized, context.RequestAborted);
                 }
             }).ExcludeFromDescription();
     }
 
     /// <summary>
-    /// Serializes an AsyncAPI V2 document ensuring required properties are present.
-    /// AsyncAPI 2.x specification requires 'channels' to be present (can be an empty object).
+    /// Computes a weak ETag from the serialized document content using a SHA256 hash.
     /// </summary>
-    private static async Task SerializeV2WithRequiredProperties(HttpContext context, ByteBard.AsyncAPI.Models.AsyncApiDocument document, bool isYaml)
+    private static string ComputeETag(string content)
     {
-        string serialized;
-        
-        if (isYaml)
-        {
-            serialized = AsyncApiSerializationHelper.SerializeV2ToYaml(document);
-        }
-        else
-        {
-            serialized = AsyncApiSerializationHelper.SerializeV2ToJson(document);
-        }
-
-        await context.Response.WriteAsync(serialized, context.RequestAborted);
-    }
-
-    /// <summary>
-    /// Serializes an AsyncAPI V3 document to the response.
-    /// Uses StringWriter to serialize the document to a string first, then writes atomically
-    /// to the response. This avoids streaming issues with IIS in-process mode where writing
-    /// directly to the response PipeWriter via Utf8BufferTextWriter can cause truncated output
-    /// due to buffer flush ordering issues.
-    /// </summary>
-    private static async Task SerializeV3(HttpContext context, ByteBard.AsyncAPI.Models.AsyncApiDocument document, bool isYaml)
-    {
-        string serialized;
-
-        if (isYaml)
-        {
-            serialized = AsyncApiSerializationHelper.SerializeV3ToYaml(document);
-        }
-        else
-        {
-            serialized = AsyncApiSerializationHelper.SerializeV3ToJson(document);
-        }
-
-        await context.Response.WriteAsync(serialized, context.RequestAborted);
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
+        var hashHex = Convert.ToHexStringLower(hashBytes);
+        return $"\"{hashHex}\"";
     }
 
     private static bool UseYaml(string pattern) =>
