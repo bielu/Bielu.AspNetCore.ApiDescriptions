@@ -91,6 +91,11 @@ public class KafkaNotificationWorker : BackgroundService
             Timestamp = DateTime.UtcNow
         };
 
+        if (notification.OrderId == Guid.Empty)
+        {
+            _logger.LogWarning("Failed to parse order ID from Kafka message key: {Key}", result.Message.Key);
+        }
+
         await _orderHub.Clients.All.SendAsync("ReceiveOrderStatusUpdate", notification);
         _logger.LogInformation("Pushed order notification for {OrderId} to SignalR clients", notification.OrderId);
     }

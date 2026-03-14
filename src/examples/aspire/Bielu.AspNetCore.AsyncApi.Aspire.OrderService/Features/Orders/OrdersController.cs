@@ -65,7 +65,7 @@ public class OrdersController : ControllerBase
         var cached = await db.StringGetAsync(cacheKey);
         if (cached.HasValue)
         {
-            var cachedOrder = JsonSerializer.Deserialize<Order>(cached!);
+            var cachedOrder = JsonSerializer.Deserialize<Order>(cached.ToString());
             if (cachedOrder is not null) return cachedOrder;
         }
 

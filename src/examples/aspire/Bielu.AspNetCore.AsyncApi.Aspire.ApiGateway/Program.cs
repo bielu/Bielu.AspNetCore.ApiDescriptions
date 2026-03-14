@@ -80,12 +80,13 @@ builder.Services.AddReverseProxy()
 builder.Services.AddAsyncApiMerge(options =>
 {
     // Enumerate all services from configuration and register their AsyncAPI documents.
-    // Aspire populates "services:{name}:http:0" with the resolved URLs at runtime.
+    // Aspire populates "services:{name}:{scheme}:{index}" with the resolved URLs at runtime.
+    const string AspireHttpEndpointKey = "http:0";
     var servicesSection = builder.Configuration.GetSection("services");
     foreach (var serviceSection in servicesSection.GetChildren())
     {
         var serviceName = serviceSection.Key;
-        var serviceUrl = serviceSection.GetSection("http:0").Value;
+        var serviceUrl = serviceSection.GetSection(AspireHttpEndpointKey).Value;
 
         if (string.IsNullOrEmpty(serviceUrl))
         {
