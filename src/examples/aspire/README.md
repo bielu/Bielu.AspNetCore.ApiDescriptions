@@ -1,4 +1,4 @@
-# AsyncAPI Aspire Example
+# AsyncAPI Aspire Example — Mini Shop
 
 A distributed microservices example built with [.NET Aspire](https://learn.microsoft.com/dotnet/aspire/) demonstrating how to use **Bielu.AspNetCore.AsyncApi** across multiple services with a YARP API Gateway that merges AsyncAPI documentation from all downstream microservices.
 
@@ -97,3 +97,140 @@ The Aspire dashboard will be available at the URL shown in the console output. F
 | `orders.status-changed` | Order Service | — | `OrderStatusChangedEvent` |
 | `inventory.reserved` | Inventory Service | — | `InventoryReservedEvent` |
 | `inventory.stock-level-changed` | Inventory Service | — | `StockLevelChangedEvent` |
+
+## Example Merged AsyncAPI Document
+
+The merged AsyncAPI document served by the API Gateway at `/asyncapi/merged.json` combines all microservice specs into a single document:
+
+```json
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Mini Shop",
+    "version": "1.0.0",
+    "description": "Merged AsyncAPI documentation from all Mini Shop microservices, served via YARP API Gateway.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+  },
+  "defaultContentType": "application/json",
+  "servers": {
+    "kafka": {
+      "host": "kafka:9092",
+      "protocol": "kafka",
+      "description": "Apache Kafka broker"
+    }
+  },
+  "channels": {
+    "orders.created": {
+      "address": "orders.created",
+      "servers": [{ "$ref": "#/servers/kafka" }],
+      "messages": {
+        "OrderCreatedEvent": {
+          "$ref": "#/components/messages/OrderCreatedEvent"
+        }
+      }
+    },
+    "orders.status-changed": {
+      "address": "orders.status-changed",
+      "servers": [{ "$ref": "#/servers/kafka" }],
+      "messages": {
+        "OrderStatusChangedEvent": {
+          "$ref": "#/components/messages/OrderStatusChangedEvent"
+        }
+      }
+    },
+    "inventory.reserved": {
+      "address": "inventory.reserved",
+      "servers": [{ "$ref": "#/servers/kafka" }],
+      "messages": {
+        "InventoryReservedEvent": {
+          "$ref": "#/components/messages/InventoryReservedEvent"
+        }
+      }
+    },
+    "inventory.stock-level-changed": {
+      "address": "inventory.stock-level-changed",
+      "servers": [{ "$ref": "#/servers/kafka" }],
+      "messages": {
+        "StockLevelChangedEvent": {
+          "$ref": "#/components/messages/StockLevelChangedEvent"
+        }
+      }
+    }
+  },
+  "operations": {
+    "OrderCreated": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/orders.created" },
+      "messages": [{ "$ref": "#/channels/orders.created/messages/OrderCreatedEvent" }]
+    },
+    "OrderStatusChanged": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/orders.status-changed" },
+      "messages": [{ "$ref": "#/channels/orders.status-changed/messages/OrderStatusChangedEvent" }]
+    },
+    "InventoryReserved": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/inventory.reserved" },
+      "messages": [{ "$ref": "#/channels/inventory.reserved/messages/InventoryReservedEvent" }]
+    },
+    "StockLevelChanged": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/inventory.stock-level-changed" },
+      "messages": [{ "$ref": "#/channels/inventory.stock-level-changed/messages/StockLevelChangedEvent" }]
+    }
+  },
+  "components": {
+    "messages": {
+      "OrderCreatedEvent": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "orderId": { "type": "string", "format": "uuid" },
+            "productId": { "type": "string" },
+            "quantity": { "type": "integer" },
+            "timestamp": { "type": "string", "format": "date-time" }
+          }
+        }
+      },
+      "OrderStatusChangedEvent": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "orderId": { "type": "string", "format": "uuid" },
+            "previousStatus": { "type": "string" },
+            "newStatus": { "type": "string" },
+            "timestamp": { "type": "string", "format": "date-time" }
+          }
+        }
+      },
+      "InventoryReservedEvent": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "orderId": { "type": "string", "format": "uuid" },
+            "productId": { "type": "string" },
+            "quantityReserved": { "type": "integer" },
+            "success": { "type": "boolean" },
+            "timestamp": { "type": "string", "format": "date-time" }
+          }
+        }
+      },
+      "StockLevelChangedEvent": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "productId": { "type": "string" },
+            "previousQuantity": { "type": "integer" },
+            "newQuantity": { "type": "integer" },
+            "reason": { "type": "string" },
+            "timestamp": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    }
+  }
+}
+```

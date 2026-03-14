@@ -2,104 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json;
+using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Events;
+using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Models;
 using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService;
-
-/// <summary>
-/// Represents a customer order.
-/// </summary>
-public class Order
-{
-    /// <summary>
-    /// Unique order identifier.
-    /// </summary>
-    public Guid Id { get; set; }
-
-    /// <summary>
-    /// Customer identifier.
-    /// </summary>
-    public string CustomerId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Product identifier.
-    /// </summary>
-    public string ProductId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Quantity of the product ordered.
-    /// </summary>
-    public int Quantity { get; set; }
-
-    /// <summary>
-    /// Total price of the order.
-    /// </summary>
-    public decimal TotalPrice { get; set; }
-
-    /// <summary>
-    /// Current status of the order.
-    /// </summary>
-    public string Status { get; set; } = "Pending";
-
-    /// <summary>
-    /// Timestamp when the order was created.
-    /// </summary>
-    public DateTime CreatedAt { get; set; }
-}
-
-/// <summary>
-/// Event published when a new order is created.
-/// </summary>
-public class OrderCreatedEvent
-{
-    /// <summary>
-    /// The order identifier.
-    /// </summary>
-    public Guid OrderId { get; set; }
-
-    /// <summary>
-    /// The product identifier that was ordered.
-    /// </summary>
-    public string ProductId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The quantity ordered.
-    /// </summary>
-    public int Quantity { get; set; }
-
-    /// <summary>
-    /// Timestamp when the event occurred.
-    /// </summary>
-    public DateTime Timestamp { get; set; }
-}
-
-/// <summary>
-/// Event published when an order status changes.
-/// </summary>
-public class OrderStatusChangedEvent
-{
-    /// <summary>
-    /// The order identifier.
-    /// </summary>
-    public Guid OrderId { get; set; }
-
-    /// <summary>
-    /// The previous status of the order.
-    /// </summary>
-    public string PreviousStatus { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The new status of the order.
-    /// </summary>
-    public string NewStatus { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Timestamp when the status change occurred.
-    /// </summary>
-    public DateTime Timestamp { get; set; }
-}
+namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders;
 
 /// <summary>
 /// Controller for managing orders. Publishes events to Kafka when orders are created or updated.

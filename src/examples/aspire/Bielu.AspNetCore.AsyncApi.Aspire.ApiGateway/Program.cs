@@ -16,21 +16,27 @@ builder.Services.AddReverseProxy()
 // The merger fetches AsyncAPI docs from each microservice and combines them into a single document.
 builder.Services.AddAsyncApiMerge(options =>
 {
-    // These URLs use Aspire service discovery names.
-    // At runtime, Aspire resolves "orderservice" and "inventoryservice" to actual addresses.
-    var orderServiceUrl = builder.Configuration["services:orderservice:http:0"]
-        ?? "http://orderservice/asyncapi/v1.json";
-    var inventoryServiceUrl = builder.Configuration["services:inventoryservice:http:0"]
-        ?? "http://inventoryservice/asyncapi/v1.json";
+    // Enumerate all services from configuration and register their AsyncAPI documents.
+    // Aspire populates "services:{name}:http:0" with the resolved URLs at runtime.
+    var servicesSection = builder.Configuration.GetSection("services");
+    foreach (var serviceSection in servicesSection.GetChildren())
+    {
+        var serviceName = serviceSection.Key;
+        var serviceUrl = serviceSection.GetSection("http:0").Value;
 
-    options.AddSource(orderServiceUrl.TrimEnd('/') + "/asyncapi/v1.json", "orders");
-    options.AddSource(inventoryServiceUrl.TrimEnd('/') + "/asyncapi/v1.json", "inventory");
+        if (string.IsNullOrEmpty(serviceUrl))
+        {
+            serviceUrl = $"http://{serviceName}";
+        }
+
+        options.AddSource(serviceUrl.TrimEnd('/') + "/asyncapi/v1.json", serviceName);
+    }
 
     options.Info = new ByteBard.AsyncAPI.Models.AsyncApiInfo
     {
-        Title = "Unified AsyncAPI Gateway",
+        Title = "Mini Shop",
         Version = "1.0.0",
-        Description = "Merged AsyncAPI documentation from all microservices, served via YARP API Gateway."
+        Description = "Merged AsyncAPI documentation from all Mini Shop microservices, served via YARP API Gateway."
     };
 });
 

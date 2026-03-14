@@ -2,130 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json;
+using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Events;
+using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Models;
 using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Bielu.AspNetCore.AsyncApi.Aspire.InventoryService;
-
-/// <summary>
-/// Represents a product's inventory record.
-/// </summary>
-public class InventoryItem
-{
-    /// <summary>
-    /// Product identifier.
-    /// </summary>
-    public string ProductId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Product name.
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Available quantity in stock.
-    /// </summary>
-    public int QuantityAvailable { get; set; }
-
-    /// <summary>
-    /// Reserved quantity (pending fulfillment).
-    /// </summary>
-    public int QuantityReserved { get; set; }
-
-    /// <summary>
-    /// Warehouse location identifier.
-    /// </summary>
-    public string WarehouseLocation { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// Event consumed when a new order is created (from Order Service).
-/// </summary>
-public class OrderCreatedEvent
-{
-    /// <summary>
-    /// The order identifier.
-    /// </summary>
-    public Guid OrderId { get; set; }
-
-    /// <summary>
-    /// The product identifier that was ordered.
-    /// </summary>
-    public string ProductId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The quantity ordered.
-    /// </summary>
-    public int Quantity { get; set; }
-
-    /// <summary>
-    /// Timestamp when the event occurred.
-    /// </summary>
-    public DateTime Timestamp { get; set; }
-}
-
-/// <summary>
-/// Event published when inventory is reserved for an order.
-/// </summary>
-public class InventoryReservedEvent
-{
-    /// <summary>
-    /// The order identifier this reservation is for.
-    /// </summary>
-    public Guid OrderId { get; set; }
-
-    /// <summary>
-    /// The product identifier.
-    /// </summary>
-    public string ProductId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The quantity reserved.
-    /// </summary>
-    public int QuantityReserved { get; set; }
-
-    /// <summary>
-    /// Whether the reservation was successful.
-    /// </summary>
-    public bool Success { get; set; }
-
-    /// <summary>
-    /// Timestamp when the reservation occurred.
-    /// </summary>
-    public DateTime Timestamp { get; set; }
-}
-
-/// <summary>
-/// Event published when stock levels change.
-/// </summary>
-public class StockLevelChangedEvent
-{
-    /// <summary>
-    /// The product identifier.
-    /// </summary>
-    public string ProductId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Previous available quantity.
-    /// </summary>
-    public int PreviousQuantity { get; set; }
-
-    /// <summary>
-    /// New available quantity.
-    /// </summary>
-    public int NewQuantity { get; set; }
-
-    /// <summary>
-    /// Reason for the stock change.
-    /// </summary>
-    public string Reason { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Timestamp when the change occurred.
-    /// </summary>
-    public DateTime Timestamp { get; set; }
-}
+namespace Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory;
 
 /// <summary>
 /// Controller for managing inventory. Subscribes to order events and publishes inventory events via Kafka.
@@ -136,7 +19,6 @@ public class StockLevelChangedEvent
 [Route("api/[controller]")]
 public class InventoryController : ControllerBase
 {
-    private const string OrderCreatedTopic = "orders.created";
     private const string InventoryReservedTopic = "inventory.reserved";
     private const string StockLevelChangedTopic = "inventory.stock-level-changed";
 
