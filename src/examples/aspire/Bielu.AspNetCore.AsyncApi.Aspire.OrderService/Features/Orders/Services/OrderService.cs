@@ -2,26 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Data;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Events;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Models;
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Caching;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
 using Microsoft.EntityFrameworkCore;
-using StackExchange.Redis;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Services;
 
 /// <summary>
 /// Service handling order business logic, persistence, caching, and event publishing.
+/// Uses the shared <see cref="ICacheService"/> from ServiceDefaults for Valkey caching.
 /// </summary>
 public class OrderService(
     ActivitySourceProvider activitySourceProvider,
     IEventPublisher eventPublisher,
     OrderDbContext dbContext,
-    IConnectionMultiplexer redis,
+    ICacheService cache,
     OrderMetrics metrics,
     ILogger<OrderService> logger) : IOrderService
 {
@@ -43,23 +43,14 @@ public class OrderService(
         using var activity = _activitySource.StartActivity("GetOrderById");
         activity?.SetTag("order.id", id.ToString());
 
-        var db = redis.GetDatabase();
         var cacheKey = $"order:{id}";
 
         // Try cache first
-        var cached = await db.StringGetAsync(cacheKey);
-        if (cached.HasValue)
+        var cachedOrder = await cache.GetAsync<Order>(cacheKey);
+        if (cachedOrder is not null)
         {
             activity?.SetTag("cache.hit", true);
-            try
-            {
-                var cachedOrder = JsonSerializer.Deserialize<Order>(cached.ToString());
-                if (cachedOrder is not null) return cachedOrder;
-            }
-            catch (JsonException ex)
-            {
-                logger.LogWarning(ex, "Failed to deserialize cached order {OrderId}, falling back to database", id);
-            }
+            return cachedOrder;
         }
 
         activity?.SetTag("cache.hit", false);
@@ -69,7 +60,7 @@ public class OrderService(
         if (order is null) return null;
 
         // Cache for 5 minutes
-        await db.StringSetAsync(cacheKey, JsonSerializer.Serialize(order), TimeSpan.FromMinutes(5));
+        await cache.SetAsync(cacheKey, order, TimeSpan.FromMinutes(5));
         return order;
     }
 
@@ -91,8 +82,7 @@ public class OrderService(
         await dbContext.SaveChangesAsync();
 
         // Cache in Valkey
-        var db = redis.GetDatabase();
-        await db.StringSetAsync($"order:{order.Id}", JsonSerializer.Serialize(order), TimeSpan.FromMinutes(5));
+        await cache.SetAsync($"order:{order.Id}", order, TimeSpan.FromMinutes(5));
 
         // Publish event to Kafka
         var orderCreatedEvent = new OrderCreatedEvent
@@ -133,8 +123,7 @@ public class OrderService(
         activity?.SetTag("order.previous_status", previousStatus);
 
         // Invalidate cache
-        var db = redis.GetDatabase();
-        await db.KeyDeleteAsync($"order:{id}");
+        await cache.RemoveAsync($"order:{id}");
 
         // Publish event to Kafka
         var statusChangedEvent = new OrderStatusChangedEvent

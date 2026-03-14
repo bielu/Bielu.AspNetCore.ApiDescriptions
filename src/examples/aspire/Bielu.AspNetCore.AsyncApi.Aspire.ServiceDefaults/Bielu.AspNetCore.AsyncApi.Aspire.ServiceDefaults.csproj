@@ -17,6 +17,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
     <PackageReference Include="Aspire.Confluent.Kafka" />
+    <PackageReference Include="StackExchange.Redis" />
   </ItemGroup>
 
 </Project>

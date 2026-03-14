@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Caching;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
 using Microsoft.AspNetCore.Builder;
@@ -38,6 +39,9 @@ public static class Extensions
         // Register the shared Kafka event publisher and messaging metrics
         builder.Services.AddSingleton<MessagingMetrics>();
         builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+
+        // Register the shared Redis/Valkey cache service
+        builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
         return builder;
     }

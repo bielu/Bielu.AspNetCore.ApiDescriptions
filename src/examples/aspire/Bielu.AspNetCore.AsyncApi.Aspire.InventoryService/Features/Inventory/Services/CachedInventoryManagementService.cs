@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Events;
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Models;
-using StackExchange.Redis;
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Caching;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Services;
 
 /// <summary>
 /// Caching decorator for <see cref="IInventoryManagementService"/> using Valkey (Redis-compatible).
 /// Registered via Scrutor's <c>Decorate</c> — wraps the real service transparently.
+/// Uses the shared <see cref="ICacheService"/> from ServiceDefaults.
 /// </summary>
 public class CachedInventoryManagementService(
     IInventoryManagementService inner,
-    IConnectionMultiplexer redis,
+    ICacheService cache,
     ILogger<CachedInventoryManagementService> logger) : IInventoryManagementService
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
@@ -23,30 +23,15 @@ public class CachedInventoryManagementService(
     public async Task<IEnumerable<InventoryItem>> GetAllAsync()
     {
         const string cacheKey = "inventory:all";
-        var db = redis.GetDatabase();
 
-        var cached = await db.StringGetAsync(cacheKey);
-        if (cached.HasValue)
-        {
-            try
-            {
-                var items = JsonSerializer.Deserialize<List<InventoryItem>>(cached.ToString());
-                if (items is not null)
-                {
-                    logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
-                    return items;
-                }
-            }
-            catch (JsonException ex)
-            {
-                logger.LogWarning(ex, "Failed to deserialize cached inventory list, falling back to source");
-            }
-        }
+        var cached = await cache.GetAsync<List<InventoryItem>>(cacheKey);
+        if (cached is not null)
+            return cached;
 
         var result = await inner.GetAllAsync();
         var materialized = result.ToList();
 
-        await db.StringSetAsync(cacheKey, JsonSerializer.Serialize(materialized), CacheDuration);
+        await cache.SetAsync(cacheKey, materialized, CacheDuration);
         return materialized;
     }
 
@@ -54,30 +39,15 @@ public class CachedInventoryManagementService(
     public async Task<InventoryItem?> GetByProductIdAsync(string productId)
     {
         var cacheKey = $"inventory:{productId}";
-        var db = redis.GetDatabase();
 
-        var cached = await db.StringGetAsync(cacheKey);
-        if (cached.HasValue)
-        {
-            try
-            {
-                var item = JsonSerializer.Deserialize<InventoryItem>(cached.ToString());
-                if (item is not null)
-                {
-                    logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
-                    return item;
-                }
-            }
-            catch (JsonException ex)
-            {
-                logger.LogWarning(ex, "Failed to deserialize cached inventory item {ProductId}, falling back to source", productId);
-            }
-        }
+        var cached = await cache.GetAsync<InventoryItem>(cacheKey);
+        if (cached is not null)
+            return cached;
 
         var result = await inner.GetByProductIdAsync(productId);
         if (result is not null)
         {
-            await db.StringSetAsync(cacheKey, JsonSerializer.Serialize(result), CacheDuration);
+            await cache.SetAsync(cacheKey, result, CacheDuration);
         }
 
         return result;
@@ -89,7 +59,7 @@ public class CachedInventoryManagementService(
         var result = await inner.ReserveInventoryAsync(orderEvent);
 
         // Invalidate caches after mutation
-        await InvalidateProductCacheAsync(orderEvent.ProductId);
+        await cache.RemoveAsync([$"inventory:{orderEvent.ProductId}", "inventory:all"]);
 
         return result;
     }
@@ -102,18 +72,9 @@ public class CachedInventoryManagementService(
         if (result is not null)
         {
             // Invalidate caches after mutation
-            await InvalidateProductCacheAsync(productId);
+            await cache.RemoveAsync([$"inventory:{productId}", "inventory:all"]);
         }
 
         return result;
-    }
-
-    private async Task InvalidateProductCacheAsync(string productId)
-    {
-        var db = redis.GetDatabase();
-        await Task.WhenAll(
-            db.KeyDeleteAsync($"inventory:{productId}"),
-            db.KeyDeleteAsync("inventory:all"));
-        logger.LogDebug("Invalidated cache for product {ProductId}", productId);
     }
 }
