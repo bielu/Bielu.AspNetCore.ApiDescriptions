@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Data;
+using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Events;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Models;
-using Confluent.Kafka;
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 
@@ -19,32 +21,41 @@ public class OrderService : IOrderService
     private const string OrderCreatedTopic = "orders.created";
     private const string OrderStatusChangedTopic = "orders.status-changed";
 
-    private readonly IProducer<string, string> _kafkaProducer;
+    private static readonly ActivitySource s_activitySource = new("MiniShop.OrderService");
+
+    private readonly IEventPublisher _eventPublisher;
     private readonly OrderDbContext _dbContext;
     private readonly IConnectionMultiplexer _redis;
+    private readonly OrderMetrics _metrics;
     private readonly ILogger<OrderService> _logger;
 
     public OrderService(
-        IProducer<string, string> kafkaProducer,
+        IEventPublisher eventPublisher,
         OrderDbContext dbContext,
         IConnectionMultiplexer redis,
+        OrderMetrics metrics,
         ILogger<OrderService> logger)
     {
-        _kafkaProducer = kafkaProducer;
+        _eventPublisher = eventPublisher;
         _dbContext = dbContext;
         _redis = redis;
+        _metrics = metrics;
         _logger = logger;
     }
 
     /// <inheritdoc />
     public async Task<IEnumerable<Order>> GetAllAsync()
     {
+        using var activity = s_activitySource.StartActivity("GetAllOrders");
         return await _dbContext.Orders.OrderByDescending(o => o.CreatedAt).ToListAsync();
     }
 
     /// <inheritdoc />
     public async Task<Order?> GetByIdAsync(Guid id)
     {
+        using var activity = s_activitySource.StartActivity("GetOrderById");
+        activity?.SetTag("order.id", id.ToString());
+
         var db = _redis.GetDatabase();
         var cacheKey = $"order:{id}";
 
@@ -52,9 +63,12 @@ public class OrderService : IOrderService
         var cached = await db.StringGetAsync(cacheKey);
         if (cached.HasValue)
         {
+            activity?.SetTag("cache.hit", true);
             var cachedOrder = JsonSerializer.Deserialize<Order>(cached.ToString());
             if (cachedOrder is not null) return cachedOrder;
         }
+
+        activity?.SetTag("cache.hit", false);
 
         // Fallback to PostgreSQL via EF Core
         var order = await _dbContext.Orders.FindAsync(id);
@@ -68,9 +82,14 @@ public class OrderService : IOrderService
     /// <inheritdoc />
     public async Task<Order> CreateAsync(Order order)
     {
+        using var activity = s_activitySource.StartActivity("CreateOrder");
+
         order.Id = Guid.NewGuid();
         order.Status = "Pending";
         order.CreatedAt = DateTime.UtcNow;
+
+        activity?.SetTag("order.id", order.Id.ToString());
+        activity?.SetTag("order.product_id", order.ProductId);
 
         // Persist to PostgreSQL via EF Core
         _dbContext.Orders.Add(order);
@@ -89,12 +108,9 @@ public class OrderService : IOrderService
             Timestamp = DateTime.UtcNow
         };
 
-        await _kafkaProducer.ProduceAsync(OrderCreatedTopic,
-            new Message<string, string>
-            {
-                Key = order.Id.ToString(),
-                Value = JsonSerializer.Serialize(orderCreatedEvent)
-            });
+        await _eventPublisher.PublishAsync(OrderCreatedTopic, order.Id.ToString(), orderCreatedEvent);
+        _metrics.OrderCreated();
+        _metrics.EventPublished(OrderCreatedTopic);
 
         _logger.LogInformation("Order {OrderId} created and published to {Topic}", order.Id, OrderCreatedTopic);
 
@@ -104,12 +120,22 @@ public class OrderService : IOrderService
     /// <inheritdoc />
     public async Task<Order?> UpdateStatusAsync(Guid id, string newStatus)
     {
+        using var activity = s_activitySource.StartActivity("UpdateOrderStatus");
+        activity?.SetTag("order.id", id.ToString());
+        activity?.SetTag("order.new_status", newStatus);
+
         var order = await _dbContext.Orders.FindAsync(id);
-        if (order is null) return null;
+        if (order is null)
+        {
+            _metrics.StatusUpdateFailed();
+            return null;
+        }
 
         var previousStatus = order.Status;
         order.Status = newStatus;
         await _dbContext.SaveChangesAsync();
+
+        activity?.SetTag("order.previous_status", previousStatus);
 
         // Invalidate cache
         var db = _redis.GetDatabase();
@@ -124,15 +150,12 @@ public class OrderService : IOrderService
             Timestamp = DateTime.UtcNow
         };
 
-        await _kafkaProducer.ProduceAsync(OrderStatusChangedTopic,
-            new Message<string, string>
-            {
-                Key = id.ToString(),
-                Value = JsonSerializer.Serialize(statusChangedEvent)
-            });
+        await _eventPublisher.PublishAsync(OrderStatusChangedTopic, id.ToString(), statusChangedEvent);
+        _metrics.StatusUpdated();
+        _metrics.EventPublished(OrderStatusChangedTopic);
 
-        _logger.LogInformation("Order {OrderId} status changed to {Status} and published to {Topic}",
-            id, newStatus, OrderStatusChangedTopic);
+        _logger.LogInformation("Order {OrderId} status changed from {PreviousStatus} to {NewStatus}",
+            id, previousStatus, newStatus);
 
         return order;
     }

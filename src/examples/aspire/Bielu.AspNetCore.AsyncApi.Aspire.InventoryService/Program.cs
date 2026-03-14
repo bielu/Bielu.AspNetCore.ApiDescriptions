@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Data;
+using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Diagnostics;
+using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Services;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Bindings.Kafka;
@@ -10,12 +12,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+// Register custom metrics and tracing for this service
+builder.AddServiceMetrics(InventoryMetrics.MeterName);
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddSource("MiniShop.InventoryService"));
+
 // Register Aspire Confluent Kafka producer and consumer (connection managed by Aspire)
 builder.AddKafkaProducer<string, string>("kafka");
 builder.AddKafkaConsumer<string, string>("kafka");
 
 // Register Aspire PostgreSQL with Entity Framework Core (connection managed by Aspire)
 builder.AddNpgsqlDbContext<InventoryDbContext>("inventorydb");
+
+// Register service layer and metrics
+builder.Services.AddSingleton<InventoryMetrics>();
+builder.Services.AddScoped<IInventoryManagementService, InventoryManagementService>();
 
 builder.Services.AddAsyncApi(options =>
 {

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications;
+using Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications.Hubs;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.UI;
@@ -10,13 +12,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+// Register custom metrics and tracing for this service
+builder.AddServiceMetrics(NotificationMetrics.MeterName);
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddSource("MiniShop.NotificationService"));
+
 // Register Aspire Confluent Kafka consumer (connection managed by Aspire)
 builder.AddKafkaConsumer<string, string>("kafka");
 
 builder.Services.AddSignalR();
 
-// Register background service that consumes Kafka events and pushes to SignalR
-builder.Services.AddHostedService<Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications.KafkaNotificationWorker>();
+// Register metrics and background service that consumes Kafka events and pushes to SignalR
+builder.Services.AddSingleton<NotificationMetrics>();
+builder.Services.AddHostedService<KafkaNotificationWorker>();
 
 builder.Services.AddAsyncApi(options =>
 {

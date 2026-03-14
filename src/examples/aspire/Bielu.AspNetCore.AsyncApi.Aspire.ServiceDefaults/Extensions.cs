@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,11 +34,15 @@ public static class Extensions
             http.AddServiceDiscovery();
         });
 
+        // Register the shared Kafka event publisher
+        builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+
         return builder;
     }
 
     /// <summary>
     /// Configures OpenTelemetry with OTLP exporter.
+    /// Custom meters can be registered via <paramref name="configureMetrics"/>.
     /// </summary>
     public static IHostApplicationBuilder ConfigureOpenTelemetry(this IHostApplicationBuilder builder)
     {
@@ -57,10 +62,22 @@ public static class Extensions
             .WithTracing(tracing =>
             {
                 tracing.AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation();
+                    .AddHttpClientInstrumentation()
+                    .AddSource("MiniShop.Messaging");
             });
 
         builder.AddOpenTelemetryExporters();
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers a custom OpenTelemetry meter for this service's metrics.
+    /// </summary>
+    public static IHostApplicationBuilder AddServiceMetrics(this IHostApplicationBuilder builder, string meterName)
+    {
+        builder.Services.AddOpenTelemetry()
+            .WithMetrics(metrics => metrics.AddMeter(meterName));
 
         return builder;
     }

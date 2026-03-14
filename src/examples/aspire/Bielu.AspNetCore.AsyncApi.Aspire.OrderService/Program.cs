@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Data;
+using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Diagnostics;
+using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Services;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.OrderTracking.Hubs;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.UI;
@@ -11,6 +13,11 @@ using ByteBard.AsyncAPI.Bindings.WebSockets;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+// Register custom metrics and tracing for this service
+builder.AddServiceMetrics(OrderMetrics.MeterName);
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddSource("MiniShop.OrderService"));
 
 // Register Aspire Confluent Kafka producer (connection managed by Aspire)
 builder.AddKafkaProducer<string, string>("kafka");
@@ -22,6 +29,10 @@ builder.AddNpgsqlDbContext<OrderDbContext>("ordersdb");
 builder.AddRedisClient("valkey");
 
 builder.Services.AddSignalR();
+
+// Register service layer and metrics
+builder.Services.AddSingleton<OrderMetrics>();
+builder.Services.AddScoped<IOrderService, Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Services.OrderService>();
 
 builder.Services.AddAsyncApi(options =>
 {
