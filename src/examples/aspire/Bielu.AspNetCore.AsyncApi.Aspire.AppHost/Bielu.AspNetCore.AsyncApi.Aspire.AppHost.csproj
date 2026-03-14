@@ -1,0 +1,23 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.1.2">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Kafka" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+    <PackageReference Include="Aspire.Hosting.Valkey" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.ApiGateway\Bielu.AspNetCore.AsyncApi.Aspire.ApiGateway.csproj" />
+    <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.OrderService\Bielu.AspNetCore.AsyncApi.Aspire.OrderService.csproj" />
+    <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.InventoryService\Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.csproj" />
+  </ItemGroup>
+
+</Project>
