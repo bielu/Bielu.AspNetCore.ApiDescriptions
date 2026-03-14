@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults\Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
+    <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
+    <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi.UI\Bielu.AspNetCore.AsyncApi.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ByteBard.AsyncAPI.NET.Bindings" />
+    <PackageReference Include="Aspire.Confluent.Kafka" />
+  </ItemGroup>
+
+</Project>

@@ -42,6 +42,13 @@ dotnet add package Bielu.AspNetCore.AsyncApi.Attributes
 dotnet add package Bielu.AspNetCore.AsyncApi.UI
 ```
 
+## Examples
+
+| Example | Description |
+|---------|-------------|
+| [StreetlightsAPI](./src/examples/StreetlightsAPI) | Minimal single-service example — MQTT-based streetlight monitoring with subscribe/publish operations. Great starting point for learning the attribute-based API. |
+| [Aspire Mini Shop](./src/examples/aspire) | Distributed microservices demo built with .NET Aspire — Order Service, Inventory Service, Notification Service, and a YARP API Gateway that merges AsyncAPI docs from all downstream services. Uses Kafka, PostgreSQL, Valkey, SignalR, Scrutor decorator pattern, and OpenTelemetry. |
+
 ## Getting Started
 
 See the [StreetlightsAPI example](./src/examples/StreetlightsAPI) for a complete working example.

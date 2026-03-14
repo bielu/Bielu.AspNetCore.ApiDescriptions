@@ -29,5 +29,26 @@
     <PackageVersion Include="Microsoft.Playwright" Version="1.58.0" />
     <!-- Code Coverage -->
     <PackageVersion Include="coverlet.collector" Version="8.0.0" />
+    <!-- Aspire Hosting -->
+    <PackageVersion Include="Aspire.Hosting.Kafka" Version="13.1.2" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
+    <PackageVersion Include="Aspire.Hosting.Valkey" Version="13.1.2" />
+    <!-- YARP -->
+    <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
+    <!-- Aspire Service Defaults -->
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.4.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.4.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
+    <!-- Aspire Client Integrations -->
+    <PackageVersion Include="Aspire.Confluent.Kafka" Version="13.1.2" />
+    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
+    <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.1.2" />
+    <PackageVersion Include="StackExchange.Redis" Version="2.12.1" />
+    <!-- DI Decorator support -->
+    <PackageVersion Include="Scrutor" Version="7.0.0" />
   </ItemGroup>
 </Project>

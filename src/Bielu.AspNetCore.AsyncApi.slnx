@@ -6,6 +6,14 @@
   </Configurations>
   <Folder Name="/examples/">
     <Project Path="./examples/StreetlightsAPI/StreetlightsAPI.csproj" />
+    <Folder Name="/examples/aspire/">
+      <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.AppHost/Bielu.AspNetCore.AsyncApi.Aspire.AppHost.csproj" />
+      <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults/Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.csproj" />
+      <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.ApiGateway/Bielu.AspNetCore.AsyncApi.Aspire.ApiGateway.csproj" />
+      <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.OrderService/Bielu.AspNetCore.AsyncApi.Aspire.OrderService.csproj" />
+      <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.InventoryService/Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.csproj" />
+      <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.NotificationService/Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.csproj" />
+    </Folder>
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Tests/Bielu.AspNetCore.AsyncApi.Tests.csproj" />
