@@ -51,8 +51,15 @@ public class OrderService(
         if (cached.HasValue)
         {
             activity?.SetTag("cache.hit", true);
-            var cachedOrder = JsonSerializer.Deserialize<Order>(cached.ToString());
-            if (cachedOrder is not null) return cachedOrder;
+            try
+            {
+                var cachedOrder = JsonSerializer.Deserialize<Order>(cached.ToString());
+                if (cachedOrder is not null) return cachedOrder;
+            }
+            catch (JsonException ex)
+            {
+                logger.LogWarning(ex, "Failed to deserialize cached order {OrderId}, falling back to database", id);
+            }
         }
 
         activity?.SetTag("cache.hit", false);
@@ -70,10 +77,11 @@ public class OrderService(
     public async Task<Order> CreateAsync(Order order)
     {
         using var activity = _activitySource.StartActivity("CreateOrder");
+        var now = DateTime.UtcNow;
 
         order.Id = Guid.NewGuid();
         order.Status = "Pending";
-        order.CreatedAt = DateTime.UtcNow;
+        order.CreatedAt = now;
 
         activity?.SetTag("order.id", order.Id.ToString());
         activity?.SetTag("order.product_id", order.ProductId);
@@ -92,7 +100,7 @@ public class OrderService(
             OrderId = order.Id,
             ProductId = order.ProductId,
             Quantity = order.Quantity,
-            Timestamp = DateTime.UtcNow
+            Timestamp = now
         };
 
         await eventPublisher.PublishAsync(OrderCreatedTopic, order.Id.ToString(), orderCreatedEvent);
@@ -108,6 +116,7 @@ public class OrderService(
     public async Task<Order?> UpdateStatusAsync(Guid id, string newStatus)
     {
         using var activity = _activitySource.StartActivity("UpdateOrderStatus");
+        var now = DateTime.UtcNow;
         activity?.SetTag("order.id", id.ToString());
         activity?.SetTag("order.new_status", newStatus);
 
@@ -134,7 +143,7 @@ public class OrderService(
             OrderId = id,
             PreviousStatus = previousStatus,
             NewStatus = newStatus,
-            Timestamp = DateTime.UtcNow
+            Timestamp = now
         };
 
         await eventPublisher.PublishAsync(OrderStatusChangedTopic, id.ToString(), statusChangedEvent);
