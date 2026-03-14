@@ -9,12 +9,8 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Data;
 /// <summary>
 /// Entity Framework Core DbContext for the Order Service.
 /// </summary>
-public class OrderDbContext : DbContext
+public class OrderDbContext(DbContextOptions<OrderDbContext> options) : DbContext(options)
 {
-    public OrderDbContext(DbContextOptions<OrderDbContext> options) : base(options)
-    {
-    }
-
     /// <summary>
     /// Orders table.
     /// </summary>

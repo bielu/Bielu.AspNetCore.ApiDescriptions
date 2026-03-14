@@ -14,15 +14,8 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.OrderTracking.H
 /// </summary>
 [AsyncApi]
 [Channel("order-tracking", Servers = ["websocket"])]
-public class OrderTrackingHub : Hub
+public class OrderTrackingHub(ILogger<OrderTrackingHub> logger) : Hub
 {
-    private readonly ILogger<OrderTrackingHub> _logger;
-
-    public OrderTrackingHub(ILogger<OrderTrackingHub> logger)
-    {
-        _logger = logger;
-    }
-
     /// <summary>
     /// Publishes a real-time order tracking update to subscribed clients via WebSocket.
     /// </summary>
@@ -31,7 +24,7 @@ public class OrderTrackingHub : Hub
         Summary = "Receive real-time order tracking updates via WebSocket")]
     public async Task SendTrackingUpdate(OrderTrackingUpdate update)
     {
-        _logger.LogInformation("Broadcasting tracking update for order {OrderId}: {Status} at {Step}",
+        logger.LogInformation("Broadcasting tracking update for order {OrderId}: {Status} at {Step}",
             update.OrderId, update.TrackingStatus, update.CurrentStep);
 
         await Clients.Group($"track-{update.OrderId}").SendAsync("ReceiveTrackingUpdate", update);
@@ -46,7 +39,7 @@ public class OrderTrackingHub : Hub
     public async Task TrackOrder(string orderId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"track-{orderId}");
-        _logger.LogInformation("Client {ConnectionId} started tracking order {OrderId}",
+        logger.LogInformation("Client {ConnectionId} started tracking order {OrderId}",
             Context.ConnectionId, orderId);
     }
 
@@ -56,20 +49,20 @@ public class OrderTrackingHub : Hub
     public async Task UntrackOrder(string orderId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"track-{orderId}");
-        _logger.LogInformation("Client {ConnectionId} stopped tracking order {OrderId}",
+        logger.LogInformation("Client {ConnectionId} stopped tracking order {OrderId}",
             Context.ConnectionId, orderId);
     }
 
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation("Client {ConnectionId} connected to OrderTrackingHub",
+        logger.LogInformation("Client {ConnectionId} connected to OrderTrackingHub",
             Context.ConnectionId);
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation("Client {ConnectionId} disconnected from OrderTrackingHub",
+        logger.LogInformation("Client {ConnectionId} disconnected from OrderTrackingHub",
             Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }

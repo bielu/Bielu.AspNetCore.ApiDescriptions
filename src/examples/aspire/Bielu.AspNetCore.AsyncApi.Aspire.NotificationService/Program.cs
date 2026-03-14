@@ -4,6 +4,7 @@
 using Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications;
 using Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications.Hubs;
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Bindings.WebSockets;
@@ -14,8 +15,7 @@ builder.AddServiceDefaults();
 
 // Register custom metrics and tracing for this service
 builder.AddServiceMetrics(NotificationMetrics.MeterName);
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing.AddSource("MiniShop.NotificationService"));
+builder.AddServiceTracing(DiagnosticsNames.NotificationService);
 
 // Register Aspire Confluent Kafka consumer (connection managed by Aspire)
 builder.AddKafkaConsumer<string, string>("kafka");

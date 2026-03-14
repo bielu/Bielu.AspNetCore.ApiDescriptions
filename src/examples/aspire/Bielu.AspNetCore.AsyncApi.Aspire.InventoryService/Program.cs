@@ -4,6 +4,7 @@
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Data;
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Services;
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Bindings.Kafka;
@@ -14,8 +15,7 @@ builder.AddServiceDefaults();
 
 // Register custom metrics and tracing for this service
 builder.AddServiceMetrics(InventoryMetrics.MeterName);
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing.AddSource("MiniShop.InventoryService"));
+builder.AddServiceTracing(DiagnosticsNames.InventoryService);
 
 // Register Aspire Confluent Kafka producer and consumer (connection managed by Aspire)
 builder.AddKafkaProducer<string, string>("kafka");

@@ -9,12 +9,8 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.D
 /// <summary>
 /// Entity Framework Core DbContext for the Inventory Service.
 /// </summary>
-public class InventoryDbContext : DbContext
+public class InventoryDbContext(DbContextOptions<InventoryDbContext> options) : DbContext(options)
 {
-    public InventoryDbContext(DbContextOptions<InventoryDbContext> options) : base(options)
-    {
-    }
-
     /// <summary>
     /// Inventory items table.
     /// </summary>

@@ -5,6 +5,7 @@ using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Data;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Services;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.OrderTracking.Hubs;
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Bindings.Kafka;
@@ -16,8 +17,7 @@ builder.AddServiceDefaults();
 
 // Register custom metrics and tracing for this service
 builder.AddServiceMetrics(OrderMetrics.MeterName);
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing.AddSource("MiniShop.OrderService"));
+builder.AddServiceTracing(DiagnosticsNames.OrderService);
 
 // Register Aspire Confluent Kafka producer (connection managed by Aspire)
 builder.AddKafkaProducer<string, string>("kafka");

@@ -14,15 +14,8 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifica
 /// </summary>
 [AsyncApi]
 [Channel("notifications/order-status", Servers = ["websocket"])]
-public class OrderNotificationHub : Hub
+public class OrderNotificationHub(ILogger<OrderNotificationHub> logger) : Hub
 {
-    private readonly ILogger<OrderNotificationHub> _logger;
-
-    public OrderNotificationHub(ILogger<OrderNotificationHub> logger)
-    {
-        _logger = logger;
-    }
-
     /// <summary>
     /// Sends an order status notification to all connected clients.
     /// </summary>
@@ -31,7 +24,7 @@ public class OrderNotificationHub : Hub
         Summary = "Receive real-time order status updates via WebSocket")]
     public async Task SendOrderStatusUpdate(OrderStatusNotification notification)
     {
-        _logger.LogInformation("Broadcasting order status notification for order {OrderId}: {Status}",
+        logger.LogInformation("Broadcasting order status notification for order {OrderId}: {Status}",
             notification.OrderId, notification.Status);
 
         await Clients.All.SendAsync("ReceiveOrderStatusUpdate", notification);
@@ -46,20 +39,20 @@ public class OrderNotificationHub : Hub
     public async Task SubscribeToOrder(string orderId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"order-{orderId}");
-        _logger.LogInformation("Client {ConnectionId} subscribed to order {OrderId}",
+        logger.LogInformation("Client {ConnectionId} subscribed to order {OrderId}",
             Context.ConnectionId, orderId);
     }
 
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation("Client {ConnectionId} connected to OrderNotificationHub",
+        logger.LogInformation("Client {ConnectionId} connected to OrderNotificationHub",
             Context.ConnectionId);
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation("Client {ConnectionId} disconnected from OrderNotificationHub",
+        logger.LogInformation("Client {ConnectionId} disconnected from OrderNotificationHub",
             Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }

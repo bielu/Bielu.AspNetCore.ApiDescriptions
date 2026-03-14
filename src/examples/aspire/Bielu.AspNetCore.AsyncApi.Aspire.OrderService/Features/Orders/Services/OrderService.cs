@@ -7,6 +7,7 @@ using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Data;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Events;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Models;
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
@@ -16,47 +17,33 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Services
 /// <summary>
 /// Service handling order business logic, persistence, caching, and event publishing.
 /// </summary>
-public class OrderService : IOrderService
+public class OrderService(
+    ActivitySourceProvider activitySourceProvider,
+    IEventPublisher eventPublisher,
+    OrderDbContext dbContext,
+    IConnectionMultiplexer redis,
+    OrderMetrics metrics,
+    ILogger<OrderService> logger) : IOrderService
 {
     private const string OrderCreatedTopic = "orders.created";
     private const string OrderStatusChangedTopic = "orders.status-changed";
 
-    private static readonly ActivitySource s_activitySource = new("MiniShop.OrderService");
-
-    private readonly IEventPublisher _eventPublisher;
-    private readonly OrderDbContext _dbContext;
-    private readonly IConnectionMultiplexer _redis;
-    private readonly OrderMetrics _metrics;
-    private readonly ILogger<OrderService> _logger;
-
-    public OrderService(
-        IEventPublisher eventPublisher,
-        OrderDbContext dbContext,
-        IConnectionMultiplexer redis,
-        OrderMetrics metrics,
-        ILogger<OrderService> logger)
-    {
-        _eventPublisher = eventPublisher;
-        _dbContext = dbContext;
-        _redis = redis;
-        _metrics = metrics;
-        _logger = logger;
-    }
+    private readonly ActivitySource _activitySource = activitySourceProvider.ActivitySource;
 
     /// <inheritdoc />
     public async Task<IEnumerable<Order>> GetAllAsync()
     {
-        using var activity = s_activitySource.StartActivity("GetAllOrders");
-        return await _dbContext.Orders.OrderByDescending(o => o.CreatedAt).ToListAsync();
+        using var activity = _activitySource.StartActivity("GetAllOrders");
+        return await dbContext.Orders.OrderByDescending(o => o.CreatedAt).ToListAsync();
     }
 
     /// <inheritdoc />
     public async Task<Order?> GetByIdAsync(Guid id)
     {
-        using var activity = s_activitySource.StartActivity("GetOrderById");
+        using var activity = _activitySource.StartActivity("GetOrderById");
         activity?.SetTag("order.id", id.ToString());
 
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         var cacheKey = $"order:{id}";
 
         // Try cache first
@@ -71,7 +58,7 @@ public class OrderService : IOrderService
         activity?.SetTag("cache.hit", false);
 
         // Fallback to PostgreSQL via EF Core
-        var order = await _dbContext.Orders.FindAsync(id);
+        var order = await dbContext.Orders.FindAsync(id);
         if (order is null) return null;
 
         // Cache for 5 minutes
@@ -82,7 +69,7 @@ public class OrderService : IOrderService
     /// <inheritdoc />
     public async Task<Order> CreateAsync(Order order)
     {
-        using var activity = s_activitySource.StartActivity("CreateOrder");
+        using var activity = _activitySource.StartActivity("CreateOrder");
 
         order.Id = Guid.NewGuid();
         order.Status = "Pending";
@@ -92,11 +79,11 @@ public class OrderService : IOrderService
         activity?.SetTag("order.product_id", order.ProductId);
 
         // Persist to PostgreSQL via EF Core
-        _dbContext.Orders.Add(order);
-        await _dbContext.SaveChangesAsync();
+        dbContext.Orders.Add(order);
+        await dbContext.SaveChangesAsync();
 
         // Cache in Valkey
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         await db.StringSetAsync($"order:{order.Id}", JsonSerializer.Serialize(order), TimeSpan.FromMinutes(5));
 
         // Publish event to Kafka
@@ -108,11 +95,11 @@ public class OrderService : IOrderService
             Timestamp = DateTime.UtcNow
         };
 
-        await _eventPublisher.PublishAsync(OrderCreatedTopic, order.Id.ToString(), orderCreatedEvent);
-        _metrics.OrderCreated();
-        _metrics.EventPublished(OrderCreatedTopic);
+        await eventPublisher.PublishAsync(OrderCreatedTopic, order.Id.ToString(), orderCreatedEvent);
+        metrics.OrderCreated();
+        metrics.EventPublished(OrderCreatedTopic);
 
-        _logger.LogInformation("Order {OrderId} created and published to {Topic}", order.Id, OrderCreatedTopic);
+        logger.LogInformation("Order {OrderId} created and published to {Topic}", order.Id, OrderCreatedTopic);
 
         return order;
     }
@@ -120,25 +107,25 @@ public class OrderService : IOrderService
     /// <inheritdoc />
     public async Task<Order?> UpdateStatusAsync(Guid id, string newStatus)
     {
-        using var activity = s_activitySource.StartActivity("UpdateOrderStatus");
+        using var activity = _activitySource.StartActivity("UpdateOrderStatus");
         activity?.SetTag("order.id", id.ToString());
         activity?.SetTag("order.new_status", newStatus);
 
-        var order = await _dbContext.Orders.FindAsync(id);
+        var order = await dbContext.Orders.FindAsync(id);
         if (order is null)
         {
-            _metrics.StatusUpdateFailed();
+            metrics.StatusUpdateFailed();
             return null;
         }
 
         var previousStatus = order.Status;
         order.Status = newStatus;
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         activity?.SetTag("order.previous_status", previousStatus);
 
         // Invalidate cache
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         await db.KeyDeleteAsync($"order:{id}");
 
         // Publish event to Kafka
@@ -150,11 +137,11 @@ public class OrderService : IOrderService
             Timestamp = DateTime.UtcNow
         };
 
-        await _eventPublisher.PublishAsync(OrderStatusChangedTopic, id.ToString(), statusChangedEvent);
-        _metrics.StatusUpdated();
-        _metrics.EventPublished(OrderStatusChangedTopic);
+        await eventPublisher.PublishAsync(OrderStatusChangedTopic, id.ToString(), statusChangedEvent);
+        metrics.StatusUpdated();
+        metrics.EventPublished(OrderStatusChangedTopic);
 
-        _logger.LogInformation("Order {OrderId} status changed from {PreviousStatus} to {NewStatus}",
+        logger.LogInformation("Order {OrderId} status changed from {PreviousStatus} to {NewStatus}",
             id, previousStatus, newStatus);
 
         return order;

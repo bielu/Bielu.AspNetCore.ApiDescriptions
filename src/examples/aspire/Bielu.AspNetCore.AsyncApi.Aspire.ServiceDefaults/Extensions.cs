@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -42,7 +43,7 @@ public static class Extensions
 
     /// <summary>
     /// Configures OpenTelemetry with OTLP exporter.
-    /// Custom meters can be registered via <paramref name="configureMetrics"/>.
+    /// The shared <see cref="DiagnosticsNames.Messaging"/> source is always registered.
     /// </summary>
     public static IHostApplicationBuilder ConfigureOpenTelemetry(this IHostApplicationBuilder builder)
     {
@@ -63,8 +64,13 @@ public static class Extensions
             {
                 tracing.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddSource("MiniShop.Messaging");
+                    .AddSource(DiagnosticsNames.Messaging);
             });
+
+        // Register the Messaging ActivitySource as a singleton via DI
+        builder.Services.AddKeyedSingleton(
+            DiagnosticsNames.Messaging,
+            new ActivitySourceProvider(DiagnosticsNames.Messaging));
 
         builder.AddOpenTelemetryExporters();
 
@@ -78,6 +84,19 @@ public static class Extensions
     {
         builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics => metrics.AddMeter(meterName));
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers a singleton <see cref="ActivitySourceProvider"/> for the given source name
+    /// and subscribes it to OpenTelemetry tracing.
+    /// </summary>
+    public static IHostApplicationBuilder AddServiceTracing(this IHostApplicationBuilder builder, string sourceName)
+    {
+        builder.Services.AddSingleton(new ActivitySourceProvider(sourceName));
+        builder.Services.AddOpenTelemetry()
+            .WithTracing(tracing => tracing.AddSource(sourceName));
 
         return builder;
     }

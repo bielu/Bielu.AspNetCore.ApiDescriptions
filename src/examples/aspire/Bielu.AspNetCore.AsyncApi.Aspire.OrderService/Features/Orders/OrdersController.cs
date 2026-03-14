@@ -16,17 +16,10 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders;
 [AsyncApi]
 [ApiController]
 [Route("api/[controller]")]
-public class OrdersController : ControllerBase
+public class OrdersController(IOrderService orderService) : ControllerBase
 {
     private const string OrderCreatedTopic = "orders.created";
     private const string OrderStatusChangedTopic = "orders.status-changed";
-
-    private readonly IOrderService _orderService;
-
-    public OrdersController(IOrderService orderService)
-    {
-        _orderService = orderService;
-    }
 
     /// <summary>
     /// Get all orders.
@@ -34,7 +27,7 @@ public class OrdersController : ControllerBase
     [HttpGet]
     public async Task<IEnumerable<Order>> GetAll()
     {
-        return await _orderService.GetAllAsync();
+        return await orderService.GetAllAsync();
     }
 
     /// <summary>
@@ -43,7 +36,7 @@ public class OrdersController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<Order>> GetById(Guid id)
     {
-        var order = await _orderService.GetByIdAsync(id);
+        var order = await orderService.GetByIdAsync(id);
         if (order is null) return NotFound();
         return order;
     }
@@ -56,7 +49,7 @@ public class OrdersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Order>> Create([FromBody] Order order)
     {
-        var created = await _orderService.CreateAsync(order);
+        var created = await orderService.CreateAsync(order);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
@@ -68,7 +61,7 @@ public class OrdersController : ControllerBase
     [HttpPut("{id:guid}/status")]
     public async Task<ActionResult> UpdateStatus(Guid id, [FromBody] string newStatus)
     {
-        var order = await _orderService.UpdateStatusAsync(id, newStatus);
+        var order = await orderService.UpdateStatusAsync(id, newStatus);
         if (order is null) return NotFound();
         return Ok(new { id, status = order.Status });
     }

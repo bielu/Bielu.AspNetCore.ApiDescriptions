@@ -16,17 +16,10 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory;
 [AsyncApi]
 [ApiController]
 [Route("api/[controller]")]
-public class InventoryController : ControllerBase
+public class InventoryController(IInventoryManagementService inventoryService) : ControllerBase
 {
     private const string InventoryReservedTopic = "inventory.reserved";
     private const string StockLevelChangedTopic = "inventory.stock-level-changed";
-
-    private readonly IInventoryManagementService _inventoryService;
-
-    public InventoryController(IInventoryManagementService inventoryService)
-    {
-        _inventoryService = inventoryService;
-    }
 
     /// <summary>
     /// Get all inventory items.
@@ -34,7 +27,7 @@ public class InventoryController : ControllerBase
     [HttpGet]
     public async Task<IEnumerable<InventoryItem>> GetAll()
     {
-        return await _inventoryService.GetAllAsync();
+        return await inventoryService.GetAllAsync();
     }
 
     /// <summary>
@@ -43,7 +36,7 @@ public class InventoryController : ControllerBase
     [HttpGet("{productId}")]
     public async Task<ActionResult<InventoryItem>> GetByProductId(string productId)
     {
-        var item = await _inventoryService.GetByProductIdAsync(productId);
+        var item = await inventoryService.GetByProductIdAsync(productId);
         if (item is null) return NotFound();
         return item;
     }
@@ -58,7 +51,7 @@ public class InventoryController : ControllerBase
     [HttpPost("reserve")]
     public async Task<ActionResult<InventoryReservedEvent>> ReserveInventory([FromBody] OrderCreatedEvent orderEvent)
     {
-        var reservedEvent = await _inventoryService.ReserveInventoryAsync(orderEvent);
+        var reservedEvent = await inventoryService.ReserveInventoryAsync(orderEvent);
         return Ok(reservedEvent);
     }
 
@@ -70,7 +63,7 @@ public class InventoryController : ControllerBase
     [HttpPost("{productId}/restock")]
     public async Task<ActionResult> Restock(string productId, [FromBody] int additionalQuantity)
     {
-        var item = await _inventoryService.RestockAsync(productId, additionalQuantity);
+        var item = await inventoryService.RestockAsync(productId, additionalQuantity);
         if (item is null) return NotFound();
         return Ok(item);
     }

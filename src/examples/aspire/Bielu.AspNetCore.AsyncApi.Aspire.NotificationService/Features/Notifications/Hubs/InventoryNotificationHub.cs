@@ -14,15 +14,8 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifica
 /// </summary>
 [AsyncApi]
 [Channel("notifications/inventory-alerts", Servers = ["websocket"])]
-public class InventoryNotificationHub : Hub
+public class InventoryNotificationHub(ILogger<InventoryNotificationHub> logger) : Hub
 {
-    private readonly ILogger<InventoryNotificationHub> _logger;
-
-    public InventoryNotificationHub(ILogger<InventoryNotificationHub> logger)
-    {
-        _logger = logger;
-    }
-
     /// <summary>
     /// Sends an inventory alert notification to all connected clients.
     /// </summary>
@@ -31,7 +24,7 @@ public class InventoryNotificationHub : Hub
         Summary = "Receive real-time inventory level alerts via WebSocket")]
     public async Task SendInventoryAlert(InventoryAlertNotification notification)
     {
-        _logger.LogInformation("Broadcasting inventory alert for product {ProductId}: {Severity}",
+        logger.LogInformation("Broadcasting inventory alert for product {ProductId}: {Severity}",
             notification.ProductId, notification.Severity);
 
         await Clients.All.SendAsync("ReceiveInventoryAlert", notification);
@@ -46,20 +39,20 @@ public class InventoryNotificationHub : Hub
     public async Task SubscribeToProduct(string productId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"product-{productId}");
-        _logger.LogInformation("Client {ConnectionId} subscribed to product {ProductId}",
+        logger.LogInformation("Client {ConnectionId} subscribed to product {ProductId}",
             Context.ConnectionId, productId);
     }
 
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation("Client {ConnectionId} connected to InventoryNotificationHub",
+        logger.LogInformation("Client {ConnectionId} connected to InventoryNotificationHub",
             Context.ConnectionId);
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation("Client {ConnectionId} disconnected from InventoryNotificationHub",
+        logger.LogInformation("Client {ConnectionId} disconnected from InventoryNotificationHub",
             Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }

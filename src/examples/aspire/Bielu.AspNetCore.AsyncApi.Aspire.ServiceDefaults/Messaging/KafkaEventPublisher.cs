@@ -3,7 +3,9 @@
 
 using System.Diagnostics;
 using System.Text.Json;
+using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
@@ -12,23 +14,17 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
 /// Kafka-backed implementation of <see cref="IEventPublisher"/>.
 /// Handles serialization, tracing, and structured logging for all event publishing.
 /// </summary>
-public class KafkaEventPublisher : IEventPublisher
+public class KafkaEventPublisher(
+    [FromKeyedServices(DiagnosticsNames.Messaging)] ActivitySourceProvider activitySourceProvider,
+    IProducer<string, string> producer,
+    ILogger<KafkaEventPublisher> logger) : IEventPublisher
 {
-    private static readonly ActivitySource s_activitySource = new("MiniShop.Messaging");
-
-    private readonly IProducer<string, string> _producer;
-    private readonly ILogger<KafkaEventPublisher> _logger;
-
-    public KafkaEventPublisher(IProducer<string, string> producer, ILogger<KafkaEventPublisher> logger)
-    {
-        _producer = producer;
-        _logger = logger;
-    }
+    private readonly ActivitySource _activitySource = activitySourceProvider.ActivitySource;
 
     /// <inheritdoc />
     public async Task PublishAsync<TEvent>(string topic, string key, TEvent @event, CancellationToken cancellationToken = default)
     {
-        using var activity = s_activitySource.StartActivity($"Publish {topic}", ActivityKind.Producer);
+        using var activity = _activitySource.StartActivity($"Publish {topic}", ActivityKind.Producer);
         activity?.SetTag("messaging.system", "kafka");
         activity?.SetTag("messaging.destination", topic);
         activity?.SetTag("messaging.destination_kind", "topic");
@@ -36,14 +32,14 @@ public class KafkaEventPublisher : IEventPublisher
 
         var payload = JsonSerializer.Serialize(@event);
 
-        await _producer.ProduceAsync(topic,
+        await producer.ProduceAsync(topic,
             new Message<string, string>
             {
                 Key = key,
                 Value = payload
             }, cancellationToken);
 
-        _logger.LogInformation("Published {EventType} to {Topic} with key {Key}",
+        logger.LogInformation("Published {EventType} to {Topic} with key {Key}",
             typeof(TEvent).Name, topic, key);
     }
 }
