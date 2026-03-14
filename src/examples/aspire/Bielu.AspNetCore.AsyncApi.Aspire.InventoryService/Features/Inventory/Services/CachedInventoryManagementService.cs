@@ -17,28 +17,29 @@ public class CachedInventoryManagementService(
     ICacheService cache,
     ILogger<CachedInventoryManagementService> logger) : IInventoryManagementService
 {
+    private const string AllItemsCacheKey = "inventory:all";
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+
+    private static string ProductCacheKey(string productId) => $"inventory:{productId}";
 
     /// <inheritdoc />
     public async Task<IEnumerable<InventoryItem>> GetAllAsync()
     {
-        const string cacheKey = "inventory:all";
-
-        var cached = await cache.GetAsync<List<InventoryItem>>(cacheKey);
+        var cached = await cache.GetAsync<List<InventoryItem>>(AllItemsCacheKey);
         if (cached is not null)
             return cached;
 
         var result = await inner.GetAllAsync();
         var materialized = result.ToList();
 
-        await cache.SetAsync(cacheKey, materialized, CacheDuration);
+        await cache.SetAsync(AllItemsCacheKey, materialized, CacheDuration);
         return materialized;
     }
 
     /// <inheritdoc />
     public async Task<InventoryItem?> GetByProductIdAsync(string productId)
     {
-        var cacheKey = $"inventory:{productId}";
+        var cacheKey = ProductCacheKey(productId);
 
         var cached = await cache.GetAsync<InventoryItem>(cacheKey);
         if (cached is not null)
@@ -59,7 +60,7 @@ public class CachedInventoryManagementService(
         var result = await inner.ReserveInventoryAsync(orderEvent);
 
         // Invalidate caches after mutation
-        await cache.RemoveAsync([$"inventory:{orderEvent.ProductId}", "inventory:all"]);
+        await cache.RemoveAsync([ProductCacheKey(orderEvent.ProductId), AllItemsCacheKey]);
 
         return result;
     }
@@ -72,7 +73,7 @@ public class CachedInventoryManagementService(
         if (result is not null)
         {
             // Invalidate caches after mutation
-            await cache.RemoveAsync([$"inventory:{productId}", "inventory:all"]);
+            await cache.RemoveAsync([ProductCacheKey(productId), AllItemsCacheKey]);
         }
 
         return result;

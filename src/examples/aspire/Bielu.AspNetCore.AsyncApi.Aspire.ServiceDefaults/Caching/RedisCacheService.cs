@@ -26,7 +26,7 @@ public class RedisCacheService(
 
         try
         {
-            var result = JsonSerializer.Deserialize<T>(cached.ToString());
+            var result = JsonSerializer.Deserialize<T>((ReadOnlySpan<byte>)cached!);
             if (result is not null)
             {
                 logger.LogDebug("Cache hit for {CacheKey}", key);
@@ -60,7 +60,8 @@ public class RedisCacheService(
     public async Task RemoveAsync(IEnumerable<string> keys, CancellationToken cancellationToken = default)
     {
         var db = redis.GetDatabase();
-        await Task.WhenAll(keys.Select(k => db.KeyDeleteAsync(k).AsTask()));
+        var redisKeys = keys.Select(k => (RedisKey)k).ToArray();
+        await db.KeyDeleteAsync(redisKeys);
         logger.LogDebug("Invalidated cache keys: {CacheKeys}", string.Join(", ", keys));
     }
 }
