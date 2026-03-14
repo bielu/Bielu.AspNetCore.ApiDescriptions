@@ -38,12 +38,20 @@ var inventoryService = builder.AddProject<Projects.Bielu_AspNetCore_AsyncApi_Asp
     .WaitFor(kafka)
     .WaitFor(inventoryDb);
 
+var notificationService = builder.AddProject<Projects.Bielu_AspNetCore_AsyncApi_Aspire_NotificationService>("notificationservice")
+    .WithReference(kafka)
+    .WaitFor(kafka)
+    .WaitFor(orderService)
+    .WaitFor(inventoryService);
+
 // API Gateway with YARP reverse proxy and merged AsyncAPI documentation
 var apiGateway = builder.AddProject<Projects.Bielu_AspNetCore_AsyncApi_Aspire_ApiGateway>("apigateway")
     .WithReference(orderService)
     .WithReference(inventoryService)
+    .WithReference(notificationService)
     .WaitFor(orderService)
     .WaitFor(inventoryService)
+    .WaitFor(notificationService)
     .WithExternalHttpEndpoints();
 
 builder.Build().Run();

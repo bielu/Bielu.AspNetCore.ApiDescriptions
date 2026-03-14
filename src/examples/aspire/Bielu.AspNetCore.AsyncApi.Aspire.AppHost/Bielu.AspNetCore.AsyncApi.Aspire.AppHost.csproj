@@ -18,6 +18,7 @@
     <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.ApiGateway\Bielu.AspNetCore.AsyncApi.Aspire.ApiGateway.csproj" />
     <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.OrderService\Bielu.AspNetCore.AsyncApi.Aspire.OrderService.csproj" />
     <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.InventoryService\Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.csproj" />
+    <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.NotificationService\Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.csproj" />
   </ItemGroup>
 
 </Project>

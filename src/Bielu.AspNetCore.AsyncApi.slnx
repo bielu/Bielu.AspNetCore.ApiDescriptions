@@ -12,6 +12,7 @@
       <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.ApiGateway/Bielu.AspNetCore.AsyncApi.Aspire.ApiGateway.csproj" />
       <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.OrderService/Bielu.AspNetCore.AsyncApi.Aspire.OrderService.csproj" />
       <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.InventoryService/Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.csproj" />
+      <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.NotificationService/Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.csproj" />
     </Folder>
   </Folder>
   <Folder Name="/tests/">

@@ -43,5 +43,9 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
+    <!-- Aspire Client Integrations -->
+    <PackageVersion Include="Aspire.Confluent.Kafka" Version="13.1.2" />
+    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
+    <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.1.2" />
   </ItemGroup>
 </Project>
