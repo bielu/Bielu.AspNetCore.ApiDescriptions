@@ -54,14 +54,6 @@ dotnet restore
 The UI components require Node.js packages. Navigate to the UI directory and install dependencies:
 
 ```bash
-cd src/Saunter.UI
-npm ci
-cd ../..
-```
-
-Alternatively, for the newer Bielu.AspNetCore.AsyncApi.UI:
-
-```bash
 cd src/Bielu.AspNetCore.AsyncApi.UI
 npm install
 cd ../..
@@ -80,7 +72,7 @@ dotnet build
 Build the entire solution:
 
 ```bash
-dotnet build Saunter.sln
+dotnet build src/Bielu.AspNetCore.AsyncApi.slnx
 ```
 
 Build a specific project:
@@ -100,7 +92,7 @@ dotnet pack ./src/Bielu.AspNetCore.AsyncApi.UI/Bielu.AspNetCore.AsyncApi.UI.cspr
 ### Running the Example Application
 
 ```bash
-cd examples/StreetlightsAPI
+cd src/examples/StreetlightsAPI
 dotnet run
 ```
 
@@ -119,14 +111,11 @@ dotnet test
 ### Run Specific Test Projects
 
 ```bash
-# Unit tests
-dotnet test ./test/Saunter.Tests/Saunter.Tests.csproj
+# Core tests
+dotnet test ./test/Bielu.AspNetCore.AsyncApi.Tests/Bielu.AspNetCore.AsyncApi.Tests.csproj
 
-# Marker type tests
-dotnet test ./test/Saunter.Tests.MarkerTypeTests/Saunter.Tests.MarkerTypeTests.csproj
-
-# Integration tests
-dotnet test ./test/Saunter.IntegrationTests.ReverseProxy/
+# CLI tool tests
+dotnet test ./test/Bielu.AspNetCore.AsyncApi.Cli.Tests/Bielu.AspNetCore.AsyncApi.Cli.Tests.csproj
 ```
 
 ### Run Tests with Code Coverage
@@ -142,13 +131,13 @@ This project uses consistent code formatting enforced by `dotnet format`.
 ### Check Code Formatting
 
 ```bash
-dotnet format --verify-no-changes Saunter.sln
+dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx
 ```
 
 ### Apply Code Formatting
 
 ```bash
-dotnet format Saunter.sln
+dotnet format src/Bielu.AspNetCore.AsyncApi.slnx
 ```
 
 ### General Guidelines
@@ -173,7 +162,7 @@ dotnet format Saunter.sln
 
 3. **Check code formatting**:
    ```bash
-   dotnet format --verify-no-changes Saunter.sln
+   dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx
    ```
 
 4. **Update documentation** if you've changed public APIs
@@ -213,7 +202,7 @@ To update the version, modify this file before creating a release tag.
 
 ### CI Pipeline
 
-The CI workflow ([.github/workflows/ci.yaml](./.github/workflows/ci.yaml)) runs on:
+The CI workflow ([.github/workflows/buildAndPublishPackage.yml](./.github/workflows/buildAndPublishPackage.yml)) runs on:
 - Every push to `main`
 - Every pull request
 
