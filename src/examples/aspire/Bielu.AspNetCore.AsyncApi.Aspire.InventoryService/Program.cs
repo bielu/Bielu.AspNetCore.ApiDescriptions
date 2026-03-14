@@ -24,9 +24,15 @@ builder.AddKafkaConsumer<string, string>("kafka");
 // Register Aspire PostgreSQL with Entity Framework Core (connection managed by Aspire)
 builder.AddNpgsqlDbContext<InventoryDbContext>("inventorydb");
 
+// Register Aspire Valkey/Redis cache (connection managed by Aspire)
+builder.AddRedisClient("valkey");
+
 // Register service layer and metrics
 builder.Services.AddSingleton<InventoryMetrics>();
 builder.Services.AddScoped<IInventoryManagementService, InventoryManagementService>();
+
+// Decorate with Valkey caching (Scrutor decorator pattern)
+builder.Services.Decorate<IInventoryManagementService, CachedInventoryManagementService>();
 
 builder.Services.AddAsyncApi(options =>
 {

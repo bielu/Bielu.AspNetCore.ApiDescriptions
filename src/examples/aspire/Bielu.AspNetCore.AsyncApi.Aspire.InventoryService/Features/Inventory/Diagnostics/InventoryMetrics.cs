@@ -16,7 +16,6 @@ public sealed class InventoryMetrics
     private readonly Counter<long> _reservationsFailed;
     private readonly Counter<long> _restocks;
     private readonly Counter<long> _inventoryChanges;
-    private readonly Counter<long> _eventsPublished;
 
     public InventoryMetrics(IMeterFactory meterFactory)
     {
@@ -41,16 +40,10 @@ public sealed class InventoryMetrics
             "inventory.changes",
             unit: "{change}",
             description: "Total number of inventory quantity changes");
-
-        _eventsPublished = meter.CreateCounter<long>(
-            "inventory.events_published",
-            unit: "{event}",
-            description: "Total number of inventory events published to Kafka");
     }
 
     public void ReservationSucceeded() => _reservationsSucceeded.Add(1);
     public void ReservationFailed() => _reservationsFailed.Add(1);
     public void Restocked() => _restocks.Add(1);
     public void InventoryChanged(string productId) => _inventoryChanges.Add(1, new KeyValuePair<string, object?>("product_id", productId));
-    public void EventPublished(string topic) => _eventsPublished.Add(1, new KeyValuePair<string, object?>("topic", topic));
 }

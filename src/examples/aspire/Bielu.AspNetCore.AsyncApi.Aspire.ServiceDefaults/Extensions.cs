@@ -35,7 +35,8 @@ public static class Extensions
             http.AddServiceDiscovery();
         });
 
-        // Register the shared Kafka event publisher
+        // Register the shared Kafka event publisher and messaging metrics
+        builder.Services.AddSingleton<MessagingMetrics>();
         builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
         return builder;
@@ -58,7 +59,8 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    .AddMeter(Messaging.MessagingMetrics.MeterName);
             })
             .WithTracing(tracing =>
             {

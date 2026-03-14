@@ -105,7 +105,6 @@ public class OrderService(
 
         await eventPublisher.PublishAsync(OrderCreatedTopic, order.Id.ToString(), orderCreatedEvent);
         metrics.OrderCreated();
-        metrics.EventPublished(OrderCreatedTopic);
 
         logger.LogInformation("Order {OrderId} created and published to {Topic}", order.Id, OrderCreatedTopic);
 
@@ -148,7 +147,6 @@ public class OrderService(
 
         await eventPublisher.PublishAsync(OrderStatusChangedTopic, id.ToString(), statusChangedEvent);
         metrics.StatusUpdated();
-        metrics.EventPublished(OrderStatusChangedTopic);
 
         logger.LogInformation("Order {OrderId} status changed from {PreviousStatus} to {NewStatus}",
             id, previousStatus, newStatus);

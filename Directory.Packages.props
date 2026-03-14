@@ -47,5 +47,7 @@
     <PackageVersion Include="Aspire.Confluent.Kafka" Version="13.1.2" />
     <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
     <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.1.2" />
+    <!-- DI Decorator support -->
+    <PackageVersion Include="Scrutor" Version="7.0.0" />
   </ItemGroup>
 </Project>

@@ -35,8 +35,10 @@ var orderService = builder.AddProject<Projects.Bielu_AspNetCore_AsyncApi_Aspire_
 var inventoryService = builder.AddProject<Projects.Bielu_AspNetCore_AsyncApi_Aspire_InventoryService>("inventoryservice")
     .WithReference(kafka)
     .WithReference(inventoryDb)
+    .WithReference(valkey)
     .WaitFor(kafka)
-    .WaitFor(inventoryDb);
+    .WaitFor(inventoryDb)
+    .WaitFor(valkey);
 
 var notificationService = builder.AddProject<Projects.Bielu_AspNetCore_AsyncApi_Aspire_NotificationService>("notificationservice")
     .WithReference(kafka)

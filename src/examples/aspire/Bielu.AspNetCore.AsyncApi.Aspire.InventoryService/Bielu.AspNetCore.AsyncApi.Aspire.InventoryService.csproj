@@ -18,6 +18,8 @@
     <PackageReference Include="ByteBard.AsyncAPI.NET.Bindings" />
     <PackageReference Include="Aspire.Confluent.Kafka" />
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Aspire.StackExchange.Redis" />
+    <PackageReference Include="Scrutor" />
   </ItemGroup>
 
 </Project>

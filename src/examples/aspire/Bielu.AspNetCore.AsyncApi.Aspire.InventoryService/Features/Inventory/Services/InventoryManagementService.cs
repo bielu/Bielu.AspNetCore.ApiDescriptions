@@ -87,7 +87,6 @@ public class InventoryManagementService(
 
         // Publish event to Kafka
         await eventPublisher.PublishAsync(InventoryReservedTopic, orderEvent.OrderId.ToString(), reservedEvent);
-        metrics.EventPublished(InventoryReservedTopic);
 
         return reservedEvent;
     }
@@ -123,7 +122,6 @@ public class InventoryManagementService(
 
         metrics.Restocked();
         metrics.InventoryChanged(productId);
-        metrics.EventPublished(StockLevelChangedTopic);
 
         logger.LogInformation("Restocked {ProductId}: {Previous} -> {New}",
             productId, previousQuantity, item.QuantityAvailable);

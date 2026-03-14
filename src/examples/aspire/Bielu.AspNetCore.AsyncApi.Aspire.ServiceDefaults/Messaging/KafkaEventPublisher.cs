@@ -12,11 +12,12 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
 
 /// <summary>
 /// Kafka-backed implementation of <see cref="IEventPublisher"/>.
-/// Handles serialization, tracing, and structured logging for all event publishing.
+/// Handles serialization, tracing, metrics, and structured logging for all event publishing.
 /// </summary>
 public class KafkaEventPublisher(
     [FromKeyedServices(DiagnosticsNames.Messaging)] ActivitySourceProvider activitySourceProvider,
     IProducer<string, string> producer,
+    MessagingMetrics messagingMetrics,
     ILogger<KafkaEventPublisher> logger) : IEventPublisher
 {
     private readonly ActivitySource _activitySource = activitySourceProvider.ActivitySource;
@@ -38,6 +39,8 @@ public class KafkaEventPublisher(
                 Key = key,
                 Value = payload
             }, cancellationToken);
+
+        messagingMetrics.EventPublished(topic);
 
         logger.LogInformation("Published {EventType} to {Topic} with key {Key}",
             typeof(TEvent).Name, topic, key);

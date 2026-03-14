@@ -16,7 +16,6 @@ public sealed class OrderMetrics
     private readonly Counter<long> _ordersFailed;
     private readonly Counter<long> _statusUpdates;
     private readonly Counter<long> _statusUpdatesFailed;
-    private readonly Counter<long> _eventsPublished;
 
     public OrderMetrics(IMeterFactory meterFactory)
     {
@@ -41,16 +40,10 @@ public sealed class OrderMetrics
             "orders.status_update_failed",
             unit: "{order}",
             description: "Total number of failed order status updates");
-
-        _eventsPublished = meter.CreateCounter<long>(
-            "orders.events_published",
-            unit: "{event}",
-            description: "Total number of order events published to Kafka");
     }
 
     public void OrderCreated() => _ordersCreated.Add(1);
     public void OrderCreateFailed() => _ordersFailed.Add(1);
     public void StatusUpdated() => _statusUpdates.Add(1);
     public void StatusUpdateFailed() => _statusUpdatesFailed.Add(1);
-    public void EventPublished(string topic) => _eventsPublished.Add(1, new KeyValuePair<string, object?>("topic", topic));
 }
