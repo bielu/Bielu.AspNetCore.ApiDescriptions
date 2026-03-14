@@ -1,6 +1,6 @@
 # Bielu.AspNetCore.AsyncApi
 
-[![CI](https://github.com/bielu/Bielu.AspNetCore.AsyncApi/actions/workflows/ci.yaml/badge.svg)](https://github.com/bielu/Bielu.AspNetCore.AsyncApi/actions/workflows/ci.yaml)
+[![CI](https://github.com/bielu/Bielu.AspNetCore.AsyncApi/actions/workflows/buildAndPublishPackage.yml/badge.svg)](https://github.com/bielu/Bielu.AspNetCore.AsyncApi/actions/workflows/buildAndPublishPackage.yml)
 [![NuGet](https://img.shields.io/nuget/v/Bielu.AspNetCore.AsyncApi.svg)](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Bielu.AspNetCore.AsyncApi.svg)](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
