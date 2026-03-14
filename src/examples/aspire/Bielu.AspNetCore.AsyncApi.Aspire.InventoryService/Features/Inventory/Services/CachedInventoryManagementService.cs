@@ -111,8 +111,9 @@ public class CachedInventoryManagementService(
     private async Task InvalidateProductCacheAsync(string productId)
     {
         var db = redis.GetDatabase();
-        await db.KeyDeleteAsync($"inventory:{productId}");
-        await db.KeyDeleteAsync("inventory:all");
+        await Task.WhenAll(
+            db.KeyDeleteAsync($"inventory:{productId}"),
+            db.KeyDeleteAsync("inventory:all"));
         logger.LogDebug("Invalidated cache for product {ProductId}", productId);
     }
 }
