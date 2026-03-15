@@ -41,7 +41,7 @@ A distributed microservices example built with [.NET Aspire](https://learn.micro
 
 | Project | Description |
 |---------|-------------|
-| **AppHost** | Aspire orchestrator — wires Kafka, PostgreSQL, Valkey, Ozone (container), and all microservices |
+| **AppHost** | Aspire orchestrator — wires Kafka, PostgreSQL, Valkey, Ozone (multi-container), and all microservices |
 | **ServiceDefaults** | Shared configuration: OpenTelemetry, health checks, service discovery, resilience |
 | **OrderService** | Manages orders, publishes `OrderCreated` and `OrderStatusChanged` events to Kafka |
 | **InventoryService** | Manages inventory, subscribes to order events, publishes `InventoryReserved` and `StockLevelChanged` events |
@@ -53,8 +53,8 @@ A distributed microservices example built with [.NET Aspire](https://learn.micro
 |------------|------------|-------------|
 | **Kafka** | `Aspire.Hosting.Kafka` | Message broker for event-driven communication between services |
 | **PostgreSQL** | `Aspire.Hosting.PostgreSQL` | Relational database for order and inventory data |
-| **Valkey** | `Aspire.Hosting.Valkey` | Distributed cache (Redis-compatible) for Order Service |
-| **Apache Ozone** | Custom container (`AddContainer`) | S3-compatible distributed object storage — no official Aspire package |
+| **Valkey** | `Aspire.Hosting.Valkey` | Distributed cache (Redis-compatible) for Order and Inventory Services |
+| **Apache Ozone** | Custom containers (`AddContainer`) | S3-compatible distributed object storage (SCM, OM, DataNode, S3 Gateway) for Inventory Service |
 | **YARP** | `Yarp.ReverseProxy` NuGet | API Gateway / reverse proxy for routing and AsyncAPI doc aggregation |
 
 ## AsyncAPI Integration

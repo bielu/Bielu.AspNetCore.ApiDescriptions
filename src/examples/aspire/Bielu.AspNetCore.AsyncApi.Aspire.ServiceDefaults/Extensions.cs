@@ -36,13 +36,6 @@ public static class Extensions
             http.AddServiceDiscovery();
         });
 
-        // Register the shared Kafka event publisher and messaging metrics
-        builder.Services.AddSingleton<MessagingMetrics>();
-        builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
-
-        // Register the shared Redis/Valkey cache service
-        builder.Services.AddSingleton<ICacheService, RedisCacheService>();
-
         return builder;
     }
 
@@ -126,6 +119,31 @@ public static class Extensions
     {
         builder.Services.AddHealthChecks()
             .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers the shared Kafka event publisher and messaging metrics.
+    /// Call this only in services that use Kafka for publishing events.
+    /// Requires a Kafka producer to be registered via <c>AddKafkaProducer</c>.
+    /// </summary>
+    public static IHostApplicationBuilder AddMessaging(this IHostApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton<MessagingMetrics>();
+        builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers the shared Redis/Valkey cache service.
+    /// Call this only in services that use Redis/Valkey for caching.
+    /// Requires an <c>IConnectionMultiplexer</c> to be registered via <c>AddRedisClient</c>.
+    /// </summary>
+    public static IHostApplicationBuilder AddCaching(this IHostApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
         return builder;
     }

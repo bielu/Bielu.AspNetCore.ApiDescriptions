@@ -14,6 +14,8 @@ using ByteBard.AsyncAPI.Bindings.WebSockets;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddMessaging();
+builder.AddCaching();
 
 // Register custom metrics and tracing for this service
 builder.AddServiceMetrics(OrderMetrics.MeterName);
