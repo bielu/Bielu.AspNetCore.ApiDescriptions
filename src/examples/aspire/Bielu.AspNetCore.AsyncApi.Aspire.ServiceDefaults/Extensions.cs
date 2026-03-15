@@ -174,32 +174,27 @@ public static class Extensions
     /// On Linux the centos8 variant is preferred because it statically links SASL
     /// (avoiding the missing libsasl2.so.3 issue on Ubuntu 24.04+).
     /// On Windows/macOS the standard library is loaded from the runtimes directory.
+    /// NOTE: Uses ProcessArchitecture (not OSArchitecture) because the native DLL must
+    /// match the running process — e.g., x64 .NET on Windows ARM64 needs win-x64 binaries.
+    /// librdkafka.redist 2.12.0 ships: linux-arm64, linux-x64, osx-arm64, osx-x64,
+    /// win-x64, win-x86. Notably win-arm64 is NOT shipped — Windows ARM64 users must
+    /// use the x64 .NET SDK (runs under emulation) until upstream adds win-arm64 support.
     /// See: https://github.com/confluentinc/confluent-kafka-dotnet/issues/778
     /// </summary>
     private static void EnsureLibrdkafka()
     {
-        string? path = null;
+        IntPtr handle = IntPtr.Zero;
         string baseDir = AppContext.BaseDirectory;
 
-        if (OperatingSystem.IsLinux())
+        foreach (var candidate in GetLibrdkafkaCandidates(baseDir))
         {
-            var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
-            var centos8 = Path.Combine(baseDir, "runtimes", arch, "native", "centos8-librdkafka.so");
-            path = File.Exists(centos8) ? centos8 : Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.so");
-        }
-        else if (OperatingSystem.IsWindows())
-        {
-            var arch = RuntimeInformation.OSArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
-            path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dll");
-        }
-        else if (OperatingSystem.IsMacOS())
-        {
-            var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
-            path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dylib");
+            if (File.Exists(candidate) && NativeLibrary.TryLoad(candidate, out handle))
+            {
+                break;
+            }
         }
 
-        if (path == null || !File.Exists(path) ||
-            !NativeLibrary.TryLoad(path, out var handle))
+        if (handle == IntPtr.Zero)
         {
             return;
         }
@@ -213,6 +208,40 @@ public static class Extensions
         catch (InvalidOperationException)
         {
             // A resolver is already registered for this assembly (e.g., called from AppHost) — safe to ignore
+        }
+    }
+
+    /// <summary>
+    /// Returns candidate native library paths in priority order for the current platform.
+    /// </summary>
+    private static IEnumerable<string> GetLibrdkafkaCandidates(string baseDir)
+    {
+        var arch = RuntimeInformation.ProcessArchitecture;
+
+        if (OperatingSystem.IsLinux())
+        {
+            var rid = arch == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
+            // centos8 variant has SASL statically linked (no libsasl2.so.3 dependency)
+            yield return Path.Combine(baseDir, "runtimes", rid, "native", "centos8-librdkafka.so");
+            yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.so");
+        }
+        else if (OperatingSystem.IsWindows())
+        {
+            var rid = arch switch
+            {
+                Architecture.X86 => "win-x86",
+                Architecture.Arm64 => "win-arm64",
+                _ => "win-x64",
+            };
+            yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.dll");
+            // Fallback: on ARM64 try x64 (works when process runs under x64 emulation)
+            if (rid != "win-x64")
+                yield return Path.Combine(baseDir, "runtimes", "win-x64", "native", "librdkafka.dll");
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            var rid = arch == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
+            yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.dylib");
         }
     }
 }

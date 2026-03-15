@@ -125,33 +125,54 @@ static IResourceBuilder<ContainerResource> WithOzoneConfig(IResourceBuilder<Cont
 // Pre-loads the correct librdkafka native library variant for the current platform.
 // Returns an IntPtr handle on success, or IntPtr.Zero if no pre-loading is needed
 // (e.g., the default P/Invoke search will find the library on its own).
+// NOTE: Uses ProcessArchitecture (not OSArchitecture) because the native DLL must
+// match the running process — e.g., x64 .NET on Windows ARM64 needs win-x64 binaries.
 static IntPtr PreloadLibrdkafka()
 {
-    string? path = null;
     string baseDir = AppContext.BaseDirectory;
 
-    if (OperatingSystem.IsLinux())
+    foreach (var candidate in GetLibrdkafkaCandidates(baseDir))
     {
-        // centos8 variant has SASL statically linked (no libsasl2.so.3 dependency)
-        var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
-        var centos8 = Path.Combine(baseDir, "runtimes", arch, "native", "centos8-librdkafka.so");
-        path = File.Exists(centos8) ? centos8 : Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.so");
-    }
-    else if (OperatingSystem.IsWindows())
-    {
-        var arch = RuntimeInformation.OSArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
-        path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dll");
-    }
-    else if (OperatingSystem.IsMacOS())
-    {
-        var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
-        path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dylib");
-    }
-
-    if (path != null && File.Exists(path) && NativeLibrary.TryLoad(path, out var handle))
-    {
-        return handle;
+        if (File.Exists(candidate) && NativeLibrary.TryLoad(candidate, out var handle))
+        {
+            return handle;
+        }
     }
 
     return IntPtr.Zero;
+}
+
+// Returns candidate paths in priority order for the current platform.
+// librdkafka.redist 2.12.0 ships: linux-arm64, linux-x64, osx-arm64, osx-x64, win-x64, win-x86.
+// Notably win-arm64 is NOT shipped — Windows ARM64 users must use the x64 .NET SDK
+// (runs under emulation) until upstream adds win-arm64 support.
+static IEnumerable<string> GetLibrdkafkaCandidates(string baseDir)
+{
+    var arch = RuntimeInformation.ProcessArchitecture;
+
+    if (OperatingSystem.IsLinux())
+    {
+        var rid = arch == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
+        // centos8 variant has SASL statically linked (no libsasl2.so.3 dependency)
+        yield return Path.Combine(baseDir, "runtimes", rid, "native", "centos8-librdkafka.so");
+        yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.so");
+    }
+    else if (OperatingSystem.IsWindows())
+    {
+        var rid = arch switch
+        {
+            Architecture.X86 => "win-x86",
+            Architecture.Arm64 => "win-arm64",
+            _ => "win-x64",
+        };
+        yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.dll");
+        // Fallback: on ARM64 try x64 (works when process runs under x64 emulation)
+        if (rid != "win-x64")
+            yield return Path.Combine(baseDir, "runtimes", "win-x64", "native", "librdkafka.dll");
+    }
+    else if (OperatingSystem.IsMacOS())
+    {
+        var rid = arch == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
+        yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.dylib");
+    }
 }
