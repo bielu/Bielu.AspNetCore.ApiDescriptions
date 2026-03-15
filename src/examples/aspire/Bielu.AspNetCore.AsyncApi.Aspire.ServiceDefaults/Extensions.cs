@@ -26,6 +26,10 @@ public static class Extensions
     /// </summary>
     public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
     {
+        // Ensure librdkafka native library is pre-loaded with a compatible variant
+        // before any Confluent.Kafka type is used (including Aspire health checks).
+        EnsureLibrdkafka();
+
         builder.ConfigureOpenTelemetry();
         builder.AddDefaultHealthChecks();
         builder.Services.AddServiceDiscovery();
@@ -160,5 +164,45 @@ public static class Extensions
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Workaround for librdkafka native library loading issue on some Linux distributions.
+    /// The default librdkafka.so links against libsasl2.so.3 which may not be available
+    /// (e.g., Ubuntu 24.04 ships libsasl2.so.2). The centos8 variant has SASL statically linked.
+    /// Must be called before any Confluent.Kafka type is used (including Aspire health checks).
+    /// See: https://github.com/confluentinc/confluent-kafka-dotnet/issues/778
+    /// </summary>
+    private static void EnsureLibrdkafka()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        var centos8Path = Path.Combine(AppContext.BaseDirectory, "runtimes", "linux-x64", "native", "centos8-librdkafka.so");
+        if (!File.Exists(centos8Path))
+        {
+            return;
+        }
+
+        var confluentAssembly = typeof(Confluent.Kafka.ProducerBuilder<string, string>).Assembly;
+        try
+        {
+            System.Runtime.InteropServices.NativeLibrary.SetDllImportResolver(confluentAssembly,
+                (libraryName, assembly, searchPath) =>
+                {
+                    if (libraryName == "librdkafka" &&
+                        System.Runtime.InteropServices.NativeLibrary.TryLoad(centos8Path, out var handle))
+                    {
+                        return handle;
+                    }
+                    return IntPtr.Zero;
+                });
+        }
+        catch (InvalidOperationException)
+        {
+            // A resolver is already registered for this assembly (e.g., called from AppHost) — safe to ignore
+        }
     }
 }

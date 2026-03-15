@@ -1,6 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
+
+// Workaround for librdkafka native library loading issue on some Linux distributions.
+// The default librdkafka.so links against libsasl2.so.3 which may not be available
+// (e.g., Ubuntu 24.04 ships libsasl2.so.2 instead). The centos8 variant of librdkafka
+// has SASL statically linked and doesn't have this external dependency.
+// This resolver must be registered before any Confluent.Kafka type is used (including
+// the health check registered by Aspire.Hosting.Kafka).
+// See: https://github.com/confluentinc/confluent-kafka-dotnet/issues/778
+if (OperatingSystem.IsLinux())
+{
+    var centos8Path = Path.Combine(AppContext.BaseDirectory, "runtimes", "linux-x64", "native", "centos8-librdkafka.so");
+    if (File.Exists(centos8Path))
+    {
+        var confluentAssembly = typeof(Confluent.Kafka.ProducerBuilder<string, string>).Assembly;
+        NativeLibrary.SetDllImportResolver(confluentAssembly, (libraryName, assembly, searchPath) =>
+        {
+            if (libraryName == "librdkafka" &&
+                NativeLibrary.TryLoad(centos8Path, out var handle))
+            {
+                return handle;
+            }
+            return IntPtr.Zero;
+        });
+    }
+}
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Infrastructure services
