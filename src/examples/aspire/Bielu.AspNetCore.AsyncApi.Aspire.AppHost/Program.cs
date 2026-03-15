@@ -35,7 +35,8 @@ var ozoneOm = WithOzoneConfig(builder.AddContainer("ozone-om", ozoneImage, ozone
     .WaitFor(ozoneScm);
 
 var ozoneDatanode = WithOzoneConfig(builder.AddContainer("ozone-datanode", ozoneImage, ozoneTag))
-    .WithArgs("ozone", "datanode");
+    .WithArgs("ozone", "datanode")
+    .WaitFor(ozoneScm);
 
 var ozoneS3g = WithOzoneConfig(builder.AddContainer("ozone-s3g", ozoneImage, ozoneTag))
     .WithHttpEndpoint(targetPort: 9878, name: "ozone-s3")
@@ -81,6 +82,8 @@ var apiGateway = builder.AddProject<Projects.Bielu_AspNetCore_AsyncApi_Aspire_Ap
 builder.Build().Run();
 
 // Applies the common Ozone environment variables shared by all Ozone containers.
+// The "OZONE-SITE.XML_" prefix is an Apache Ozone convention — the Docker entrypoint
+// converts these environment variables into ozone-site.xml configuration entries.
 // See: https://github.com/apache/ozone-docker/blob/latest/docker-compose.yaml
 static IResourceBuilder<ContainerResource> WithOzoneConfig(IResourceBuilder<ContainerResource> container)
 {
