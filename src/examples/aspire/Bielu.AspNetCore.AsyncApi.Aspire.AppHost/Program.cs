@@ -5,8 +5,12 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 // Infrastructure services
 
-// Kafka message broker (official Aspire hosting package)
-var kafka = builder.AddKafka("kafka");
+// Kafka message broker (official Aspire hosting package — provides the Apache Kafka broker
+// that is a prerequisite for Aspire.Confluent.Kafka connectors used by the services).
+// Uses confluentinc/confluent-local Docker image with KRaft mode (no ZooKeeper needed).
+var kafka = builder.AddKafka("kafka")
+    .WithKafkaUI()
+    .WithDataVolume();
 
 // PostgreSQL database (official Aspire hosting package)
 var postgres = builder.AddPostgres("postgres");

@@ -17,8 +17,9 @@ builder.AddServiceDefaults();
 builder.AddServiceMetrics(NotificationMetrics.MeterName);
 builder.AddServiceTracing(DiagnosticsNames.NotificationService);
 
-// Register Aspire Confluent Kafka consumer (connection managed by Aspire)
-builder.AddKafkaConsumer<string, string>("kafka");
+// Register Aspire Confluent Kafka consumer (connects to the Kafka broker provided by AppHost).
+// Client-side health checks are disabled because the AppHost already monitors broker health via WaitFor.
+builder.AddKafkaConsumer<string, string>("kafka", settings => settings.DisableHealthChecks = true);
 
 builder.Services.AddSignalR();
 
