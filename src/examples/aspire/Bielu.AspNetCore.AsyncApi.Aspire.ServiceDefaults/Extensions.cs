@@ -234,8 +234,9 @@ public static class Extensions
                 _ => "win-x64",
             };
             yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.dll");
-            // Fallback: on ARM64 try x64 (works when process runs under x64 emulation)
-            if (rid != "win-x64")
+            // Fallback: win-arm64 is not shipped by librdkafka.redist — try win-x64 which may
+            // work if the ARM64 process was actually launched under x64 emulation.
+            if (rid == "win-arm64")
                 yield return Path.Combine(baseDir, "runtimes", "win-x64", "native", "librdkafka.dll");
         }
         else if (OperatingSystem.IsMacOS())
