@@ -167,38 +167,50 @@ public static class Extensions
     }
 
     /// <summary>
-    /// Workaround for librdkafka native library loading issue on some Linux distributions.
-    /// The default librdkafka.so links against libsasl2.so.3 which may not be available
-    /// (e.g., Ubuntu 24.04 ships libsasl2.so.2). The centos8 variant has SASL statically linked.
-    /// Must be called before any Confluent.Kafka type is used (including Aspire health checks).
+    /// Pre-loads the correct librdkafka native library variant for the current platform
+    /// and registers a DLL import resolver so that Confluent.Kafka's P/Invoke calls
+    /// resolve to the pre-loaded library.
+    /// On Linux the centos8 variant is preferred because it statically links SASL
+    /// (avoiding the missing libsasl2.so.3 issue on Ubuntu 24.04+).
+    /// On Windows/macOS the standard library is loaded from the runtimes directory.
     /// See: https://github.com/confluentinc/confluent-kafka-dotnet/issues/778
     /// </summary>
     private static void EnsureLibrdkafka()
     {
-        if (!OperatingSystem.IsLinux())
+        string? path = null;
+        string baseDir = AppContext.BaseDirectory;
+
+        if (OperatingSystem.IsLinux())
+        {
+            var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.Arm64
+                ? "linux-arm64" : "linux-x64";
+            var centos8 = Path.Combine(baseDir, "runtimes", arch, "native", "centos8-librdkafka.so");
+            path = File.Exists(centos8) ? centos8 : Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.so");
+        }
+        else if (OperatingSystem.IsWindows())
+        {
+            var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.X86
+                ? "win-x86" : "win-x64";
+            path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dll");
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.Arm64
+                ? "osx-arm64" : "osx-x64";
+            path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dylib");
+        }
+
+        if (path == null || !File.Exists(path) ||
+            !System.Runtime.InteropServices.NativeLibrary.TryLoad(path, out var handle))
         {
             return;
         }
 
-        var centos8Path = Path.Combine(AppContext.BaseDirectory, "runtimes", "linux-x64", "native", "centos8-librdkafka.so");
-        if (!File.Exists(centos8Path))
-        {
-            return;
-        }
-
-        var confluentAssembly = typeof(Confluent.Kafka.ProducerBuilder<string, string>).Assembly;
         try
         {
-            System.Runtime.InteropServices.NativeLibrary.SetDllImportResolver(confluentAssembly,
-                (libraryName, assembly, searchPath) =>
-                {
-                    if (libraryName == "librdkafka" &&
-                        System.Runtime.InteropServices.NativeLibrary.TryLoad(centos8Path, out var handle))
-                    {
-                        return handle;
-                    }
-                    return IntPtr.Zero;
-                });
+            System.Runtime.InteropServices.NativeLibrary.SetDllImportResolver(
+                typeof(Confluent.Kafka.ProducerBuilder<string, string>).Assembly,
+                (libraryName, _, _) => libraryName == "librdkafka" ? handle : IntPtr.Zero);
         }
         catch (InvalidOperationException)
         {

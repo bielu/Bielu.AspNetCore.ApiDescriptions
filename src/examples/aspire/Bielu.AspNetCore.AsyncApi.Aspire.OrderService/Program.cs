@@ -21,8 +21,10 @@ builder.AddCaching();
 builder.AddServiceMetrics(OrderMetrics.MeterName);
 builder.AddServiceTracing(DiagnosticsNames.OrderService);
 
-// Register Aspire Confluent Kafka producer (connects to the Kafka broker provided by AppHost)
-builder.AddKafkaProducer<string, string>("kafka");
+// Register Aspire Confluent Kafka producer (connects to the Kafka broker provided by AppHost).
+// Client-side health checks are disabled to avoid loading the librdkafka native library
+// during health checks; the AppHost already monitors broker readiness via WaitFor.
+builder.AddKafkaProducer<string, string>("kafka", settings => settings.DisableHealthChecks = true);
 
 // Register Aspire PostgreSQL with Entity Framework Core (connection managed by Aspire)
 builder.AddNpgsqlDbContext<OrderDbContext>("ordersdb");

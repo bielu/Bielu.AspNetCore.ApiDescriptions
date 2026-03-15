@@ -3,29 +3,21 @@
 
 using System.Runtime.InteropServices;
 
-// Workaround for librdkafka native library loading issue on some Linux distributions.
-// The default librdkafka.so links against libsasl2.so.3 which may not be available
-// (e.g., Ubuntu 24.04 ships libsasl2.so.2 instead). The centos8 variant of librdkafka
-// has SASL statically linked and doesn't have this external dependency.
-// This resolver must be registered before any Confluent.Kafka type is used (including
-// the health check registered by Aspire.Hosting.Kafka).
+// Workaround for librdkafka native library loading on platforms where the default
+// P/Invoke search path does not find the library or its dependencies.
+// On Linux the default librdkafka.so requires libsasl2.so.3 which may be absent;
+// the centos8 variant statically links SASL and has no such dependency.
+// On Windows/macOS the library may not be found via default search paths when
+// running from the Aspire AppHost.
+// Pre-loading ensures the library is available before Aspire.Hosting.Kafka registers
+// its HealthChecks.Kafka health check (used by WaitFor).
 // See: https://github.com/confluentinc/confluent-kafka-dotnet/issues/778
-if (OperatingSystem.IsLinux())
+var librdkafkaHandle = PreloadLibrdkafka();
+if (librdkafkaHandle != IntPtr.Zero)
 {
-    var centos8Path = Path.Combine(AppContext.BaseDirectory, "runtimes", "linux-x64", "native", "centos8-librdkafka.so");
-    if (File.Exists(centos8Path))
-    {
-        var confluentAssembly = typeof(Confluent.Kafka.ProducerBuilder<string, string>).Assembly;
-        NativeLibrary.SetDllImportResolver(confluentAssembly, (libraryName, assembly, searchPath) =>
-        {
-            if (libraryName == "librdkafka" &&
-                NativeLibrary.TryLoad(centos8Path, out var handle))
-            {
-                return handle;
-            }
-            return IntPtr.Zero;
-        });
-    }
+    NativeLibrary.SetDllImportResolver(
+        typeof(Confluent.Kafka.ProducerBuilder<string, string>).Assembly,
+        (libraryName, _, _) => libraryName == "librdkafka" ? librdkafkaHandle : IntPtr.Zero);
 }
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -128,4 +120,38 @@ static IResourceBuilder<ContainerResource> WithOzoneConfig(IResourceBuilder<Cont
         .WithEnvironment("OZONE-SITE.XML_ozone.scm.block.client.address", "ozone-scm")
         .WithEnvironment("OZONE-SITE.XML_ozone.scm.datanode.id.dir", "/data/metadata")
         .WithEnvironment("OZONE-SITE.XML_ozone.replication", "1");
+}
+
+// Pre-loads the correct librdkafka native library variant for the current platform.
+// Returns an IntPtr handle on success, or IntPtr.Zero if no pre-loading is needed
+// (e.g., the default P/Invoke search will find the library on its own).
+static IntPtr PreloadLibrdkafka()
+{
+    string? path = null;
+    string baseDir = AppContext.BaseDirectory;
+
+    if (OperatingSystem.IsLinux())
+    {
+        // centos8 variant has SASL statically linked (no libsasl2.so.3 dependency)
+        var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
+        var centos8 = Path.Combine(baseDir, "runtimes", arch, "native", "centos8-librdkafka.so");
+        path = File.Exists(centos8) ? centos8 : Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.so");
+    }
+    else if (OperatingSystem.IsWindows())
+    {
+        var arch = RuntimeInformation.OSArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
+        path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dll");
+    }
+    else if (OperatingSystem.IsMacOS())
+    {
+        var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
+        path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dylib");
+    }
+
+    if (path != null && File.Exists(path) && NativeLibrary.TryLoad(path, out var handle))
+    {
+        return handle;
+    }
+
+    return IntPtr.Zero;
 }
