@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Caching;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
@@ -182,33 +183,30 @@ public static class Extensions
 
         if (OperatingSystem.IsLinux())
         {
-            var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.Arm64
-                ? "linux-arm64" : "linux-x64";
+            var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
             var centos8 = Path.Combine(baseDir, "runtimes", arch, "native", "centos8-librdkafka.so");
             path = File.Exists(centos8) ? centos8 : Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.so");
         }
         else if (OperatingSystem.IsWindows())
         {
-            var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.X86
-                ? "win-x86" : "win-x64";
+            var arch = RuntimeInformation.OSArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
             path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dll");
         }
         else if (OperatingSystem.IsMacOS())
         {
-            var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.Arm64
-                ? "osx-arm64" : "osx-x64";
+            var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
             path = Path.Combine(baseDir, "runtimes", arch, "native", "librdkafka.dylib");
         }
 
         if (path == null || !File.Exists(path) ||
-            !System.Runtime.InteropServices.NativeLibrary.TryLoad(path, out var handle))
+            !NativeLibrary.TryLoad(path, out var handle))
         {
             return;
         }
 
         try
         {
-            System.Runtime.InteropServices.NativeLibrary.SetDllImportResolver(
+            NativeLibrary.SetDllImportResolver(
                 typeof(Confluent.Kafka.ProducerBuilder<string, string>).Assembly,
                 (libraryName, _, _) => libraryName == "librdkafka" ? handle : IntPtr.Zero);
         }
