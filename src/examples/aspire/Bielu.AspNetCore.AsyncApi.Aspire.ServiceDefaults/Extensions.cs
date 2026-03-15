@@ -64,7 +64,7 @@ public static class Extensions
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation()
-                    .AddMeter(Messaging.MessagingMetrics.MeterName);
+                    .AddMeter(MessagingMetrics.MeterName);
             })
             .WithTracing(tracing =>
             {

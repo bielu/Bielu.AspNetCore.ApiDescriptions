@@ -46,7 +46,7 @@ public class RedisCacheService(
     {
         var db = redis.GetDatabase();
         var payload = JsonSerializer.Serialize(value);
-        await db.StringSetAsync(key, payload, expiration);
+        await db.StringSetAsync(key, payload, new Expiration(expiration ?? TimeSpan.FromHours(1)));
     }
 
     /// <inheritdoc />
