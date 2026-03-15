@@ -125,7 +125,7 @@ public static class Extensions
 
     /// <summary>
     /// Registers the shared Kafka event publisher and messaging metrics.
-    /// Call this only in services that use Kafka for publishing events.
+    /// Call this in services that publish events via Kafka.
     /// Requires a Kafka producer to be registered via <c>AddKafkaProducer</c>.
     /// </summary>
     public static IHostApplicationBuilder AddMessaging(this IHostApplicationBuilder builder)
