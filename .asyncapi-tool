@@ -3,11 +3,15 @@ description: A library that provides built-in support for generating AsyncAPI do
 links:
   repoUrl: https://github.com/bielu/Bielu.AspNetCore.AsyncApi
 filters:
-  language: c#
+  language: C#
   technology:
-    - ASP.NET Core
+    - ASP.NET
     - .NET
   categories:
     - code-first
     - documentation-generator
+    - cli
+    - framework
+    - ui-component
+    - bundler
   hasCommercial: false
