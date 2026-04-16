@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Caching;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
@@ -26,6 +27,10 @@ public static class Extensions
     /// </summary>
     public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
     {
+        // Ensure librdkafka native library is pre-loaded with a compatible variant
+        // before any Confluent.Kafka type is used (including Aspire health checks).
+        EnsureLibrdkafka();
+
         builder.ConfigureOpenTelemetry();
         builder.AddDefaultHealthChecks();
         builder.Services.AddServiceDiscovery();
@@ -35,13 +40,6 @@ public static class Extensions
             http.AddStandardResilienceHandler();
             http.AddServiceDiscovery();
         });
-
-        // Register the shared Kafka event publisher and messaging metrics
-        builder.Services.AddSingleton<MessagingMetrics>();
-        builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
-
-        // Register the shared Redis/Valkey cache service
-        builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
         return builder;
     }
@@ -131,6 +129,31 @@ public static class Extensions
     }
 
     /// <summary>
+    /// Registers the shared Kafka event publisher and messaging metrics.
+    /// Call this in services that publish events via Kafka.
+    /// Requires a Kafka producer to be registered via <c>AddKafkaProducer</c>.
+    /// </summary>
+    public static IHostApplicationBuilder AddMessaging(this IHostApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton<MessagingMetrics>();
+        builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers the shared Redis/Valkey cache service.
+    /// Call this only in services that use Redis/Valkey for caching.
+    /// Requires an <c>IConnectionMultiplexer</c> to be registered via <c>AddRedisClient</c>.
+    /// </summary>
+    public static IHostApplicationBuilder AddCaching(this IHostApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+
+        return builder;
+    }
+
+    /// <summary>
     /// Maps default health check endpoints for readiness and liveness probes.
     /// </summary>
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
@@ -142,5 +165,84 @@ public static class Extensions
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Pre-loads the correct librdkafka native library variant for the current platform
+    /// and registers a DLL import resolver so that Confluent.Kafka's P/Invoke calls
+    /// resolve to the pre-loaded library.
+    /// On Linux the centos8 variant is preferred because it statically links SASL
+    /// (avoiding the missing libsasl2.so.3 issue on Ubuntu 24.04+).
+    /// On Windows/macOS the standard library is loaded from the runtimes directory.
+    /// NOTE: Uses ProcessArchitecture (not OSArchitecture) because the native DLL must
+    /// match the running process — e.g., x64 .NET on Windows ARM64 needs win-x64 binaries.
+    /// librdkafka.redist 2.12.0 ships: linux-arm64, linux-x64, osx-arm64, osx-x64,
+    /// win-x64, win-x86. Notably win-arm64 is NOT shipped — Windows ARM64 users must
+    /// use the x64 .NET SDK (runs under emulation) until upstream adds win-arm64 support.
+    /// See: https://github.com/confluentinc/confluent-kafka-dotnet/issues/778
+    /// </summary>
+    private static void EnsureLibrdkafka()
+    {
+        IntPtr handle = IntPtr.Zero;
+        string baseDir = AppContext.BaseDirectory;
+
+        foreach (var candidate in GetLibrdkafkaCandidates(baseDir))
+        {
+            if (File.Exists(candidate) && NativeLibrary.TryLoad(candidate, out handle))
+            {
+                break;
+            }
+        }
+
+        if (handle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            NativeLibrary.SetDllImportResolver(
+                typeof(Confluent.Kafka.ProducerBuilder<string, string>).Assembly,
+                (libraryName, _, _) => libraryName == "librdkafka" ? handle : IntPtr.Zero);
+        }
+        catch (InvalidOperationException)
+        {
+            // A resolver is already registered for this assembly (e.g., called from AppHost) — safe to ignore
+        }
+    }
+
+    /// <summary>
+    /// Returns candidate native library paths in priority order for the current platform.
+    /// </summary>
+    private static IEnumerable<string> GetLibrdkafkaCandidates(string baseDir)
+    {
+        var arch = RuntimeInformation.ProcessArchitecture;
+
+        if (OperatingSystem.IsLinux())
+        {
+            var rid = arch == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
+            // centos8 variant has SASL statically linked (no libsasl2.so.3 dependency)
+            yield return Path.Combine(baseDir, "runtimes", rid, "native", "centos8-librdkafka.so");
+            yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.so");
+        }
+        else if (OperatingSystem.IsWindows())
+        {
+            var rid = arch switch
+            {
+                Architecture.X86 => "win-x86",
+                Architecture.Arm64 => "win-arm64",
+                _ => "win-x64",
+            };
+            yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.dll");
+            // Fallback: win-arm64 is not shipped by librdkafka.redist — try win-x64 which may
+            // work if the ARM64 process was actually launched under x64 emulation.
+            if (rid == "win-arm64")
+                yield return Path.Combine(baseDir, "runtimes", "win-x64", "native", "librdkafka.dll");
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            var rid = arch == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
+            yield return Path.Combine(baseDir, "runtimes", rid, "native", "librdkafka.dylib");
+        }
     }
 }

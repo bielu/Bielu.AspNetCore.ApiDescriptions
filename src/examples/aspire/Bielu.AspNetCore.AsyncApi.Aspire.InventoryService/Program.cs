@@ -12,14 +12,18 @@ using ByteBard.AsyncAPI.Bindings.Kafka;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddMessaging();
+builder.AddCaching();
 
 // Register custom metrics and tracing for this service
 builder.AddServiceMetrics(InventoryMetrics.MeterName);
 builder.AddServiceTracing(DiagnosticsNames.InventoryService);
 
-// Register Aspire Confluent Kafka producer and consumer (connection managed by Aspire)
-builder.AddKafkaProducer<string, string>("kafka");
-builder.AddKafkaConsumer<string, string>("kafka");
+// Register Aspire Confluent Kafka producer and consumer (connects to the Kafka broker provided by AppHost).
+// Client-side health checks are disabled to avoid loading the librdkafka native library
+// during health checks; the AppHost already monitors broker readiness via WaitFor.
+builder.AddKafkaProducer<string, string>("kafka", settings => settings.DisableHealthChecks = true);
+builder.AddKafkaConsumer<string, string>("kafka", settings => settings.DisableHealthChecks = true);
 
 // Register Aspire PostgreSQL with Entity Framework Core (connection managed by Aspire)
 builder.AddNpgsqlDbContext<InventoryDbContext>("inventorydb");
@@ -45,7 +49,7 @@ builder.Services.AddAsyncApi(options =>
         .WithInfo("Inventory Service", "1.0.0")
         .WithDescription(
             "Inventory Service API — manages product inventory and reacts to order events via Kafka. " +
-            "Data is persisted to PostgreSQL (EF Core). Uses Apache Ozone for document storage.")
+            "Data is persisted to PostgreSQL (EF Core) and cached in Valkey. Uses Apache Ozone for document storage.")
         .WithLicense("Apache 2.0", "https://www.apache.org/licenses/LICENSE-2.0");
 
     options.AddChannelBinding("kafkaInventoryChannel",

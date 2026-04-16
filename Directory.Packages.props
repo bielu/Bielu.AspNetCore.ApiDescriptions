@@ -45,6 +45,7 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
     <!-- Aspire Client Integrations -->
     <PackageVersion Include="Aspire.Confluent.Kafka" Version="13.1.2" />
+    <PackageVersion Include="Confluent.Kafka" Version="2.12.0" />
     <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
     <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.1.2" />
     <PackageVersion Include="StackExchange.Redis" Version="2.12.1" />
