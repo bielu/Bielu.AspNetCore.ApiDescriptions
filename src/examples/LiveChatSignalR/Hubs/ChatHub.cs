@@ -40,6 +40,21 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
         Description = "The server receives a SendMessageRequest, wraps it in a ChatMessage and pushes it to the 'ReceiveMessage' client method for every member of the chat.")]
     public async Task SendMessage(SendMessageRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.ChatId))
+        {
+            throw new HubException("ChatId is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Content))
+        {
+            throw new HubException("Message content cannot be empty.");
+        }
+
+        if (request.Content.Length > 2000)
+        {
+            throw new HubException("Message content cannot exceed 2000 characters.");
+        }
+
         var message = new ChatMessage
         {
             ChatId = request.ChatId,
@@ -75,6 +90,11 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
         Description = "Adds the caller to the chat group. All chat members (including the caller) receive a UserPresenceEvent confirming the join. Subsequently the caller receives ChatMessage events via 'ReceiveMessage'.")]
     public async Task JoinChat(string chatId)
     {
+        if (string.IsNullOrWhiteSpace(chatId))
+        {
+            throw new HubException("ChatId is required.");
+        }
+
         var username = Context.User!.Identity!.Name!;
         await Groups.AddToGroupAsync(Context.ConnectionId, chatId);
 
@@ -106,6 +126,11 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
         Description = "Removes the caller from the chat group. Remaining chat members receive a UserPresenceEvent with Action 'Left'.")]
     public async Task LeaveChat(string chatId)
     {
+        if (string.IsNullOrWhiteSpace(chatId))
+        {
+            throw new HubException("ChatId is required.");
+        }
+
         var username = Context.User!.Identity!.Name!;
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, chatId);
 
