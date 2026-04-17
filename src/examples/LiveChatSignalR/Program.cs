@@ -2,6 +2,7 @@ using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Bindings.WebSockets;
 using LiveChatSignalR.Hubs;
+using LiveChatSignalR.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer();
 builder.Services.AddAuthorization();
+
+// ── Application services ─────────────────────────────────────────────────────
+builder.Services.AddSingleton<InMemoryMessageStore>();
 
 // ── SignalR ──────────────────────────────────────────────────────────────────
 builder.Services.AddSignalR();

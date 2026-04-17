@@ -1,5 +1,6 @@
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using LiveChatSignalR.Models;
+using LiveChatSignalR.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
@@ -18,7 +19,7 @@ namespace LiveChatSignalR.Hubs;
 /// </summary>
 [AsyncApi]
 [Authorize]
-public class ChatHub(ILogger<ChatHub> logger) : Hub
+public class ChatHub(ILogger<ChatHub> logger, InMemoryMessageStore messageStore) : Hub
 {
     // -------------------------------------------------------------------------
     // Send message  (chat/{chatId})
@@ -67,7 +68,66 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
             "User {User} sent message in chat {Chat}: {Content}",
             message.SenderUsername, request.ChatId, request.Content);
 
+        messageStore.AddMessage(message);
+
         await Clients.Group(request.ChatId).SendAsync("ReceiveMessage", message);
+    }
+
+    // -------------------------------------------------------------------------
+    // Get message history  (chat/{chatId})
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Returns a page of historical messages for the specified chat.
+    /// Supports pagination and an optional date offset (<see cref="GetMessagesRequest.Before"/>)
+    /// so clients can load older messages on demand (e.g. infinite scroll).
+    /// The caller receives a <see cref="GetMessagesResponse"/> directly (request/response).
+    /// </summary>
+    [Channel("chat/{chatId}",
+        Description = "Channel for all chat messages and presence events. Works for both group rooms and private conversations.",
+        Servers = ["websocket"])]
+    [ChannelParameter("chatId", typeof(string),
+        Description = "Unique identifier of the chat (e.g. \"general\", \"support\", or a private conversation ID).")]
+    [PublishOperation(typeof(GetMessagesResponse), "Chat",
+        OperationId = "GetMessages",
+        Summary = "Retrieve historical messages for a chat",
+        Description = "Returns a paginated list of messages for the given chat. Supports a 'before' date-time offset to fetch only messages older than a given timestamp, enabling efficient infinite-scroll UX.")]
+    public Task<GetMessagesResponse> GetMessages(GetMessagesRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ChatId))
+        {
+            throw new HubException("ChatId is required.");
+        }
+
+        if (request.Page < 1)
+        {
+            throw new HubException("Page must be at least 1.");
+        }
+
+        if (request.PageSize is < 1 or > 100)
+        {
+            throw new HubException("PageSize must be between 1 and 100.");
+        }
+
+        var (messages, totalCount) = messageStore.GetMessages(
+            request.ChatId, request.Page, request.PageSize, request.Before);
+
+        var response = new GetMessagesResponse
+        {
+            ChatId = request.ChatId,
+            Messages = messages,
+            TotalCount = totalCount,
+            Page = request.Page,
+            PageSize = request.PageSize,
+            HasMore = request.Page * request.PageSize < totalCount
+        };
+
+        logger.LogInformation(
+            "User {User} requested messages for chat {Chat} (page {Page}, pageSize {PageSize}, before {Before}) — {Count}/{Total}",
+            Context.User!.Identity!.Name!, request.ChatId, request.Page, request.PageSize,
+            request.Before?.ToString("O") ?? "n/a", messages.Count, totalCount);
+
+        return Task.FromResult(response);
     }
 
     // -------------------------------------------------------------------------
