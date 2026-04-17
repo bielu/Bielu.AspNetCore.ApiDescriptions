@@ -1,14 +1,15 @@
 namespace LiveChatSignalR.Models;
 
 /// <summary>
-/// A chat message broadcast to all users in a room.
+/// A chat message delivered to all members of a chat.
+/// Used for both group rooms and private (1-on-1) conversations.
 /// </summary>
 public class ChatMessage
 {
     /// <summary>
-    /// The room the message was sent to.
+    /// The chat this message belongs to (room or private conversation).
     /// </summary>
-    public string RoomId { get; set; } = string.Empty;
+    public string ChatId { get; set; } = string.Empty;
 
     /// <summary>
     /// The username of the sender.

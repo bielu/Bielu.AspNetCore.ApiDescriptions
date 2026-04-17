@@ -7,160 +7,124 @@ namespace LiveChatSignalR.Hubs;
 /// <summary>
 /// SignalR hub for real-time live chat via WebSocket.
 ///
-/// Clients connect to this hub to exchange messages inside named rooms,
-/// send private (direct) messages to individual users, and receive
-/// user-presence notifications when someone joins or leaves a room.
+/// Clients connect to this hub to exchange messages inside named chats
+/// and receive user-presence notifications when someone joins or leaves.
+/// Both group rooms (e.g. "general") and private 1-on-1 conversations
+/// use the same channel and the same logic — only the chatId differs.
 ///
 /// Channel layout:
-///   chat/{roomId}    — room-scoped broadcast messages and presence events
-///   chat/private     — private (direct) messages between two users
+///   chat/{chatId}  — all chat messages and presence events
 /// </summary>
 [AsyncApi]
 public class ChatHub(ILogger<ChatHub> logger) : Hub
 {
     // -------------------------------------------------------------------------
-    // Room channel  (chat/{roomId})
+    // Send message  (chat/{chatId})
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Sends a message to everyone in the specified room.
+    /// Sends a message to everyone in the specified chat.
     /// The server broadcasts a <see cref="ChatMessage"/> to the "ReceiveMessage"
-    /// client method for all members of the room group.
+    /// client method for all members of the chat group.
     /// </summary>
-    [Channel("chat/{roomId}",
-        Description = "Room-scoped channel for broadcasting chat messages and presence events.",
+    [Channel("chat/{chatId}",
+        Description = "Channel for all chat messages and presence events. Works for both group rooms and private conversations.",
         Servers = ["websocket"])]
-    [ChannelParameter("roomId", typeof(string),
-        Description = "Unique identifier of the chat room (e.g. \"general\", \"support\").")]
+    [ChannelParameter("chatId", typeof(string),
+        Description = "Unique identifier of the chat (e.g. \"general\", \"support\", or a private conversation ID).")]
     [PublishOperation(typeof(ChatMessage), "Chat",
-        OperationId = "SendRoomMessage",
-        Summary = "Broadcast a message to all users in a chat room",
-        Description = "The server receives a SendMessageRequest from the sender, wraps it in a ChatMessage and pushes it to the 'ReceiveMessage' client method for every connected member of the room.")]
-    public async Task SendRoomMessage(SendMessageRequest request)
+        OperationId = "SendMessage",
+        Summary = "Send a message to a chat",
+        Description = "The server receives a SendMessageRequest, wraps it in a ChatMessage and pushes it to the 'ReceiveMessage' client method for every member of the chat.")]
+    public async Task SendMessage(SendMessageRequest request)
     {
         var message = new ChatMessage
         {
-            RoomId = request.RoomId,
+            ChatId = request.ChatId,
             SenderUsername = Context.User?.Identity?.Name ?? Context.ConnectionId,
             Content = request.Content,
             SentAt = DateTime.UtcNow
         };
 
         logger.LogInformation(
-            "User {User} sent message in room {Room}: {Content}",
-            message.SenderUsername, request.RoomId, request.Content);
+            "User {User} sent message in chat {Chat}: {Content}",
+            message.SenderUsername, request.ChatId, request.Content);
 
-        await Clients.Group(request.RoomId).SendAsync("ReceiveMessage", message);
+        await Clients.Group(request.ChatId).SendAsync("ReceiveMessage", message);
     }
 
+    // -------------------------------------------------------------------------
+    // Join / Leave  (chat/{chatId})
+    // -------------------------------------------------------------------------
+
     /// <summary>
-    /// Joins a chat room and notifies other members.
-    /// The client is added to the SignalR group for the room, and a
+    /// Joins a chat and notifies other members.
+    /// The client is added to the SignalR group for the chat, and a
     /// <see cref="UserPresenceEvent"/> with Action "Joined" is sent to the group.
     /// </summary>
-    [Channel("chat/{roomId}",
-        Description = "Room-scoped channel for broadcasting chat messages and presence events.",
+    [Channel("chat/{chatId}",
+        Description = "Channel for all chat messages and presence events. Works for both group rooms and private conversations.",
         Servers = ["websocket"])]
-    [ChannelParameter("roomId", typeof(string),
-        Description = "Unique identifier of the chat room (e.g. \"general\", \"support\").")]
+    [ChannelParameter("chatId", typeof(string),
+        Description = "Unique identifier of the chat (e.g. \"general\", \"support\", or a private conversation ID).")]
     [SubscribeOperation(typeof(UserPresenceEvent), "Chat",
-        OperationId = "JoinRoom",
-        Summary = "Join a chat room and receive presence and message events",
-        Description = "Adds the caller to the room group. All room members (including the caller) receive a UserPresenceEvent confirming the join. Subsequently the caller receives ChatMessage events via 'ReceiveMessage'.")]
-    public async Task JoinRoom(string roomId, string username)
+        OperationId = "JoinChat",
+        Summary = "Join a chat and receive messages and presence events",
+        Description = "Adds the caller to the chat group. All chat members (including the caller) receive a UserPresenceEvent confirming the join. Subsequently the caller receives ChatMessage events via 'ReceiveMessage'.")]
+    public async Task JoinChat(string chatId, string username)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, chatId);
 
         var presence = new UserPresenceEvent
         {
-            RoomId = roomId,
+            ChatId = chatId,
             Username = username,
             Action = "Joined",
             OccurredAt = DateTime.UtcNow
         };
 
-        logger.LogInformation("User {User} joined room {Room}", username, roomId);
-        await Clients.Group(roomId).SendAsync("UserPresenceChanged", presence);
+        logger.LogInformation("User {User} joined chat {Chat}", username, chatId);
+        await Clients.Group(chatId).SendAsync("UserPresenceChanged", presence);
     }
 
     /// <summary>
-    /// Leaves a chat room and notifies other members.
-    /// The client is removed from the SignalR group for the room, and a
+    /// Leaves a chat and notifies other members.
+    /// The client is removed from the SignalR group for the chat, and a
     /// <see cref="UserPresenceEvent"/> with Action "Left" is sent to the remaining members.
     /// </summary>
-    [Channel("chat/{roomId}",
-        Description = "Room-scoped channel for broadcasting chat messages and presence events.",
+    [Channel("chat/{chatId}",
+        Description = "Channel for all chat messages and presence events. Works for both group rooms and private conversations.",
         Servers = ["websocket"])]
-    [ChannelParameter("roomId", typeof(string),
-        Description = "Unique identifier of the chat room (e.g. \"general\", \"support\").")]
+    [ChannelParameter("chatId", typeof(string),
+        Description = "Unique identifier of the chat (e.g. \"general\", \"support\", or a private conversation ID).")]
     [SubscribeOperation(typeof(UserPresenceEvent), "Chat",
-        OperationId = "LeaveRoom",
-        Summary = "Leave a chat room",
-        Description = "Removes the caller from the room group. Remaining room members receive a UserPresenceEvent with Action 'Left'.")]
-    public async Task LeaveRoom(string roomId, string username)
+        OperationId = "LeaveChat",
+        Summary = "Leave a chat",
+        Description = "Removes the caller from the chat group. Remaining chat members receive a UserPresenceEvent with Action 'Left'.")]
+    public async Task LeaveChat(string chatId, string username)
     {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, chatId);
 
         var presence = new UserPresenceEvent
         {
-            RoomId = roomId,
+            ChatId = chatId,
             Username = username,
             Action = "Left",
             OccurredAt = DateTime.UtcNow
         };
 
-        logger.LogInformation("User {User} left room {Room}", username, roomId);
-        await Clients.Group(roomId).SendAsync("UserPresenceChanged", presence);
-    }
-
-    // -------------------------------------------------------------------------
-    // Private (direct-message) channel  (chat/private)
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Sends a private message from the caller to a specific recipient.
-    /// The hub delivers the <see cref="PrivateMessage"/> only to the connection(s)
-    /// that belong to the target user via the "ReceivePrivateMessage" client method.
-    /// </summary>
-    [Channel("chat/private",
-        Description = "Channel for private (direct) messages between two users.",
-        Servers = ["websocket"])]
-    [PublishOperation(typeof(PrivateMessage), "Chat",
-        OperationId = "SendPrivateMessage",
-        Summary = "Send a private message to a specific user",
-        Description = "The server delivers the PrivateMessage only to the recipient's active connection(s) via the 'ReceivePrivateMessage' client method. The sender also receives a confirmation copy.")]
-    public async Task SendPrivateMessage(SendPrivateMessageRequest request)
-    {
-        var senderUsername = Context.User?.Identity?.Name ?? Context.ConnectionId;
-
-        var message = new PrivateMessage
-        {
-            SenderUsername = senderUsername,
-            RecipientUsername = request.RecipientUsername,
-            Content = request.Content,
-            SentAt = DateTime.UtcNow
-        };
-
-        logger.LogInformation(
-            "Private message from {Sender} to {Recipient}",
-            senderUsername, request.RecipientUsername);
-
-        // In a real application you would look up the recipient's connection IDs
-        // from a user-to-connection mapping (e.g. stored in Redis or in-memory).
-        // Here we use a named group per user as a simplified stand-in.
-        await Clients.Group($"user:{request.RecipientUsername}").SendAsync("ReceivePrivateMessage", message);
-        await Clients.Caller.SendAsync("ReceivePrivateMessage", message);
+        logger.LogInformation("User {User} left chat {Chat}", username, chatId);
+        await Clients.Group(chatId).SendAsync("UserPresenceChanged", presence);
     }
 
     // -------------------------------------------------------------------------
     // Lifecycle overrides
     // -------------------------------------------------------------------------
 
-    /// <summary>Registers the caller in a per-user group on connect.</summary>
+    /// <summary>Called when a new client connects to the hub.</summary>
     public override async Task OnConnectedAsync()
     {
         var username = Context.User?.Identity?.Name ?? Context.ConnectionId;
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"user:{username}");
 
         logger.LogInformation("Client {ConnectionId} ({User}) connected to ChatHub",
             Context.ConnectionId, username);
@@ -168,11 +132,10 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
         await base.OnConnectedAsync();
     }
 
-    /// <summary>Removes the caller from their per-user group on disconnect.</summary>
+    /// <summary>Called when a client disconnects from the hub.</summary>
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var username = Context.User?.Identity?.Name ?? Context.ConnectionId;
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user:{username}");
 
         logger.LogInformation("Client {ConnectionId} ({User}) disconnected from ChatHub",
             Context.ConnectionId, username);

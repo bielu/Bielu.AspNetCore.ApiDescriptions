@@ -3,12 +3,15 @@
 This example shows how to document a real-time **live-chat** service built with
 **ASP.NET Core SignalR** using the `Bielu.AspNetCore.AsyncApi` library.
 
+Both **group rooms** (e.g. `general`, `support`) and **private 1-on-1
+conversations** share the same channel and logic — the only difference is the
+`chatId` used to identify the conversation.
+
 ## Features
 
 | Channel | Description |
 |---|---|
-| `chat/{roomId}` | Room-scoped broadcast — send and receive chat messages, and user presence (join/leave) events |
-| `chat/private` | Private (direct) messages between two users |
+| `chat/{chatId}` | All chat messages and user-presence events (rooms **and** private conversations) |
 
 ## Running
 
@@ -29,18 +32,16 @@ The AsyncAPI documentation is available at:
 
 | Method | Parameters | Description |
 |---|---|---|
-| `JoinRoom` | `roomId`, `username` | Join a room and start receiving its messages |
-| `LeaveRoom` | `roomId`, `username` | Leave a room |
-| `SendRoomMessage` | `SendMessageRequest` | Broadcast a message to the room |
-| `SendPrivateMessage` | `SendPrivateMessageRequest` | Send a private message to a specific user |
+| `JoinChat` | `chatId`, `username` | Join a chat and start receiving its messages |
+| `LeaveChat` | `chatId`, `username` | Leave a chat |
+| `SendMessage` | `SendMessageRequest` | Send a message to a chat (request contains `chatId` and `content`) |
 
 ## Client methods (server → client)
 
 | Method | Payload | Description |
 |---|---|---|
-| `ReceiveMessage` | `ChatMessage` | A new message was broadcast to the room |
-| `UserPresenceChanged` | `UserPresenceEvent` | A user joined or left the room |
-| `ReceivePrivateMessage` | `PrivateMessage` | A private message was delivered |
+| `ReceiveMessage` | `ChatMessage` | A new message was sent in the chat |
+| `UserPresenceChanged` | `UserPresenceEvent` | A user joined or left the chat |
 
 ## AsyncAPI document
 
@@ -53,7 +54,7 @@ similar to the one below.
   "info": {
     "title": "Live Chat API",
     "version": "1.0.0",
-    "description": "A live-chat service built with ASP.NET Core SignalR. Clients connect over WebSocket to join rooms, broadcast messages, send private messages, and receive user-presence events in real time.",
+    "description": "A live-chat service built with ASP.NET Core SignalR. Clients connect over WebSocket to join chats, send messages, and receive user-presence events in real time. Group rooms and private conversations use the same channel.",
     "license": {
       "name": "Apache 2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0"
@@ -68,39 +69,28 @@ similar to the one below.
   },
   "defaultContentType": "application/json",
   "channels": {
-    "chat/{roomId}": {
-      "description": "Room-scoped channel for broadcasting chat messages and presence events.",
+    "chat/{chatId}": {
+      "description": "Channel for all chat messages and presence events. Works for both group rooms and private conversations.",
       "servers": ["websocket"],
       "parameters": {
-        "roomId": {
-          "description": "Unique identifier of the chat room (e.g. \"general\", \"support\").",
+        "chatId": {
+          "description": "Unique identifier of the chat (e.g. \"general\", \"support\", or a private conversation ID).",
           "schema": { "type": "string" }
         }
       },
       "publish": {
-        "operationId": "SendRoomMessage",
-        "summary": "Broadcast a message to all users in a chat room",
-        "description": "The server receives a SendMessageRequest from the sender, wraps it in a ChatMessage and pushes it to the 'ReceiveMessage' client method for every connected member of the room.",
+        "operationId": "SendMessage",
+        "summary": "Send a message to a chat",
+        "description": "The server receives a SendMessageRequest, wraps it in a ChatMessage and pushes it to the 'ReceiveMessage' client method for every member of the chat.",
         "tags": [{ "name": "Chat" }],
         "message": { "$ref": "#/components/messages/chatMessage" }
       },
       "subscribe": {
-        "operationId": "JoinRoom",
-        "summary": "Join a chat room and receive presence and message events",
-        "description": "Adds the caller to the room group. All room members (including the caller) receive a UserPresenceEvent confirming the join.",
+        "operationId": "JoinChat",
+        "summary": "Join a chat and receive messages and presence events",
+        "description": "Adds the caller to the chat group. All chat members (including the caller) receive a UserPresenceEvent confirming the join.",
         "tags": [{ "name": "Chat" }],
         "message": { "$ref": "#/components/messages/userPresenceEvent" }
-      }
-    },
-    "chat/private": {
-      "description": "Channel for private (direct) messages between two users.",
-      "servers": ["websocket"],
-      "publish": {
-        "operationId": "SendPrivateMessage",
-        "summary": "Send a private message to a specific user",
-        "description": "The server delivers the PrivateMessage only to the recipient's active connection(s) via the 'ReceivePrivateMessage' client method.",
-        "tags": [{ "name": "Chat" }],
-        "message": { "$ref": "#/components/messages/privateMessage" }
       }
     }
   },
@@ -110,30 +100,20 @@ similar to the one below.
         "title": "chatMessage",
         "type": "object",
         "properties": {
-          "roomId":          { "type": "string" },
-          "senderUsername":  { "type": "string" },
-          "content":         { "type": "string" },
-          "sentAt":          { "type": "string", "format": "dateTime" }
+          "chatId":           { "type": "string" },
+          "senderUsername":   { "type": "string" },
+          "content":          { "type": "string" },
+          "sentAt":           { "type": "string", "format": "dateTime" }
         }
       },
       "userPresenceEvent": {
         "title": "userPresenceEvent",
         "type": "object",
         "properties": {
-          "roomId":      { "type": "string" },
+          "chatId":      { "type": "string" },
           "username":    { "type": "string" },
           "action":      { "type": "string", "description": "\"Joined\" or \"Left\"" },
           "occurredAt":  { "type": "string", "format": "dateTime" }
-        }
-      },
-      "privateMessage": {
-        "title": "privateMessage",
-        "type": "object",
-        "properties": {
-          "senderUsername":    { "type": "string" },
-          "recipientUsername": { "type": "string" },
-          "content":           { "type": "string" },
-          "sentAt":            { "type": "string", "format": "dateTime" }
         }
       }
     },
@@ -147,11 +127,6 @@ similar to the one below.
         "name": "userPresenceEvent",
         "title": "userPresenceEvent",
         "payload": { "$ref": "#/components/schemas/userPresenceEvent" }
-      },
-      "privateMessage": {
-        "name": "privateMessage",
-        "title": "privateMessage",
-        "payload": { "$ref": "#/components/schemas/privateMessage" }
       }
     }
   }
@@ -161,9 +136,10 @@ similar to the one below.
 ## How it works
 
 1. **`[AsyncApi]`** on `ChatHub` tells the library to scan this class for channel declarations.
-2. **`[Channel("chat/{roomId}", ...)]`** declares a parameterised channel. The `{roomId}` placeholder is described by `[ChannelParameter]`.
-3. **`[PublishOperation]`** on `SendRoomMessage` documents the operation where the *server publishes* (broadcasts) a `ChatMessage` to clients.
-4. **`[SubscribeOperation]`** on `JoinRoom` / `LeaveRoom` documents that the *client subscribes* to `UserPresenceEvent` messages from the server.
-5. **`[PublishOperation]`** on `SendPrivateMessage` documents the private-message channel.
+2. **`[Channel("chat/{chatId}", ...)]`** declares a parameterised channel. The `{chatId}` placeholder is described by `[ChannelParameter]`.
+3. **`[PublishOperation]`** on `SendMessage` documents the operation where the *server publishes* a `ChatMessage` to all chat members.
+4. **`[SubscribeOperation]`** on `JoinChat` / `LeaveChat` documents that *clients subscribe* to `UserPresenceEvent` messages from the server.
 
 The same `[Channel]` name used on multiple methods is merged into a single channel entry in the generated document; publish and subscribe operations are collected from each decorated method independently.
+
+Group rooms and private conversations share the exact same model — the `chatId` is the only distinguishing factor. For private conversations you would typically generate a deterministic chat ID from the two participant usernames (e.g. `private:alice+bob`).

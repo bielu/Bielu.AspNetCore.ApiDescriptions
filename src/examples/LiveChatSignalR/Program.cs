@@ -21,8 +21,9 @@ builder.Services.AddAsyncApi(options =>
         .WithDefaultContentType("application/json")
         .WithDescription(
             "A live-chat service built with ASP.NET Core SignalR. " +
-            "Clients connect over WebSocket to join rooms, broadcast messages, " +
-            "send private messages, and receive user-presence events in real time.")
+            "Clients connect over WebSocket to join chats, send messages, " +
+            "and receive user-presence events in real time. " +
+            "Group rooms and private conversations use the same channel.")
         .WithLicense("Apache 2.0", "https://www.apache.org/licenses/LICENSE-2.0");
 
     // Reusable WebSocket channel binding

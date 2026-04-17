@@ -1,14 +1,14 @@
 namespace LiveChatSignalR.Models;
 
 /// <summary>
-/// Event raised when a user joins or leaves a chat room.
+/// Event raised when a user joins or leaves a chat.
 /// </summary>
 public class UserPresenceEvent
 {
     /// <summary>
-    /// The room the event relates to.
+    /// The chat the event relates to.
     /// </summary>
-    public string RoomId { get; set; } = string.Empty;
+    public string ChatId { get; set; } = string.Empty;
 
     /// <summary>
     /// The username of the user who joined or left.
