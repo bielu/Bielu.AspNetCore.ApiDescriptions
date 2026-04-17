@@ -1,5 +1,6 @@
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using LiveChatSignalR.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 namespace LiveChatSignalR.Hubs;
@@ -16,6 +17,7 @@ namespace LiveChatSignalR.Hubs;
 ///   chat/{chatId}  — all chat messages and presence events
 /// </summary>
 [AsyncApi]
+[Authorize]
 public class ChatHub(ILogger<ChatHub> logger) : Hub
 {
     // -------------------------------------------------------------------------
@@ -41,7 +43,7 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
         var message = new ChatMessage
         {
             ChatId = request.ChatId,
-            SenderUsername = Context.User?.Identity?.Name ?? Context.ConnectionId,
+            SenderUsername = Context.User!.Identity!.Name!,
             Content = request.Content,
             SentAt = DateTime.UtcNow
         };
@@ -71,8 +73,9 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
         OperationId = "JoinChat",
         Summary = "Join a chat and receive messages and presence events",
         Description = "Adds the caller to the chat group. All chat members (including the caller) receive a UserPresenceEvent confirming the join. Subsequently the caller receives ChatMessage events via 'ReceiveMessage'.")]
-    public async Task JoinChat(string chatId, string username)
+    public async Task JoinChat(string chatId)
     {
+        var username = Context.User!.Identity!.Name!;
         await Groups.AddToGroupAsync(Context.ConnectionId, chatId);
 
         var presence = new UserPresenceEvent
@@ -101,8 +104,9 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
         OperationId = "LeaveChat",
         Summary = "Leave a chat",
         Description = "Removes the caller from the chat group. Remaining chat members receive a UserPresenceEvent with Action 'Left'.")]
-    public async Task LeaveChat(string chatId, string username)
+    public async Task LeaveChat(string chatId)
     {
+        var username = Context.User!.Identity!.Name!;
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, chatId);
 
         var presence = new UserPresenceEvent
@@ -124,7 +128,7 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
     /// <summary>Called when a new client connects to the hub.</summary>
     public override async Task OnConnectedAsync()
     {
-        var username = Context.User?.Identity?.Name ?? Context.ConnectionId;
+        var username = Context.User!.Identity!.Name!;
 
         logger.LogInformation("Client {ConnectionId} ({User}) connected to ChatHub",
             Context.ConnectionId, username);
@@ -135,7 +139,7 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
     /// <summary>Called when a client disconnects from the hub.</summary>
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var username = Context.User?.Identity?.Name ?? Context.ConnectionId;
+        var username = Context.User!.Identity!.Name!;
 
         logger.LogInformation("Client {ConnectionId} ({User}) disconnected from ChatHub",
             Context.ConnectionId, username);

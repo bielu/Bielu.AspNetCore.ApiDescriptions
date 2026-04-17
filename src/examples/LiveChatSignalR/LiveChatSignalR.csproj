@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="ByteBard.AsyncAPI.NET.Bindings" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
   </ItemGroup>
 
 </Project>

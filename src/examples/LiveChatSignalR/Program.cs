@@ -2,8 +2,14 @@ using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Bindings.WebSockets;
 using LiveChatSignalR.Hubs;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── Authentication ───────────────────────────────────────────────────────────
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+builder.Services.AddAuthorization();
 
 // ── SignalR ──────────────────────────────────────────────────────────────────
 builder.Services.AddSignalR();
@@ -35,6 +41,9 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // ── SignalR hub ──────────────────────────────────────────────────────────────
 app.MapHub<ChatHub>("/hubs/chat");

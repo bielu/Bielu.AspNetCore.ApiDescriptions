@@ -13,6 +13,22 @@ conversations** share the same channel and logic — the only difference is the
 |---|---|
 | `chat/{chatId}` | All chat messages and user-presence events (rooms **and** private conversations) |
 
+## Authentication
+
+The hub requires an authenticated user. The example is configured with
+**JWT Bearer** authentication — clients must provide a valid bearer token when
+connecting:
+
+```js
+const connection = new signalR.HubConnectionBuilder()
+    .withUrl("/hubs/chat", { accessTokenFactory: () => token })
+    .build();
+```
+
+The authenticated user's `Name` claim is used as the username for all chat
+operations (message sender, presence events). Clients do not supply their own
+username.
+
 ## Running
 
 ```sh
@@ -32,8 +48,8 @@ The AsyncAPI documentation is available at:
 
 | Method | Parameters | Description |
 |---|---|---|
-| `JoinChat` | `chatId`, `username` | Join a chat and start receiving its messages |
-| `LeaveChat` | `chatId`, `username` | Leave a chat |
+| `JoinChat` | `chatId` | Join a chat and start receiving its messages |
+| `LeaveChat` | `chatId` | Leave a chat |
 | `SendMessage` | `SendMessageRequest` | Send a message to a chat (request contains `chatId` and `content`) |
 
 ## Client methods (server → client)
