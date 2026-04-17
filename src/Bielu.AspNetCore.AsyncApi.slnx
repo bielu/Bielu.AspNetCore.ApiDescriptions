@@ -6,6 +6,7 @@
   </Configurations>
   <Folder Name="/examples/">
     <Project Path="./examples/StreetlightsAPI/StreetlightsAPI.csproj" />
+    <Project Path="./examples/LiveChatSignalR/LiveChatSignalR.csproj" />
   </Folder>
     <Folder Name="/examples/aspire/">
         <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.AppHost/Bielu.AspNetCore.AsyncApi.Aspire.AppHost.csproj" />
