@@ -35,22 +35,22 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
     [PublishOperation(typeof(ChatMessage), "Chat",
         OperationId = "SendRoomMessage",
         Summary = "Broadcast a message to all users in a chat room",
-        Description = "The server receives a ChatMessage from the sender and pushes it to the 'ReceiveMessage' client method for every connected member of the room.")]
-    public async Task SendRoomMessage(string roomId, string content)
+        Description = "The server receives a SendMessageRequest from the sender, wraps it in a ChatMessage and pushes it to the 'ReceiveMessage' client method for every connected member of the room.")]
+    public async Task SendRoomMessage(SendMessageRequest request)
     {
         var message = new ChatMessage
         {
-            RoomId = roomId,
+            RoomId = request.RoomId,
             SenderUsername = Context.User?.Identity?.Name ?? Context.ConnectionId,
-            Content = content,
+            Content = request.Content,
             SentAt = DateTime.UtcNow
         };
 
         logger.LogInformation(
             "User {User} sent message in room {Room}: {Content}",
-            message.SenderUsername, roomId, content);
+            message.SenderUsername, request.RoomId, request.Content);
 
-        await Clients.Group(roomId).SendAsync("ReceiveMessage", message);
+        await Clients.Group(request.RoomId).SendAsync("ReceiveMessage", message);
     }
 
     /// <summary>
@@ -129,26 +129,26 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
         OperationId = "SendPrivateMessage",
         Summary = "Send a private message to a specific user",
         Description = "The server delivers the PrivateMessage only to the recipient's active connection(s) via the 'ReceivePrivateMessage' client method. The sender also receives a confirmation copy.")]
-    public async Task SendPrivateMessage(string recipientUsername, string content)
+    public async Task SendPrivateMessage(SendPrivateMessageRequest request)
     {
         var senderUsername = Context.User?.Identity?.Name ?? Context.ConnectionId;
 
         var message = new PrivateMessage
         {
             SenderUsername = senderUsername,
-            RecipientUsername = recipientUsername,
-            Content = content,
+            RecipientUsername = request.RecipientUsername,
+            Content = request.Content,
             SentAt = DateTime.UtcNow
         };
 
         logger.LogInformation(
             "Private message from {Sender} to {Recipient}",
-            senderUsername, recipientUsername);
+            senderUsername, request.RecipientUsername);
 
         // In a real application you would look up the recipient's connection IDs
         // from a user-to-connection mapping (e.g. stored in Redis or in-memory).
         // Here we use a named group per user as a simplified stand-in.
-        await Clients.Group($"user:{recipientUsername}").SendAsync("ReceivePrivateMessage", message);
+        await Clients.Group($"user:{request.RecipientUsername}").SendAsync("ReceivePrivateMessage", message);
         await Clients.Caller.SendAsync("ReceivePrivateMessage", message);
     }
 

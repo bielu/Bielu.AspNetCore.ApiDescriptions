@@ -31,8 +31,8 @@ The AsyncAPI documentation is available at:
 |---|---|---|
 | `JoinRoom` | `roomId`, `username` | Join a room and start receiving its messages |
 | `LeaveRoom` | `roomId`, `username` | Leave a room |
-| `SendRoomMessage` | `roomId`, `content` | Broadcast a message to the room |
-| `SendPrivateMessage` | `recipientUsername`, `content` | Send a private message to a specific user |
+| `SendRoomMessage` | `SendMessageRequest` | Broadcast a message to the room |
+| `SendPrivateMessage` | `SendPrivateMessageRequest` | Send a private message to a specific user |
 
 ## Client methods (server → client)
 
@@ -80,7 +80,7 @@ similar to the one below.
       "publish": {
         "operationId": "SendRoomMessage",
         "summary": "Broadcast a message to all users in a chat room",
-        "description": "The server receives a ChatMessage from the sender and pushes it to the 'ReceiveMessage' client method for every connected member of the room.",
+        "description": "The server receives a SendMessageRequest from the sender, wraps it in a ChatMessage and pushes it to the 'ReceiveMessage' client method for every connected member of the room.",
         "tags": [{ "name": "Chat" }],
         "message": { "$ref": "#/components/messages/chatMessage" }
       },
