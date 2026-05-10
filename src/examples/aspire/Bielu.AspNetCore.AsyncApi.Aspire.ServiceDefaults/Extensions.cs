@@ -4,6 +4,7 @@
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Caching;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
+using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using StackExchange.Redis;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -26,6 +28,14 @@ public static class Extensions
     /// </summary>
     public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
     {
+        builder.AddKafkaProducer<string, string>("kafka");
+        builder.AddKafkaConsumer<string, string>("kafka", configure =>
+        {
+            configure.Config.GroupId = "your-consumer-group"; // Required
+            configure.Config.AutoOffsetReset = AutoOffsetReset.Earliest;
+        });
+        builder.Services.AddSingleton<IConnectionMultiplexer>((servicwes) =>
+            ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]));
         builder.ConfigureOpenTelemetry();
         builder.AddDefaultHealthChecks();
         builder.Services.AddServiceDiscovery();

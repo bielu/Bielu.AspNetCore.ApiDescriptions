@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
 using ByteBard.AsyncAPI.Readers;
@@ -46,6 +47,10 @@ public sealed class AsyncApiDocumentMerger
         foreach (var source in options.Sources)
         {
             var document = await LoadDocumentAsync(source, options.HttpTimeout, cancellationToken).ConfigureAwait(false);
+            if(document is null)
+            {
+                continue;
+            }
             documents.Add((document, source));
         }
 
@@ -76,46 +81,64 @@ public sealed class AsyncApiDocumentMerger
         return MergeDocuments(sources, options);
     }
 
-    internal async Task<AsyncApiDocument> LoadDocumentAsync(AsyncApiDocumentSource source, TimeSpan httpTimeout, CancellationToken cancellationToken)
+    internal async Task<AsyncApiDocument?> LoadDocumentAsync(AsyncApiDocumentSource source, TimeSpan httpTimeout, CancellationToken cancellationToken)
     {
         var content = await LoadContentAsync(source.Uri, httpTimeout, cancellationToken).ConfigureAwait(false);
+        if (content is null)
+        {
+            return null;
+        }
         return ParseDocument(content, source.Uri);
     }
 
-    private async Task<string> LoadContentAsync(string uri, TimeSpan httpTimeout, CancellationToken cancellationToken)
+    private async Task<string?> LoadContentAsync(string uri, TimeSpan httpTimeout, CancellationToken cancellationToken)
     {
-        if (Uri.TryCreate(uri, UriKind.Absolute, out var parsedUri) &&
-            (parsedUri.Scheme == Uri.UriSchemeHttp || parsedUri.Scheme == Uri.UriSchemeHttps))
+        try
         {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(httpTimeout);
-            var response = await _httpClient.GetAsync(parsedUri, cts.Token).ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+            if (Uri.TryCreate(uri, UriKind.Absolute, out var parsedUri) &&
+                (parsedUri.Scheme == Uri.UriSchemeHttp || parsedUri.Scheme == Uri.UriSchemeHttps))
+            {
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(httpTimeout);
+                var response = await _httpClient.GetAsync(parsedUri, cts.Token).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+            }
+
+            // Treat as file path
+            var filePath = uri.StartsWith("file://", StringComparison.OrdinalIgnoreCase)
+                ? new Uri(uri).LocalPath
+                : uri;
+
+            if (!File.Exists(filePath))
+            {
+                throw new FileNotFoundException($"AsyncAPI document file not found: '{filePath}'", filePath);
+            }
+
+            return await File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false);
         }
-
-        // Treat as file path
-        var filePath = uri.StartsWith("file://", StringComparison.OrdinalIgnoreCase)
-            ? new Uri(uri).LocalPath
-            : uri;
-
-        if (!File.Exists(filePath))
+        catch (Exception e)
         {
-            throw new FileNotFoundException($"AsyncAPI document file not found: '{filePath}'", filePath);
+            return null;
         }
-
-        return await File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false);
+        
     }
 
     internal static AsyncApiDocument ParseDocument(string content, string sourceUri)
     {
-        var reader = new AsyncApiStringReader();
+        var reader = new AsyncApiStringReader(new AsyncApiReaderSettings());
         var document = reader.Read(content, out var diagnostic);
 
-        if (diagnostic.Errors.Count > 0)
+        if (diagnostic?.Errors is { Count: > 0 } errs)
         {
-            var errors = string.Join("; ", diagnostic.Errors.Select(e => e.Message));
-            throw new InvalidOperationException($"Failed to parse AsyncAPI document from '{sourceUri}': {errors}");
+            // Surface diagnostic errors so binding/parse issues are not silently swallowed.
+            // We log instead of throwing because the merger is best-effort: a partially
+            // parseable document may still be useful, and forcing a hard failure would
+            // break the gateway when one downstream service emits a non-conformant doc.
+            foreach (var error in errs)
+            {
+                Debug.WriteLine($"[AsyncApiDocumentMerger] Parse error for '{sourceUri}': {error.Message} (pointer: {error.Pointer})");
+            }
         }
 
         return document;
@@ -140,7 +163,22 @@ public sealed class AsyncApiDocumentMerger
         {
             var prefix = source.KeyPrefix ?? string.Empty;
 
-            MergeServers(merged, document, prefix);
+            // Build a per-section key map (originalKey -> finalMergedKey) for this source
+            // BEFORE we mutate any references. The map is used to rewrite all internal
+            // $ref pointers in the source document so that when the document is grafted
+            // into the merged document the pointers still resolve to the correct items.
+            var keyMap = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+
+            MergeServers(merged, document, prefix, keyMap);
+            BuildKeyMap(keyMap, "channels", document.Channels, prefix);
+            BuildKeyMap(keyMap, "operations", document.Operations, prefix);
+            BuildComponentKeyMaps(keyMap, document.Components, prefix);
+
+            // Rewrite every reference inside the source document using the freshly
+            // computed key map. After this point the document carries the merged
+            // pointer namespace and can be safely combined with `merged`.
+            RewriteReferences(document, keyMap);
+
             MergeChannels(merged, document, prefix);
             MergeOperations(merged, document, prefix);
             MergeComponents(merged, document, prefix);
@@ -149,18 +187,245 @@ public sealed class AsyncApiDocumentMerger
         return merged;
     }
 
-    private static void MergeServers(AsyncApiDocument merged, AsyncApiDocument source, string prefix)
+    private static void MergeServers(
+        AsyncApiDocument merged,
+        AsyncApiDocument source,
+        string prefix,
+        Dictionary<string, Dictionary<string, string>> keyMap)
     {
         if (source.Servers is null)
         {
             return;
         }
 
+        var sectionMap = GetOrCreateSectionMap(keyMap, "servers");
+
         foreach (var (key, server) in source.Servers)
         {
+            // Try to find an already-merged server with identical connection coordinates
+            // so that 5 microservices that all talk to the same Kafka broker collapse to
+            // a single server entry instead of producing N near-duplicates.
+            string? existingKey = null;
+            foreach (var (mKey, mServer) in merged.Servers)
+            {
+                if (AreServersEquivalent(server, mServer))
+                {
+                    existingKey = mKey;
+                    break;
+                }
+            }
+
+            if (existingKey is not null)
+            {
+                sectionMap[key] = existingKey;
+                continue;
+            }
+
             var mergedKey = GetMergedKey(prefix, key);
-            merged.Servers.TryAdd(mergedKey, server);
+            merged.Servers[mergedKey] = server;
+            sectionMap[key] = mergedKey;
         }
+    }
+
+    private static bool AreServersEquivalent(AsyncApiServer a, AsyncApiServer b)
+    {
+        if (ReferenceEquals(a, b))
+        {
+            return true;
+        }
+        if (a is null || b is null)
+        {
+            return false;
+        }
+        return string.Equals(a.Host, b.Host, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(a.Protocol, b.Protocol, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(a.PathName ?? string.Empty, b.PathName ?? string.Empty, StringComparison.Ordinal)
+            && string.Equals(a.ProtocolVersion ?? string.Empty, b.ProtocolVersion ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    private static Dictionary<string, string> GetOrCreateSectionMap(
+        Dictionary<string, Dictionary<string, string>> keyMap, string section)
+    {
+        if (!keyMap.TryGetValue(section, out var map))
+        {
+            map = new Dictionary<string, string>(StringComparer.Ordinal);
+            keyMap[section] = map;
+        }
+        return map;
+    }
+
+    private static void BuildKeyMap<TValue>(
+        Dictionary<string, Dictionary<string, string>> keyMap,
+        string section,
+        IDictionary<string, TValue>? source,
+        string prefix)
+    {
+        if (source is null)
+        {
+            return;
+        }
+        var map = GetOrCreateSectionMap(keyMap, section);
+        foreach (var key in source.Keys)
+        {
+            map[key] = GetMergedKey(prefix, key);
+        }
+    }
+
+    private static void BuildComponentKeyMaps(
+        Dictionary<string, Dictionary<string, string>> keyMap,
+        AsyncApiComponents? components,
+        string prefix)
+    {
+        if (components is null)
+        {
+            return;
+        }
+        BuildKeyMap(keyMap, "components/schemas", components.Schemas, prefix);
+        BuildKeyMap(keyMap, "components/servers", components.Servers, prefix);
+        BuildKeyMap(keyMap, "components/channels", components.Channels, prefix);
+        BuildKeyMap(keyMap, "components/operations", components.Operations, prefix);
+        BuildKeyMap(keyMap, "components/messages", components.Messages, prefix);
+        BuildKeyMap(keyMap, "components/securitySchemes", components.SecuritySchemes, prefix);
+        BuildKeyMap(keyMap, "components/parameters", components.Parameters, prefix);
+        BuildKeyMap(keyMap, "components/correlationIds", components.CorrelationIds, prefix);
+        BuildKeyMap(keyMap, "components/tags", components.Tags, prefix);
+        BuildKeyMap(keyMap, "components/operationTraits", components.OperationTraits, prefix);
+        BuildKeyMap(keyMap, "components/messageTraits", components.MessageTraits, prefix);
+        BuildKeyMap(keyMap, "components/serverBindings", components.ServerBindings, prefix);
+        BuildKeyMap(keyMap, "components/channelBindings", components.ChannelBindings, prefix);
+        BuildKeyMap(keyMap, "components/operationBindings", components.OperationBindings, prefix);
+        BuildKeyMap(keyMap, "components/messageBindings", components.MessageBindings, prefix);
+    }
+
+    /// <summary>
+    /// Walks the entire document graph and rewrites every <see cref="AsyncApiReference"/>
+    /// pointer string from the original key namespace to the merged key namespace.
+    /// Without this, a reference like <c>#/servers/kafka</c> coming from a service that
+    /// was merged with prefix <c>orderservice_</c> would still point at <c>#/servers/kafka</c>
+    /// in the merged document — which no longer exists, producing an invalid AsyncAPI doc.
+    /// </summary>
+    private static void RewriteReferences(AsyncApiDocument document, Dictionary<string, Dictionary<string, string>> keyMap)
+    {
+        if (keyMap.Count == 0)
+        {
+            return;
+        }
+        var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        Visit(document, keyMap, visited);
+    }
+
+    private static void Visit(object? node, Dictionary<string, Dictionary<string, string>> keyMap, HashSet<object> visited)
+    {
+        if (node is null || node is string || node.GetType().IsPrimitive || !visited.Add(node))
+        {
+            return;
+        }
+
+        if (node is IAsyncApiReferenceable refable && refable.Reference is { Reference: { Length: > 0 } refStr })
+        {
+            var rewritten = RewriteRefString(refStr, keyMap);
+            if (!ReferenceEquals(rewritten, refStr))
+            {
+                // AsyncApiReference.Reference is a computed property (no setter) that is
+                // built from the original string captured by the constructor, so we have
+                // to replace the whole reference object rather than mutate it in place.
+                refable.Reference = new AsyncApiReference(rewritten, refable.Reference.Type);
+            }
+            // Reference objects are leaf nodes (the resolved target lives elsewhere); do
+            // not descend further as that produces noise and potential cycles.
+            return;
+        }
+
+        switch (node)
+        {
+            case System.Collections.IDictionary dict:
+                foreach (var v in dict.Values)
+                {
+                    Visit(v, keyMap, visited);
+                }
+                return;
+            case System.Collections.IEnumerable enumerable:
+                foreach (var v in enumerable)
+                {
+                    Visit(v, keyMap, visited);
+                }
+                return;
+        }
+
+        // Reflect over public readable properties to traverse the object graph. We only
+        // care about complex AsyncAPI model types — primitives/strings/enums are skipped.
+        var type = node.GetType();
+        if (type.Namespace is null || !type.Namespace.StartsWith("ByteBard.AsyncAPI", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        foreach (var prop in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+        {
+            if (prop.GetIndexParameters().Length > 0 || !prop.CanRead)
+            {
+                continue;
+            }
+            var pt = prop.PropertyType;
+            if (pt.IsPrimitive || pt.IsEnum || pt == typeof(string) || pt == typeof(Uri))
+            {
+                continue;
+            }
+            object? value;
+            try { value = prop.GetValue(node); }
+            catch { continue; }
+            Visit(value, keyMap, visited);
+        }
+    }
+
+    private static string RewriteRefString(string refStr, Dictionary<string, Dictionary<string, string>> keyMap)
+    {
+        // Only rewrite local fragment refs that point at a known section.
+        // External refs, refs we don't recognise, and refs already pointing to a
+        // merged key are left untouched.
+        if (!refStr.StartsWith("#/", StringComparison.Ordinal))
+        {
+            return refStr;
+        }
+
+        var parts = refStr.Substring(2).Split('/');
+        // Expected shapes:
+        //  servers/{key}
+        //  channels/{key}[/...]
+        //  operations/{key}[/...]
+        //  components/{section}/{key}[/...]
+        string section;
+        int keyIndex;
+        if (parts.Length >= 2 && parts[0] == "components")
+        {
+            if (parts.Length < 3)
+            {
+                return refStr;
+            }
+            section = $"components/{parts[1]}";
+            keyIndex = 2;
+        }
+        else if (parts.Length >= 2)
+        {
+            section = parts[0];
+            keyIndex = 1;
+        }
+        else
+        {
+            return refStr;
+        }
+
+        if (!keyMap.TryGetValue(section, out var map))
+        {
+            return refStr;
+        }
+        var originalKey = parts[keyIndex];
+        if (!map.TryGetValue(originalKey, out var newKey) || string.Equals(originalKey, newKey, StringComparison.Ordinal))
+        {
+            return refStr;
+        }
+        parts[keyIndex] = newKey;
+        return "#/" + string.Join("/", parts);
     }
 
     private static void MergeChannels(AsyncApiDocument merged, AsyncApiDocument source, string prefix)

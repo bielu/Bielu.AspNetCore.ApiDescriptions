@@ -17,9 +17,7 @@ builder.AddServiceDefaults();
 builder.AddServiceMetrics(InventoryMetrics.MeterName);
 builder.AddServiceTracing(DiagnosticsNames.InventoryService);
 
-// Register Aspire Confluent Kafka producer and consumer (connection managed by Aspire)
-builder.AddKafkaProducer<string, string>("kafka");
-builder.AddKafkaConsumer<string, string>("kafka");
+
 
 // Register Aspire PostgreSQL with Entity Framework Core (connection managed by Aspire)
 builder.AddNpgsqlDbContext<InventoryDbContext>("inventorydb");
@@ -48,7 +46,7 @@ builder.Services.AddAsyncApi(options =>
             "Data is persisted to PostgreSQL (EF Core). Uses Apache Ozone for document storage.")
         .WithLicense("Apache 2.0", "https://www.apache.org/licenses/LICENSE-2.0");
 
-    options.AddChannelBinding("kafkaInventoryChannel",
+    options.AddChannelBinding("kafka",
         new KafkaChannelBinding());
 });
 

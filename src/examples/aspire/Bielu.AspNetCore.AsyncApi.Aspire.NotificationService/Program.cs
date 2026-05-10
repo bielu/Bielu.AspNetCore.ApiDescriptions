@@ -17,8 +17,6 @@ builder.AddServiceDefaults();
 builder.AddServiceMetrics(NotificationMetrics.MeterName);
 builder.AddServiceTracing(DiagnosticsNames.NotificationService);
 
-// Register Aspire Confluent Kafka consumer (connection managed by Aspire)
-builder.AddKafkaConsumer<string, string>("kafka");
 
 builder.Services.AddSignalR();
 
@@ -40,7 +38,7 @@ builder.Services.AddAsyncApi(options =>
             "Consumes order and inventory events from Kafka and pushes updates to connected clients.")
         .WithLicense("Apache 2.0", "https://www.apache.org/licenses/LICENSE-2.0");
 
-    options.AddChannelBinding("wsNotificationChannel",
+    options.AddChannelBinding("ws",
         new WebSocketsChannelBinding());
 });
 

@@ -19,8 +19,6 @@ builder.AddServiceDefaults();
 builder.AddServiceMetrics(OrderMetrics.MeterName);
 builder.AddServiceTracing(DiagnosticsNames.OrderService);
 
-// Register Aspire Confluent Kafka producer (connection managed by Aspire)
-builder.AddKafkaProducer<string, string>("kafka");
 
 // Register Aspire PostgreSQL with Entity Framework Core (connection managed by Aspire)
 builder.AddNpgsqlDbContext<OrderDbContext>("ordersdb");
@@ -54,10 +52,10 @@ builder.Services.AddAsyncApi(options =>
             "Data is persisted to PostgreSQL (EF Core) and cached in Valkey.")
         .WithLicense("Apache 2.0", "https://www.apache.org/licenses/LICENSE-2.0");
 
-    options.AddChannelBinding("kafkaOrderChannel",
+    options.AddChannelBinding("kafka",
         new KafkaChannelBinding());
 
-    options.AddChannelBinding("wsOrderTrackingChannel",
+    options.AddChannelBinding("ws",
         new WebSocketsChannelBinding());
 });
 

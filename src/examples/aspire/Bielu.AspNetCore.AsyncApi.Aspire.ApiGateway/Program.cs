@@ -115,7 +115,7 @@ app.UseWebSockets();
 app.MapReverseProxy();
 
 // Map the merged AsyncAPI document endpoint and UI
-app.MapMergedAsyncApi("/asyncapi/merged.json");
+app.MapMergedAsyncApi("/asyncapi/v1.json");
 app.MapAsyncApiUi("/asyncapi");
 
 app.Run();
