@@ -6,6 +6,18 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 ## [Unreleased]
 
+### Added
+
+- **SignalR protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` package
+  providing a custom `signalr` protocol with channel, operation, message and server bindings, plus a
+  runnable `SignalRChat` example.
+
+### Fixed
+
+- `BindingsRef` on `[Channel]` and operation attributes now actually attaches the referenced binding
+  (registered via `AddChannelBinding`/`AddOperationBinding`) to the channel/operation in the generated
+  document. Previously the binding was only stored under `components` and never linked.
+
 ## Changes from Saunter
 
 This section documents the key differences between Bielu.AspNetCore.AsyncApi and the original [Saunter](https://github.com/asyncapi/saunter) library.

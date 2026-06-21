@@ -22,7 +22,7 @@ This project is based on and inspired by:
 - ✅ **Build-time document generation** - Generate AsyncAPI documents at build-time for static hosting
 - ✅ **Document transformers** - Customize the generated document via document transformers
 - ✅ **Schema transformers** - Customize the generated schema via schema transformers
-- ✅ **Protocol bindings** - Support for AMQP, HTTP, MQTT, Kafka, and other protocol bindings
+- ✅ **Protocol bindings** - Support for AMQP, HTTP, MQTT, Kafka, SignalR, and other protocol bindings
 - ✅ **Multiple documents** - Generate multiple AsyncAPI documents from a single application
  - ✅ **Interactive UI** - Built-in AsyncAPI UI, or render the document with [Scalar](https://scalar.com/) (recommended) — see [Viewing the Documentation](#viewing-the-documentation)
 - ✅ **Attribute-based configuration** - Decorate your classes with attributes to define channels and operations
@@ -395,6 +395,64 @@ public void PublishLightMeasuredEvent(LightMeasuredEvent lightMeasuredEvent) { }
 ```
 
 Available bindings: [AsyncAPI.NET.Bindings](https://www.nuget.org/packages/AsyncAPI.NET.Bindings/)
+
+> `BindingsRef` attaches a binding registered with `AddChannelBinding`/`AddOperationBinding` to the
+> referenced channel/operation, so it appears inline in the generated document.
+
+### SignalR protocol
+
+The `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` package adds a custom `signalr` protocol
+with channel, operation, message and server bindings. Use it exactly like any other binding:
+
+```csharp
+builder.Services.AddSignalR();
+builder.Services.AddControllers(); // AsyncAPI document generation uses MVC application parts
+
+builder.Services.AddAsyncApi("signalr", options =>
+{
+    options.AddChannelBinding("chatHub", new SignalRChannelBinding
+    {
+        Hub = "/chatHub",
+        Transports = { SignalRProtocol.Transports.WebSockets, SignalRProtocol.Transports.LongPolling },
+        Protocols = { SignalRProtocol.HubProtocols.Json, SignalRProtocol.HubProtocols.MessagePack },
+    });
+
+    options.AddOperationBinding("sendMessage", new SignalROperationBinding
+    {
+        Target = "SendMessage",
+        Direction = SignalRProtocol.Directions.ClientToServer,
+        CallType = SignalRProtocol.CallTypes.Invocation,
+    });
+});
+
+// Annotate the hub and map it
+[AsyncApi]
+[Channel("chatHub", BindingsRef = "chatHub")]
+public class ChatHub : Hub
+{
+    [PublishOperation(typeof(ChatMessage), BindingsRef = "sendMessage")]
+    public Task SendMessage(ChatMessage message) => Clients.All.SendAsync("ReceiveMessage", message);
+}
+
+app.MapHub<ChatHub>("/chatHub");
+app.MapAsyncApi();
+app.MapScalarApiReference(o => o.AddAsyncApiDocument("signalr", "SignalR Chat", "/asyncapi/signalr.json")); // /scalar
+```
+
+A runnable example lives in [`src/examples/SignalRChat`](src/examples/SignalRChat).
+
+**SignalR message types** — `SignalRMessageBinding.MessageType` is a `SignalRMessageType` enum that
+serializes to a readable token (the underlying integer is the SignalR hub-protocol wire id):
+
+| Token | Wire id | Meaning |
+| --- | --- | --- |
+| `invocation` | 1 | Client/server invokes a method |
+| `streamItem` | 2 | A single item of a stream |
+| `completion` | 3 | Result/error of an invocation |
+| `streamInvocation` | 4 | Invokes a streaming method |
+| `cancelInvocation` | 5 | Cancels a streaming invocation |
+| `ping` | 6 | Keep-alive |
+| `close` | 7 | Connection closing |
 
 ## Multiple AsyncAPI Documents
 

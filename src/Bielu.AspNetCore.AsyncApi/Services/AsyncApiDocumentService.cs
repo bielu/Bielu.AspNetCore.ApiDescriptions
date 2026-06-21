@@ -175,14 +175,11 @@ internal sealed class AsyncApiDocumentService(
     private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr)
     {
         var sanitizedKey = AsyncApiNamingHelper.SanitizeKey(channelAttr.Name);
-        if (channelAttr.BindingsRef != null && document.Channels.TryGetValue(channelAttr.BindingsRef, out var existingChannelByRef))
-        {
-            return existingChannelByRef;
-        }
         if (document.Channels.TryGetValue(sanitizedKey, out var existing))
         {
             existing.Description ??= channelAttr.Description;
             existing.Address ??= channelAttr.Name;
+            AttachChannelBindings(document, existing, channelAttr.BindingsRef);
             return existing;
         }
 
@@ -192,8 +189,50 @@ internal sealed class AsyncApiDocumentService(
             Description = channelAttr.Description ?? string.Empty,
         };
 
+        AttachChannelBindings(document, created, channelAttr.BindingsRef);
         document.Channels[sanitizedKey] = created;
         return created;
+    }
+
+    /// <summary>
+    /// Attaches a channel bindings item registered in <c>components/channelBindings</c> (via
+    /// <see cref="AsyncApiOptions.AddChannelBinding"/>) to the channel referenced by <paramref name="bindingsRef"/>.
+    /// </summary>
+    private static void AttachChannelBindings(AsyncApiDocument document, AsyncApiChannel channel, string? bindingsRef)
+    {
+        if (string.IsNullOrWhiteSpace(bindingsRef))
+        {
+            return;
+        }
+
+        if (document.Components?.ChannelBindings is { } registered &&
+            registered.TryGetValue(AsyncApiNamingHelper.SanitizeKey(bindingsRef), out var bindings))
+        {
+            channel.Bindings = bindings;
+        }
+    }
+
+    /// <summary>
+    /// Attaches an operation bindings item registered in <c>components/operationBindings</c> (via
+    /// <see cref="AsyncApiOptions.AddOperationBinding"/>) to the operation referenced by <paramref name="bindingsRef"/>.
+    /// </summary>
+    private static void AttachOperationBindings(AsyncApiDocument document, AsyncApiOperation operation, string? bindingsRef)
+    {
+        if (string.IsNullOrWhiteSpace(bindingsRef))
+        {
+            return;
+        }
+
+        if (document.Components?.OperationBindings is not { } registered)
+        {
+            return;
+        }
+
+        if (registered.TryGetValue(bindingsRef, out var bindings) ||
+            registered.TryGetValue(AsyncApiNamingHelper.SanitizeKey(bindingsRef), out bindings))
+        {
+            operation.Bindings = bindings;
+        }
     }
 
     private static void ApplyChannelParametersFromAttributes(AsyncApiChannel channel, MemberInfo member)
@@ -405,6 +444,8 @@ private async Task ApplyOperationsFromAttributes(
             : AsyncApiAction.Receive;
 
         op.Channel = new AsyncApiChannelReference($"#/channels/{AsyncApiNamingHelper.SanitizeKey(channel.Address!)}");
+
+        AttachOperationBindings(document, op, opAttr.BindingsRef);
 
         if (opAttr.Tags is { Length: > 0 })
         {
