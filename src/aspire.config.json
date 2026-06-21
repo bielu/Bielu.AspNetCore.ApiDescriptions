@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.AppHost/Bielu.AspNetCore.AsyncApi.Aspire.AppHost.csproj"
+  }
+}

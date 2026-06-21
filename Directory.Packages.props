@@ -5,18 +5,18 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- ByteBard AsyncAPI -->
-    <PackageVersion Include="ByteBard.AsyncAPI.NET" Version="2.1.3-beta.14" />
-    <PackageVersion Include="ByteBard.AsyncAPI.NET.Bindings" Version="2.1.3-beta.14" />
-    <PackageVersion Include="ByteBard.AsyncAPI.NET.Readers" Version="2.1.3-beta.14" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET" Version="3.0.0" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET.Bindings" Version="3.0.0" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET.Readers" Version="3.0.0" />
     <!-- Microsoft Extensions -->
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.3" />
-    <PackageVersion Include="System.Text.Json" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.9" />
+    <PackageVersion Include="System.Text.Json" Version="10.0.9" />
     <!-- Analyzers -->
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.14.15" />
     <!-- Test frameworks -->
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
@@ -24,30 +24,30 @@
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.Testing" Version="10.2.0" />
     <!-- ASP.NET Core testing -->
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.9" />
     <!-- Playwright for headless browser testing -->
-    <PackageVersion Include="Microsoft.Playwright" Version="1.58.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.60.0" />
     <!-- Code Coverage -->
-    <PackageVersion Include="coverlet.collector" Version="8.0.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <!-- Aspire Hosting -->
-    <PackageVersion Include="Aspire.Hosting.Kafka" Version="13.1.2" />
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
-    <PackageVersion Include="Aspire.Hosting.Valkey" Version="13.1.2" />
+    <PackageVersion Include="Aspire.Hosting.Kafka" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.Valkey" Version="13.4.6" />
     <!-- YARP -->
     <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
     <!-- Aspire Service Defaults -->
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.4.0" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.4.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.7.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
     <!-- Aspire Client Integrations -->
-    <PackageVersion Include="Aspire.Confluent.Kafka" Version="13.1.2" />
-    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
-    <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.1.2" />
-    <PackageVersion Include="StackExchange.Redis" Version="2.12.1" />
+    <PackageVersion Include="Aspire.Confluent.Kafka" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.4.6" />
+    <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.4.6" />
+    <PackageVersion Include="StackExchange.Redis" Version="3.0.0" />
     <!-- DI Decorator support -->
     <PackageVersion Include="Scrutor" Version="7.0.0" />
   </ItemGroup>

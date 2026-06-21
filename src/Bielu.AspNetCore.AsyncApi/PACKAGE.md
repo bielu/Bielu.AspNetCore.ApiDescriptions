@@ -48,6 +48,25 @@ app.MapAsyncApi();
 app.Run();
 ```
 
+## Viewing the Documentation
+
+The library serves a standard AsyncAPI document at `/asyncapi/{documentName}.json`, so you can render it with any AsyncAPI-compatible UI. We recommend [Scalar](https://scalar.com/), which renders AsyncAPI channels, operations, messages, and schemas alongside your OpenAPI references:
+
+```sh
+dotnet add package Scalar.AspNetCore
+```
+
+```C#
+app.MapAsyncApi();
+
+app.MapScalarApiReference(options =>
+{
+    options.AddAsyncApiDocument("v1", "My API", "/asyncapi/v1.json");
+});
+```
+
+> Note: Scalar's AsyncAPI support is still evolving; not every part of the specification is rendered yet.
+
 ## Main Types
 
 <!-- The main types provided in this library -->
