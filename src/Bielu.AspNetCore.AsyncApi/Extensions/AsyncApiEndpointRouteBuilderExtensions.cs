@@ -4,12 +4,14 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 
@@ -55,24 +57,50 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                 }
                 else
                 {
-                    var document = await documentService.GetAsyncApiDocumentAsync(context.RequestServices, context.Request, context.RequestAborted);
-                    var documentOptions = options.Get(lowercasedDocumentName);
-
                     var isYaml = UseYaml(pattern);
 
-                    // Serialize the document
+                    // Build and serialize the document into a buffer *before* committing any response
+                    // headers. If this throws, no headers are sent yet, so we can still return an
+                    // accurate error status instead of a 200 with a broken body (see issue #31).
                     string serialized;
-                    if (documentOptions.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
+                    try
                     {
-                        serialized = isYaml
-                            ? AsyncApiSerializationHelper.SerializeV2ToYaml(document)
-                            : AsyncApiSerializationHelper.SerializeV2ToJson(document);
+                        var document = await documentService.GetAsyncApiDocumentAsync(context.RequestServices, context.Request, context.RequestAborted);
+                        var documentOptions = options.Get(lowercasedDocumentName);
+
+                        if (documentOptions.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
+                        {
+                            serialized = isYaml
+                                ? AsyncApiSerializationHelper.SerializeV2ToYaml(document)
+                                : AsyncApiSerializationHelper.SerializeV2ToJson(document);
+                        }
+                        else
+                        {
+                            serialized = isYaml
+                                ? AsyncApiSerializationHelper.SerializeV3ToYaml(document)
+                                : AsyncApiSerializationHelper.SerializeV3ToJson(document);
+                        }
                     }
-                    else
+                    catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
                     {
-                        serialized = isYaml
-                            ? AsyncApiSerializationHelper.SerializeV3ToYaml(document)
-                            : AsyncApiSerializationHelper.SerializeV3ToJson(document);
+                        // The client disconnected; headers were never committed, so just stop.
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        GetLogger(context).LogError(ex, "Failed to generate AsyncApi document '{DocumentName}'.", lowercasedDocumentName);
+                        await WriteProblemAsync(context, StatusCodes.Status500InternalServerError,
+                            $"Failed to generate the AsyncApi document '{lowercasedDocumentName}'.");
+                        return;
+                    }
+
+                    // Guard against an empty/whitespace document being served as a successful 200.
+                    if (string.IsNullOrWhiteSpace(serialized))
+                    {
+                        GetLogger(context).LogError("AsyncApi document '{DocumentName}' serialized to an empty document.", lowercasedDocumentName);
+                        await WriteProblemAsync(context, StatusCodes.Status500InternalServerError,
+                            $"The AsyncApi document '{lowercasedDocumentName}' serialized to an empty document.");
+                        return;
                     }
 
                     // Compute ETag from serialized content
@@ -87,8 +115,11 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                         return;
                     }
 
-                    string contentType = isYaml ? "text/plain+yaml;charset=utf-8" : "application/json;charset=utf-8";
-                    context.Response.ContentType = contentType;
+                    var payload = Encoding.UTF8.GetBytes(serialized);
+                    context.Response.ContentType = isYaml ? "text/plain+yaml;charset=utf-8" : "application/json;charset=utf-8";
+                    // Set Content-Length so a truncated write surfaces as a protocol error rather than a
+                    // silently short body.
+                    context.Response.ContentLength = payload.Length;
 
                     await context.Response.StartAsync();
                     if (context.RequestAborted.IsCancellationRequested)
@@ -96,7 +127,7 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                         return;
                     }
 
-                    await context.Response.WriteAsync(serialized, context.RequestAborted);
+                    await context.Response.Body.WriteAsync(payload, context.RequestAborted);
                 }
             }).ExcludeFromDescription();
     }
@@ -114,4 +145,33 @@ public static class AsyncApiEndpointRouteBuilderExtensions
     private static bool UseYaml(string pattern) =>
         pattern.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) ||
         pattern.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);
+
+    private static ILogger GetLogger(HttpContext context) =>
+        context.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("Bielu.AspNetCore.AsyncApi")
+        ?? NullLoggerInstance;
+
+    private static readonly ILogger NullLoggerInstance =
+        Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+
+    /// <summary>
+    /// Writes an RFC 7807 problem response. Safe to call only before the response has started, which
+    /// is guaranteed here because serialization is fully buffered before any header is committed.
+    /// </summary>
+    private static async Task WriteProblemAsync(HttpContext context, int statusCode, string detail)
+    {
+        context.Response.Clear();
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/problem+json;charset=utf-8";
+
+        var payload = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+            title = "An error occurred while producing the AsyncApi document.",
+            status = statusCode,
+            detail,
+        });
+
+        context.Response.ContentLength = payload.Length;
+        await context.Response.Body.WriteAsync(payload, context.RequestAborted);
+    }
 }
