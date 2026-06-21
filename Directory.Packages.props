@@ -50,5 +50,7 @@
     <PackageVersion Include="StackExchange.Redis" Version="3.0.0" />
     <!-- DI Decorator support -->
     <PackageVersion Include="Scrutor" Version="7.0.0" />
+    <!-- Scalar API reference UI (AsyncAPI rendering) -->
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.4" />
   </ItemGroup>
 </Project>

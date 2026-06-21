@@ -4,38 +4,33 @@ This is an example implementation (with minor additions) of the [Streetlights AP
 
 ## Running
 
-The example project references the Saunter project directly (for easy debugging), so we need to install the UI assets manually.
-This requires nodejs/npm, but neither are required when using the nuget package in your project.
+The example project references the `Bielu.AspNetCore.AsyncApi` projects directly (for easy debugging). The built-in UI assets are embedded in the `Bielu.AspNetCore.AsyncApi.UI` package, so no extra setup is required.
 
 Run the sample with `dotnet run` and then use curl (or similar) to send test requests to the API.
 
 ```sh
-#### Install UI assets
-
-$ cd ~/saunter/src/Saunter.UI
-$ npm install
-
-added 106 packages, and audited 107 packages in 2s
-
-1 package is looking for funding
-  run `npm fund` for details
-
-found 0 vulnerabilities
-
 #### Run the example
 
-$ cd ~/saunter/examples/StreetlightsAPI
+$ cd src/examples/StreetlightsAPI
 $ dotnet run
 
-info: StreetlightsAPI.Program[0] AsyncAPI doc available at: http://localhost:5000/asyncapi/asyncapi.json
-info: StreetlightsAPI.Program[0] AsyncAPI UI available at: http://localhost:5000/asyncapi/ui/
+info: StreetlightsAPI.Program[0] AsyncAPI doc available at: http://localhost:5000/asyncapi/v1.json
+info: StreetlightsAPI.Program[0] AsyncAPI UI available at: http://localhost:5000/asyncapi
+info: StreetlightsAPI.Program[0] Scalar UI available at: http://localhost:5000/scalar
 info: Microsoft.Hosting.Lifetime[0] Now listening on: http://localhost:5000
 info: Microsoft.Hosting.Lifetime[0] Application started. Press Ctrl+C to shut down.
 info: Microsoft.Hosting.Lifetime[0] Hosting environment: Production
-info: Microsoft.Hosting.Lifetime[0] Content root path: saunter\examples\StreetlightsAPI
+info: Microsoft.Hosting.Lifetime[0] Content root path: src\examples\StreetlightsAPI
+```
 
-#### View the UI in your browser at http://localhost:5000/asyncapi/ui/
+## Viewing the Documentation
 
+This example exposes the generated AsyncAPI document at `http://localhost:5000/asyncapi/v1.json` and renders it two ways:
+
+- **Scalar (recommended):** `http://localhost:5000/scalar` — wired up in `Program.cs` via `MapScalarApiReference(...).AddAsyncApiDocument("v1", "Streetlights API", "/asyncapi/v1.json")`.
+- **Built-in UI:** `http://localhost:5000/asyncapi` — mapped via `MapAsyncApiUi()`.
+
+```sh
 #### Get streetlights
 
 $ Invoke-WebRequest 'http://localhost:5000/api/streetlights' | ConvertFrom-Json

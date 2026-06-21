@@ -2,6 +2,7 @@
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Bindings.Http;
+using Scalar.AspNetCore;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -91,7 +92,13 @@ namespace StreetlightsAPI
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapAsyncApi();
+                // Built-in AsyncAPI UI (served at /asyncapi)
                 endpoints.MapAsyncApiUi();
+                // Recommended: render the generated AsyncAPI document with Scalar (served at /scalar)
+                endpoints.MapScalarApiReference(options =>
+                {
+                    options.AddAsyncApiDocument("v1", "Streetlights API", "/asyncapi/v1.json");
+                });
                 endpoints.MapControllers();
             });
 
@@ -102,6 +109,7 @@ namespace StreetlightsAPI
             logger.LogInformation("AsyncAPI doc available at: {URL}",
                 $"{addresses.FirstOrDefault()}/asyncapi/v1.json");
             logger.LogInformation("AsyncAPI UI available at: {URL}", $"{addresses.FirstOrDefault()}/asyncapi");
+            logger.LogInformation("Scalar UI available at: {URL}", $"{addresses.FirstOrDefault()}/scalar");
         }
     }
 }

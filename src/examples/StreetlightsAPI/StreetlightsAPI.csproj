@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="ByteBard.AsyncAPI.NET.Bindings" />
+    <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>
 
 </Project>
