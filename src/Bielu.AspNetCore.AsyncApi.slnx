@@ -7,6 +7,7 @@
   <Folder Name="/examples/">
     <Project Path="./examples/StreetlightsAPI/StreetlightsAPI.csproj" />
     <Project Path="./examples/SignalRChat/SignalRChat.csproj" />
+    <Project Path="./examples/GrpcGreeter/GrpcGreeter.csproj" />
   </Folder>
     <Folder Name="/examples/aspire/">
         <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.AppHost/Bielu.AspNetCore.AsyncApi.Aspire.AppHost.csproj" />
@@ -22,6 +23,7 @@
     <Project Path="Bielu.AspNetCore.AsyncApi.Tests.ExternalLibraries/Bielu.AspNetCore.AsyncApi.Tests.ExternalLibraries.csproj" />
     <Project Path="Bielu.AspNetCore.AsyncApi.Tests.Shared.LibraryChannels/Bielu.AspNetCore.AsyncApi.Tests.Shared.LibraryChannels.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.Tests/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.Tests.csproj" />
+    <Project Path="../test/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.Tests/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.Tests.csproj" />
   </Folder>
   <Folder Name="/Solution Files/">
     <File Path="../.dockerignore" />
@@ -40,6 +42,7 @@
   </Folder>
   <Project Path="./Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.csproj" />
+  <Project Path="./Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Merger/Bielu.AspNetCore.AsyncApi.Merger.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.UI/Bielu.AspNetCore.AsyncApi.UI.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi/Bielu.AspNetCore.AsyncApi.csproj" />
