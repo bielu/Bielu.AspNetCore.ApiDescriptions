@@ -11,6 +11,14 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 - **SignalR protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` package
   providing a custom `signalr` protocol with channel, operation, message and server bindings, plus a
   runnable `SignalRChat` example.
+- **gRPC protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc` package
+  providing a custom `grpc` protocol with channel, operation, message and server bindings.
+- **Server-Sent Events (SSE) protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse`
+  package providing a custom `sse` protocol with channel, operation, message and server bindings
+  modelling the `text/event-stream` (`event`/`id`/`retry`/`data`) wire shape.
+- **WebRTC protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc` package
+  providing a custom `webrtc` protocol with channel, operation, message and server bindings covering
+  `RTCDataChannel` streams and SDP/ICE signaling.
 
 ### Fixed
 

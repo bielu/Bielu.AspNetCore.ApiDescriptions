@@ -22,7 +22,7 @@ This project is based on and inspired by:
 - ✅ **Build-time document generation** - Generate AsyncAPI documents at build-time for static hosting
 - ✅ **Document transformers** - Customize the generated document via document transformers
 - ✅ **Schema transformers** - Customize the generated schema via schema transformers
-- ✅ **Protocol bindings** - Support for AMQP, HTTP, MQTT, Kafka, SignalR, and other protocol bindings
+- ✅ **Protocol bindings** - Support for AMQP, HTTP, MQTT, Kafka, SignalR, gRPC, SSE, WebRTC, and other protocol bindings
 - ✅ **Multiple documents** - Generate multiple AsyncAPI documents from a single application
  - ✅ **Interactive UI** - Built-in AsyncAPI UI, or render the document with [Scalar](https://scalar.com/) (recommended) — see [Viewing the Documentation](#viewing-the-documentation)
 - ✅ **Attribute-based configuration** - Decorate your classes with attributes to define channels and operations
@@ -453,6 +453,80 @@ serializes to a readable token (the underlying integer is the SignalR hub-protoc
 | `cancelInvocation` | 5 | Cancels a streaming invocation |
 | `ping` | 6 | Keep-alive |
 | `close` | 7 | Connection closing |
+
+### Server-Sent Events (SSE) protocol
+
+The `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse` package adds a custom `sse` protocol with
+channel, operation, message and server bindings. SSE is a one-way server-to-client stream of
+`text/event-stream` frames, so operations default to the `serverToClient` direction.
+
+```csharp
+builder.Services.AddAsyncApi("sse", options =>
+{
+    options.AddSseChannelBinding("events", b =>
+    {
+        b.Path = "/events";
+        b.Method = SseProtocol.Methods.Get; // EventSource always uses GET
+    });
+
+    options.AddSseOperationBinding("onPriceUpdate", b =>
+    {
+        b.Direction = SseProtocol.Directions.ServerToClient;
+    });
+});
+```
+
+The four bindings map onto the SSE wire shape:
+
+| Binding | Notable fields |
+| --- | --- |
+| `SseChannelBinding` | `Path`, `Method`, `ContentType` (defaults to `text/event-stream`), `Query`, `Headers` (e.g. `Last-Event-ID`) |
+| `SseOperationBinding` | `Method`, `Direction` (defaults to `serverToClient`) |
+| `SseMessageBinding` | `Event` (the `event:` field), `Id` (`id:`), `Retry` (reconnection time in ms) |
+| `SseServerBinding` | `Retry` (default reconnection time), `Heartbeat` (whether the server emits keep-alive comments) |
+
+### WebRTC protocol
+
+The `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc` package adds a custom `webrtc` protocol
+covering both SDP/ICE signaling and `RTCDataChannel` streams.
+
+```csharp
+builder.Services.AddAsyncApi("webrtc", options =>
+{
+    options.AddServer("webrtc", "signal.example.com", "webrtc"); // signaling endpoint
+
+    options.AddWebRtcChannelBinding("chat", b =>
+    {
+        b.ChannelType = WebRtcProtocol.ChannelTypes.DataChannel;
+        b.Label = "chat";
+        b.Ordered = true;
+    });
+
+    options.AddWebRtcOperationBinding("sendOffer", b =>
+    {
+        b.SignalingType = WebRtcSignalingType.Offer;
+        b.Direction = WebRtcProtocol.Directions.ClientToServer;
+    });
+});
+```
+
+The four bindings map onto the WebRTC concepts:
+
+| Binding | Notable fields |
+| --- | --- |
+| `WebRtcChannelBinding` | `ChannelType` (`dataChannel`/`media`), `Label`, `SubProtocol`, `Ordered`, `MaxRetransmits`, `MaxPacketLifeTime`, `Negotiated`, `Id` |
+| `WebRtcOperationBinding` | `SignalingType` (`offer`/`answer`/`candidate`), `Direction` |
+| `WebRtcMessageBinding` | `SignalingType`, `Encoding` (`text`/`binary`/`json`), `Headers` |
+| `WebRtcServerBinding` | `SignalingUrl`, `IceServers` (STUN/TURN URLs), `BundlePolicy` |
+
+**WebRTC signaling types** — `SignalingType` is a `WebRtcSignalingType` enum that serializes to a
+readable token:
+
+| Token | Meaning |
+| --- | --- |
+| `offer` | SDP offer initiating negotiation |
+| `answer` | SDP answer responding to an offer |
+| `candidate` | An ICE candidate discovered during connectivity checks |
 
 ## Multiple AsyncAPI Documents
 

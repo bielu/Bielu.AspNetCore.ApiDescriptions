@@ -19,6 +19,9 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.Cli` | CLI tool for getting/merging documents at build time |
 | `Bielu.AspNetCore.AsyncApi.ApiDescription.Server` | MSBuild props/targets for build-time generation |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` | SignalR protocol bindings |
+| `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc` | gRPC protocol bindings |
+| `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse` | Server-Sent Events (SSE) protocol bindings |
+| `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc` | WebRTC protocol bindings |
 | `src/examples/StreetlightsAPI` | Minimal single-service example (best starting point) |
 | `src/examples/aspire` | Distributed .NET Aspire microservices demo |
 
