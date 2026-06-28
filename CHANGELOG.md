@@ -8,6 +8,13 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 ### Added
 
+- **Interactive SignalR console for Scalar** - New `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` package
+  (ASP.NET Core) and `Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire` package (Aspire hosting) that
+  add a live SignalR client panel to the Scalar API Reference. The panel reads the SignalR bindings
+  from your AsyncAPI document(s) and lets you connect to a hub, invoke client-to-server methods and
+  watch server-to-client events. It is powered by the standalone, npm-publishable
+  `@bielu/scalar-signalr` bundle (a drop-in replacement for `scalar.js`). Wired into the `SignalRChat`
+  example via `MapScalarSignalRAssets()` + `options.WithSignalRClient(...)`.
 - **SignalR protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` package
   providing a custom `signalr` protocol with channel, operation, message and server bindings, plus a
   runnable `SignalRChat` example.

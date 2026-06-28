@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.Scalar.SignalR</RootNamespace>
+        <Description>Interactive SignalR console for the Scalar API Reference in ASP.NET Core. Serves a Scalar bundle that adds a SignalR client driven by your SignalR AsyncAPI bindings.</Description>
+        <PackageTags>scalar;signalr;asyncapi;aspnetcore;api-reference</PackageTags>
+        <SignalRBundlePath>$(MSBuildProjectDirectory)/assets/dist/plugin.js</SignalRBundlePath>
+        <DefaultItemExcludes>$(DefaultItemExcludes);assets/node_modules/**;assets/dist/**</DefaultItemExcludes>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="Scalar.AspNetCore" />
+    </ItemGroup>
+
+    <!--
+      The interactive client lives in the assets/ npm package (@bielu/scalar-signalr). Build the
+      single IIFE bundle (skipped when it already exists, so a CI agent without Node can still build
+      the .NET package from a pre-built bundle), then embed it as a manifest resource. This must run
+      before AssignTargetPaths so the dynamically added EmbeddedResource is picked up by the resource
+      pipeline (hooking GenerateResource/CoreCompile is too late — the resource list is snapshotted
+      earlier).
+    -->
+    <Target Name="PrepareSignalRBundle" BeforeTargets="AssignTargetPaths">
+        <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)/assets" Condition="!Exists('$(MSBuildProjectDirectory)/assets/node_modules')" />
+        <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)/assets" Condition="!Exists('$(SignalRBundlePath)')" />
+        <ItemGroup>
+            <EmbeddedResource Include="$(SignalRBundlePath)">
+                <LogicalName>Bielu.AspNetCore.AsyncApi.Scalar.SignalR.bundle.js</LogicalName>
+            </EmbeddedResource>
+        </ItemGroup>
+    </Target>
+
+</Project>

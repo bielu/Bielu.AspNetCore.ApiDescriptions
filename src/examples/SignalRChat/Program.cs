@@ -1,5 +1,6 @@
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
+using Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
 using Bielu.AspNetCore.AsyncApi.UI;
 using Scalar.AspNetCore;
 using SignalRChat;
@@ -61,10 +62,16 @@ app.MapHub<ChatHub>(HubPath);
 app.MapAsyncApi();      // GET /asyncapi/signalr.json
 app.MapAsyncApiUi();    // GET /asyncapi
 
-// Render the generated AsyncAPI document with Scalar (served at /scalar).
+// Serve the SignalR-enabled Scalar bundle (GET /scalar/signalr/bundle.js).
+app.MapScalarSignalRAssets();
+
+// Render the generated AsyncAPI document with Scalar (served at /scalar), and add the
+// interactive SignalR console. The console discovers the AsyncAPI document automatically from
+// Scalar's own sources — no need to declare it again.
 app.MapScalarApiReference(options =>
 {
     options.AddAsyncApiDocument("signalr", "SignalR Chat", "/asyncapi/signalr.json");
+    options.WithSignalRClient();
 });
 
 app.Run();
