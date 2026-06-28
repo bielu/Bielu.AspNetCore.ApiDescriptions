@@ -7,10 +7,13 @@ import {
   LogLevel,
 } from '@microsoft/signalr'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { resolveDocuments } from '../discovery'
 import { loadSignalRHubs } from '../signalr-bindings'
-import type { SignalRHubModel, SignalROperationModel, SignalRPluginConfig } from '../types'
+import type { SignalRDocumentRef, SignalRHubModel, SignalROperationModel } from '../types'
 
-const props = defineProps<{ config: SignalRPluginConfig }>()
+// `options` is the Scalar configuration Scalar binds to the element; `documents` is an optional
+// explicit override. Documents are otherwise auto-discovered from `options.sources`.
+const props = defineProps<{ options?: Record<string, any>; documents?: SignalRDocumentRef[] }>()
 
 type TransportChoice = 'auto' | 'webSockets' | 'serverSentEvents' | 'longPolling'
 type LogEntry = { time: string; dir: 'in' | 'out' | 'sys'; text: string }
@@ -161,7 +164,7 @@ watch(selectedHub, (hub) => {
 
 async function init() {
   loading.value = true
-  hubs.value = await loadSignalRHubs(props.config?.documents ?? [])
+  hubs.value = await loadSignalRHubs(resolveDocuments(props.options, props.documents))
   if (hubs.value.length > 0) {
     selectedKey.value = hubKey(hubs.value[0])
   }

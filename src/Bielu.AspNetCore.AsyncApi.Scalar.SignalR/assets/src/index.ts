@@ -1,6 +1,6 @@
-import { createApiReference as createScalarApiReference } from '@scalar/api-reference'
-import { createSignalRPlugin } from './plugin'
-import type { SignalRDocumentRef, SignalRPluginConfig } from './types'
+import { defineCustomElement } from 'vue'
+import SignalRConsole from './components/SignalRConsole.vue'
+import { createSignalRPlugin, SIGNALR_CONSOLE_TAG } from './plugin'
 
 export { createSignalRPlugin } from './plugin'
 export { loadSignalRHubs, parseSignalRHubs } from './signalr-bindings'
@@ -12,90 +12,58 @@ export type {
   SignalRPluginConfig,
 } from './types'
 
-/**
- * Config captured from this bundle's own `<script>` URL, e.g.
- * `bundle.js?documents=<base64-json>`. This is the channel used by the Aspire helper, where the
- * Scalar container HTML cannot inject a `HeadContent` global. Must be read while the IIFE is
- * executing (that is the only moment `document.currentScript` is valid), so it runs at module load.
- */
-const scriptConfig: Partial<SignalRPluginConfig> = (() => {
-  if (typeof document === 'undefined') {
-    return {}
+/** Register the console as a Web Component (idempotent). */
+function registerElement(): void {
+  if (typeof customElements === 'undefined' || customElements.get(SIGNALR_CONSOLE_TAG)) {
+    return
   }
-  const src = (document.currentScript as HTMLScriptElement | null)?.src
-  if (!src) {
-    return {}
+  customElements.define(SIGNALR_CONSOLE_TAG, defineCustomElement(SignalRConsole))
+}
+
+/** Adds the SignalR plugin to a Scalar configuration without mutating the caller's object. */
+function withSignalRPlugin(config: Record<string, any>): Record<string, any> {
+  const plugins = Array.isArray(config.plugins) ? config.plugins.slice() : []
+  plugins.push(createSignalRPlugin())
+  return { ...config, plugins }
+}
+
+/** Wrap `Scalar.createApiReference` so every call registers the SignalR plugin. */
+function wrapScalar(scalar: any): any {
+  if (scalar && typeof scalar.createApiReference === 'function' && !scalar.__bieluSignalRWrapped) {
+    const original = scalar.createApiReference.bind(scalar)
+    scalar.createApiReference = (element: unknown, config: Record<string, any> = {}) =>
+      original(element, withSignalRPlugin(config))
+    scalar.__bieluSignalRWrapped = true
+  }
+  return scalar
+}
+
+/**
+ * Install the hook regardless of script order: if Scalar's bundle has already set `window.Scalar`
+ * we wrap it now; otherwise we intercept the assignment so we wrap it the moment Scalar registers.
+ */
+function installScalarHook(): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+  let stored: any = (window as any).Scalar
+  if (stored) {
+    wrapScalar(stored)
   }
   try {
-    const raw = new URL(src).searchParams.get('documents')
-    return raw ? { documents: JSON.parse(atob(raw)) } : {}
+    Object.defineProperty(window, 'Scalar', {
+      configurable: true,
+      enumerable: true,
+      get: () => stored,
+      set: (value) => {
+        stored = wrapScalar(value)
+      },
+    })
   } catch {
-    return {}
-  }
-})()
-
-/**
- * Derives the candidate documents straight from the Scalar configuration's `sources` (and the
- * legacy top-level `url`/`content`). Scalar already knows every document, so the SignalR console
- * does not need them declared a second time — non-AsyncAPI sources are filtered out later.
- */
-function documentsFromScalarConfig(config: Record<string, any> | undefined): SignalRDocumentRef[] {
-  if (!config) {
-    return []
-  }
-  const refs: SignalRDocumentRef[] = []
-  const seen = new Set<string>()
-
-  const addUrl = (url: unknown, title?: unknown) => {
-    if (typeof url === 'string' && url && !seen.has(url)) {
-      seen.add(url)
-      refs.push({ name: typeof title === 'string' && title ? title : url, url })
-    }
-  }
-  const addContent = (content: unknown, title?: unknown) => {
-    if (content && typeof content === 'object') {
-      refs.push({ name: typeof title === 'string' && title ? title : 'document', doc: content as Record<string, any> })
-    }
-  }
-
-  const sources = Array.isArray(config.sources) ? config.sources : []
-  for (const source of sources) {
-    addUrl(source?.url ?? source?.spec?.url, source?.title ?? source?.slug)
-    addContent(source?.content ?? source?.spec?.content, source?.title ?? source?.slug)
-  }
-  addUrl(config.url)
-  addContent(config.content)
-
-  return refs
-}
-
-/**
- * Resolves the SignalR config. The document list is, in decreasing priority:
- *  - an explicit override (inline `config.signalr`, the injected global, or the `<script>` query);
- *  - otherwise auto-discovered from the Scalar configuration's `sources`.
- */
-function resolveSignalRConfig(config: Record<string, any> | undefined): SignalRPluginConfig {
-  const injected = (globalThis as any).__BIELU_SCALAR_SIGNALR__ as Partial<SignalRPluginConfig> | undefined
-  const inline = config?.signalr as Partial<SignalRPluginConfig> | undefined
-  const override = inline?.documents ?? injected?.documents ?? scriptConfig.documents
-  return {
-    documents: override && override.length > 0 ? override : documentsFromScalarConfig(config),
+    // `Scalar` is already defined and non-configurable — best-effort wrap what is there.
+    wrapScalar((window as any).Scalar)
   }
 }
 
-/**
- * Drop-in replacement for `Scalar.createApiReference` that additionally registers the interactive
- * SignalR console plugin.
- */
-export function createApiReference(element: unknown, config: Record<string, any> = {}) {
-  const signalr = resolveSignalRConfig(config)
-  const plugins = [...(config.plugins ?? []), createSignalRPlugin(signalr)]
-  return createScalarApiReference(element as any, { ...config, plugins })
-}
-
-// Expose the wrapper on the global so the standard Scalar HTML shell — which calls
-// `Scalar.createApiReference(...)` — picks up the SignalR-enabled version unchanged.
-if (typeof window !== 'undefined') {
-  const existing = (window as any).Scalar ?? {}
-  ;(window as any).Scalar = { ...existing, createApiReference }
-}
+registerElement()
+installScalarHook()
