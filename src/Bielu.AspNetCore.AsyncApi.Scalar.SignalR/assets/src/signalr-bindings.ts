@@ -8,6 +8,8 @@ import type {
 
 const SIGNALR = 'signalr'
 const MAX_SCHEMA_DEPTH = 6
+// Cap each AsyncAPI document fetch so a hung endpoint can't keep the SignalR panel loading forever.
+const DOC_FETCH_TIMEOUT_MS = 10000
 
 type AnyRecord = Record<string, any>
 
@@ -173,15 +175,26 @@ function pageScheme(): string {
   return 'http'
 }
 
-/** Build an absolute base URL (`scheme://host`) from an AsyncAPI server host string. */
+/**
+ * Build an absolute base URL (`scheme://host`) from an AsyncAPI server host string. Accepts bare
+ * hosts (which inherit the page scheme) as well as `http`/`https`/`ws`/`wss` URLs; the WebSocket
+ * schemes are mapped onto HTTP(S) (SignalR's `withUrl` expects an HTTP endpoint) and any path/query
+ * is stripped so only `scheme://host` remains.
+ */
 function resolveServerBaseUrl(host: string | undefined): string {
   if (!host) {
     return typeof window !== 'undefined' ? window.location.origin : ''
   }
-  if (/^https?:\/\//i.test(host)) {
-    return host.replace(/\/+$/, '')
+  const trimmed = host.trim()
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `${pageScheme()}://${trimmed}`
+  try {
+    const url = new URL(withScheme)
+    const protocol = url.protocol === 'wss:' ? 'https:' : url.protocol === 'ws:' ? 'http:' : url.protocol
+    return `${protocol}//${url.host}`
+  } catch {
+    // Best-effort fallback for an unparseable host: keep the previous behaviour.
+    return `${pageScheme()}://${trimmed.replace(/\/+$/, '')}`
   }
-  return `${pageScheme()}://${host.replace(/\/+$/, '')}`
 }
 
 function firstSignalRServerHost(doc: AnyRecord): string | undefined {
@@ -289,18 +302,27 @@ export async function loadSignalRHubs(documents: SignalRDocumentRef[]): Promise<
     try {
       let doc = ref.doc
       if (!doc && ref.url) {
-        const response = await fetch(resolveDocUrl(ref.url), { headers: { accept: 'application/json' } })
-        if (!response.ok) {
-          continue
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), DOC_FETCH_TIMEOUT_MS)
+        try {
+          const response = await fetch(resolveDocUrl(ref.url), {
+            headers: { accept: 'application/json' },
+            signal: controller.signal,
+          })
+          if (!response.ok) {
+            continue
+          }
+          doc = await response.json()
+        } finally {
+          clearTimeout(timer)
         }
-        doc = await response.json()
       }
       if (!doc || !doc.asyncapi) {
         continue
       }
       all.push(...parseSignalRHubs(ref.name, doc))
     } catch {
-      // Ignore individual document failures so the console still renders the rest.
+      // Ignore individual document failures (including fetch timeouts) so the console still renders the rest.
     }
   }
   return all

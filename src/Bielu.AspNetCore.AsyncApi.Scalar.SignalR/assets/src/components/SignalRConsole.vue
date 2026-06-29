@@ -25,19 +25,33 @@ const baseUrlOverride = ref('')
 const transport = ref<TransportChoice>('auto')
 const state = ref<HubConnectionState>(HubConnectionState.Disconnected)
 const log = reactive<LogEntry[]>([])
+// Per-operation state survives hub switches, so it is keyed by hub + operation id (operations from
+// different hubs/documents can share an `op.id`, which would otherwise overwrite each other).
 const invokeArgs = reactive<Record<string, string>>({})
 const results = reactive<Record<string, { ok: boolean; text: string }>>({})
-// Which method is selected in the dropdown, and which of its messages is the active example.
-const selectedMethodId = ref<string | null>(null)
+// Which method is selected per hub (keyed by hubKey), and which message of an op is the active example.
+const selectedMethodIds = reactive<Record<string, string>>({})
 const selectedMessageIndex = reactive<Record<string, number>>({})
 
 let connection: HubConnection | null = null
 
 const hubKey = (hub: SignalRHubModel) => `${hub.documentName}:${hub.channelName}`
+// A hub-scoped key for an operation. All displayed operations belong to the selected hub, so the
+// selected hub key uniquely scopes them.
+const opKey = (op: SignalROperationModel) => `${selectedKey.value}:${op.id}`
 
 const selectedHub = computed(() => hubs.value.find((hub) => hubKey(hub) === selectedKey.value) ?? null)
 const clientToServer = computed(() => selectedHub.value?.operations.filter((op) => op.direction === 'clientToServer') ?? [])
 const serverToClient = computed(() => selectedHub.value?.operations.filter((op) => op.direction === 'serverToClient') ?? [])
+// The selected method id for the current hub, persisted per hub so switching hubs keeps each choice.
+const selectedMethodId = computed<string | null>({
+  get: () => (selectedKey.value ? selectedMethodIds[selectedKey.value] ?? null : null),
+  set: (value) => {
+    if (selectedKey.value && value) {
+      selectedMethodIds[selectedKey.value] = value
+    }
+  },
+})
 const selectedMethod = computed(() => clientToServer.value.find((op) => op.id === selectedMethodId.value) ?? null)
 const isConnected = computed(() => state.value === HubConnectionState.Connected)
 const stateLabel = computed(() => HubConnectionState[state.value] ?? 'Disconnected')
@@ -72,17 +86,17 @@ function transportFlag(): HttpTransportType | undefined {
   }
 }
 
+/**
+ * Parse the editor contents into a positional argument array. Throws on invalid JSON so malformed
+ * input surfaces as a validation error instead of being silently sent as a raw string argument.
+ */
 function parseArgs(raw: string): unknown[] {
   const text = (raw ?? '').trim()
   if (!text) {
     return []
   }
-  try {
-    const parsed = JSON.parse(text)
-    return Array.isArray(parsed) ? parsed : [parsed]
-  } catch {
-    return [text]
-  }
+  const parsed = JSON.parse(text)
+  return Array.isArray(parsed) ? parsed : [parsed]
 }
 
 async function disconnect() {
@@ -157,29 +171,36 @@ function streamAll(target: string, args: unknown[]): Promise<unknown[]> {
 }
 
 async function testRequest(op: SignalROperationModel) {
+  const key = opKey(op)
   if (!connection || !isConnected.value) {
-    results[op.id] = { ok: false, text: 'Not connected — press Connect first.' }
+    results[key] = { ok: false, text: 'Not connected — press Connect first.' }
     return
   }
-  const args = parseArgs(invokeArgs[op.id])
+  let args: unknown[]
+  try {
+    args = parseArgs(invokeArgs[key])
+  } catch (error: any) {
+    results[key] = { ok: false, text: `Invalid JSON arguments: ${error?.message ?? error}` }
+    return
+  }
   addLog('out', `${op.target}(${args.map((arg) => JSON.stringify(arg)).join(', ')})`)
   try {
     if (op.callType === 'send') {
       await connection.send(op.target, ...args)
-      results[op.id] = { ok: true, text: 'Sent (fire-and-forget, no response).' }
+      results[key] = { ok: true, text: 'Sent (fire-and-forget, no response).' }
     } else if (op.callType === 'streamInvocation') {
       const items = await streamAll(op.target, args)
-      results[op.id] = { ok: true, text: `Stream completed: ${items.length} item(s).\n${JSON.stringify(items, null, 2)}` }
+      results[key] = { ok: true, text: `Stream completed: ${items.length} item(s).\n${JSON.stringify(items, null, 2)}` }
     } else {
       const result = await connection.invoke(op.target, ...args)
       const text = result === undefined ? 'Completed (no return value).' : JSON.stringify(result, null, 2)
-      results[op.id] = { ok: true, text }
+      results[key] = { ok: true, text }
       if (result !== undefined) {
         addLog('in', `← ${JSON.stringify(result)}`)
       }
     }
   } catch (error: any) {
-    results[op.id] = { ok: false, text: `Error: ${error?.message ?? error}` }
+    results[key] = { ok: false, text: `Error: ${error?.message ?? error}` }
     addLog('sys', `Invoke failed: ${error?.message ?? error}`)
   }
 }
@@ -195,19 +216,27 @@ function exampleFor(op: SignalROperationModel | null, index: number): string {
 
 /** Select a message and (re)fill the arguments editor with its generated example. */
 function applyExample(op: SignalROperationModel, index: number) {
-  selectedMessageIndex[op.id] = index
-  invokeArgs[op.id] = exampleFor(op, index)
+  const key = opKey(op)
+  selectedMessageIndex[key] = index
+  invokeArgs[key] = exampleFor(op, index)
 }
 
 /** Prefill an operation's editor with its first example, but only if it is still untouched. */
 function ensurePrefilled(op: SignalROperationModel) {
-  if (invokeArgs[op.id] === undefined) {
-    applyExample(op, selectedMessageIndex[op.id] ?? 0)
+  const key = opKey(op)
+  if (invokeArgs[key] === undefined) {
+    applyExample(op, selectedMessageIndex[key] ?? 0)
   }
 }
 
 watch(selectedHub, (hub) => {
   baseUrlOverride.value = hub?.baseUrl ?? ''
+  void disconnect()
+})
+
+// Editing the Base URL or Transport changes the endpoint, so drop any live connection — the next
+// Connect rebuilds it from the current hubUrl/transport settings.
+watch([baseUrlOverride, transport], () => {
   void disconnect()
 })
 
@@ -307,7 +336,7 @@ onBeforeUnmount(() => void disconnect())
           <label v-if="selectedMethod && selectedMethod.messages.length > 1" class="bsr__field bsr__field--grow">
             <span>Message</span>
             <select
-              :value="selectedMessageIndex[selectedMethod.id] ?? 0"
+              :value="selectedMessageIndex[opKey(selectedMethod)] ?? 0"
               @change="applyExample(selectedMethod, Number(($event.target as HTMLSelectElement).value))"
             >
               <option v-for="(message, index) in selectedMethod.messages" :key="message.name" :value="index">
@@ -331,13 +360,13 @@ onBeforeUnmount(() => void disconnect())
               type="button"
               class="bsr__link"
               :disabled="selectedMethod.messages.length === 0"
-              @click="applyExample(selectedMethod, selectedMessageIndex[selectedMethod.id] ?? 0)"
+              @click="applyExample(selectedMethod, selectedMessageIndex[opKey(selectedMethod)] ?? 0)"
             >
               ↺ Reset to example
             </button>
           </div>
           <textarea
-            v-model="invokeArgs[selectedMethod.id]"
+            v-model="invokeArgs[opKey(selectedMethod)]"
             class="bsr__code"
             rows="6"
             spellcheck="false"
@@ -349,7 +378,7 @@ onBeforeUnmount(() => void disconnect())
               ▶ Test Request
             </button>
           </div>
-          <pre v-if="results[selectedMethod.id]" class="bsr__result" :data-ok="results[selectedMethod.id].ok">{{ results[selectedMethod.id].text }}</pre>
+          <pre v-if="results[opKey(selectedMethod)]" class="bsr__result" :data-ok="results[opKey(selectedMethod)].ok">{{ results[opKey(selectedMethod)].text }}</pre>
         </template>
       </article>
       </div>

@@ -38,7 +38,7 @@
         <h1>SignalR Chat</h1>
         <span id="status" class="status">connecting…</span>
         <input id="room" placeholder="room (optional)" />
-        <button id="joinBtn">Join room</button>
+        <button id="joinBtn" disabled>Join room</button>
     </header>
     <main>
         <div id="log"></div>
@@ -89,6 +89,22 @@
             .withAutomaticReconnect()
             .build();
 
+        const isConnected = () => connection.state === signalR.HubConnectionState.Connected;
+
+        // Reflect the live connection state in the status pill and gate the buttons: Join/Send are only
+        // usable while actually connected, and are re-enabled after a successful automatic reconnect.
+        function setStatus(label, connected) {
+            $('status').textContent = label;
+            $('status').classList.toggle('on', connected);
+            $('sendBtn').disabled = !connected;
+            $('joinBtn').disabled = !connected;
+        }
+        setStatus('connecting…', false);
+
+        connection.onreconnecting(() => setStatus('reconnecting…', false));
+        connection.onreconnected(() => setStatus('connected', true));
+        connection.onclose(() => setStatus('disconnected', false));
+
         // --- Server-to-client pushes (IChatClient) ---
         connection.on('ReceiveMessage', renderMessage);
         connection.on('UserJoined', (p) => { add(`${esc(p.user)} joined · ${p.onlineCount} online`, 'sys'); refreshOnline(); });
@@ -113,7 +129,7 @@
         // --- Client-to-server hub methods ---
         async function send() {
             const text = $('text').value.trim();
-            if (!text) return;
+            if (!text || !isConnected()) return;
             const message = { user, text, sentAt: new Date().toISOString(), room: currentRoom };
             if (currentRoom) {
                 await connection.send('SendToRoom', message); // room travels on the payload
@@ -129,11 +145,13 @@
 
         let lastTyping = 0;
         $('text').addEventListener('input', () => {
+            if (!isConnected()) return;
             const now = Date.now();
             if (now - lastTyping > 1000) { connection.send('NotifyTyping', { user, isTyping: true, room: currentRoom }); lastTyping = now; }
         });
 
         $('joinBtn').addEventListener('click', async () => {
+            if (!isConnected()) return;
             const room = $('room').value.trim();
             if (currentRoom) await connection.send('LeaveRoom', currentRoom);
             currentRoom = room || null;
@@ -147,9 +165,7 @@
 
         connection.start()
             .then(async () => {
-                $('status').textContent = 'connected';
-                $('status').classList.add('on');
-                $('sendBtn').disabled = false;
+                setStatus('connected', true);
                 await refreshOnline();
                 // Replay the recent backlog using a SignalR stream (streamInvocation).
                 connection.stream('StreamHistory', 30).subscribe({
@@ -158,7 +174,7 @@
                     complete: () => add('— end of history —', 'sys'),
                 });
             })
-            .catch((err) => { $('status').textContent = 'failed'; add(esc(err), 'sys'); });
+            .catch((err) => { setStatus('failed', false); add(esc(err), 'sys'); });
     </script>
 </body>
 </html>

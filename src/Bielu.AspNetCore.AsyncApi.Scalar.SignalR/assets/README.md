@@ -40,7 +40,7 @@ import { createApiReference, createSignalRPlugin } from '@bielu/scalar-signalr'
 createApiReference('#app', { sources: [{ url: '/asyncapi/signalr.json' }] })
 
 // … or register the plugin yourself on the stock Scalar API Reference:
-// plugins: [createSignalRPlugin({ documents: [{ name: 'signalr', url: '/asyncapi/signalr.json' }] })]
+// plugins: [createSignalRPlugin([{ name: 'signalr', url: '/asyncapi/signalr.json' }])]
 ```
 
 ## Build

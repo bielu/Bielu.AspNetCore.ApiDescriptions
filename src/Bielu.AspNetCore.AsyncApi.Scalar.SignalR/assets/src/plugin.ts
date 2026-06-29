@@ -3,6 +3,9 @@ import type { SignalRDocumentRef } from './types'
 /** The custom element tag the console is rendered as (registered in `index.ts`). */
 export const SIGNALR_CONSOLE_TAG = 'bielu-signalr-console'
 
+/** The Scalar plugin's identifier, used to detect (and de-duplicate) an existing registration. */
+export const SIGNALR_PLUGIN_NAME = 'bielu-signalr'
+
 /**
  * The structural shape of a Scalar API Reference plugin. Declared locally so this package does not
  * take a hard dependency on a specific `@scalar/types` version; Scalar validates it at runtime.
@@ -23,21 +26,26 @@ type ApiReferencePlugin = () => {
  * documents (discovered from the Scalar configuration at registration time) are passed to the
  * element as the `documents` prop, so the console does not depend on Scalar binding its config.
  */
-export const createSignalRPlugin = (documents?: SignalRDocumentRef[]): ApiReferencePlugin => () => ({
-  name: 'bielu-signalr',
-  extensions: [],
-  views: {
-    'content.end': [
-      {
-        component: SIGNALR_CONSOLE_TAG,
-        props: documents && documents.length > 0 ? { documents } : {},
-        sidebar: {
-          show: true,
-          label: 'SignalR',
+export const createSignalRPlugin = (documents?: SignalRDocumentRef[]): ApiReferencePlugin => {
+  const plugin: ApiReferencePlugin = () => ({
+    name: SIGNALR_PLUGIN_NAME,
+    extensions: [],
+    views: {
+      'content.end': [
+        {
+          component: SIGNALR_CONSOLE_TAG,
+          props: documents && documents.length > 0 ? { documents } : {},
+          sidebar: {
+            show: true,
+            label: 'SignalR',
+          },
         },
-      },
-    ],
-  },
-})
+      ],
+    },
+  })
+  // Tag the factory so callers can detect an already-registered SignalR plugin without invoking it.
+  ;(plugin as { pluginName?: string }).pluginName = SIGNALR_PLUGIN_NAME
+  return plugin
+}
 
 export type { ApiReferencePlugin }

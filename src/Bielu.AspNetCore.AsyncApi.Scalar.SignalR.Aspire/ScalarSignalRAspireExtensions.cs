@@ -12,9 +12,11 @@ namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire;
 public static class ScalarSignalRAspireExtensions
 {
     /// <summary>
-    /// The default CDN URL for the published <c>@bielu/scalar-signalr</c> bundle.
+    /// The default CDN URL for the published <c>@bielu/scalar-signalr</c> bundle. Pinned to a specific
+    /// published version (an immutable jsDelivr asset) so deployed packages always load the same bundle
+    /// rather than floating to whatever is latest on npm.
     /// </summary>
-    public const string DefaultBundleUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-signalr";
+    public const string DefaultBundleUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-signalr@0.1.0";
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

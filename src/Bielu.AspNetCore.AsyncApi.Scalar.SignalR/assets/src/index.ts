@@ -1,7 +1,7 @@
 import { defineCustomElement } from 'vue'
 import SignalRConsole from './components/SignalRConsole.vue'
 import { resolveDocuments } from './discovery'
-import { createSignalRPlugin, SIGNALR_CONSOLE_TAG } from './plugin'
+import { createSignalRPlugin, SIGNALR_CONSOLE_TAG, SIGNALR_PLUGIN_NAME } from './plugin'
 
 export { createSignalRPlugin } from './plugin'
 export { loadSignalRHubs, parseSignalRHubs } from './signalr-bindings'
@@ -55,6 +55,11 @@ function registerElement(): void {
  */
 function withSignalRPlugin(config: Record<string, any>): Record<string, any> {
   const plugins = Array.isArray(config.plugins) ? config.plugins.slice() : []
+  // Don't register a second time if the consumer already added the plugin (e.g. they both load the
+  // auto-registering bundle and call `createSignalRPlugin()` themselves).
+  if (plugins.some((plugin) => (plugin as { pluginName?: string })?.pluginName === SIGNALR_PLUGIN_NAME)) {
+    return config
+  }
   const documents = resolveDocuments(config)
   plugins.push(createSignalRPlugin(documents))
   return { ...config, plugins }

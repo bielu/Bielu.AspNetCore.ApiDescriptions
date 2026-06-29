@@ -19,8 +19,8 @@ public sealed class ScalarSignalRAspireOptions
     /// <returns>The same <see cref="ScalarSignalRAspireOptions"/> instance for chaining.</returns>
     public ScalarSignalRAspireOptions AddDocument(string name, string url)
     {
-        ArgumentException.ThrowIfNullOrEmpty(name);
-        ArgumentException.ThrowIfNullOrEmpty(url);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
 
         Documents.Add(new ScalarSignalRAspireDocument(name, url));
         return this;

@@ -37,7 +37,9 @@ export function documentsFromScalarConfig(config: Record<string, any> | undefine
 
 /**
  * Resolves the documents to scan, in decreasing priority:
- *  - an explicit override (`documents` prop, or a `window.__BIELU_SCALAR_SIGNALR__` global);
+ *  - an explicit override (`documents` prop);
+ *  - a `SignalRPluginConfig` embedded inline on the Scalar config as `config.signalr`;
+ *  - a `window.__BIELU_SCALAR_SIGNALR__` global;
  *  - otherwise auto-discovery from the Scalar configuration passed as `options`.
  */
 export function resolveDocuments(
@@ -46,6 +48,10 @@ export function resolveDocuments(
 ): SignalRDocumentRef[] {
   if (override && override.length > 0) {
     return override
+  }
+  const fromConfig = options?.signalr?.documents as SignalRDocumentRef[] | undefined
+  if (fromConfig && fromConfig.length > 0) {
+    return fromConfig
   }
   const injected = (globalThis as any).__BIELU_SCALAR_SIGNALR__?.documents as SignalRDocumentRef[] | undefined
   if (injected && injected.length > 0) {

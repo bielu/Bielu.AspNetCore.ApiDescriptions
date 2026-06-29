@@ -32,7 +32,7 @@
     "url": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi"
   },
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && vue-tsc -p tsconfig.json",
     "typecheck": "vue-tsc --noEmit",
     "dev": "vite build --watch"
   },

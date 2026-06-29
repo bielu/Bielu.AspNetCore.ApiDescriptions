@@ -62,7 +62,9 @@ public class ChatHub : Hub<IChatClient>
     // Connection registry (connectionId -> user) so presence can be reported as people come and go.
     private static readonly ConcurrentDictionary<string, string> Connections = new();
 
-    // A small in-memory ring buffer of recent messages, streamed back to new clients on request.
+    // A small in-memory ring buffer of recent *broadcast* messages, streamed back to new clients on
+    // request. Room-scoped messages are intentionally kept out so the backlog can be replayed to any
+    // client without leaking another room's traffic.
     private const int BacklogSize = 50;
     private static readonly ConcurrentQueue<ChatMessage> Backlog = new();
 
@@ -95,8 +97,10 @@ public class ChatHub : Hub<IChatClient>
     [PublishOperation(typeof(ChatMessage), "chat", Summary = "Broadcast a chat message to every connected client.", BindingsRef = "sendMessage")]
     public async Task SendMessage(ChatMessage message)
     {
-        Remember(message with { Room = null });
-        await Clients.All.ReceiveMessage(message);
+        // Normalise once so the backlog and the live broadcast carry the identical (room-less) payload.
+        var broadcast = message with { Room = null };
+        Remember(broadcast);
+        await Clients.All.ReceiveMessage(broadcast);
     }
 
     /// <summary>
@@ -108,8 +112,14 @@ public class ChatHub : Hub<IChatClient>
     [Channel("chatHub")]
     public async Task SendToRoom(ChatMessage message)
     {
-        Remember(message);
-        await Clients.Group(message.Room ?? string.Empty).ReceiveMessage(message);
+        if (string.IsNullOrWhiteSpace(message.Room))
+        {
+            throw new HubException("SendToRoom requires a non-empty room.");
+        }
+
+        // Deliberately NOT added to the backlog: room messages are excluded from the replayable
+        // history so StreamHistory can never leak a room's messages to clients outside that room.
+        await Clients.Group(message.Room).ReceiveMessage(message);
     }
 
     /// <summary>Adds the caller to a named chat room.</summary>
@@ -145,9 +155,10 @@ public class ChatHub : Hub<IChatClient>
         => Task.FromResult<IReadOnlyCollection<string>>(Connections.Values.Distinct().ToArray());
 
     /// <summary>
-    /// Streaming hub method: replays the most recent <paramref name="count"/> messages to the caller
-    /// as a SignalR stream. Showcases the <c>streamInvocation</c> call type; the single <c>int</c>
-    /// argument is what the caller supplies, so the generated console example is directly invocable.
+    /// Streaming hub method: replays the most recent <paramref name="count"/> broadcast messages to
+    /// the caller as a SignalR stream. Only room-less broadcasts are kept in the backlog, so this can
+    /// never leak room-scoped traffic. Showcases the <c>streamInvocation</c> call type; the single
+    /// <c>int</c> argument is what the caller supplies, so the generated console example is invocable.
     /// </summary>
     [PublishOperation(typeof(int), "chat", Summary = "Stream the recent message backlog to the caller.", BindingsRef = "streamHistory")]
     [Channel("chatHub")]

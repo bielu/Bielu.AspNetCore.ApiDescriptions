@@ -16,19 +16,41 @@
         <PackageReference Include="Scalar.AspNetCore" />
     </ItemGroup>
 
+    <!-- The frontend sources whose changes must regenerate the embedded bundle. -->
+    <ItemGroup>
+        <SignalRAssetSource Include="$(MSBuildProjectDirectory)/assets/src/**/*" />
+        <SignalRAssetSource Include="$(MSBuildProjectDirectory)/assets/package.json" />
+        <SignalRAssetSource Include="$(MSBuildProjectDirectory)/assets/package-lock.json" />
+        <SignalRAssetSource Include="$(MSBuildProjectDirectory)/assets/vite.config.ts" />
+        <SignalRAssetSource Include="$(MSBuildProjectDirectory)/assets/tsconfig.json" />
+    </ItemGroup>
+
     <!--
-      The interactive client lives in the assets/ npm package (@bielu/scalar-signalr). Build the
-      single IIFE bundle (skipped when it already exists, so a CI agent without Node can still build
-      the .NET package from a pre-built bundle), then embed it as a manifest resource. This must run
-      before AssignTargetPaths so the dynamically added EmbeddedResource is picked up by the resource
-      pipeline (hooking GenerateResource/CoreCompile is too late — the resource list is snapshotted
-      earlier).
+      The interactive client lives in the assets/ npm package (@bielu/scalar-signalr). Rebuild the
+      single IIFE bundle whenever the plugin source or build config changes (incremental via
+      Inputs/Outputs), so edits are never masked by a stale bundle. A CI agent without Node can still
+      build the .NET package from a pre-built bundle that is newer than the sources — MSBuild then
+      finds the output up to date and skips the npm steps entirely.
     -->
-    <Target Name="PrepareSignalRBundle" BeforeTargets="AssignTargetPaths">
+    <Target Name="BuildSignalRBundle"
+            BeforeTargets="AssignTargetPaths"
+            Inputs="@(SignalRAssetSource)"
+            Outputs="$(SignalRBundlePath)">
         <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)/assets" Condition="!Exists('$(MSBuildProjectDirectory)/assets/node_modules')" />
-        <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)/assets" Condition="!Exists('$(SignalRBundlePath)')" />
+        <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)/assets" />
+    </Target>
+
+    <!--
+      Embed the built bundle as a manifest resource. Runs unconditionally (after the optional
+      rebuild) and before AssignTargetPaths so the dynamically added EmbeddedResource is picked up by
+      the resource pipeline (hooking GenerateResource/CoreCompile is too late — the resource list is
+      snapshotted earlier).
+    -->
+    <Target Name="EmbedSignalRBundle"
+            BeforeTargets="AssignTargetPaths"
+            DependsOnTargets="BuildSignalRBundle">
         <ItemGroup>
-            <EmbeddedResource Include="$(SignalRBundlePath)">
+            <EmbeddedResource Include="$(SignalRBundlePath)" Condition="Exists('$(SignalRBundlePath)')">
                 <LogicalName>Bielu.AspNetCore.AsyncApi.Scalar.SignalR.plugin.js</LogicalName>
             </EmbeddedResource>
         </ItemGroup>
