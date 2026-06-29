@@ -35,27 +35,53 @@ builder.Services.AddAsyncApi("signalr", options =>
         };
     });
 
-    // Channel + operation bindings are attached to the hub via [Channel(BindingsRef=...)] /
-    // [PublishOperation(BindingsRef=...)] on ChatHub, exactly like any other protocol binding, e.g.
-    //   options.AddChannelBinding("ws", new WebSocketsChannelBinding());
-    options.AddChannelBinding("chatHub", new SignalRChannelBinding
+    // Channel binding describes the hub itself. It is attached to the hub via
+    // [Channel("chatHub", BindingsRef = "chatHub")] on ChatHub.
+    options.AddSignalRChannelBinding("chatHub", channel =>
     {
-        Hub = HubPath,
-        Transports = { SignalRProtocol.Transports.WebSockets, SignalRProtocol.Transports.LongPolling },
-        Protocols = { SignalRProtocol.HubProtocols.Json, SignalRProtocol.HubProtocols.MessagePack },
+        channel.Hub = HubPath;
+        channel.Transports = new List<string> { SignalRProtocol.Transports.WebSockets, SignalRProtocol.Transports.LongPolling };
+        channel.Protocols = new List<string> { SignalRProtocol.HubProtocols.Json, SignalRProtocol.HubProtocols.MessagePack };
     });
 
-    options.AddOperationBinding("sendMessage", new SignalROperationBinding
+    // --- Client-to-server hub methods --------------------------------------------------------
+    // Operation bindings are attached to each hub method via [PublishOperation(BindingsRef = ...)].
+    // The call type matters: it tells a client whether to `send` (fire-and-forget, no result),
+    // `invoke` (await a result) or open a stream.
+
+    // Fire-and-forget broadcasts/notifications: return Task with no result -> `send`.
+    options.AddSignalROperationBinding("sendMessage", op => Bind(op, "SendMessage", SignalRProtocol.CallTypes.Send));
+    options.AddSignalROperationBinding("sendToRoom", op => Bind(op, "SendToRoom", SignalRProtocol.CallTypes.Send));
+    options.AddSignalROperationBinding("joinRoom", op => Bind(op, "JoinRoom", SignalRProtocol.CallTypes.Send));
+    options.AddSignalROperationBinding("leaveRoom", op => Bind(op, "LeaveRoom", SignalRProtocol.CallTypes.Send));
+    options.AddSignalROperationBinding("notifyTyping", op => Bind(op, "NotifyTyping", SignalRProtocol.CallTypes.Send));
+
+    // Request/response: returns Task<T> the caller awaits -> `invocation`.
+    options.AddSignalROperationBinding("getOnlineUsers", op => Bind(op, "GetOnlineUsers", SignalRProtocol.CallTypes.Invocation));
+
+    // Streaming: returns IAsyncEnumerable<T> -> `streamInvocation`.
+    options.AddSignalROperationBinding("streamHistory", op =>
     {
-        Target = "SendMessage",
-        Direction = SignalRProtocol.Directions.ClientToServer,
-        CallType = SignalRProtocol.CallTypes.Invocation,
+        Bind(op, "StreamHistory", SignalRProtocol.CallTypes.StreamInvocation);
+        op.Streaming = true;
     });
+
+    // --- Server-to-client pushes -------------------------------------------------------------
+    // These map to the IChatClient methods (documented as `subscribe`/`send` operations). The
+    // direction is what matters here; the client listens for them rather than calling them.
+    options.AddSignalROperationBinding("receiveMessage", op => Push(op, "ReceiveMessage"));
+    options.AddSignalROperationBinding("userJoined", op => Push(op, "UserJoined"));
+    options.AddSignalROperationBinding("userLeft", op => Push(op, "UserLeft"));
+    options.AddSignalROperationBinding("typingChanged", op => Push(op, "TypingChanged"));
 });
 
 var app = builder.Build();
 
 app.UseRouting();
+
+// Serve the browser chat client from wwwroot (GET / -> wwwroot/index.html).
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 // 3. Map the hub and the AsyncAPI document + UI endpoints.
 app.MapHub<ChatHub>(HubPath);
@@ -75,6 +101,22 @@ app.MapScalarApiReference(options =>
 });
 
 app.Run();
+
+// Configures a client-to-server operation binding for a hub method.
+static void Bind(SignalROperationBinding binding, string target, string callType)
+{
+    binding.Target = target;
+    binding.Direction = SignalRProtocol.Directions.ClientToServer;
+    binding.CallType = callType;
+}
+
+// Configures a server-to-client push operation binding. The direction conveys that the client
+// receives the message rather than invoking it, so no call type is set.
+static void Push(SignalROperationBinding binding, string target)
+{
+    binding.Target = target;
+    binding.Direction = SignalRProtocol.Directions.ServerToClient;
+}
 
 // Exposed so integration tests can host this app with WebApplicationFactory<Program>.
 public partial class Program;

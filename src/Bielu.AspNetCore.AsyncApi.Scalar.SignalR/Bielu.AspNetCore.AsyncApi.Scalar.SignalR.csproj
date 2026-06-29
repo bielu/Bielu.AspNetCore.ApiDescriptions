@@ -29,7 +29,7 @@
         <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)/assets" Condition="!Exists('$(SignalRBundlePath)')" />
         <ItemGroup>
             <EmbeddedResource Include="$(SignalRBundlePath)">
-                <LogicalName>Bielu.AspNetCore.AsyncApi.Scalar.SignalR.bundle.js</LogicalName>
+                <LogicalName>Bielu.AspNetCore.AsyncApi.Scalar.SignalR.plugin.js</LogicalName>
             </EmbeddedResource>
         </ItemGroup>
     </Target>

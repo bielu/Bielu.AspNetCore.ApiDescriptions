@@ -9,7 +9,7 @@ namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
 /// </summary>
 public static class ScalarSignalREndpointRouteBuilderExtensions
 {
-    private const string BundleResourceName = "Bielu.AspNetCore.AsyncApi.Scalar.SignalR.bundle.js";
+    private const string BundleResourceName = "Bielu.AspNetCore.AsyncApi.Scalar.SignalR.plugin.js";
 
     /// <summary>
     /// Serves the SignalR-enabled Scalar bundle (the <c>@bielu/scalar-signalr</c> build) at
@@ -41,6 +41,8 @@ public static class ScalarSignalREndpointRouteBuilderExtensions
             }
 
             context.Response.ContentType = "text/javascript; charset=utf-8";
+            // Revalidate on each load so a redeployed bundle is never masked by a stale browser cache.
+            context.Response.Headers.CacheControl = "no-cache";
             await stream.CopyToAsync(context.Response.Body);
         }).ExcludeFromDescription();
 

@@ -20,6 +20,19 @@ export type SignalRPluginConfig = {
   documents: SignalRDocumentRef[]
 }
 
+/** A message an operation can carry, with a generated example payload. */
+export type SignalRMessageModel = {
+  /** Message name/key (e.g. `chatMessage`). */
+  name: string
+  /** Human-friendly title, when the document provides one. */
+  title?: string
+  /**
+   * A ready-to-send example of the hub method arguments, as a pretty-printed JSON array string
+   * (e.g. `[{ "user": "string", … }]`), generated from the message payload schema.
+   */
+  example: string
+}
+
 /** A single hub operation (client-to-server method or server-to-client event). */
 export type SignalROperationModel = {
   /** AsyncAPI operation id. */
@@ -30,6 +43,8 @@ export type SignalROperationModel = {
   /** `invocation`, `streamInvocation` or `send`. */
   callType?: string
   summary?: string
+  /** Messages this operation carries, each with an example payload to prefill the editor. */
+  messages: SignalRMessageModel[]
 }
 
 /** A SignalR hub discovered from an AsyncAPI channel with a `signalr` binding. */
