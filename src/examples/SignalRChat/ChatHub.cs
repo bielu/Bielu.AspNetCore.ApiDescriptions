@@ -68,6 +68,10 @@ public class ChatHub : Hub<IChatClient>
     private const int BacklogSize = 50;
     private static readonly ConcurrentQueue<ChatMessage> Backlog = new();
 
+    // Per-connection room membership so room-scoped sends can be authorised. SignalR's Groups API is
+    // write-only (it cannot be queried), so the hub tracks which rooms each connection has joined.
+    private static readonly ConcurrentDictionary<string, HashSet<string>> RoomMembership = new();
+
     /// <summary>The display name supplied on the connection query string, e.g. <c>?user=ada</c>.</summary>
     private string UserName =>
         Context.GetHttpContext()?.Request.Query["user"].ToString() is { Length: > 0 } name
@@ -89,6 +93,8 @@ public class ChatHub : Hub<IChatClient>
         {
             await Clients.Others.UserLeft(new PresenceEvent(user, Context.ConnectionId, Connections.Count, DateTimeOffset.UtcNow));
         }
+
+        RoomMembership.TryRemove(Context.ConnectionId, out _);
 
         await base.OnDisconnectedAsync(exception);
     }
@@ -112,27 +118,49 @@ public class ChatHub : Hub<IChatClient>
     [Channel("chatHub")]
     public async Task SendToRoom(ChatMessage message)
     {
-        if (string.IsNullOrWhiteSpace(message.Room))
+        var room = NormalizeRoom(message.Room);
+        if (!IsInRoom(room))
         {
-            throw new HubException("SendToRoom requires a non-empty room.");
+            throw new HubException("You must join the room before sending to it.");
         }
 
         // Deliberately NOT added to the backlog: room messages are excluded from the replayable
         // history so StreamHistory can never leak a room's messages to clients outside that room.
-        await Clients.Group(message.Room).ReceiveMessage(message);
+        // Forward the normalised room so the group key matches Join/Leave and clients see the canonical name.
+        await Clients.Group(room).ReceiveMessage(message with { Room = room });
     }
 
     /// <summary>Adds the caller to a named chat room.</summary>
     [PublishOperation(typeof(string), Summary = "Join a named chat room.", BindingsRef = "joinRoom")]
     [Channel("chatHub")]
     public Task JoinRoom(string room)
-        => Groups.AddToGroupAsync(Context.ConnectionId, room);
+    {
+        var normalized = NormalizeRoom(room);
+        var rooms = RoomMembership.GetOrAdd(Context.ConnectionId, static _ => new HashSet<string>(StringComparer.Ordinal));
+        lock (rooms)
+        {
+            rooms.Add(normalized);
+        }
+
+        return Groups.AddToGroupAsync(Context.ConnectionId, normalized);
+    }
 
     /// <summary>Removes the caller from a named chat room.</summary>
     [PublishOperation(typeof(string), Summary = "Leave a named chat room.", BindingsRef = "leaveRoom")]
     [Channel("chatHub")]
     public Task LeaveRoom(string room)
-        => Groups.RemoveFromGroupAsync(Context.ConnectionId, room);
+    {
+        var normalized = NormalizeRoom(room);
+        if (RoomMembership.TryGetValue(Context.ConnectionId, out var rooms))
+        {
+            lock (rooms)
+            {
+                rooms.Remove(normalized);
+            }
+        }
+
+        return Groups.RemoveFromGroupAsync(Context.ConnectionId, normalized);
+    }
 
     /// <summary>
     /// Fire-and-forget: tell other clients whether the caller is currently typing. Takes a single
@@ -171,6 +199,32 @@ public class ChatHub : Hub<IChatClient>
             cancellationToken.ThrowIfCancellationRequested();
             yield return message;
             await Task.Delay(50, cancellationToken);
+        }
+    }
+
+    /// <summary>Trim a room name and reject it if null, empty or whitespace-only.</summary>
+    private static string NormalizeRoom(string? room)
+    {
+        var trimmed = room?.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            throw new HubException("A non-empty room name is required.");
+        }
+
+        return trimmed;
+    }
+
+    /// <summary>Whether the calling connection has joined <paramref name="room"/>.</summary>
+    private bool IsInRoom(string room)
+    {
+        if (!RoomMembership.TryGetValue(Context.ConnectionId, out var rooms))
+        {
+            return false;
+        }
+
+        lock (rooms)
+        {
+            return rooms.Contains(room);
         }
     }
 

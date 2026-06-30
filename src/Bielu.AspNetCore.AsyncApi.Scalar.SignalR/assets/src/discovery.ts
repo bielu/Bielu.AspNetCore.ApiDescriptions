@@ -35,12 +35,30 @@ export function documentsFromScalarConfig(config: Record<string, any> | undefine
   return refs
 }
 
+/** Type guard: a non-empty array of well-formed `SignalRDocumentRef`s (each with a `name` and a `url` or `doc`). */
+function isDocumentRefArray(value: unknown): value is SignalRDocumentRef[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+      (entry): entry is SignalRDocumentRef =>
+        entry != null &&
+        typeof entry === 'object' &&
+        typeof (entry as SignalRDocumentRef).name === 'string' &&
+        (typeof (entry as SignalRDocumentRef).url === 'string' || (entry as SignalRDocumentRef).doc != null),
+    )
+  )
+}
+
 /**
  * Resolves the documents to scan, in decreasing priority:
  *  - an explicit override (`documents` prop);
  *  - a `SignalRPluginConfig` embedded inline on the Scalar config as `config.signalr`;
  *  - a `window.__BIELU_SCALAR_SIGNALR__` global;
  *  - otherwise auto-discovery from the Scalar configuration passed as `options`.
+ *
+ * The `config.signalr` and global values are untyped input, so they are validated before use and
+ * malformed values fall through to the next discovery source.
  */
 export function resolveDocuments(
   options: Record<string, any> | undefined,
@@ -49,12 +67,12 @@ export function resolveDocuments(
   if (override && override.length > 0) {
     return override
   }
-  const fromConfig = options?.signalr?.documents as SignalRDocumentRef[] | undefined
-  if (fromConfig && fromConfig.length > 0) {
+  const fromConfig = options?.signalr?.documents
+  if (isDocumentRefArray(fromConfig)) {
     return fromConfig
   }
-  const injected = (globalThis as any).__BIELU_SCALAR_SIGNALR__?.documents as SignalRDocumentRef[] | undefined
-  if (injected && injected.length > 0) {
+  const injected = (globalThis as any).__BIELU_SCALAR_SIGNALR__?.documents
+  if (isDocumentRefArray(injected)) {
     return injected
   }
   return documentsFromScalarConfig(options)
