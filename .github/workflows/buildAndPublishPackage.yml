@@ -11,22 +11,33 @@ on:
 
   workflow_dispatch:
 
+# Least-privilege default for GITHUB_TOKEN; jobs opt into more only where they need it.
+permissions:
+  contents: read
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
-# (the npm package @bielu/scalar-signalr lives at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets)
+# (the npm package @bielu/scalar-signalr lives at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets).
+# Reusable workflows are pinned to an immutable commit SHA of bielu/bielu.GithubActions.Templates.
 jobs:
   # Pull request: build the NuGet and npm packages for validation, publish nothing.
   ci:
     if: github.event_name == 'pull_request'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
+    # The NuGet build posts coverage / duplicate-code results as PR comments.
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@c18e6a807678b8d8eec47974b3c9ceac3cfba41b
     with:
       suffix: "pr"
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
 
   # Published GitHub release: build and publish the stable NuGet and npm packages.
+  # Publishing uses the NUGET_APIKEY / NPM_TOKEN secrets, so no extra GITHUB_TOKEN scope is needed
+  # (the default contents: read above is sufficient).
   release:
     if: github.event_name == 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@c18e6a807678b8d8eec47974b3c9ceac3cfba41b
     with:
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
@@ -37,7 +48,7 @@ jobs:
   # Push to main / manual dispatch: build and publish beta prereleases of both packages.
   releaseBeta:
     if: github.event_name != 'pull_request' && github.event_name != 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@c18e6a807678b8d8eec47974b3c9ceac3cfba41b
     with:
       suffix: "beta"
       generate-schema: false
