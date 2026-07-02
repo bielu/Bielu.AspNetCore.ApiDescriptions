@@ -6,34 +6,42 @@ on:
   pull_request:
     branches:
       - main
+  release:
+    types: [ published ]
 
   workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# (the npm package @bielu/scalar-signalr lives at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets)
 jobs:
-      # Runs a single command using the runners shell
-  buildPr:
+  # Pull request: build the NuGet and npm packages for validation, publish nothing.
+  ci:
     if: github.event_name == 'pull_request'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciNoSchema.yml@main
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
     with:
       suffix: "pr"
+      generate-schema: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
 
-  build:
+  # Published GitHub release: build and publish the stable NuGet and npm packages.
+  release:
     if: github.event_name == 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciNoSchema.yml@main
-
-  buildBeta:
-    if: github.event_name != 'pull_request' && github.event_name != 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciNoSchema.yml@main
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
     with:
-      suffix: "beta"
-
-  deploy:
-    needs: [build,buildBeta]
-    if: |
-      always()
-      && contains(needs.*.result, 'success')
-      && !contains(needs.*.result, 'failure')
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/releaseNuget.yml@main
+      generate-schema: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # Push to main / manual dispatch: build and publish beta prereleases of both packages.
+  releaseBeta:
+    if: github.event_name != 'pull_request' && github.event_name != 'release'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    with:
+      suffix: "beta"
+      generate-schema: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+    secrets:
+      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
