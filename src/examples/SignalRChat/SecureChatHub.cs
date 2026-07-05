@@ -41,7 +41,7 @@ public class SecureChatHub : Hub<ISecureChatClient>
     private string UserName =>
         Context.GetHttpContext()?.Request.Query["user"].ToString() is { Length: > 0 } name
             ? name
-            : $"anon-{Context.ConnectionId[..6]}";
+            : $"anon-{Context.ConnectionId[..Math.Min(6, Context.ConnectionId.Length)]}";
 
     /// <inheritdoc />
     public override async Task OnConnectedAsync()

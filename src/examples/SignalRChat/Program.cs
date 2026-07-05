@@ -43,7 +43,7 @@ builder.Services.AddAsyncApi("signalr", options =>
         };
     });
 
-    options.IncludeOnlyChannels.Add("chatHub");
+    options.AddIncludedChannel("chatHub");
 
     options.AddSignalRChannelBinding("chatHub", channel =>
     {
@@ -91,7 +91,7 @@ builder.Services.AddAsyncApi("signalr-secure", options =>
         };
     });
 
-    options.IncludeOnlyChannels.Add("secureChatHub");
+    options.AddIncludedChannel("secureChatHub");
 
     options.AddSignalRChannelBinding("secureChatHub", channel =>
     {

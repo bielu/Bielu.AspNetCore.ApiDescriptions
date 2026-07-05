@@ -74,17 +74,23 @@ export function resolveSignalRAuth(
   // getAuthSelectedSchemas may return undefined on Scalar's empty auth state — guard with ?? []
   let schemas = auth.getAuthSelectedSchemas({ type: 'document', documentName }) ?? []
   if (schemas.length === 0) {
-    // Exact match failed — iterate all exported documents and use the first one that has selected
-    // schemes. This covers cases where Scalar's internal document key diverges from our slugified
-    // title (e.g. a deduplication suffix was added) or when only one document has auth configured.
-    const exportedKeys = Object.keys(auth.export() ?? {})
-    for (const key of exportedKeys) {
-      const keySchemas = auth.getAuthSelectedSchemas({ type: 'document', documentName: key }) ?? []
-      if (keySchemas.length > 0) {
-        resolvedDocName = key
-        schemas = keySchemas
-        break
-      }
+    // Exact match failed — fall back to an exported document key only when it is unambiguous:
+    // the key matches the requested document after normalisation (case/slug differences), or
+    // exactly one exported document has schemes selected. With several candidates we cannot tell
+    // which credentials belong to this document, so skip rather than reuse another document's.
+    const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+    const candidates = Object.keys(auth.export() ?? {})
+      .map((key) => ({
+        key,
+        schemas: auth.getAuthSelectedSchemas({ type: 'document', documentName: key }) ?? [],
+      }))
+      .filter((candidate) => candidate.schemas.length > 0)
+    const match =
+      candidates.find((candidate) => normalize(candidate.key) === normalize(documentName)) ??
+      (candidates.length === 1 ? candidates[0] : undefined)
+    if (match) {
+      resolvedDocName = match.key
+      schemas = match.schemas
     }
   }
   if (schemas.length === 0) return empty
@@ -95,15 +101,27 @@ export function resolveSignalRAuth(
     const secrets = auth.getAuthSecrets(resolvedDocName, schemeName)
     if (!secrets) continue
 
+    // Only schemes declared in this hub's securitySchemes may contribute credentials — ignore
+    // selections carried over from other documents or stale auth state.
     const schemeDef = securitySchemes[schemeName]
-    const type = secrets.type || schemeDef?.type || ''
+    if (!schemeDef) continue
+
+    const type = secrets.type || schemeDef.type || ''
     const token = secrets['x-scalar-secret-token']
 
     switch (type) {
       case 'apiKey':
       case 'httpApiKey': {
-        const location = (schemeDef?.in ?? 'query').toLowerCase()
-        const paramName = schemeDef?.name ?? 'api_key'
+        const location = (schemeDef.in ?? 'query').toLowerCase()
+        const paramName = schemeDef.name ?? 'api_key'
+        if (location === 'cookie') {
+          result.warnings.push(
+            `API key scheme "${schemeName}" targets cookie "${paramName}", which the browser ` +
+              `attaches automatically — not appending it to the URL. Ensure the cookie is set ` +
+              `for this origin.`,
+          )
+          break
+        }
         if (location === 'header') {
           result.warnings.push(
             `API key scheme "${schemeName}" targets header "${paramName}", but browser WebSocket/SSE ` +

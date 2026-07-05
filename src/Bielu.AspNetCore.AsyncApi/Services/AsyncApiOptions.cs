@@ -306,6 +306,18 @@ public sealed class AsyncApiOptions
     public HashSet<string> IncludeOnlyChannels { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// Adds a channel name to <see cref="IncludeOnlyChannels"/>, sanitizing it the same way channel
+    /// keys are sanitized during document generation, so raw channel names (e.g. containing slashes
+    /// or spaces) match the generated keys.
+    /// </summary>
+    public AsyncApiOptions AddIncludedChannel(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        IncludeOnlyChannels.Add(AsyncApiNamingHelper.SanitizeKey(name));
+        return this;
+    }
+
+    /// <summary>
     /// Adds an operation binding.
     /// </summary>
     public AsyncApiOptions AddOperationBinding(string name, IOperationBinding binding)
