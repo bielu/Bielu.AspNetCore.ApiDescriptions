@@ -24,7 +24,7 @@ public record TypingEvent(string User, bool IsTyping, string? Room);
 /// channel (the messages a client receives), mirroring the client-to-server hub methods declared on
 /// <see cref="ChatHub"/>.
 /// </summary>
-[AsyncApi]
+[AsyncApi("signalr")]
 [Channel("chatHub", Description = "Real-time chat hub backed by ASP.NET Core SignalR.")]
 public interface IChatClient
 {
@@ -55,7 +55,7 @@ public interface IChatClient
 /// protocol bindings are linked to the channel/operations via the <c>BindingsRef</c> values registered
 /// in <c>Program.cs</c>.
 /// </remarks>
-[AsyncApi]
+[AsyncApi("signalr")]
 [Channel("chatHub", BindingsRef = "chatHub", Description = "Real-time chat hub backed by ASP.NET Core SignalR.")]
 public class ChatHub : Hub<IChatClient>
 {
