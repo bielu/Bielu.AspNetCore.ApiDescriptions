@@ -158,6 +158,10 @@ internal sealed class AsyncApiDocumentService(
                     if (channelAttr is null)
                         continue;
 
+                    var channelKey = AsyncApiNamingHelper.SanitizeKey(channelAttr.Name);
+                    if (_options.IncludeOnlyChannels.Count > 0 && !_options.IncludeOnlyChannels.Contains(channelKey))
+                        continue;
+
                     var channel = GetOrCreateChannel(document, channelAttr);
 
                     ApplyChannelParametersFromAttributes(channel, member);

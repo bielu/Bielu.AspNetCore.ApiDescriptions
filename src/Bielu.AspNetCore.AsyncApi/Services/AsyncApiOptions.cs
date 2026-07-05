@@ -299,6 +299,13 @@ public sealed class AsyncApiOptions
     public string DocumentRoutePattern { get; set; }
 
     /// <summary>
+    /// When non-empty, only channels whose sanitized key appears in this set are included in the
+    /// generated document. Useful when multiple hubs share an assembly and you need each AsyncAPI
+    /// document to expose only its own hub. Comparison is case-insensitive.
+    /// </summary>
+    public HashSet<string> IncludeOnlyChannels { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Adds an operation binding.
     /// </summary>
     public AsyncApiOptions AddOperationBinding(string name, IOperationBinding binding)
