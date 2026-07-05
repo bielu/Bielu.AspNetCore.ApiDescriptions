@@ -47,6 +47,18 @@ export type SignalROperationModel = {
   messages: SignalRMessageModel[]
 }
 
+/** A minimal representation of an AsyncAPI security scheme, extracted at document-parse time. */
+export type SecuritySchemeModel = {
+  /** e.g. `'apiKey'`, `'http'`, `'oauth2'`, `'openIdConnect'`. */
+  type: string
+  /** For `apiKey`: `'query'`, `'header'`, or `'cookie'`. */
+  in?: string
+  /** For `apiKey`: the query-param or header field name. */
+  name?: string
+  /** For `http`: `'bearer'`, `'basic'`, etc. */
+  scheme?: string
+}
+
 /** A SignalR hub discovered from an AsyncAPI channel with a `signalr` binding. */
 export type SignalRHubModel = {
   documentName: string
@@ -58,4 +70,6 @@ export type SignalRHubModel = {
   transports: string[]
   protocols: string[]
   operations: SignalROperationModel[]
+  /** Security schemes declared in this hub's AsyncAPI document, keyed by scheme name. */
+  securitySchemes?: Record<string, SecuritySchemeModel>
 }

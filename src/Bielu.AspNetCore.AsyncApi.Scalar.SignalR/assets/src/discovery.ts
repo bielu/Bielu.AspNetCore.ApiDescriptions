@@ -1,9 +1,36 @@
 import type { SignalRDocumentRef } from './types'
 
 /**
+ * Minimal replica of Scalar's `slugify` + `slugger` pipeline from
+ * `@scalar/helpers/string/slugify` + `@scalar/helpers/string/slugger`.
+ *
+ * Scalar stores each AsyncAPI document in its workspace under the key
+ * `slugger(source.title)` — i.e. the lowercased, non-word-stripped,
+ * space-collapsed version of the display title. The auth store is keyed by
+ * the same string, so our `hub.documentName` must match it exactly.
+ *
+ * We replicate only the subset we need (no options, no deduplication suffix)
+ * to avoid a hard dependency on `@scalar/helpers`.
+ */
+function scalarSlugify(v: string): string {
+  return v
+    .slice(0, 255)
+    .trim()
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}\s_-]/gu, '') // strip chars that aren't letters/marks/digits/spaces/–
+    .replace(/[\s_-]+/g, '-') // collapse runs of whitespace/underscores/hyphens
+    .replace(/^-+|-+$/g, '') // trim leading/trailing hyphens
+}
+
+/**
  * Derives candidate documents straight from the Scalar configuration's `sources` (and the legacy
  * top-level `url`/`content`). Scalar already knows every document, so the SignalR console does not
  * need them declared a second time — non-AsyncAPI sources are filtered out later.
+ *
+ * The `name` on each ref is set to `scalarSlugify(source.title)` so it matches the key that
+ * Scalar's workspace store (and auth store) uses for the document — which is derived the same way
+ * in `normalizeConfigurations` via `slug(source.title)`.
  */
 export function documentsFromScalarConfig(config: Record<string, any> | undefined): SignalRDocumentRef[] {
   if (!config) {
@@ -12,15 +39,20 @@ export function documentsFromScalarConfig(config: Record<string, any> | undefine
   const refs: SignalRDocumentRef[] = []
   const seen = new Set<string>()
 
+  const nameFor = (title: unknown, fallback: string): string => {
+    const t = typeof title === 'string' && title ? title : null
+    return t ? scalarSlugify(t) : fallback
+  }
+
   const addUrl = (url: unknown, title?: unknown) => {
     if (typeof url === 'string' && url && !seen.has(url)) {
       seen.add(url)
-      refs.push({ name: typeof title === 'string' && title ? title : url, url })
+      refs.push({ name: nameFor(title, url), url })
     }
   }
   const addContent = (content: unknown, title?: unknown) => {
     if (content && typeof content === 'object') {
-      refs.push({ name: typeof title === 'string' && title ? title : 'document', doc: content as Record<string, any> })
+      refs.push({ name: nameFor(title, 'document'), doc: content as Record<string, any> })
     }
   }
 

@@ -1,4 +1,5 @@
 import type {
+  SecuritySchemeModel,
   SignalRDirection,
   SignalRDocumentRef,
   SignalRHubModel,
@@ -232,6 +233,24 @@ export function parseSignalRHubs(documentName: string, doc: AnyRecord): SignalRH
   }
 
   const baseUrl = resolveServerBaseUrl(firstSignalRServerHost(doc))
+
+  // Extract security schemes from the document so the console can read them at connect time
+  // without re-fetching the document. Only a minimal subset is needed for auth resolution.
+  const rawSchemes: AnyRecord = doc.components?.securitySchemes ?? {}
+  const securitySchemes: Record<string, SecuritySchemeModel> = {}
+  for (const [key, raw] of Object.entries(rawSchemes)) {
+    if (raw && typeof raw === 'object') {
+      const s = raw as AnyRecord
+      securitySchemes[key] = {
+        type: typeof s.type === 'string' ? s.type : '',
+        ...(typeof s.in === 'string' ? { in: s.in } : {}),
+        ...(typeof s.name === 'string' ? { name: s.name } : {}),
+        ...(typeof s.scheme === 'string' ? { scheme: s.scheme } : {}),
+      }
+    }
+  }
+  const docSecuritySchemes = Object.keys(securitySchemes).length > 0 ? securitySchemes : undefined
+
   const channels: AnyRecord = doc.channels ?? {}
   const hubs = new Map<string, SignalRHubModel>()
 
@@ -249,6 +268,7 @@ export function parseSignalRHubs(documentName: string, doc: AnyRecord): SignalRH
       transports: binding.transports ?? [],
       protocols: binding.protocols ?? [],
       operations: [],
+      securitySchemes: docSecuritySchemes,
     })
   }
 

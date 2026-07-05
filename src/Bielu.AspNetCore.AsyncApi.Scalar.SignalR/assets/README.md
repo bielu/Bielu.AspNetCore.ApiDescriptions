@@ -43,6 +43,30 @@ createApiReference('#app', { sources: [{ url: '/asyncapi/signalr.json' }] })
 // plugins: [createSignalRPlugin([{ name: 'signalr', url: '/asyncapi/signalr.json' }])]
 ```
 
+## Auth integration
+
+Scalar owns the top-level Authentication UI. When the user selects a security scheme there, the
+SignalR console picks up the credentials automatically at **Connect** time — no separate login step
+is needed.
+
+**Requires the custom Scalar build** (`feat/plugin-auth-state`). On stock Scalar the console
+connects without credentials (graceful no-op); the upstream PR is tracked at
+[scalar/scalar#9639](https://github.com/scalar/scalar/pull/9639#issuecomment-4862275759).
+
+### How credentials are mapped to the SignalR client
+
+| Scheme | Location | SignalR mapping |
+|---|---|---|
+| `apiKey` | `query` | Key appended to hub URL as `?<name>=<value>` |
+| `apiKey` | `header` | **Warning logged** — browser WS/SSE cannot set headers; falls back to query |
+| `http` bearer | — | `accessTokenFactory: () => token` |
+| `oauth2` / `openIdConnect` | — | `accessTokenFactory: () => token` |
+| `http` basic | — | **Warning logged** — not sendable over WS/SSE; connect proceeds without auth |
+
+The scheme definition is read from `components.securitySchemes` in the AsyncAPI document. The
+console matches the Scalar document name to the selected scheme; if no exact match is found it
+falls back to the sole document in Scalar's exported auth state.
+
 ## Build
 
 ```bash

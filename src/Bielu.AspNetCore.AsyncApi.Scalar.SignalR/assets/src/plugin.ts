@@ -1,3 +1,4 @@
+import { setAuthState } from './auth'
 import type { SignalRDocumentRef } from './types'
 
 /** The custom element tag the console is rendered as (registered in `index.ts`). */
@@ -30,6 +31,13 @@ export const createSignalRPlugin = (documents?: SignalRDocumentRef[]): ApiRefere
   const plugin: ApiReferencePlugin = () => ({
     name: SIGNALR_PLUGIN_NAME,
     extensions: [],
+    // Capture Scalar's auth state whenever the plugin is initialised or the configuration changes.
+    // `auth` is only present on the custom Scalar build (feat/plugin-auth-state); on stock Scalar
+    // this is a no-op because `setAuthState` guards with an `isPluginAuthState` check.
+    hooks: {
+      onInit: ({ auth }: { auth?: unknown }) => setAuthState(auth),
+      onConfigChange: ({ auth }: { auth?: unknown }) => setAuthState(auth),
+    },
     views: {
       'content.end': [
         {

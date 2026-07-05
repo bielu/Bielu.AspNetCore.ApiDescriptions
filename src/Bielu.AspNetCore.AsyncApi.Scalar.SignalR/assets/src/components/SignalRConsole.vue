@@ -2,11 +2,13 @@
 import {
   HttpTransportType,
   type HubConnection,
+  type IHttpConnectionOptions,
   HubConnectionBuilder,
   HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { getAuthState, resolveSignalRAuth } from '../auth'
 import { resolveDocuments } from '../discovery'
 import { loadSignalRHubs } from '../signalr-bindings'
 import type { SignalRDocumentRef, SignalRHubModel, SignalROperationModel } from '../types'
@@ -20,6 +22,7 @@ type LogEntry = { time: string; dir: 'in' | 'out' | 'sys'; text: string }
 
 const loading = ref(true)
 const hubs = ref<SignalRHubModel[]>([])
+const selectedDocumentName = ref<string | null>(null)
 const selectedKey = ref<string | null>(null)
 const baseUrlOverride = ref('')
 const transport = ref<TransportChoice>('auto')
@@ -40,7 +43,25 @@ const hubKey = (hub: SignalRHubModel) => `${hub.documentName}:${hub.channelName}
 // selected hub key uniquely scopes them.
 const opKey = (op: SignalROperationModel) => `${selectedKey.value}:${op.id}`
 
-const selectedHub = computed(() => hubs.value.find((hub) => hubKey(hub) === selectedKey.value) ?? null)
+const uniqueDocuments = computed(() => {
+  const seen = new Set<string>()
+  const docs: string[] = []
+  for (const h of hubs.value) {
+    if (!seen.has(h.documentName)) {
+      seen.add(h.documentName)
+      docs.push(h.documentName)
+    }
+  }
+  return docs
+})
+
+const filteredHubs = computed(() =>
+  selectedDocumentName.value
+    ? hubs.value.filter((h) => h.documentName === selectedDocumentName.value)
+    : hubs.value,
+)
+
+const selectedHub = computed(() => filteredHubs.value.find((hub) => hubKey(hub) === selectedKey.value) ?? null)
 const clientToServer = computed(() => selectedHub.value?.operations.filter((op) => op.direction === 'clientToServer') ?? [])
 const serverToClient = computed(() => selectedHub.value?.operations.filter((op) => op.direction === 'serverToClient') ?? [])
 // The selected method id for the current hub, persisted per hub so switching hubs keeps each choice.
@@ -118,9 +139,47 @@ async function connect() {
   }
   await disconnect()
 
+  // Resolve Scalar's current auth state → no-op on stock Scalar or when no scheme is selected.
+  const authState = getAuthState()
+  const authResult = resolveSignalRAuth(hub.documentName, hub.securitySchemes, authState)
+  for (const warn of authResult.warnings) {
+    addLog('sys', `Auth warning: ${warn}`)
+  }
+
+  // Warn when the hub declares security schemes but no credentials were resolved.
+  const hasSchemes = hub.securitySchemes && Object.keys(hub.securitySchemes).length > 0
+  const resolvedCredentials =
+    Object.keys(authResult.queryParams).length > 0 || !!authResult.accessToken
+  if (hasSchemes && !resolvedCredentials) {
+    if (!authState) {
+      addLog(
+        'sys',
+        'Auth: no Scalar auth state available — the custom Scalar build (feat/plugin-auth-state) may not be loaded.',
+      )
+    } else {
+      addLog(
+        'sys',
+        `Auth: no credentials resolved for document "${hub.documentName}" — select a security scheme in the Authentication panel and enter your credentials.`,
+      )
+    }
+  }
+
+  // Append any resolved query params (e.g. api_key) to the hub URL.
+  let effectiveUrl = hubUrl.value
+  if (Object.keys(authResult.queryParams).length > 0) {
+    const qs = new URLSearchParams(authResult.queryParams).toString()
+    effectiveUrl += (effectiveUrl.includes('?') ? '&' : '?') + qs
+  }
+
   const flag = transportFlag()
+  const withUrlOptions: IHttpConnectionOptions = flag !== undefined ? { transport: flag } : {}
+  if (authResult.accessToken) {
+    const token = authResult.accessToken
+    withUrlOptions.accessTokenFactory = () => token
+  }
+
   connection = new HubConnectionBuilder()
-    .withUrl(hubUrl.value, flag !== undefined ? { transport: flag } : {})
+    .withUrl(effectiveUrl, withUrlOptions)
     .configureLogging(LogLevel.Warning)
     .withAutomaticReconnect()
     .build()
@@ -145,7 +204,7 @@ async function connect() {
   })
 
   try {
-    addLog('sys', `Connecting to ${hubUrl.value}…`)
+    addLog('sys', `Connecting to ${effectiveUrl}…`)
     await connection.start()
     state.value = HubConnectionState.Connected
     addLog('sys', 'Connected')
@@ -229,6 +288,11 @@ function ensurePrefilled(op: SignalROperationModel) {
   }
 }
 
+watch(selectedDocumentName, () => {
+  const first = filteredHubs.value[0]
+  selectedKey.value = first ? hubKey(first) : null
+})
+
 watch(selectedHub, (hub) => {
   baseUrlOverride.value = hub?.baseUrl ?? ''
   void disconnect()
@@ -263,6 +327,7 @@ async function init() {
   loading.value = true
   hubs.value = await loadSignalRHubs(resolveDocuments(props.options, props.documents))
   if (hubs.value.length > 0) {
+    selectedDocumentName.value = hubs.value[0].documentName
     selectedKey.value = hubKey(hubs.value[0])
   }
   loading.value = false
@@ -288,10 +353,16 @@ onBeforeUnmount(() => void disconnect())
       <!-- Connection bar -->
       <div class="bsr__card bsr__conn">
         <div class="bsr__conn-row">
+          <label v-if="uniqueDocuments.length > 1" class="bsr__field">
+            <span>Document</span>
+            <select v-model="selectedDocumentName">
+              <option v-for="doc in uniqueDocuments" :key="doc" :value="doc">{{ doc }}</option>
+            </select>
+          </label>
           <label class="bsr__field">
             <span>Hub</span>
             <select v-model="selectedKey">
-              <option v-for="hub in hubs" :key="hubKey(hub)" :value="hubKey(hub)">
+              <option v-for="hub in filteredHubs" :key="hubKey(hub)" :value="hubKey(hub)">
                 {{ hub.channelName }} ({{ hub.hubPath }})
               </option>
             </select>

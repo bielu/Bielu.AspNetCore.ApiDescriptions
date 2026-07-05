@@ -1,0 +1,137 @@
+import type { SecuritySchemeModel } from './types'
+
+/**
+ * Minimal structural copy of the PluginAuthState API exposed by the custom Scalar build
+ * (feat/plugin-auth-state). Declaring it locally keeps the bundle free from a hard dependency on a
+ * specific @scalar/types version; Scalar validates the plugin shape at runtime.
+ *
+ * On stock Scalar (where this API does not exist), `setAuthState` simply has nothing to store and
+ * all callers of `resolveSignalRAuth` receive the no-op empty result.
+ */
+type AuthSecretKey =
+  | 'x-scalar-secret-token'
+  | 'x-scalar-secret-username'
+  | 'x-scalar-secret-password'
+  | 'x-scalar-secret-refresh-token'
+
+type AuthSecrets = { type: string } & Partial<Record<AuthSecretKey, string>>
+
+type PluginAuthState = {
+  export: () => Record<string, unknown>
+  getAuthSecrets: (documentName: string, schemeName: string) => AuthSecrets | undefined
+  getAuthSelectedSchemas: (payload: { type: 'document'; documentName: string }) => string[]
+}
+
+let _authState: PluginAuthState | undefined
+
+export function setAuthState(auth: unknown): void {
+  if (isPluginAuthState(auth)) {
+    _authState = auth
+  }
+}
+
+export function getAuthState(): PluginAuthState | undefined {
+  return _authState
+}
+
+function isPluginAuthState(value: unknown): value is PluginAuthState {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    typeof (value as PluginAuthState).getAuthSecrets === 'function' &&
+    typeof (value as PluginAuthState).getAuthSelectedSchemas === 'function' &&
+    typeof (value as PluginAuthState).export === 'function'
+  )
+}
+
+export type ResolvedAuth = {
+  /** Bearer token to supply via `accessTokenFactory` (http bearer, oauth2, openIdConnect). */
+  accessToken?: string
+  /** Key-value pairs to append as query parameters to the hub URL. */
+  queryParams: Record<string, string>
+  /** Non-fatal warnings about scheme constraints (e.g. header-only schemes that WS cannot send). */
+  warnings: string[]
+}
+
+/**
+ * Resolve Scalar's selected auth for the given document and map the secrets to SignalR connection
+ * options. Returns an empty result when auth state is absent (stock Scalar or no scheme selected),
+ * so callers need no guard.
+ *
+ * Document-name matching tries an exact match first, then falls back to the sole key in the
+ * exported auth state (covers cases where Scalar's internal key differs in case or normalisation
+ * from the AsyncAPI document name).
+ */
+export function resolveSignalRAuth(
+  documentName: string,
+  securitySchemes: Record<string, SecuritySchemeModel> | undefined,
+  auth: PluginAuthState | undefined,
+): ResolvedAuth {
+  const empty: ResolvedAuth = { queryParams: {}, warnings: [] }
+  if (!auth || !securitySchemes) return empty
+
+  let resolvedDocName = documentName
+  // getAuthSelectedSchemas may return undefined on Scalar's empty auth state — guard with ?? []
+  let schemas = auth.getAuthSelectedSchemas({ type: 'document', documentName }) ?? []
+  if (schemas.length === 0) {
+    // Exact match failed — iterate all exported documents and use the first one that has selected
+    // schemes. This covers cases where Scalar's internal document key diverges from our slugified
+    // title (e.g. a deduplication suffix was added) or when only one document has auth configured.
+    const exportedKeys = Object.keys(auth.export() ?? {})
+    for (const key of exportedKeys) {
+      const keySchemas = auth.getAuthSelectedSchemas({ type: 'document', documentName: key }) ?? []
+      if (keySchemas.length > 0) {
+        resolvedDocName = key
+        schemas = keySchemas
+        break
+      }
+    }
+  }
+  if (schemas.length === 0) return empty
+
+  const result: ResolvedAuth = { queryParams: {}, warnings: [] }
+
+  for (const schemeName of schemas) {
+    const secrets = auth.getAuthSecrets(resolvedDocName, schemeName)
+    if (!secrets) continue
+
+    const schemeDef = securitySchemes[schemeName]
+    const type = secrets.type || schemeDef?.type || ''
+    const token = secrets['x-scalar-secret-token']
+
+    switch (type) {
+      case 'apiKey':
+      case 'httpApiKey': {
+        const location = (schemeDef?.in ?? 'query').toLowerCase()
+        const paramName = schemeDef?.name ?? 'api_key'
+        if (location === 'header') {
+          result.warnings.push(
+            `API key scheme "${schemeName}" targets header "${paramName}", but browser WebSocket/SSE ` +
+              `cannot set arbitrary headers — appending as a query param instead. ` +
+              `Ensure the server also accepts "${paramName}" as a query parameter.`,
+          )
+        }
+        if (token) result.queryParams[paramName] = token
+        break
+      }
+      case 'http': {
+        const scheme = schemeDef?.scheme?.toLowerCase() ?? ''
+        if (scheme === 'bearer' || scheme === '') {
+          if (token) result.accessToken = token
+        } else if (scheme === 'basic') {
+          result.warnings.push(
+            `HTTP Basic scheme "${schemeName}" cannot be sent over browser WebSocket/SSE — ` +
+              `connect will proceed without credentials.`,
+          )
+        }
+        break
+      }
+      case 'oauth2':
+      case 'openIdConnect':
+        if (token) result.accessToken = token
+        break
+    }
+  }
+
+  return result
+}
