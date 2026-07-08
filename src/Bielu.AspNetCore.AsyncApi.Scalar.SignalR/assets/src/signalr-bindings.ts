@@ -1,5 +1,13 @@
+import {
+  deref,
+  exampleFromSchema,
+  extractSecuritySchemes,
+  firstServerHost,
+  loadAsyncApiDocuments,
+  refName,
+  resolveServerBaseUrl,
+} from '@bielu/scalar-core'
 import type {
-  SecuritySchemeModel,
   SignalRDirection,
   SignalRDocumentRef,
   SignalRHubModel,
@@ -8,148 +16,8 @@ import type {
 } from './types'
 
 const SIGNALR = 'signalr'
-const MAX_SCHEMA_DEPTH = 6
-// Cap each AsyncAPI document fetch so a hung endpoint can't keep the SignalR panel loading forever.
-const DOC_FETCH_TIMEOUT_MS = 10000
 
 type AnyRecord = Record<string, any>
-
-/** Resolve a local JSON pointer (`#/a/b/c`) against the document. */
-function pointer(doc: AnyRecord, ref: string): AnyRecord | undefined {
-  if (typeof ref !== 'string' || !ref.startsWith('#/')) {
-    return undefined
-  }
-  let node: any = doc
-  for (const raw of ref.slice(2).split('/')) {
-    if (node == null) {
-      return undefined
-    }
-    node = node[raw.replace(/~1/g, '/').replace(/~0/g, '~')]
-  }
-  return node
-}
-
-/** Follow a chain of `$ref`s until a concrete node is reached (cycle-safe). */
-function deref(doc: AnyRecord, node: AnyRecord | undefined, seen = new Set<string>()): AnyRecord | undefined {
-  let current = node
-  while (current && typeof current.$ref === 'string') {
-    if (seen.has(current.$ref)) {
-      return undefined
-    }
-    seen.add(current.$ref)
-    current = pointer(doc, current.$ref)
-  }
-  return current
-}
-
-// Numeric `format`s that some schema generators emit with `type: "string"` (e.g. .NET renders
-// `int` as `{ type: "string", format: "int32" }`). Treated as numbers so examples stay invocable.
-const NUMERIC_FORMATS = new Set(['int32', 'int64', 'integer', 'long', 'double', 'float', 'decimal', 'number'])
-
-/** A placeholder value for a `string` schema, honouring common formats. */
-function exampleString(schema: AnyRecord): string {
-  switch (schema.format) {
-    case 'date-time':
-      return new Date().toISOString()
-    case 'date':
-      return new Date().toISOString().slice(0, 10)
-    case 'time':
-      return new Date().toISOString().slice(11, 19)
-    case 'uuid':
-    case 'guid':
-      return '00000000-0000-0000-0000-000000000000'
-    case 'email':
-      return 'user@example.com'
-    case 'uri':
-    case 'url':
-      return 'https://example.com'
-    default:
-      return 'string'
-  }
-}
-
-/** Build a representative example value from a JSON schema node. */
-function exampleFromSchema(doc: AnyRecord, node: AnyRecord | undefined, depth = 0, seen = new Set<string>()): unknown {
-  const schema = deref(doc, node, new Set(seen))
-  if (!schema || depth > MAX_SCHEMA_DEPTH) {
-    return null
-  }
-
-  // AsyncAPI multi-format payloads wrap the JSON schema under `schema`.
-  if (schema.schema && !schema.type && !schema.properties && !schema.enum) {
-    return exampleFromSchema(doc, schema.schema, depth, seen)
-  }
-
-  // Prefer explicit, document-provided values.
-  if (Array.isArray(schema.examples) && schema.examples.length > 0) {
-    return schema.examples[0]
-  }
-  if (schema.example !== undefined) {
-    return schema.example
-  }
-  if (schema.default !== undefined) {
-    return schema.default
-  }
-  if (Array.isArray(schema.enum) && schema.enum.length > 0) {
-    return schema.enum[0]
-  }
-  if (schema.const !== undefined) {
-    return schema.const
-  }
-
-  const composite: AnyRecord[] | undefined = schema.allOf ?? schema.oneOf ?? schema.anyOf
-  if (Array.isArray(composite) && composite.length > 0) {
-    if (schema.allOf) {
-      const merged: AnyRecord = {}
-      for (const sub of composite) {
-        const value = exampleFromSchema(doc, sub, depth, seen)
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          Object.assign(merged, value)
-        }
-      }
-      if (Object.keys(merged).length > 0) {
-        return merged
-      }
-    }
-    return exampleFromSchema(doc, composite[0], depth, seen)
-  }
-
-  const type = Array.isArray(schema.type) ? schema.type.find((t: string) => t !== 'null') : schema.type
-
-  // A numeric format wins over a (sometimes incorrect) `string` type.
-  if (typeof schema.format === 'string' && NUMERIC_FORMATS.has(schema.format)) {
-    return typeof schema.minimum === 'number' ? schema.minimum : 0
-  }
-
-  switch (type) {
-    case 'object':
-      return exampleObject(doc, schema, depth, seen)
-    case 'array': {
-      const item = exampleFromSchema(doc, schema.items, depth + 1, seen)
-      return item === null ? [] : [item]
-    }
-    case 'string':
-      return exampleString(schema)
-    case 'integer':
-    case 'number':
-      return typeof schema.minimum === 'number' ? schema.minimum : 0
-    case 'boolean':
-      return false
-    case 'null':
-      return null
-    default:
-      return schema.properties ? exampleObject(doc, schema, depth, seen) : null
-  }
-}
-
-function exampleObject(doc: AnyRecord, schema: AnyRecord, depth: number, seen: Set<string>): AnyRecord {
-  const out: AnyRecord = {}
-  const properties: AnyRecord = schema.properties ?? {}
-  for (const key of Object.keys(properties)) {
-    out[key] = exampleFromSchema(doc, properties[key], depth + 1, seen)
-  }
-  return out
-}
 
 /** Resolve the message(s) an operation carries and generate an example payload for each. */
 function buildMessages(doc: AnyRecord, op: AnyRecord): SignalRMessageModel[] {
@@ -169,54 +37,6 @@ function buildMessages(doc: AnyRecord, op: AnyRecord): SignalRMessageModel[] {
   return messages
 }
 
-function pageScheme(): string {
-  if (typeof window !== 'undefined' && window.location?.protocol) {
-    return window.location.protocol.replace(':', '')
-  }
-  return 'http'
-}
-
-/**
- * Build an absolute base URL (`scheme://host`) from an AsyncAPI server host string. Accepts bare
- * hosts (which inherit the page scheme) as well as `http`/`https`/`ws`/`wss` URLs; the WebSocket
- * schemes are mapped onto HTTP(S) (SignalR's `withUrl` expects an HTTP endpoint) and any path/query
- * is stripped so only `scheme://host` remains.
- */
-function resolveServerBaseUrl(host: string | undefined): string {
-  if (!host) {
-    return typeof window !== 'undefined' ? window.location.origin : ''
-  }
-  const trimmed = host.trim()
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `${pageScheme()}://${trimmed}`
-  try {
-    const url = new URL(withScheme)
-    const protocol = url.protocol === 'wss:' ? 'https:' : url.protocol === 'ws:' ? 'http:' : url.protocol
-    return `${protocol}//${url.host}`
-  } catch {
-    // Best-effort fallback for an unparseable host: keep the previous behaviour.
-    return `${pageScheme()}://${trimmed.replace(/\/+$/, '')}`
-  }
-}
-
-function firstSignalRServerHost(doc: AnyRecord): string | undefined {
-  const servers: AnyRecord = doc.servers ?? {}
-  for (const key of Object.keys(servers)) {
-    const server: AnyRecord = servers[key] ?? {}
-    if (server.protocol === SIGNALR || server.bindings?.[SIGNALR]) {
-      return server.host ?? server.url
-    }
-  }
-  return undefined
-}
-
-function refName(ref: string | undefined): string | undefined {
-  if (!ref) {
-    return undefined
-  }
-  const parts = ref.split('/')
-  return parts[parts.length - 1]
-}
-
 function directionFor(op: AnyRecord, binding: AnyRecord | undefined): SignalRDirection {
   const fromBinding = binding?.direction
   if (fromBinding === 'clientToServer' || fromBinding === 'serverToClient') {
@@ -232,23 +52,11 @@ export function parseSignalRHubs(documentName: string, doc: AnyRecord): SignalRH
     return []
   }
 
-  const baseUrl = resolveServerBaseUrl(firstSignalRServerHost(doc))
+  const baseUrl = resolveServerBaseUrl(firstServerHost(doc, SIGNALR))
 
   // Extract security schemes from the document so the console can read them at connect time
   // without re-fetching the document. Only a minimal subset is needed for auth resolution.
-  const rawSchemes: AnyRecord = doc.components?.securitySchemes ?? {}
-  const securitySchemes: Record<string, SecuritySchemeModel> = {}
-  for (const [key, raw] of Object.entries(rawSchemes)) {
-    if (raw && typeof raw === 'object') {
-      const s = raw as AnyRecord
-      securitySchemes[key] = {
-        type: typeof s.type === 'string' ? s.type : '',
-        ...(typeof s.in === 'string' ? { in: s.in } : {}),
-        ...(typeof s.name === 'string' ? { name: s.name } : {}),
-        ...(typeof s.scheme === 'string' ? { scheme: s.scheme } : {}),
-      }
-    }
-  }
+  const securitySchemes = extractSecuritySchemes(doc)
   const docSecuritySchemes = Object.keys(securitySchemes).length > 0 ? securitySchemes : undefined
 
   const channels: AnyRecord = doc.channels ?? {}
@@ -296,54 +104,11 @@ export function parseSignalRHubs(documentName: string, doc: AnyRecord): SignalRH
 }
 
 /**
- * Resolve a document URL the way Scalar does. Scalar source URLs are app-root-relative with the
- * leading slash stripped (e.g. `asyncapi/signalr.json`), so they must resolve against the origin —
- * not the current page path (`/scalar/...`), which would 404.
- */
-function resolveDocUrl(url: string): string {
-  if (typeof window === 'undefined' || !window.location?.origin) {
-    return url
-  }
-  try {
-    return new URL(url, window.location.origin).href
-  } catch {
-    return url
-  }
-}
-
-/**
  * Resolve the configured documents (inline object or URL) and aggregate the SignalR hubs they
- * declare. Only documents that are actually AsyncAPI (have an `asyncapi` version field) are
- * considered, so OpenAPI sources in the same Scalar configuration are ignored.
+ * declare. Only documents that are actually AsyncAPI are considered, so OpenAPI sources in the
+ * same Scalar configuration are ignored.
  */
 export async function loadSignalRHubs(documents: SignalRDocumentRef[]): Promise<SignalRHubModel[]> {
-  const all: SignalRHubModel[] = []
-  for (const ref of documents) {
-    try {
-      let doc = ref.doc
-      if (!doc && ref.url) {
-        const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), DOC_FETCH_TIMEOUT_MS)
-        try {
-          const response = await fetch(resolveDocUrl(ref.url), {
-            headers: { accept: 'application/json' },
-            signal: controller.signal,
-          })
-          if (!response.ok) {
-            continue
-          }
-          doc = await response.json()
-        } finally {
-          clearTimeout(timer)
-        }
-      }
-      if (!doc || !doc.asyncapi) {
-        continue
-      }
-      all.push(...parseSignalRHubs(ref.name, doc))
-    } catch {
-      // Ignore individual document failures (including fetch timeouts) so the console still renders the rest.
-    }
-  }
-  return all
+  const loaded = await loadAsyncApiDocuments(documents)
+  return loaded.flatMap(({ name, doc }) => parseSignalRHubs(name, doc))
 }

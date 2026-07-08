@@ -48,6 +48,7 @@
   <Project Path="./Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Merger/Bielu.AspNetCore.AsyncApi.Merger.csproj" />
+  <Project Path="./Bielu.AspNetCore.AsyncApi.Scalar/Bielu.AspNetCore.AsyncApi.Scalar.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Scalar.SignalR/Bielu.AspNetCore.AsyncApi.Scalar.SignalR.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire/Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.UI/Bielu.AspNetCore.AsyncApi.UI.csproj" />

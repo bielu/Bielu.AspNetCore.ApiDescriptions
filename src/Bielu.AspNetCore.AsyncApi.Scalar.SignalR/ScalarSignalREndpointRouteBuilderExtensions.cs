@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
 namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
@@ -23,29 +21,10 @@ public static class ScalarSignalREndpointRouteBuilderExtensions
         this IEndpointRouteBuilder endpoints,
         string path = ScalarSignalRDefaults.AssetsPath)
     {
-        ArgumentNullException.ThrowIfNull(endpoints);
-        ArgumentException.ThrowIfNullOrEmpty(path);
-
-        var basePath = path.TrimEnd('/');
-        var assembly = typeof(ScalarSignalREndpointRouteBuilderExtensions).Assembly;
-
-        endpoints.MapGet($"{basePath}/plugin.js", async (HttpContext context) =>
-        {
-            await using var stream = assembly.GetManifestResourceStream(BundleResourceName);
-            if (stream is null)
-            {
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
-                await context.Response.WriteAsync(
-                    "Scalar SignalR bundle was not embedded. Build the assets npm package (npm run build).");
-                return;
-            }
-
-            context.Response.ContentType = "text/javascript; charset=utf-8";
-            // Revalidate on each load so a redeployed bundle is never masked by a stale browser cache.
-            context.Response.Headers.CacheControl = "no-cache";
-            await stream.CopyToAsync(context.Response.Body);
-        }).ExcludeFromDescription();
-
-        return endpoints;
+        return endpoints.MapScalarPluginBundle(
+            path,
+            typeof(ScalarSignalREndpointRouteBuilderExtensions).Assembly,
+            BundleResourceName,
+            "Scalar SignalR bundle was not embedded. Build the assets npm package (npm run build).");
     }
 }

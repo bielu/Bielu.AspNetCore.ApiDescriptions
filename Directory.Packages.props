@@ -5,15 +5,15 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- ByteBard AsyncAPI -->
-    <PackageVersion Include="ByteBard.AsyncAPI.NET" Version="3.0.0" />
-    <PackageVersion Include="ByteBard.AsyncAPI.NET.Bindings" Version="3.0.0" />
-    <PackageVersion Include="ByteBard.AsyncAPI.NET.Readers" Version="3.0.0" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET" Version="3.0.1-beta.17" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET.Bindings" Version="3.0.1-beta.17" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET.Readers" Version="3.0.1-beta.17" />
     <!-- Microsoft Extensions -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.9" />
     <PackageVersion Include="System.Text.Json" Version="10.0.9" />
     <!-- Analyzers -->
-    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" />
     <!-- Test frameworks -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
@@ -51,8 +51,8 @@
     <!-- DI Decorator support -->
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <!-- Scalar API reference UI (AsyncAPI rendering) -->
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.7" />
-    <PackageVersion Include="Scalar.Aspire" Version="0.11.2" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.11" />
+    <PackageVersion Include="Scalar.Aspire" Version="0.11.6" />
     <!-- gRPC (protocol bindings example) -->
     <PackageVersion Include="Grpc.AspNetCore" Version="2.80.0" />
   </ItemGroup>

@@ -17,7 +17,11 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
   `plugin.js` that registers the console as a plugin alongside Scalar's own bundle — call
   `MapScalarSignalRAssets()` to serve it and `options.WithSignalRClient(...)` to inject the script —
   while the Aspire extension swaps the Scalar container's bundle URL for the `@bielu/scalar-signalr`
-  drop-in. Wired into the `SignalRChat` example.
+  drop-in. Wired into the `SignalRChat` example. The protocol-agnostic half (document discovery,
+  auth-state capture, schema examples, the embedded-bundle endpoint and Scalar HeadContent injection,
+  plus the shared npm build/embed MSBuild targets) lives in a common `Bielu.AspNetCore.AsyncApi.Scalar`
+  package and its private `@bielu/scalar-core` npm package, so further protocol consoles (gRPC, ...)
+  reuse it rather than copying it.
 - **SignalR protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` package
   providing a custom `signalr` protocol with channel, operation, message and server bindings, plus a
   runnable `SignalRChat` example.

@@ -32,7 +32,10 @@
     "url": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi"
   },
   "scripts": {
+    "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm install && npm run build",
+    "prebuild": "npm run build:core",
     "build": "vite build && vue-tsc -p tsconfig.json",
+    "pretypecheck": "npm run build:core",
     "typecheck": "vue-tsc --noEmit",
     "dev": "vite build --watch"
   },
@@ -41,6 +44,7 @@
     "vue": "^3.5.13"
   },
   "devDependencies": {
+    "@bielu/scalar-core": "file:../../Bielu.AspNetCore.AsyncApi.Scalar/assets",
     "@vitejs/plugin-vue": "^5.2.1",
     "typescript": "^5.6.0",
     "vite": "^5.4.0",

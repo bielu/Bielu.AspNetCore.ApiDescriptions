@@ -115,7 +115,7 @@ builder.Services.AddAsyncApi("signalr-secure", options =>
         doc.Components.SecuritySchemes ??= new Dictionary<string, AsyncApiSecurityScheme>();
         doc.Components.SecuritySchemes["apiKey"] = new AsyncApiSecurityScheme
         {
-            Type = SecuritySchemeType.ApiKey,
+            Type = SecuritySchemeType.HttpApiKey,
             In = ParameterLocation.Query,
             Name = "api_key",
             Description = $"API key required to connect. Demo value: '{ApiKeyAuthenticationHandler.DemoApiKey}'.",

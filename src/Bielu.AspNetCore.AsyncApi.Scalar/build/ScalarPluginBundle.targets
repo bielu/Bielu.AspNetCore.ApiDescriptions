@@ -1,0 +1,77 @@
+<Project>
+
+    <!--
+      Shared npm build/embed pipeline for Scalar console plugin packages (SignalR, gRPC, ...).
+      Import from the protocol package csproj; the defaults below assume the conventional layout:
+
+        $(ScalarPluginAssetsDir)          the plugin's npm package        <project>/assets
+        $(ScalarPluginBundlePath)         the built IIFE bundle           <assets>/dist/plugin.js
+        $(ScalarPluginBundleLogicalName)  the manifest resource name      $(RootNamespace).plugin.js
+
+      The plugin's npm "build" script is responsible for building its @bielu/scalar-core dependency
+      first (via its "prebuild" script), so npm-only CI jobs work without MSBuild.
+
+      A CI agent without Node can still build the .NET package from a pre-built bundle that is newer
+      than the sources - MSBuild then finds the output up to date and skips the npm steps entirely.
+      Note: the core build is not synchronised across projects, so building several plugin packages
+      in parallel with stale core outputs can race in the core assets folder.
+    -->
+
+    <PropertyGroup>
+        <ScalarPluginAssetsDir Condition="'$(ScalarPluginAssetsDir)' == ''">$(MSBuildProjectDirectory)/assets</ScalarPluginAssetsDir>
+        <ScalarPluginBundlePath Condition="'$(ScalarPluginBundlePath)' == ''">$(ScalarPluginAssetsDir)/dist/plugin.js</ScalarPluginBundlePath>
+        <ScalarPluginBundleLogicalName Condition="'$(ScalarPluginBundleLogicalName)' == ''">$(RootNamespace).plugin.js</ScalarPluginBundleLogicalName>
+        <ScalarCoreAssetsDir>$(MSBuildThisFileDirectory)../assets</ScalarCoreAssetsDir>
+    </PropertyGroup>
+
+    <!-- The frontend sources whose changes must regenerate the embedded bundle. The shared core
+         sources are included because they are inlined into every plugin bundle. -->
+    <ItemGroup>
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/src/**/*" />
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/package.json" />
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/package-lock.json" />
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/vite.config.ts" />
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/tsconfig.json" />
+        <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/src/**/*" />
+        <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/package.json" />
+        <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/tsconfig.json" />
+    </ItemGroup>
+
+    <!--
+      Install npm dependencies, incremental on package-lock.json (compared to a stamp file) so a
+      lockfile change forces a fresh install before the bundle is rebuilt - not just when
+      node_modules is missing. Only reached via CallTarget from BuildScalarPluginBundle, so a
+      Node-less build with an up-to-date prebuilt bundle never runs it.
+    -->
+    <Target Name="InstallScalarPluginDeps"
+            Inputs="$(ScalarPluginAssetsDir)/package-lock.json"
+            Outputs="$(ScalarPluginAssetsDir)/node_modules/.npm-install.stamp">
+        <Exec Command="npm install" WorkingDirectory="$(ScalarPluginAssetsDir)" />
+        <Touch Files="$(ScalarPluginAssetsDir)/node_modules/.npm-install.stamp" AlwaysCreate="true" />
+    </Target>
+
+    <Target Name="BuildScalarPluginBundle"
+            BeforeTargets="AssignTargetPaths"
+            Inputs="@(ScalarPluginAssetSource)"
+            Outputs="$(ScalarPluginBundlePath)">
+        <CallTarget Targets="InstallScalarPluginDeps" />
+        <Exec Command="npm run build" WorkingDirectory="$(ScalarPluginAssetsDir)" />
+    </Target>
+
+    <!--
+      Embed the built bundle as a manifest resource. Runs unconditionally (after the optional
+      rebuild) and before AssignTargetPaths so the dynamically added EmbeddedResource is picked up by
+      the resource pipeline (hooking GenerateResource/CoreCompile is too late - the resource list is
+      snapshotted earlier).
+    -->
+    <Target Name="EmbedScalarPluginBundle"
+            BeforeTargets="AssignTargetPaths"
+            DependsOnTargets="BuildScalarPluginBundle">
+        <ItemGroup>
+            <EmbeddedResource Include="$(ScalarPluginBundlePath)" Condition="Exists('$(ScalarPluginBundlePath)')">
+                <LogicalName>$(ScalarPluginBundleLogicalName)</LogicalName>
+            </EmbeddedResource>
+        </ItemGroup>
+    </Target>
+
+</Project>

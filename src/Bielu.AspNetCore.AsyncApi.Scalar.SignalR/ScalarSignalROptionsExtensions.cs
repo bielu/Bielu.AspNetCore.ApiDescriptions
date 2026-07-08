@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Scalar.AspNetCore;
 
 namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
@@ -8,7 +7,10 @@ namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
 /// </summary>
 public static class ScalarSignalROptionsExtensions
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    /// <summary>
+    /// The window global the explicit document configuration is assigned to for the SignalR bundle.
+    /// </summary>
+    internal const string GlobalVariableName = "__BIELU_SCALAR_SIGNALR__";
 
     /// <summary>
     /// Enables the SignalR console on this Scalar API Reference.
@@ -34,33 +36,13 @@ public static class ScalarSignalROptionsExtensions
         ArgumentNullException.ThrowIfNull(options);
         ArgumentException.ThrowIfNullOrEmpty(assetsPath);
 
-        var scriptTag = $"<script src=\"{assetsPath.TrimEnd('/')}/plugin.js\"></script>";
-
-        var configScript = string.Empty;
+        ScalarSignalROptions? signalR = null;
         if (configure is not null)
         {
-            var signalR = new ScalarSignalROptions();
+            signalR = new ScalarSignalROptions();
             configure(signalR);
-
-            if (signalR.Documents.Count > 0)
-            {
-                var payload = new
-                {
-                    documents = signalR.Documents.Select(static document => new
-                    {
-                        name = document.Name,
-                        url = document.Url,
-                    }),
-                };
-                var json = JsonSerializer.Serialize(payload, JsonOptions);
-                configScript = $"<script>window.__BIELU_SCALAR_SIGNALR__ = {json};</script>";
-            }
         }
 
-        // The console script must run before Scalar's bundle so it can hook `window.Scalar`; placing
-        // it in HeadContent (the document head) guarantees that ordering.
-        options.HeadContent = (options.HeadContent ?? string.Empty) + configScript + scriptTag;
-
-        return options;
+        return options.WithAsyncApiPluginScript(assetsPath, GlobalVariableName, signalR?.Documents);
     }
 }
