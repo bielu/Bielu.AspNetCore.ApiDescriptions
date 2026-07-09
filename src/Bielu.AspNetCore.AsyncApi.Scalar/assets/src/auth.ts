@@ -16,10 +16,23 @@ type AuthSecretKey =
 
 export type AuthSecrets = { type: string } & Partial<Record<AuthSecretKey, string>>
 
+/**
+ * Scalar's selected security for a document (or operation). Each entry in `selectedSchemes` is a
+ * security *requirement* mapping a scheme name to its selected scopes; the scheme names are the
+ * object keys. Mirrors `SelectedSecurity` in `@scalar/workspace-store`.
+ */
+export type PluginSelectedSecurity = {
+  selectedIndex: number
+  selectedSchemes: Array<Record<string, string[]>>
+}
+
 export type PluginAuthState = {
   export: () => Record<string, unknown>
   getAuthSecrets: (documentName: string, schemeName: string) => AuthSecrets | undefined
-  getAuthSelectedSchemas: (payload: { type: 'document'; documentName: string }) => string[]
+  getAuthSelectedSchemas: (payload: {
+    type: 'document'
+    documentName: string
+  }) => PluginSelectedSecurity | undefined
 }
 
 let _authState: PluginAuthState | undefined
@@ -54,15 +67,47 @@ export type SelectedScheme = {
   secrets: AuthSecrets
 }
 
+/** The scheme names in a Scalar `SelectedSecurity`, flattened across its requirement objects. */
+function selectedSchemeNames(selected: PluginSelectedSecurity | undefined): string[] {
+  if (!selected || !Array.isArray(selected.selectedSchemes)) return []
+  return selected.selectedSchemes.flatMap((requirement) =>
+    requirement && typeof requirement === 'object' ? Object.keys(requirement) : [],
+  )
+}
+
+/** True when a secrets record carries at least one non-empty secret value (`x-scalar-secret-*`). */
+function hasSecretValue(secrets: AuthSecrets): boolean {
+  return Object.entries(secrets).some(
+    ([key, value]) => key.startsWith('x-scalar-secret-') && typeof value === 'string' && value.length > 0,
+  )
+}
+
+/**
+ * Resolve the auth-store key for a document: an exact match first, then a normalised match
+ * (case/slug differences), then the sole stored document when there is exactly one. Returns the
+ * requested name unchanged when nothing matches, so the secret lookups below simply find nothing.
+ */
+function resolveDocumentKey(auth: PluginAuthState, documentName: string): string {
+  const store = auth.export() ?? {}
+  if (store[documentName]) return documentName
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const keys = Object.keys(store)
+  const normalized = keys.find((key) => normalize(key) === normalize(documentName))
+  if (normalized) return normalized
+  return keys.length === 1 ? keys[0] : documentName
+}
+
 /**
  * Resolve Scalar's selected auth for the given document to the schemes (and secrets) that apply.
  * Protocol packages map the result onto their transport (query params for WebSocket, headers for
- * gRPC-Web, ...). Returns an empty result when auth state is absent (stock Scalar or no scheme
- * selected), so callers need no guard.
+ * gRPC-Web, ...). Returns an empty result when auth state is absent (stock Scalar or no credentials
+ * entered), so callers need no guard.
  *
- * Document-name matching tries an exact match first, then falls back to the sole key in the
- * exported auth state (covers cases where Scalar's internal key differs in case or normalisation
- * from the AsyncAPI document name).
+ * Selection resolution: Scalar only persists a document-level selection once the user *changes* the
+ * auth picker; the pre-selected (required) scheme's secrets are stored without a selection being
+ * written back. So when there is no explicit selection we fall back to every scheme the document
+ * declares and keep the ones that actually have a stored secret — which is what the user typed into
+ * the Authentication panel.
  */
 export function resolveSelectedSchemes(
   documentName: string,
@@ -71,40 +116,25 @@ export function resolveSelectedSchemes(
 ): SelectedScheme[] {
   if (!isPluginAuthState(auth) || !securitySchemes) return []
 
-  let resolvedDocName = documentName
-  // getAuthSelectedSchemas may return undefined on Scalar's empty auth state — guard with ?? []
-  let schemas = auth.getAuthSelectedSchemas({ type: 'document', documentName }) ?? []
-  if (schemas.length === 0) {
-    // Exact match failed — fall back to an exported document key only when it is unambiguous:
-    // the key matches the requested document after normalisation (case/slug differences), or
-    // exactly one exported document has schemes selected. With several candidates we cannot tell
-    // which credentials belong to this document, so skip rather than reuse another document's.
-    const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
-    const candidates = Object.keys(auth.export() ?? {})
-      .map((key) => ({
-        key,
-        schemas: auth.getAuthSelectedSchemas({ type: 'document', documentName: key }) ?? [],
-      }))
-      .filter((candidate) => candidate.schemas.length > 0)
-    const match =
-      candidates.find((candidate) => normalize(candidate.key) === normalize(documentName)) ??
-      (candidates.length === 1 ? candidates[0] : undefined)
-    if (match) {
-      resolvedDocName = match.key
-      schemas = match.schemas
-    }
-  }
-  if (schemas.length === 0) return []
+  const resolvedDocName = resolveDocumentKey(auth, documentName)
+
+  const selectedNames = selectedSchemeNames(
+    auth.getAuthSelectedSchemas({ type: 'document', documentName: resolvedDocName }),
+  )
+  // Fall back to every declared scheme when Scalar has no explicit selection stored.
+  const candidateNames = selectedNames.length > 0 ? selectedNames : Object.keys(securitySchemes)
 
   const selected: SelectedScheme[] = []
-  for (const schemeName of schemas) {
-    const secrets = auth.getAuthSecrets(resolvedDocName, schemeName)
-    if (!secrets) continue
-
+  for (const schemeName of candidateNames) {
     // Only schemes declared in this document's securitySchemes may contribute credentials — ignore
     // selections carried over from other documents or stale auth state.
     const scheme = securitySchemes[schemeName]
     if (!scheme) continue
+
+    // Skip schemes with no secret actually entered, so an unconfigured scheme in the fallback path
+    // does not masquerade as resolved credentials.
+    const secrets = auth.getAuthSecrets(resolvedDocName, schemeName)
+    if (!secrets || !hasSecretValue(secrets)) continue
 
     selected.push({ schemeName, type: secrets.type || scheme.type || '', scheme, secrets })
   }

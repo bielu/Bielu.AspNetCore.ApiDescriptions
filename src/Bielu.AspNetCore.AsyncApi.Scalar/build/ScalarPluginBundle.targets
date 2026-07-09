@@ -74,4 +74,16 @@
         </ItemGroup>
     </Target>
 
+    <!--
+      Make the incremental/fast up-to-date check aware of the bundle and its frontend sources.
+      Without this, changing only the bundle content (same path, added as a resource inside a target)
+      leaves the compiled assembly looking up-to-date, so `dotnet run`/`dotnet build` skips
+      recompilation and keeps embedding the stale bundle. Registering the sources as
+      UpToDateCheckInput and the bundle as UpToDateCheckBuilt forces a rebuild when either changes.
+    -->
+    <ItemGroup>
+        <UpToDateCheckInput Include="@(ScalarPluginAssetSource)" />
+        <UpToDateCheckBuilt Include="$(ScalarPluginBundlePath)" Condition="Exists('$(ScalarPluginBundlePath)')" />
+    </ItemGroup>
+
 </Project>

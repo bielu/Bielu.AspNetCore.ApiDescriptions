@@ -7,7 +7,7 @@ import {
   HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr'
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { getAuthState, resolveSignalRAuth } from '../auth'
 import { resolveDocuments } from '../discovery'
 import { loadSignalRHubs } from '../signalr-bindings'
@@ -22,6 +22,10 @@ type LogEntry = { time: string; dir: 'in' | 'out' | 'sys'; text: string }
 
 const loading = ref(true)
 const hubs = ref<SignalRHubModel[]>([])
+// The console's own root element, used to discover which Scalar document it is rendered under.
+const rootEl = ref<HTMLElement | null>(null)
+// Scalar's active document slug (null on stock Scalar / standalone use, where the picker is shown).
+const activeDocumentSlug = ref<string | null>(null)
 const selectedDocumentName = ref<string | null>(null)
 const selectedKey = ref<string | null>(null)
 const baseUrlOverride = ref('')
@@ -55,11 +59,19 @@ const uniqueDocuments = computed(() => {
   return docs
 })
 
+// Scope the visible hubs to Scalar's active document when known (so the console reflects the
+// document the user is viewing), otherwise to the manually picked document. Falls back to all hubs
+// only when neither is set.
+const scopedDocumentName = computed(() => activeDocumentSlug.value ?? selectedDocumentName.value)
 const filteredHubs = computed(() =>
-  selectedDocumentName.value
-    ? hubs.value.filter((h) => h.documentName === selectedDocumentName.value)
+  scopedDocumentName.value
+    ? hubs.value.filter((h) => h.documentName === scopedDocumentName.value)
     : hubs.value,
 )
+
+// The document picker only makes sense when the console spans several documents itself. Once it is
+// scoped to Scalar's active document, the active document is authoritative, so the picker is hidden.
+const showDocumentPicker = computed(() => !activeDocumentSlug.value && uniqueDocuments.value.length > 1)
 
 const selectedHub = computed(() => filteredHubs.value.find((hub) => hubKey(hub) === selectedKey.value) ?? null)
 const clientToServer = computed(() => selectedHub.value?.operations.filter((op) => op.direction === 'clientToServer') ?? [])
@@ -288,10 +300,17 @@ function ensurePrefilled(op: SignalROperationModel) {
   }
 }
 
-watch(selectedDocumentName, () => {
-  const first = filteredHubs.value[0]
-  selectedKey.value = first ? hubKey(first) : null
-})
+// Keep the selected hub within the visible (document-scoped) set. Fires when the document changes
+// (picker or active-document detection) and when hubs finish loading.
+watch(
+  filteredHubs,
+  (list) => {
+    if (!list.some((hub) => hubKey(hub) === selectedKey.value)) {
+      selectedKey.value = list[0] ? hubKey(list[0]) : null
+    }
+  },
+  { immediate: true },
+)
 
 watch(selectedHub, (hub) => {
   baseUrlOverride.value = hub?.baseUrl ?? ''
@@ -323,37 +342,52 @@ watch(selectedMethod, (op) => {
   }
 })
 
+/**
+ * Discover Scalar's active document from the plugin-view wrapper this console is rendered inside.
+ * Scalar renders each `content.end` plugin view under a `<div id="{documentSlug}/plugin-view/…">`
+ * scoped to the active document, so the slug is the id prefix. Returns null when the console is not
+ * inside such a wrapper (stock Scalar / standalone), leaving the multi-document picker in place.
+ */
+function detectActiveDocumentSlug(): string | null {
+  const wrapper = rootEl.value?.closest('[id*="/plugin-view/"]')
+  const slug = wrapper?.id.split('/plugin-view/')[0]
+  return slug || null
+}
+
 async function init() {
   loading.value = true
   hubs.value = await loadSignalRHubs(resolveDocuments(props.options, props.documents))
-  if (hubs.value.length > 0) {
+  // Seed a default document for the picker; the active-document scope (when detected) overrides it.
+  if (hubs.value.length > 0 && !selectedDocumentName.value) {
     selectedDocumentName.value = hubs.value[0].documentName
-    selectedKey.value = hubKey(hubs.value[0])
   }
   loading.value = false
 }
 
 void init()
+onMounted(() => {
+  activeDocumentSlug.value = detectActiveDocumentSlug()
+})
 onBeforeUnmount(() => void disconnect())
 </script>
 
 <template>
-  <section class="bsr">
+  <section ref="rootEl" class="bsr">
     <header class="bsr__head">
       <h2 class="bsr__title">SignalR</h2>
       <span class="bsr__pill" :data-state="stateLabel.toLowerCase()">{{ stateLabel }}</span>
     </header>
 
     <p v-if="loading" class="bsr__muted">Loading SignalR hubs…</p>
-    <p v-else-if="hubs.length === 0" class="bsr__muted">
-      No SignalR hubs found in the AsyncAPI document(s).
+    <p v-else-if="filteredHubs.length === 0" class="bsr__muted">
+      No SignalR hubs found in {{ activeDocumentSlug ? 'this document' : 'the AsyncAPI document(s)' }}.
     </p>
 
     <template v-else>
       <!-- Connection bar -->
       <div class="bsr__card bsr__conn">
         <div class="bsr__conn-row">
-          <label v-if="uniqueDocuments.length > 1" class="bsr__field">
+          <label v-if="showDocumentPicker" class="bsr__field">
             <span>Document</span>
             <select v-model="selectedDocumentName">
               <option v-for="doc in uniqueDocuments" :key="doc" :value="doc">{{ doc }}</option>
