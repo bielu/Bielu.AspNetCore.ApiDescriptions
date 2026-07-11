@@ -51,7 +51,7 @@
     <!-- DI Decorator support -->
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <!-- Scalar API reference UI (AsyncAPI rendering) -->
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.11" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.12-bielu.temp2" />
     <PackageVersion Include="Scalar.Aspire" Version="0.11.6" />
     <!-- gRPC (protocol bindings example) -->
     <PackageVersion Include="Grpc.AspNetCore" Version="2.80.0" />

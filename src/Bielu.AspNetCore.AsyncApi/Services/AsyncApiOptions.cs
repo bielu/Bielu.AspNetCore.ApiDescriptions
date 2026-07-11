@@ -102,6 +102,31 @@ public sealed class AsyncApiOptions
     }
 
     /// <summary>
+    /// Automatically populates <c>components.securitySchemes</c> from the ASP.NET Core authentication
+    /// schemes registered on the application (resolved at document-generation time from
+    /// <see cref="Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider"/>), and — unless
+    /// disabled — references them from the document's servers so consumers treat them as required.
+    /// </summary>
+    /// <remarks>
+    /// Built-in handlers (JWT bearer, cookies, Negotiate) are mapped out of the box. Handlers whose
+    /// shape cannot be inferred (custom API-key handlers, OAuth2/OpenID Connect flows) are skipped by
+    /// the default mapper; describe those by setting <see cref="AuthenticationDetectionOptions.Map"/>.
+    /// Detection never overwrites a hand-authored scheme of the same name unless
+    /// <see cref="AuthenticationDetectionOptions.OverwriteExisting"/> is set, so this composes with
+    /// explicitly declared schemes. Call this only on documents that should surface authentication —
+    /// it is opt-in per document.
+    /// </remarks>
+    /// <param name="configure">An optional delegate to customize the detection behavior.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions DetectAuthenticationSchemes(Action<AuthenticationDetectionOptions>? configure = null)
+    {
+        var detectionOptions = new AuthenticationDetectionOptions();
+        configure?.Invoke(detectionOptions);
+        DocumentTransformers.Add(new AuthenticationSchemeDocumentTransformer(detectionOptions));
+        return this;
+    }
+
+    /// <summary>
     /// Registers a new operation transformer on the current <see cref="AsyncApiOptions"/> instance.
     /// </summary>
     /// <typeparam name="TTransformerType">The type of the <see cref="IAsyncApiOperationTransformer"/> to instantiate.</typeparam>

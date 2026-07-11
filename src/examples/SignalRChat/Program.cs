@@ -1,5 +1,6 @@
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
+using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
 using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Models;
@@ -106,31 +107,28 @@ builder.Services.AddAsyncApi("signalr-secure", options =>
     options.AddSignalROperationBinding("secureUserJoined", op => Push(op, "UserJoined"));
     options.AddSignalROperationBinding("secureUserLeft", op => Push(op, "UserLeft"));
 
-    // Declare the API key security scheme so Scalar's Authentication UI surfaces it.
-    // Use SecuritySchemeType.ApiKey (the AsyncAPI-standard type); ByteBard now correctly
-    // serializes the `name` field for this type (fixed in AsyncAPI.NET).
-    options.AddDocumentTransformer((doc, _, _) =>
+    // Auto-populate the document's security from the registered ASP.NET Core authentication schemes.
+    // The "ApiKey" scheme is backed by a custom handler, so its location and parameter name cannot be
+    // inferred automatically — supply those here; every other registered scheme falls through to the
+    // built-in default mapper.
+    options.DetectAuthenticationSchemes(detection =>
     {
-        doc.Components ??= new AsyncApiComponents();
-        doc.Components.SecuritySchemes ??= new Dictionary<string, AsyncApiSecurityScheme>();
-        doc.Components.SecuritySchemes["apiKey"] = new AsyncApiSecurityScheme
+        detection.Map = scheme => scheme.Name switch
         {
-            Type = SecuritySchemeType.HttpApiKey,
-            In = ParameterLocation.Query,
-            Name = "api_key",
-            Description = $"API key required to connect. Demo value: '{ApiKeyAuthenticationHandler.DemoApiKey}'.",
+            "ApiKey" => AsyncApiSecurityScheme.HttpApiKey(
+                ParameterLocation.Query,
+                "api_key",
+                $"API key required to connect. Demo value: '{ApiKeyAuthenticationHandler.DemoApiKey}'."),
+            _ => AuthenticationSchemeDefaults.DefaultMap(scheme),
         };
 
-        // Reference the scheme from the server so Scalar pre-selects it in the auth panel.
-        // getAsyncApiDocumentSecurityRequirements() reads server.security to determine what
-        // the document requires, which drives the default selection in the AuthSelector.
-        if (doc.Servers?.ContainsKey("signalr") == true)
-        {
-            doc.Servers["signalr"].Security.Add(
-                new AsyncApiSecuritySchemeReference("#/components/securitySchemes/apiKey"));
-        }
-
-        return Task.CompletedTask;
+        // Attach the requirement per channel instead of to the whole server: the requirement lands only
+        // on operations of channels whose hub is [Authorize]'d (here, SecureChatHub → "secureChatHub").
+        // This is what keeps public channels unmarked in a document that mixes public and secured hubs.
+        // (Set AttachToServers = true as well if you want Scalar to pre-select the scheme at the
+        // document level; the scheme is declared in components either way, so the auth panel still works.)
+        detection.AttachToServers = false;
+        detection.AttachToAuthorizedOperations = true;
     });
 });
 
