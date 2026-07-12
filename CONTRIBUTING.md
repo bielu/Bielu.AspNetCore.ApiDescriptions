@@ -171,20 +171,43 @@ dotnet format src/Bielu.AspNetCore.AsyncApi.slnx
 
 6. **Push to your fork** and create a pull request against the `main` branch
 
-7. **Fill out the PR template** with a description of your changes
+7. **Add a changeset** describing your change (see [Changesets](#changesets) below)
 
-8. **Wait for CI checks** to pass - the following checks run automatically:
+8. **Fill out the PR template** with a description of your changes
+
+9. **Wait for CI checks** to pass - the following checks run automatically:
    - Build verification
    - Code formatting check
    - Unit tests
 
+## Changesets
+
+User-facing changes are recorded with [changesets](https://github.com/changesets/changesets) so the
+version bump and changelog are generated automatically instead of edited by hand. From the repository
+root:
+
+```bash
+npx changeset
+```
+
+Pick the affected package(s) and a bump level (patch/minor/major), then write a short, user-facing
+summary. All NuGet packages in this repo share one version, so for any NuGet change select the single
+`bielu-aspnetcore-asyncapi` entry — one bump covers the whole suite. Chore-only PRs (CI, formatting,
+tests) can record an empty changeset with `npx changeset add --empty`. See
+[`.changeset/README.md`](./.changeset/README.md) for details.
+
 ## Release Process
 
-Releases are managed through GitHub Actions and follow semantic versioning.
+Releases are managed through GitHub Actions and follow semantic versioning. The shared version is
+computed from the changesets accumulated on `main`: `npm run version` runs `changeset version` and
+then `scripts/apply-nuget-version.mjs`, which writes the new version into `version.props` and folds
+the generated notes into [`CHANGELOG.md`](./CHANGELOG.md). Maintainers do not edit `version.props` or
+the changelog by hand.
 
 ### Version File
 
-The project version is managed centrally in the `version.props` file in the repository root:
+The project version is managed centrally in the `version.props` file in the repository root (written
+by the changeset `version` step, above):
 
 ```xml
 <Project>

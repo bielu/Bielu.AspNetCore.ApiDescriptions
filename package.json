@@ -1,0 +1,18 @@
+{
+  "name": "bielu-aspnetcore-asyncapi-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Root workspace used only for changeset-driven versioning of this repository. Not published.",
+  "workspaces": [
+    "build/changeset/nuget-suite"
+  ],
+  "scripts": {
+    "changeset": "changeset",
+    "version": "changeset version && node scripts/apply-nuget-version.mjs",
+    "changeset:status": "changeset status --since=origin/main"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.0"
+  }
+}

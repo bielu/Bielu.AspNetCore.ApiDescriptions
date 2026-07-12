@@ -1,0 +1,6 @@
+{
+  "name": "bielu-aspnetcore-asyncapi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Placeholder package representing the shared version of every Bielu.AspNetCore.AsyncApi NuGet package. Bump this in a changeset for any NuGet change; scripts/apply-nuget-version.mjs projects its version onto version.props. Not published anywhere."
+}

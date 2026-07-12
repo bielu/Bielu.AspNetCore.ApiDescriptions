@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and from now on the
+`[Unreleased]` section and released version entries are managed with
+[changesets](https://github.com/changesets/changesets) — see [`.changeset/README.md`](.changeset/README.md).
+
 This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunter), the original AsyncAPI documentation generator for .NET. Below you'll find both the version history for Bielu.AspNetCore.AsyncApi and a comparison of changes from the original Saunter library.
+
+> **Versioning note.** No stable release has shipped yet. Every NuGet package in this repository
+> shares a single version (`1.0.0`, in `version.props`) and has so far only been published to the
+> **`beta` pre-release channel** on NuGet.org (`1.0.0-beta.*`). The
+> [Pre-release channel history](#pre-release-channel-history) below reconstructs, from the published
+> packages, when each package and capability first became available on that channel. Everything under
+> `[Unreleased]` is targeting the first stable `1.0.0`.
 
 ## [Unreleased]
 
@@ -21,24 +32,56 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
   auth-state capture, schema examples, the embedded-bundle endpoint and Scalar HeadContent injection,
   plus the shared npm build/embed MSBuild targets) lives in a common `Bielu.AspNetCore.AsyncApi.Scalar`
   package and its private `@bielu/scalar-core` npm package, so further protocol consoles (gRPC, ...)
-  reuse it rather than copying it.
-- **SignalR protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` package
-  providing a custom `signalr` protocol with channel, operation, message and server bindings, plus a
-  runnable `SignalRChat` example.
-- **gRPC protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc` package
-  providing a custom `grpc` protocol with channel, operation, message and server bindings.
+  reuse it rather than copying it. *(Not yet published to any channel.)*
 - **Server-Sent Events (SSE) protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse`
   package providing a custom `sse` protocol with channel, operation, message and server bindings
-  modelling the `text/event-stream` (`event`/`id`/`retry`/`data`) wire shape.
+  modelling the `text/event-stream` (`event`/`id`/`retry`/`data`) wire shape. *(Not yet published to any channel.)*
 - **WebRTC protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc` package
   providing a custom `webrtc` protocol with channel, operation, message and server bindings covering
-  `RTCDataChannel` streams and SDP/ICE signaling.
+  `RTCDataChannel` streams and SDP/ICE signaling. *(Not yet published to any channel.)*
+- **Changeset-driven release workflow** - Contributor changes are now recorded as
+  [changesets](https://github.com/changesets/changesets); the shared NuGet version and this changelog
+  are updated from them via `scripts/apply-nuget-version.mjs`.
 
 ### Fixed
 
 - `BindingsRef` on `[Channel]` and operation attributes now actually attaches the referenced binding
   (registered via `AddChannelBinding`/`AddOperationBinding`) to the channel/operation in the generated
   document. Previously the binding was only stored under `components` and never linked.
+
+## Pre-release channel history
+
+Reconstructed from the packages published to the `beta` channel on NuGet.org. Dates are the first
+`1.0.0-beta.*` publish for each package (all packages share the `1.0.0` base version).
+
+### 2026-06-21 — protocol bindings
+
+- **SignalR protocol bindings** — first `beta` publish of
+  `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR`, a custom `signalr` protocol with channel,
+  operation, message and server bindings (plus the runnable `SignalRChat` example).
+- **gRPC protocol bindings** — first `beta` publish of
+  `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc`, a custom `grpc` protocol with channel,
+  operation, message and server bindings.
+
+### 2026-03-12 — document merging
+
+- **Merger** — first `beta` publish of `Bielu.AspNetCore.AsyncApi.Merger`, which merges multiple
+  AsyncAPI documents into one.
+
+### 2026-03-11 — CLI & build-time document generation
+
+- **CLI** — first `beta` publish of `Bielu.AspNetCore.AsyncApi.Cli` (`get-document` / `merge`
+  commands).
+- **Build-time document generation** — first `beta` publish of
+  `Bielu.AspNetCore.AsyncApi.ApiDescription.Server`, emitting the AsyncAPI document at build time.
+
+### 2026-02-02 — initial beta
+
+- First `beta` publish of the core packages: `Bielu.AspNetCore.AsyncApi`,
+  `Bielu.AspNetCore.AsyncApi.Attributes` and `Bielu.AspNetCore.AsyncApi.UI`. This is the initial
+  Saunter rewrite: fluent `AddAsyncApi()` configuration, document/schema transformers, separated
+  core/attributes/UI packages, ByteBard.AsyncAPI.NET for schema handling and .NET 10 targeting
+  (see [Changes from Saunter](#changes-from-saunter)).
 
 ## Changes from Saunter
 
