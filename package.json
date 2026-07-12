@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "changeset": "changeset",
-    "version": "changeset version && node scripts/apply-nuget-version.mjs",
+    "version": "changeset version && node scripts/apply-nuget-version.mjs && npm install --package-lock-only --no-audit --no-fund",
     "changeset:status": "changeset status --since=origin/main"
   },
   "devDependencies": {
