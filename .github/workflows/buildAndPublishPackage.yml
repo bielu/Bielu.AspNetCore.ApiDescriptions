@@ -43,9 +43,14 @@ jobs:
           fetch-depth: 0
       - name: Require a changeset
         run: |
+          # Files added by this PR under .changeset/, excluding README/config. A directory pathspec
+          # is used deliberately: the git glob '.changeset/**/*.md' does NOT match top-level files
+          # like '.changeset/foo.md' (its '**/' requires an intermediate directory).
           ADDED=$(git diff --diff-filter=A --name-only \
-            "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" \
-            -- '.changeset/**/*.md' | grep -vE '/(README|config)\.' || true)
+            "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" \
+            -- .changeset \
+            | { grep -E '\.changeset/.+\.md$' || true; } \
+            | { grep -vE '/(README|config)\.' || true; })
           if [ -z "$ADDED" ]; then
             echo "::error::No changeset found in this PR. Run 'npx changeset' to describe your change, or 'npx changeset add --empty' for chore-only PRs."
             exit 1
