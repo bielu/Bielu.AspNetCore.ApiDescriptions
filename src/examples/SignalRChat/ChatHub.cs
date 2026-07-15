@@ -133,16 +133,19 @@ public class ChatHub : Hub<IChatClient>
     /// <summary>Adds the caller to a named chat room.</summary>
     [PublishOperation(typeof(string), Summary = "Join a named chat room.", BindingsRef = "joinRoom")]
     [Channel("chatHub")]
-    public Task JoinRoom(string room)
+    public async Task JoinRoom(string room)
     {
         var normalized = NormalizeRoom(room);
+
+        // Join the actual SignalR group first; only record membership once that succeeds, so
+        // IsInRoom/SendToRoom never report a room the connection was not actually added to.
+        await Groups.AddToGroupAsync(Context.ConnectionId, normalized);
+
         var rooms = RoomMembership.GetOrAdd(Context.ConnectionId, static _ => new HashSet<string>(StringComparer.Ordinal));
         lock (rooms)
         {
             rooms.Add(normalized);
         }
-
-        return Groups.AddToGroupAsync(Context.ConnectionId, normalized);
     }
 
     /// <summary>Removes the caller from a named chat room.</summary>

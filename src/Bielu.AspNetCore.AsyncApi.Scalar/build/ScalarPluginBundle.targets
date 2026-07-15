@@ -38,15 +38,16 @@
     </ItemGroup>
 
     <!--
-      Install npm dependencies, incremental on package-lock.json (compared to a stamp file) so a
-      lockfile change forces a fresh install before the bundle is rebuilt - not just when
-      node_modules is missing. Only reached via CallTarget from BuildScalarPluginBundle, so a
-      Node-less build with an up-to-date prebuilt bundle never runs it.
+      Install npm dependencies with `npm ci` - a deterministic, lockfile-only install that never
+      rewrites package-lock.json during the build. Incremental on package.json/package-lock.json
+      (compared to a stamp file) so a change to either forces a fresh install before the bundle is
+      rebuilt - not just when node_modules is missing. Only reached via CallTarget from
+      BuildScalarPluginBundle, so a Node-less build with an up-to-date prebuilt bundle never runs it.
     -->
     <Target Name="InstallScalarPluginDeps"
-            Inputs="$(ScalarPluginAssetsDir)/package-lock.json"
+            Inputs="$(ScalarPluginAssetsDir)/package.json;$(ScalarPluginAssetsDir)/package-lock.json"
             Outputs="$(ScalarPluginAssetsDir)/node_modules/.npm-install.stamp">
-        <Exec Command="npm install" WorkingDirectory="$(ScalarPluginAssetsDir)" />
+        <Exec Command="npm ci" WorkingDirectory="$(ScalarPluginAssetsDir)" />
         <Touch Files="$(ScalarPluginAssetsDir)/node_modules/.npm-install.stamp" AlwaysCreate="true" />
     </Target>
 

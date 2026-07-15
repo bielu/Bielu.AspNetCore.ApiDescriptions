@@ -85,8 +85,8 @@ function hasSecretValue(secrets: AuthSecrets): boolean {
 
 /**
  * Resolve the auth-store key for a document: an exact match first, then a normalised match
- * (case/slug differences), then the sole stored document when there is exactly one. Returns the
- * requested name unchanged when nothing matches, so the secret lookups below simply find nothing.
+ * (case/slug differences). Returns the requested name unchanged when nothing matches, so the secret
+ * lookups below simply find nothing — never falling back to another document's stored credentials.
  */
 function resolveDocumentKey(auth: PluginAuthState, documentName: string): string {
   const store = auth.export() ?? {}
@@ -95,7 +95,7 @@ function resolveDocumentKey(auth: PluginAuthState, documentName: string): string
   const keys = Object.keys(store)
   const normalized = keys.find((key) => normalize(key) === normalize(documentName))
   if (normalized) return normalized
-  return keys.length === 1 ? keys[0] : documentName
+  return documentName
 }
 
 /**

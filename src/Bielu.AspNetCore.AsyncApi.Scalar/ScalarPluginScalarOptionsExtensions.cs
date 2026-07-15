@@ -1,4 +1,6 @@
+using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Scalar.AspNetCore;
 
 namespace Bielu.AspNetCore.AsyncApi.Scalar;
@@ -10,6 +12,10 @@ namespace Bielu.AspNetCore.AsyncApi.Scalar;
 public static class ScalarPluginScalarOptionsExtensions
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    // A JavaScript identifier: the only shape safe to interpolate into the `window.{name} = …`
+    // assignment below. Rejecting anything else prevents the name from breaking out of the script.
+    private static readonly Regex JavaScriptIdentifier = new(@"^[A-Za-z_$][A-Za-z0-9_$]*$", RegexOptions.Compiled);
 
     /// <summary>
     /// Adds the plugin bundle script (served from <c>{assetsPath}/plugin.js</c>) to the page via
@@ -36,8 +42,16 @@ public static class ScalarPluginScalarOptionsExtensions
         ArgumentNullException.ThrowIfNull(options);
         ArgumentException.ThrowIfNullOrEmpty(assetsPath);
         ArgumentException.ThrowIfNullOrEmpty(globalVariableName);
+        if (!JavaScriptIdentifier.IsMatch(globalVariableName))
+        {
+            throw new ArgumentException(
+                $"'{globalVariableName}' is not a valid JavaScript identifier.",
+                nameof(globalVariableName));
+        }
 
-        var scriptTag = $"<script src=\"{assetsPath.TrimEnd('/')}/plugin.js\"></script>";
+        // Encode the path for the HTML attribute context so it cannot break out of the src="…".
+        var encodedAssetsPath = WebUtility.HtmlEncode(assetsPath.TrimEnd('/'));
+        var scriptTag = $"<script src=\"{encodedAssetsPath}/plugin.js\"></script>";
 
         var configScript = string.Empty;
         var documentList = documents?.ToArray() ?? [];

@@ -180,16 +180,22 @@ public class AuthenticationSchemeDocumentTransformerTests
     [AsyncApi(FixtureDocument)]
     [Channel("securedChannel")]
     [Authorize]
-    private sealed class SecuredChannelFixture;
+    private sealed class SecuredChannelFixture
+    {
+    }
 
     [AsyncApi(FixtureDocument)]
     [Channel("publicChannel")]
-    private sealed class PublicChannelFixture;
+    private sealed class PublicChannelFixture
+    {
+    }
 
     [AsyncApi(FixtureDocument)]
     [Channel("bearerChannel")]
     [Authorize(AuthenticationSchemes = "ApiKey")]
-    private sealed class BearerChannelFixture;
+    private sealed class BearerChannelFixture
+    {
+    }
 
     private static AsyncApiDocument CreateDocument() => new()
     {

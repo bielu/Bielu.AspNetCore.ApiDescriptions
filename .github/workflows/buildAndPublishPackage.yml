@@ -41,6 +41,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Require a changeset
         run: |
           # Files added by this PR under .changeset/, excluding README/config. A directory pathspec
@@ -94,6 +95,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Create GitHub Release for the shared NuGet version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

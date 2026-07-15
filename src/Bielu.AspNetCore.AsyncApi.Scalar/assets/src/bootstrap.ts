@@ -78,6 +78,10 @@ export function installScalarHook(spec: ConsoleBundleSpec): void {
   if (typeof window === 'undefined') {
     return
   }
+  // An earlier console bundle may have installed its own accessor. Capture its setter so we can
+  // chain onto it instead of replacing it — otherwise only the last-installed bundle would wrap
+  // Scalar when it is finally assigned.
+  const priorSetter = Object.getOwnPropertyDescriptor(window, 'Scalar')?.set
   let stored: any = (window as any).Scalar
   if (stored) {
     wrapScalar(spec, stored)
@@ -88,6 +92,9 @@ export function installScalarHook(spec: ConsoleBundleSpec): void {
       enumerable: true,
       get: () => stored,
       set: (value) => {
+        // Let the earlier hook wrap first (it mutates the same Scalar object in place), then apply
+        // our own wrap, so every installed bundle's plugin is chained onto the loaded Scalar.
+        priorSetter?.call(window, value)
         stored = wrapScalar(spec, value)
       },
     })

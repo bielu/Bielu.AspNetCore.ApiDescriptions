@@ -221,7 +221,9 @@ by the changeset `version` step, above):
 - **VersionPrefix**: The base version number (MAJOR.MINOR.PATCH)
 - **VersionSuffix**: Optional suffix for pre-release versions (e.g., `beta`, `rc1`)
 
-To update the version, modify this file before creating a release tag.
+`version.props` is written automatically by the changeset `version` step (see
+[Release Process](#release-process)) — do not edit it by hand. To change the version, add a changeset
+describing your change; the accumulated changesets determine the next version bump.
 
 ### CI Pipeline
 

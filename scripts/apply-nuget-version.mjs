@@ -39,7 +39,7 @@ const nugetChangelog = readFileSync(nugetChangelogPath, "utf8");
 // The generated file looks like:  # bielu-aspnetcore-asyncapi\n\n## X.Y.Z\n\n### Minor Changes\n...
 // Grab the body of the top-most "## X.Y.Z" section for the version we just wrote.
 const sectionRe = new RegExp(
-  `##\\s+${newVersion.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\s*\\n([\\s\\S]*?)(?=\\n##\\s+\\d|$)`,
+  `##\\s+${newVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\n([\\s\\S]*?)(?=\\n##\\s+\\d|$)`,
 );
 const match = nugetChangelog.match(sectionRe);
 const body = (match ? match[1] : "").trim();
