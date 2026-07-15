@@ -158,7 +158,11 @@ internal sealed class AsyncApiDocumentService(
                     if (channelAttr is null)
                         continue;
 
-                    var channel = GetOrCreateChannel(document, channelAttr);
+                    var channelKey = AsyncApiNamingHelper.SanitizeKey(channelAttr.Name);
+                    if (_options.IncludeOnlyChannels.Count > 0 && !_options.IncludeOnlyChannels.Contains(channelKey))
+                        continue;
+
+                    var channel = GetOrCreateChannel(document, channelAttr, channelKey);
 
                     ApplyChannelParametersFromAttributes(channel, member);
                     ApplyChannelServersFromAttributes(document, channel, channelAttr);
@@ -172,9 +176,8 @@ internal sealed class AsyncApiDocumentService(
         }
     }
 
-    private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr)
+    private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr, string sanitizedKey)
     {
-        var sanitizedKey = AsyncApiNamingHelper.SanitizeKey(channelAttr.Name);
         if (document.Channels.TryGetValue(sanitizedKey, out var existing))
         {
             existing.Description ??= channelAttr.Description;

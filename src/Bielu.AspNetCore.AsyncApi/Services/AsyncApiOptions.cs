@@ -102,6 +102,31 @@ public sealed class AsyncApiOptions
     }
 
     /// <summary>
+    /// Automatically populates <c>components.securitySchemes</c> from the ASP.NET Core authentication
+    /// schemes registered on the application (resolved at document-generation time from
+    /// <see cref="Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider"/>), and — unless
+    /// disabled — references them from the document's servers so consumers treat them as required.
+    /// </summary>
+    /// <remarks>
+    /// Built-in handlers (JWT bearer, cookies, Negotiate) are mapped out of the box. Handlers whose
+    /// shape cannot be inferred (custom API-key handlers, OAuth2/OpenID Connect flows) are skipped by
+    /// the default mapper; describe those by setting <see cref="AuthenticationDetectionOptions.Map"/>.
+    /// Detection never overwrites a hand-authored scheme of the same name unless
+    /// <see cref="AuthenticationDetectionOptions.OverwriteExisting"/> is set, so this composes with
+    /// explicitly declared schemes. Call this only on documents that should surface authentication —
+    /// it is opt-in per document.
+    /// </remarks>
+    /// <param name="configure">An optional delegate to customize the detection behavior.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions DetectAuthenticationSchemes(Action<AuthenticationDetectionOptions>? configure = null)
+    {
+        var detectionOptions = new AuthenticationDetectionOptions();
+        configure?.Invoke(detectionOptions);
+        DocumentTransformers.Add(new AuthenticationSchemeDocumentTransformer(detectionOptions));
+        return this;
+    }
+
+    /// <summary>
     /// Registers a new operation transformer on the current <see cref="AsyncApiOptions"/> instance.
     /// </summary>
     /// <typeparam name="TTransformerType">The type of the <see cref="IAsyncApiOperationTransformer"/> to instantiate.</typeparam>
@@ -297,6 +322,25 @@ public sealed class AsyncApiOptions
     public Dictionary<string, IList<IChannelBinding>> ChannelBindings { get; set; } = new();
 
     public string DocumentRoutePattern { get; set; }
+
+    /// <summary>
+    /// When non-empty, only channels whose sanitized key appears in this set are included in the
+    /// generated document. Useful when multiple hubs share an assembly and you need each AsyncAPI
+    /// document to expose only its own hub. Comparison is case-insensitive.
+    /// </summary>
+    public HashSet<string> IncludeOnlyChannels { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Adds a channel name to <see cref="IncludeOnlyChannels"/>, sanitizing it the same way channel
+    /// keys are sanitized during document generation, so raw channel names (e.g. containing slashes
+    /// or spaces) match the generated keys.
+    /// </summary>
+    public AsyncApiOptions AddIncludedChannel(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        IncludeOnlyChannels.Add(AsyncApiNamingHelper.SanitizeKey(name));
+        return this;
+    }
 
     /// <summary>
     /// Adds an operation binding.

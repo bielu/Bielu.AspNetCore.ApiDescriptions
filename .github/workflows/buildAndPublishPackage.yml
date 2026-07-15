@@ -6,34 +6,136 @@ on:
   pull_request:
     branches:
       - main
-
+  release:
+    types: [ published ]
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# Least-privilege default for GITHUB_TOKEN; jobs opt into more only where they need it.
+permissions:
+  contents: read
+
+# The npm package @bielu/scalar-signalr lives at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets;
+# the changeset workspace root is the repository root (package.json + .changeset).
+#
+# NOTE: reusable-workflow refs use @main here. Pin them to the merged
+# bielu/bielu.GithubActions.Templates commit SHA before relying on this in anger, the same way the
+# previous revision pinned @c18e6a807678b8d8eec47974b3c9ceac3cfba41b.
 jobs:
-      # Runs a single command using the runners shell
-  buildPr:
+  # Pull request: build the NuGet and npm packages for validation, publish nothing.
+  ci:
     if: github.event_name == 'pull_request'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciNoSchema.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
     with:
       suffix: "pr"
+      generate-schema: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
 
-  build:
-    if: github.event_name == 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciNoSchema.yml@main
+  # Pull request: require a changeset so the version bump + changelog are recorded.
+  changeset-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a changeset
+        run: |
+          # Files added by this PR under .changeset/, excluding README/config. A directory pathspec
+          # is used deliberately: the git glob '.changeset/**/*.md' does NOT match top-level files
+          # like '.changeset/foo.md' (its '**/' requires an intermediate directory).
+          ADDED=$(git diff --diff-filter=A --name-only \
+            "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" \
+            -- .changeset \
+            | { grep -E '\.changeset/.+\.md$' || true; } \
+            | { grep -vE '/(README|config)\.' || true; })
+          if [ -z "$ADDED" ]; then
+            echo "::error::No changeset found in this PR. Run 'npx changeset' to describe your change, or 'npx changeset add --empty' for chore-only PRs."
+            exit 1
+          fi
+          echo "Found changeset(s):"; echo "$ADDED"
 
-  buildBeta:
-    if: github.event_name != 'pull_request' && github.event_name != 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciNoSchema.yml@main
+  # Push to main: consume changesets into a "Version Packages" PR. While changesets are pending it
+  # (re)opens that PR; once it is merged and the changesets are gone, hasChangesets becomes false and
+  # the release jobs below take over.
+  version:
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/versionChangeset.yml@main
     with:
-      suffix: "beta"
+      working-directory: .
 
-  deploy:
-    needs: [build,buildBeta]
-    if: |
-      always()
-      && contains(needs.*.result, 'success')
-      && !contains(needs.*.result, 'failure')
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/releaseNuget.yml@main
+  # Version PR merged (no changesets left): publish the stable NuGet + npm packages at the versions
+  # the Version PR committed. Both publish steps are idempotent (NuGet --skip-duplicate; npm skips
+  # already-published versions), so re-running on later non-changeset pushes is a safe no-op.
+  releaseStable:
+    needs: version
+    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    with:
+      generate-schema: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # Record-keeping: tag + GitHub Release for the shared NuGet version, when not already present.
+  # (Created with GITHUB_TOKEN, so it does not itself trigger the `release` job — publishing is done
+  # by releaseStable above.)
+  tagRelease:
+    needs: version
+    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Create GitHub Release for the shared NuGet version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(grep -oPm1 '(?<=<VersionPrefix>)[^<]+' version.props)
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists; nothing to tag."
+          else
+            echo "Creating release v$VERSION"
+            gh release create "v$VERSION" --title "v$VERSION" \
+              --notes "Automated release. See CHANGELOG.md for details."
+          fi
+
+  # In-flight prereleases: publish a beta of main while a release is still pending (changesets not yet
+  # merged), and on manual dispatch. Skipped on the Version-PR-merge commit so it does not shadow the
+  # stable release.
+  releaseBeta:
+    needs: version
+    if: >-
+      always() && !cancelled()
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    with:
+      suffix: "beta"
+      generate-schema: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+    secrets:
+      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # Manual GitHub Release (escape hatch): build and publish stable packages. Independent of the
+  # changeset-driven path above and idempotent, so the two cannot double-publish.
+  release:
+    if: github.event_name == 'release'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    with:
+      generate-schema: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+    secrets:
+      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

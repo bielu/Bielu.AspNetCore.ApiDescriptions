@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.Scalar.SignalR</RootNamespace>
+        <Description>Interactive SignalR console for the Scalar API Reference in ASP.NET Core. Serves a Scalar bundle that adds a SignalR client driven by your SignalR AsyncAPI bindings.</Description>
+        <PackageTags>scalar;signalr;asyncapi;aspnetcore;api-reference</PackageTags>
+        <DefaultItemExcludes>$(DefaultItemExcludes);assets/node_modules/**;assets/dist/**</DefaultItemExcludes>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="Scalar.AspNetCore" />
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Scalar\Bielu.AspNetCore.AsyncApi.Scalar.csproj" />
+    </ItemGroup>
+
+    <!-- The interactive client lives in the assets/ npm package (@bielu/scalar-signalr). The shared
+         targets rebuild and embed the IIFE bundle incrementally; see ScalarPluginBundle.targets. -->
+    <Import Project="..\Bielu.AspNetCore.AsyncApi.Scalar\build\ScalarPluginBundle.targets" />
+
+</Project>

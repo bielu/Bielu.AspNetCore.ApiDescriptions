@@ -1,0 +1,20 @@
+{
+  "name": "bielu-aspnetcore-asyncapi-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Root workspace for changeset-driven versioning of this repository. Not published. The assets/* members are the publishable npm packages; build/changeset/nuget-suite is the placeholder for the shared NuGet version. Each member keeps its own package-lock.json so the per-folder CI `npm ci` builds are unaffected.",
+  "workspaces": [
+    "build/changeset/nuget-suite",
+    "src/Bielu.AspNetCore.AsyncApi.Scalar/assets",
+    "src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets"
+  ],
+  "scripts": {
+    "changeset": "changeset",
+    "version": "changeset version && node scripts/apply-nuget-version.mjs && npm install --package-lock-only --no-audit --no-fund",
+    "changeset:status": "changeset status --since=origin/main"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.0"
+  }
+}

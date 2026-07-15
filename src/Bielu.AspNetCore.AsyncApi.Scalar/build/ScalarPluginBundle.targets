@@ -1,0 +1,96 @@
+<Project>
+
+    <!--
+      Shared npm build/embed pipeline for Scalar console plugin packages (SignalR, gRPC, ...).
+      Import from the protocol package csproj; the defaults below assume the conventional layout:
+
+        $(ScalarPluginAssetsDir)          the plugin's npm package        <project>/assets
+        $(ScalarPluginBundlePath)         the built IIFE bundle           <assets>/dist/plugin.js
+        $(ScalarPluginBundleLogicalName)  the manifest resource name      $(RootNamespace).plugin.js
+
+      The plugin's npm "build" script is responsible for building its @bielu/scalar-core dependency
+      first (via its "prebuild" script), so npm-only CI jobs work without MSBuild.
+
+      A CI agent without Node can still build the .NET package from a pre-built bundle that is newer
+      than the sources - MSBuild then finds the output up to date and skips the npm steps entirely.
+      Note: the core build is not synchronised across projects, so building several plugin packages
+      in parallel with stale core outputs can race in the core assets folder.
+    -->
+
+    <PropertyGroup>
+        <ScalarPluginAssetsDir Condition="'$(ScalarPluginAssetsDir)' == ''">$(MSBuildProjectDirectory)/assets</ScalarPluginAssetsDir>
+        <ScalarPluginBundlePath Condition="'$(ScalarPluginBundlePath)' == ''">$(ScalarPluginAssetsDir)/dist/plugin.js</ScalarPluginBundlePath>
+        <ScalarPluginBundleLogicalName Condition="'$(ScalarPluginBundleLogicalName)' == ''">$(RootNamespace).plugin.js</ScalarPluginBundleLogicalName>
+        <ScalarCoreAssetsDir>$(MSBuildThisFileDirectory)../assets</ScalarCoreAssetsDir>
+        <!-- The assets packages are npm workspaces; the authoritative manifest, lockfile and the
+             hoisted node_modules all live at the repo root (this file is at src/<Scalar>/build/). -->
+        <ScalarWorkspaceRoot>$(MSBuildThisFileDirectory)../../..</ScalarWorkspaceRoot>
+    </PropertyGroup>
+
+    <!-- The frontend sources whose changes must regenerate the embedded bundle. The shared core
+         sources are included because they are inlined into every plugin bundle. -->
+    <ItemGroup>
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/src/**/*" />
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/package.json" />
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/package-lock.json" />
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/vite.config.ts" />
+        <ScalarPluginAssetSource Include="$(ScalarPluginAssetsDir)/tsconfig.json" />
+        <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/src/**/*" />
+        <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/package.json" />
+        <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/tsconfig.json" />
+    </ItemGroup>
+
+    <!--
+      Install npm dependencies with `npm ci` - a deterministic, lockfile-only install that never
+      rewrites package-lock.json during the build. The assets are npm workspaces, so the install
+      runs at the workspace root: npm hoists every member's dependencies into the root node_modules
+      and links the workspace packages, so running `npm ci` inside a member dir would leave its own
+      node_modules empty. Incremental on the root package.json/package-lock.json (compared to a stamp
+      file) so a dependency change forces a fresh install before the bundle is rebuilt - not just
+      when node_modules is missing. Only reached via CallTarget from BuildScalarPluginBundle, so a
+      Node-less build with an up-to-date prebuilt bundle never runs it.
+    -->
+    <Target Name="InstallScalarPluginDeps"
+            Inputs="$(ScalarWorkspaceRoot)/package.json;$(ScalarWorkspaceRoot)/package-lock.json"
+            Outputs="$(ScalarWorkspaceRoot)/node_modules/.npm-install.stamp">
+        <Exec Command="npm ci" WorkingDirectory="$(ScalarWorkspaceRoot)" />
+        <Touch Files="$(ScalarWorkspaceRoot)/node_modules/.npm-install.stamp" AlwaysCreate="true" />
+    </Target>
+
+    <Target Name="BuildScalarPluginBundle"
+            BeforeTargets="AssignTargetPaths"
+            Inputs="@(ScalarPluginAssetSource)"
+            Outputs="$(ScalarPluginBundlePath)">
+        <CallTarget Targets="InstallScalarPluginDeps" />
+        <Exec Command="npm run build" WorkingDirectory="$(ScalarPluginAssetsDir)" />
+    </Target>
+
+    <!--
+      Embed the built bundle as a manifest resource. Runs unconditionally (after the optional
+      rebuild) and before AssignTargetPaths so the dynamically added EmbeddedResource is picked up by
+      the resource pipeline (hooking GenerateResource/CoreCompile is too late - the resource list is
+      snapshotted earlier).
+    -->
+    <Target Name="EmbedScalarPluginBundle"
+            BeforeTargets="AssignTargetPaths"
+            DependsOnTargets="BuildScalarPluginBundle">
+        <ItemGroup>
+            <EmbeddedResource Include="$(ScalarPluginBundlePath)" Condition="Exists('$(ScalarPluginBundlePath)')">
+                <LogicalName>$(ScalarPluginBundleLogicalName)</LogicalName>
+            </EmbeddedResource>
+        </ItemGroup>
+    </Target>
+
+    <!--
+      Make the incremental/fast up-to-date check aware of the bundle and its frontend sources.
+      Without this, changing only the bundle content (same path, added as a resource inside a target)
+      leaves the compiled assembly looking up-to-date, so `dotnet run`/`dotnet build` skips
+      recompilation and keeps embedding the stale bundle. Registering the sources as
+      UpToDateCheckInput and the bundle as UpToDateCheckBuilt forces a rebuild when either changes.
+    -->
+    <ItemGroup>
+        <UpToDateCheckInput Include="@(ScalarPluginAssetSource)" />
+        <UpToDateCheckBuilt Include="$(ScalarPluginBundlePath)" Condition="Exists('$(ScalarPluginBundlePath)')" />
+    </ItemGroup>
+
+</Project>

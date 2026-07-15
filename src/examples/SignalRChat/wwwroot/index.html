@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SignalR Chat</title>
+    <style>
+        :root { color-scheme: light dark; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            margin: 0; height: 100vh; display: flex; flex-direction: column;
+            background: #0f1116; color: #e6e8eb;
+        }
+        header { padding: 12px 16px; border-bottom: 1px solid #232730; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+        header .status { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #232730; }
+        header .status.on { background: #14361f; color: #5ce08a; }
+        header input { background: #1a1d24; border: 1px solid #2a2f3a; color: inherit; padding: 6px 8px; border-radius: 6px; }
+        main { flex: 1; display: flex; min-height: 0; }
+        #log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+        #log .msg { line-height: 1.4; }
+        #log .msg .who { font-weight: 600; }
+        #log .msg .room { font-size: 11px; color: #7c8493; margin-left: 6px; }
+        #log .sys { color: #7c8493; font-style: italic; font-size: 13px; }
+        aside { width: 200px; border-left: 1px solid #232730; padding: 12px; overflow-y: auto; }
+        aside h2 { font-size: 12px; text-transform: uppercase; color: #7c8493; margin: 0 0 8px; }
+        aside ul { list-style: none; margin: 0; padding: 0; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+        footer { padding: 12px 16px; border-top: 1px solid #232730; display: flex; gap: 8px; align-items: center; }
+        footer input[type=text] { flex: 1; background: #1a1d24; border: 1px solid #2a2f3a; color: inherit; padding: 10px; border-radius: 6px; }
+        footer button { background: #2b6cff; border: 0; color: #fff; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
+        footer button:disabled { opacity: .5; cursor: not-allowed; }
+        #typing { height: 16px; padding: 0 16px 8px; font-size: 12px; color: #7c8493; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SignalR Chat</h1>
+        <span id="status" class="status">connecting…</span>
+        <input id="room" placeholder="room (optional)" />
+        <button id="joinBtn" disabled>Join room</button>
+    </header>
+    <main>
+        <div id="log"></div>
+        <aside>
+            <h2>Online</h2>
+            <ul id="online"></ul>
+        </aside>
+    </main>
+    <div id="typing"></div>
+    <footer>
+        <input id="text" type="text" placeholder="Type a message…" autocomplete="off" />
+        <button id="sendBtn" disabled>Send</button>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script>
+        // Pick a display name. Use ?user=ada from the URL, otherwise a per-TAB identity stored in
+        // sessionStorage — so two browser tabs are two distinct clients (open ?user=alice and
+        // ?user=bob, or just two tabs, to see typing/presence cross between them).
+        const params = new URLSearchParams(location.search);
+        let user = params.get('user') || sessionStorage.getItem('chat-user') || '';
+        if (!user) {
+            user = (prompt('Your name?') || '').trim() || `guest-${Math.random().toString(36).slice(2, 6)}`;
+        }
+        sessionStorage.setItem('chat-user', user);
+
+        const $ = (id) => document.getElementById(id);
+        const log = $('log');
+        let currentRoom = null;
+
+        function add(html, cls = 'msg') {
+            const el = document.createElement('div');
+            el.className = cls;
+            el.innerHTML = html;
+            log.appendChild(el);
+            log.scrollTop = log.scrollHeight;
+        }
+        const esc = (s) => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+        const time = (iso) => new Date(iso).toLocaleTimeString();
+
+        function renderMessage(m) {
+            const room = m.room ? `<span class="room">#${esc(m.room)}</span>` : '';
+            add(`<span class="who">${esc(m.user)}</span>${room} <span style="color:#7c8493">${time(m.sentAt)}</span><br>${esc(m.text)}`);
+        }
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(`/chatHub?user=${encodeURIComponent(user)}`)
+            .withAutomaticReconnect()
+            .build();
+
+        const isConnected = () => connection.state === signalR.HubConnectionState.Connected;
+
+        // Reflect the live connection state in the status pill and gate the buttons: Join/Send are only
+        // usable while actually connected, and are re-enabled after a successful automatic reconnect.
+        function setStatus(label, connected) {
+            $('status').textContent = label;
+            $('status').classList.toggle('on', connected);
+            $('sendBtn').disabled = !connected;
+            $('joinBtn').disabled = !connected;
+        }
+        setStatus('connecting…', false);
+
+        connection.onreconnecting(() => setStatus('reconnecting…', false));
+        connection.onreconnected(() => setStatus('connected', true));
+        connection.onclose(() => setStatus('disconnected', false));
+
+        // --- Server-to-client pushes (IChatClient) ---
+        connection.on('ReceiveMessage', renderMessage);
+        connection.on('UserJoined', (p) => { add(`${esc(p.user)} joined · ${p.onlineCount} online`, 'sys'); refreshOnline(); });
+        connection.on('UserLeft', (p) => { add(`${esc(p.user)} left · ${p.onlineCount} online`, 'sys'); refreshOnline(); });
+
+        let typingTimer;
+        connection.on('TypingChanged', (t) => {
+            // Only show typing for the room you are currently viewing (null = the broadcast channel).
+            if ((t.room ?? null) !== currentRoom) return;
+            $('typing').textContent = t.isTyping ? `${t.user} is typing…` : '';
+            clearTimeout(typingTimer);
+            if (t.isTyping) typingTimer = setTimeout(() => ($('typing').textContent = ''), 3000);
+        });
+
+        async function refreshOnline() {
+            try {
+                const users = await connection.invoke('GetOnlineUsers'); // SignalR invocation (awaits a result)
+                $('online').innerHTML = users.map(u => `<li>${esc(u)}</li>`).join('');
+            } catch { /* ignore while reconnecting */ }
+        }
+
+        // --- Client-to-server hub methods ---
+        async function send() {
+            const text = $('text').value.trim();
+            if (!text || !isConnected()) return;
+            const message = { user, text, sentAt: new Date().toISOString(), room: currentRoom };
+            if (currentRoom) {
+                await connection.send('SendToRoom', message); // room travels on the payload
+            } else {
+                await connection.send('SendMessage', message);
+            }
+            $('text').value = '';
+            await connection.send('NotifyTyping', { user, isTyping: false, room: currentRoom });
+        }
+
+        $('sendBtn').addEventListener('click', send);
+        $('text').addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+
+        let lastTyping = 0;
+        $('text').addEventListener('input', () => {
+            if (!isConnected()) return;
+            const now = Date.now();
+            if (now - lastTyping > 1000) { connection.send('NotifyTyping', { user, isTyping: true, room: currentRoom }); lastTyping = now; }
+        });
+
+        $('joinBtn').addEventListener('click', async () => {
+            if (!isConnected()) return;
+            const room = $('room').value.trim();
+            if (currentRoom) await connection.send('LeaveRoom', currentRoom);
+            currentRoom = room || null;
+            if (currentRoom) {
+                await connection.send('JoinRoom', currentRoom);
+                add(`You joined #${esc(currentRoom)}`, 'sys');
+            } else {
+                add('You left the room (broadcasting to everyone)', 'sys');
+            }
+        });
+
+        connection.start()
+            .then(async () => {
+                setStatus('connected', true);
+                await refreshOnline();
+                // Replay the recent backlog using a SignalR stream (streamInvocation).
+                connection.stream('StreamHistory', 30).subscribe({
+                    next: renderMessage,
+                    error: () => {},
+                    complete: () => add('— end of history —', 'sys'),
+                });
+            })
+            .catch((err) => { setStatus('failed', false); add(esc(err), 'sys'); });
+    </script>
+</body>
+</html>
