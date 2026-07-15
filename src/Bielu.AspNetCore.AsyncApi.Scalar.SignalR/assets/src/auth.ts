@@ -8,7 +8,7 @@ import type { SecuritySchemeModel } from './types'
 // Thin wrappers around @bielu/scalar-core's auth-state store. Typed as `unknown` so the published
 // declaration files never reference the private core package (see the core README).
 
-/** Store Scalar's PluginAuthState (no-op on stock Scalar, where the API does not exist). */
+/** Store Scalar's PluginAuthState (no-op on older Scalar versions that predate the API). */
 export function setAuthState(auth: unknown): void {
   coreSetAuthState(auth)
 }

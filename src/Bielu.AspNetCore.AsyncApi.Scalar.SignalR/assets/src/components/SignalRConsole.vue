@@ -166,7 +166,7 @@ async function connect() {
     if (!authState) {
       addLog(
         'sys',
-        'Auth: no Scalar auth state available — the custom Scalar build (feat/plugin-auth-state) may not be loaded.',
+        'Auth: no Scalar auth state available — this Scalar version may predate the plugin auth-state API (Scalar ≥ 2.16.12).',
       )
     } else {
       addLog(

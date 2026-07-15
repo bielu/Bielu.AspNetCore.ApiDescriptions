@@ -49,9 +49,9 @@ Scalar owns the top-level Authentication UI. When the user selects a security sc
 SignalR console picks up the credentials automatically at **Connect** time — no separate login step
 is needed.
 
-**Requires the custom Scalar build** (`feat/plugin-auth-state`). On stock Scalar the console
-connects without credentials (graceful no-op); the upstream PR is tracked at
-[scalar/scalar#9639](https://github.com/scalar/scalar/pull/9639#issuecomment-4862275759).
+**Requires Scalar ≥ 2.16.12** (the plugin auth-state API, upstreamed in
+[scalar/scalar#9639](https://github.com/scalar/scalar/pull/9639)). On older Scalar versions that
+predate the API, the console connects without credentials (graceful no-op).
 
 ### How credentials are mapped to the SignalR client
 

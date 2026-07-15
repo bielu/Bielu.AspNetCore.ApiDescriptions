@@ -1,12 +1,13 @@
 import type { SecuritySchemeModel } from './types'
 
 /**
- * Minimal structural copy of the PluginAuthState API exposed by the custom Scalar build
- * (feat/plugin-auth-state). Declaring it locally keeps the bundles free from a hard dependency on a
- * specific @scalar/types version; Scalar validates the plugin shape at runtime.
+ * Minimal structural copy of the PluginAuthState API Scalar exposes to plugins (upstreamed in
+ * scalar/scalar#9639, shipped in Scalar.AspNetCore ≥ 2.16.12). Declaring it locally keeps the bundles
+ * free from a hard dependency on a specific @scalar/types version; Scalar validates the plugin shape
+ * at runtime.
  *
- * On stock Scalar (where this API does not exist), `setAuthState` simply has nothing to store and
- * all callers of `resolveSelectedSchemes` receive the no-op empty result.
+ * On older Scalar versions that predate the API, `setAuthState` simply has nothing to store and all
+ * callers of `resolveSelectedSchemes` receive the no-op empty result.
  */
 type AuthSecretKey =
   | 'x-scalar-secret-token'
