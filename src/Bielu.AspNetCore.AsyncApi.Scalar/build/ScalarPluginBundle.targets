@@ -22,6 +22,9 @@
         <ScalarPluginBundlePath Condition="'$(ScalarPluginBundlePath)' == ''">$(ScalarPluginAssetsDir)/dist/plugin.js</ScalarPluginBundlePath>
         <ScalarPluginBundleLogicalName Condition="'$(ScalarPluginBundleLogicalName)' == ''">$(RootNamespace).plugin.js</ScalarPluginBundleLogicalName>
         <ScalarCoreAssetsDir>$(MSBuildThisFileDirectory)../assets</ScalarCoreAssetsDir>
+        <!-- The assets packages are npm workspaces; the authoritative manifest, lockfile and the
+             hoisted node_modules all live at the repo root (this file is at src/<Scalar>/build/). -->
+        <ScalarWorkspaceRoot>$(MSBuildThisFileDirectory)../../..</ScalarWorkspaceRoot>
     </PropertyGroup>
 
     <!-- The frontend sources whose changes must regenerate the embedded bundle. The shared core
@@ -39,16 +42,19 @@
 
     <!--
       Install npm dependencies with `npm ci` - a deterministic, lockfile-only install that never
-      rewrites package-lock.json during the build. Incremental on package.json/package-lock.json
-      (compared to a stamp file) so a change to either forces a fresh install before the bundle is
-      rebuilt - not just when node_modules is missing. Only reached via CallTarget from
-      BuildScalarPluginBundle, so a Node-less build with an up-to-date prebuilt bundle never runs it.
+      rewrites package-lock.json during the build. The assets are npm workspaces, so the install
+      runs at the workspace root: npm hoists every member's dependencies into the root node_modules
+      and links the workspace packages, so running `npm ci` inside a member dir would leave its own
+      node_modules empty. Incremental on the root package.json/package-lock.json (compared to a stamp
+      file) so a dependency change forces a fresh install before the bundle is rebuilt - not just
+      when node_modules is missing. Only reached via CallTarget from BuildScalarPluginBundle, so a
+      Node-less build with an up-to-date prebuilt bundle never runs it.
     -->
     <Target Name="InstallScalarPluginDeps"
-            Inputs="$(ScalarPluginAssetsDir)/package.json;$(ScalarPluginAssetsDir)/package-lock.json"
-            Outputs="$(ScalarPluginAssetsDir)/node_modules/.npm-install.stamp">
-        <Exec Command="npm ci" WorkingDirectory="$(ScalarPluginAssetsDir)" />
-        <Touch Files="$(ScalarPluginAssetsDir)/node_modules/.npm-install.stamp" AlwaysCreate="true" />
+            Inputs="$(ScalarWorkspaceRoot)/package.json;$(ScalarWorkspaceRoot)/package-lock.json"
+            Outputs="$(ScalarWorkspaceRoot)/node_modules/.npm-install.stamp">
+        <Exec Command="npm ci" WorkingDirectory="$(ScalarWorkspaceRoot)" />
+        <Touch Files="$(ScalarWorkspaceRoot)/node_modules/.npm-install.stamp" AlwaysCreate="true" />
     </Target>
 
     <Target Name="BuildScalarPluginBundle"
