@@ -77,12 +77,16 @@ jobs:
     needs: version
     if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    # npm publishes via trusted publishing (OIDC): the trusted publisher on npmjs.com
+    # references this repo + this workflow file, and the job must mint an OIDC token.
+    permissions:
+      contents: read
+      id-token: write
     with:
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # Record-keeping: tag + GitHub Release for the shared NuGet version, when not already present.
   # (Created with GITHUB_TOKEN, so it does not itself trigger the `release` job — publishing is done
@@ -120,22 +124,26 @@ jobs:
       && (github.event_name == 'workflow_dispatch'
           || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
     with:
       suffix: "beta"
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # Manual GitHub Release (escape hatch): build and publish stable packages. Independent of the
   # changeset-driven path above and idempotent, so the two cannot double-publish.
   release:
     if: github.event_name == 'release'
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
     with:
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
