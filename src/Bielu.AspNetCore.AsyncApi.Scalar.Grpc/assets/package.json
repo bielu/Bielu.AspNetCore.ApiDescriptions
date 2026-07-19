@@ -9,7 +9,8 @@
   "module": "./dist/plugin.js",
   "types": "./dist/types/index.d.ts",
   "files": [
-    "dist",
+    "dist/plugin.js",
+    "dist/types",
     "src",
     "README.md"
   ],
