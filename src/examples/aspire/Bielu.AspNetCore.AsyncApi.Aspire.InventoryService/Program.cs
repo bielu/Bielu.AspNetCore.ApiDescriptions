@@ -6,8 +6,8 @@ using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Diagn
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Services;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Extensions;
-using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Bindings.Kafka;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,7 +65,11 @@ app.MapDefaultEndpoints();
 app.UseRouting();
 
 app.MapAsyncApi();
-app.MapAsyncApiUi();
+// Render the generated AsyncAPI document with Scalar (served at /scalar)
+app.MapScalarApiReference(options =>
+{
+    options.AddAsyncApiDocument("v1", "Inventory Service", "/asyncapi/v1.json");
+});
 app.MapControllers();
 
 app.Run();

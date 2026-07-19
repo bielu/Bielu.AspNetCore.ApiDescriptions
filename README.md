@@ -24,7 +24,7 @@ This project is based on and inspired by:
 - ✅ **Schema transformers** - Customize the generated schema via schema transformers
 - ✅ **Protocol bindings** - Support for AMQP, HTTP, MQTT, Kafka, SignalR, gRPC, SSE, WebRTC, and other protocol bindings
 - ✅ **Multiple documents** - Generate multiple AsyncAPI documents from a single application
- - ✅ **Interactive UI** - Built-in AsyncAPI UI, or render the document with [Scalar](https://scalar.com/) (recommended) — see [Viewing the Documentation](#viewing-the-documentation)
+ - ✅ **Interactive UI** - Render the document with [Scalar](https://scalar.com/) — see [Viewing the Documentation](#viewing-the-documentation). (The built-in `Bielu.AspNetCore.AsyncApi.UI` package is deprecated.)
 - ✅ **Attribute-based configuration** - Decorate your classes with attributes to define channels and operations
 
 ## Installation
@@ -38,9 +38,11 @@ dotnet add package Bielu.AspNetCore.AsyncApi
 # Optional: Attributes package for annotating your classes
 dotnet add package Bielu.AspNetCore.AsyncApi.Attributes
 
-# Optional: UI package for interactive documentation
-dotnet add package Bielu.AspNetCore.AsyncApi.UI
+# Optional: Scalar UI for interactive documentation (recommended)
+dotnet add package Scalar.AspNetCore
 ```
+
+> ⚠️ **Deprecated:** the built-in UI package `Bielu.AspNetCore.AsyncApi.UI` is deprecated. Render the generated document with [Scalar](#recommended-scalar) instead.
 
 ## Examples
 
@@ -59,7 +61,7 @@ In your `Program.cs` or `Startup.cs`, configure AsyncAPI services:
 
 ```csharp
 using Bielu.AspNetCore.AsyncApi.Extensions;
-using Bielu.AspNetCore.AsyncApi.UI;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,8 +86,11 @@ var app = builder.Build();
 // Map the AsyncAPI document endpoint
 app.MapAsyncApi();
 
-// Optional: Map the built-in AsyncAPI UI (or use Scalar — see "Viewing the Documentation")
-app.MapAsyncApiUi();
+// Optional: render the document with Scalar (see "Viewing the Documentation")
+app.MapScalarApiReference(options =>
+{
+    options.AddAsyncApiDocument("v1", "Streetlights API", "/asyncapi/v1.json");
+});
 
 app.Run();
 ```
@@ -117,7 +122,7 @@ public class StreetlightMessageBus : IStreetlightMessageBus
 Once configured, access your AsyncAPI document:
 
 - **JSON Document**: `GET /asyncapi/v1.json`
-- **AsyncAPI UI**: `GET /asyncapi`
+- **Scalar UI**: `GET /scalar`
 
 ```json
 {
@@ -137,8 +142,6 @@ Once configured, access your AsyncAPI document:
   }
 }
 ```
-
-![AsyncAPI UI](./assets/asyncapi-ui-screenshot.png)
 
 ## Viewing the Documentation
 
@@ -209,9 +212,9 @@ If you host the UI yourself, point Scalar's standalone bundle at the generated d
 </script>
 ```
 
-### Built-in UI
+### Built-in UI (deprecated)
 
-This repository also ships a built-in UI via the `Bielu.AspNetCore.AsyncApi.UI` package, mapped with `app.MapAsyncApiUi()` (served at `/asyncapi`). It works out of the box, but Scalar is recommended for the richer, actively-developed experience.
+The `Bielu.AspNetCore.AsyncApi.UI` package (mapped with `app.MapAsyncApiUi()`, served at `/asyncapi`) is **deprecated** and will not receive further development. `MapAsyncApiUi` is marked `[Obsolete]` and the package will eventually be unlisted. Migrate to [Scalar](#recommended-scalar): the generated document endpoint (`MapAsyncApi()`) stays exactly the same — only the rendering layer changes. For interactive protocol consoles, see `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` and `Bielu.AspNetCore.AsyncApi.Scalar.Grpc`.
 
 ## Main Types
 
@@ -600,7 +603,10 @@ builder.Services.AddAsyncApi(options =>
 });
 
 app.MapAsyncApi();
-app.MapAsyncApiUi();
+app.MapScalarApiReference(options =>
+{
+    options.AddAsyncApiDocument("v1", "My API", "/asyncapi/v1.json");
+});
 ```
 
 ## Contributing

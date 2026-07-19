@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.AsyncApi.Merger.Extensions;
-using Bielu.AspNetCore.AsyncApi.UI;
+using Scalar.AspNetCore;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -114,8 +114,11 @@ app.UseWebSockets();
 // Map YARP reverse proxy routes
 app.MapReverseProxy();
 
-// Map the merged AsyncAPI document endpoint and UI
+// Map the merged AsyncAPI document endpoint and render it with Scalar (served at /scalar)
 app.MapMergedAsyncApi("/asyncapi/v1.json");
-app.MapAsyncApiUi("/asyncapi");
+app.MapScalarApiReference(options =>
+{
+    options.AddAsyncApiDocument("v1", "Mini Shop", "/asyncapi/v1.json");
+});
 
 app.Run();

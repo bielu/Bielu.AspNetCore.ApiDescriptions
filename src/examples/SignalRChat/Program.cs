@@ -2,7 +2,6 @@ using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
-using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Models;
 using Microsoft.AspNetCore.Authentication;
 using Scalar.AspNetCore;
@@ -147,7 +146,6 @@ app.MapHub<ChatHub>(HubPath);
 app.MapHub<SecureChatHub>(SecureHubPath).RequireAuthorization();
 
 app.MapAsyncApi();      // GET /asyncapi/signalr.json  +  /asyncapi/signalr-secure.json
-app.MapAsyncApiUi();    // GET /asyncapi
 
 // Serve the SignalR-enabled Scalar bundle (GET /scalar/signalr/plugin.js).
 app.MapScalarSignalRAssets();

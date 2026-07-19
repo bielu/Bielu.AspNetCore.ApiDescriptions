@@ -80,7 +80,7 @@ The main types provided by this library are:
 ## Related Packages
 
 * [Bielu.AspNetCore.AsyncApi.Attributes](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Attributes) - Attribute decorators for defining channels and operations
-* [Bielu.AspNetCore.AsyncApi.UI](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.UI) - Interactive AsyncAPI UI
+* [Bielu.AspNetCore.AsyncApi.UI](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.UI) - *(deprecated)* built-in AsyncAPI UI — use Scalar as shown above instead
 
 ## Feedback & Contributing
 

@@ -7,9 +7,9 @@ using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Services;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.OrderTracking.Hubs;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Extensions;
-using Bielu.AspNetCore.AsyncApi.UI;
 using ByteBard.AsyncAPI.Bindings.Kafka;
 using ByteBard.AsyncAPI.Bindings.WebSockets;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,7 +76,11 @@ app.UseRouting();
 app.MapHub<OrderTrackingHub>("/hubs/order-tracking");
 
 app.MapAsyncApi();
-app.MapAsyncApiUi();
+// Render the generated AsyncAPI document with Scalar (served at /scalar)
+app.MapScalarApiReference(options =>
+{
+    options.AddAsyncApiDocument("v1", "Order Service", "/asyncapi/v1.json");
+});
 app.MapControllers();
 
 app.Run();
