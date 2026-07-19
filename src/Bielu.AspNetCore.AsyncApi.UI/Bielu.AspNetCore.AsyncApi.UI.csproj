@@ -5,6 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <StaticWebAssetBasePath>bielu/asyncapi/ui</StaticWebAssetBasePath>
         <Nullable>enable</Nullable>
+        <Description>[DEPRECATED] Built-in AsyncAPI UI for Bielu.AspNetCore.AsyncApi. This package is deprecated — render the AsyncAPI document with Scalar instead (Scalar.AspNetCore + MapScalarApiReference), optionally with Bielu.AspNetCore.AsyncApi.Scalar.SignalR / .Scalar.Grpc for interactive protocol consoles.</Description>
     </PropertyGroup>
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />

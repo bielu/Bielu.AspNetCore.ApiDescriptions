@@ -43,6 +43,16 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
   [changesets](https://github.com/changesets/changesets); the shared NuGet version and this changelog
   are updated from them via `scripts/apply-nuget-version.mjs`.
 
+### Deprecated
+
+- **`Bielu.AspNetCore.AsyncApi.UI`** - The built-in AsyncAPI UI package is deprecated in favour of
+  rendering the generated document with [Scalar](https://scalar.com/). `MapAsyncApiUi()` is now marked
+  `[Obsolete]`; migrate to `Scalar.AspNetCore`'s `MapScalarApiReference(options =>
+  options.AddAsyncApiDocument(...))` (the `MapAsyncApi()` document endpoint is unchanged), optionally
+  with `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` / `.Scalar.Grpc` for interactive protocol consoles.
+  All in-repo examples have been migrated to Scalar. The package will be marked deprecated on NuGet.org
+  and eventually unlisted.
+
 ### Fixed
 
 - `BindingsRef` on `[Channel]` and operation attributes now actually attaches the referenced binding

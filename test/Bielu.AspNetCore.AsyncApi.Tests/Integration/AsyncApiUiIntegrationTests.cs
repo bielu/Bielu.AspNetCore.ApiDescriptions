@@ -1,3 +1,7 @@
+// The built-in AsyncAPI UI is deprecated in favour of Scalar, but stays covered by tests
+// for as long as the package ships.
+#pragma warning disable CS0618
+
 using System.Net;
 using System.Text.RegularExpressions;
 using Bielu.AspNetCore.AsyncApi.Extensions;

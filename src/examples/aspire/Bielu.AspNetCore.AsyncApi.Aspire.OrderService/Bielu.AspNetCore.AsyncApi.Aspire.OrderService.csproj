@@ -11,7 +11,6 @@
     <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults\Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
     <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
-    <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi.UI\Bielu.AspNetCore.AsyncApi.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +18,7 @@
     <PackageReference Include="Aspire.Confluent.Kafka" />
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Aspire.StackExchange.Redis" />
+    <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>
 
 </Project>

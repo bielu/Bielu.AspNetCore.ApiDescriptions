@@ -10,10 +10,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults\Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi.Merger\Bielu.AspNetCore.AsyncApi.Merger.csproj" />
-    <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi.UI\Bielu.AspNetCore.AsyncApi.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Yarp.ReverseProxy" />
   </ItemGroup>
 

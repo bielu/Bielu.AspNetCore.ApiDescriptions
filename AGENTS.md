@@ -14,7 +14,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 |---------|---------|
 | `Bielu.AspNetCore.AsyncApi` | Core library: services, extensions, schema generation, transformers |
 | `Bielu.AspNetCore.AsyncApi.Attributes` | Attributes for declaring channels/operations/messages |
-| `Bielu.AspNetCore.AsyncApi.UI` | Built-in interactive AsyncAPI UI (assets + endpoint mapping) |
+| `Bielu.AspNetCore.AsyncApi.UI` | **Deprecated** built-in AsyncAPI UI — use Scalar (`MapScalarApiReference` + `AddAsyncApiDocument`) instead |
 | `Bielu.AspNetCore.AsyncApi.Merger` | Merges multiple AsyncAPI documents (e.g. behind a gateway) |
 | `Bielu.AspNetCore.AsyncApi.Cli` | CLI tool for getting/merging documents at build time |
 | `Bielu.AspNetCore.AsyncApi.ApiDescription.Server` | MSBuild props/targets for build-time generation |
@@ -112,14 +112,13 @@ dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx
 dotnet format src/Bielu.AspNetCore.AsyncApi.slnx
 ```
 
-The UI project depends on Node.js — `cd src/Bielu.AspNetCore.AsyncApi.UI && npm install` before building it.
+The (deprecated) UI project depends on Node.js — `cd src/Bielu.AspNetCore.AsyncApi.UI && npm install` before building it.
 
 Run the sample to sanity-check end to end:
 
 ```bash
 cd src/examples/StreetlightsAPI && dotnet run
 # AsyncAPI JSON: http://localhost:5000/asyncapi/v1.json
-# AsyncAPI UI:   http://localhost:5000/asyncapi
 # Scalar UI:     http://localhost:5000/scalar
 ```
 

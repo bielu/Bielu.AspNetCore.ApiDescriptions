@@ -7,6 +7,7 @@ namespace Bielu.AspNetCore.AsyncApi.UI;
 
 public static class EndpointRouteBuilderExtensions
 {
+    [Obsolete("Bielu.AspNetCore.AsyncApi.UI is deprecated. Render the AsyncAPI document with Scalar instead: add the Scalar.AspNetCore package and call app.MapScalarApiReference(options => options.AddAsyncApiDocument(...)). For interactive protocol consoles see Bielu.AspNetCore.AsyncApi.Scalar.SignalR / .Scalar.Grpc. See the 'Viewing the Documentation' section of the README.")]
     public static IEndpointRouteBuilder MapAsyncApiUi(
         this IEndpointRouteBuilder endpoints,
         string path = "/asyncapi")

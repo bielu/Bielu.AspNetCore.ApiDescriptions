@@ -29,7 +29,7 @@ A distributed microservices example built with [.NET Aspire](https://learn.micro
 │  │  ┌────────┴───────────────────────┴──────────┐   │     │
 │  │  │           API Gateway (YARP)               │   │     │
 │  │  │  /asyncapi/merged.json  ← merged docs     │   │     │
-│  │  │  /asyncapi              ← AsyncAPI UI      │   │     │
+│  │  │  /scalar                ← Scalar UI        │   │     │
 │  │  │  /api/orders/*          → Order Service    │   │     │
 │  │  │  /api/inventory/*       → Inventory Svc    │   │     │
 │  │  └────────────────────────────────────────────┘   │     │
@@ -65,7 +65,7 @@ Each microservice independently exposes its own AsyncAPI documentation:
 
 The **API Gateway** uses **Bielu.AspNetCore.AsyncApi.Merger** to fetch and merge all AsyncAPI documents into a single unified specification, available at:
 - **Merged document**: `/asyncapi/merged.json`
-- **AsyncAPI UI**: `/asyncapi`
+- **Scalar UI**: `/scalar`
 
 ## Running
 
@@ -80,12 +80,12 @@ dotnet run --project src/examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.AppHos
 
 The Aspire dashboard will be available at the URL shown in the console output. From there you can:
 1. View all running services and their health status
-2. Access the API Gateway's merged AsyncAPI UI
+2. Access the API Gateway's merged AsyncAPI documentation via Scalar
 3. Monitor OpenTelemetry traces and logs
 
 ### Access AsyncAPI documentation
 - **Gateway merged docs**: `http://localhost:5182/asyncapi/merged.json`
-- **Gateway AsyncAPI UI**: `http://localhost:5182/asyncapi`
+- **Gateway Scalar UI**: `http://localhost:5182/scalar`
 - **Order Service docs**: `http://localhost:5180/asyncapi/v1.json`
 - **Inventory Service docs**: `http://localhost:5181/asyncapi/v1.json`
 
