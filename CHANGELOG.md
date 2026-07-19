@@ -33,6 +33,21 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
   plus the shared npm build/embed MSBuild targets) lives in a common `Bielu.AspNetCore.AsyncApi.Scalar`
   package and its private `@bielu/scalar-core` npm package, so further protocol consoles (gRPC, ...)
   reuse it rather than copying it. *(Not yet published to any channel.)*
+- **Interactive gRPC console for Scalar** - New `Bielu.AspNetCore.AsyncApi.Scalar.Grpc` package
+  (ASP.NET Core) and `Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire` package (Aspire hosting) that add
+  a live gRPC client panel to the Scalar API Reference, mirroring the SignalR console on the shared
+  `Bielu.AspNetCore.AsyncApi.Scalar` / `@bielu/scalar-core` foundation. The panel reads the `grpc`
+  bindings from your AsyncAPI document(s), groups RPC methods by service, prefills a JSON request
+  editor from the payload schema and invokes **unary and server-streaming** methods over **gRPC-Web**
+  (`@bufbuild/protobuf` + `@connectrpc/connect-web`; client-/bidi-streaming methods render as
+  documentation with a "not invokable from the browser" badge). Because AsyncAPI payload schemas carry
+  no protobuf field numbers, `MapScalarGrpcAssets()` also serves the real protobuf descriptors of every
+  mapped gRPC service at `{assetsPath}/descriptors` (a serialized `FileDescriptorSet`), which the
+  console uses to encode wire messages dynamically. Call `MapScalarGrpcAssets()` to serve the
+  `@bielu/scalar-grpc` bundle + descriptors and `options.WithGrpcClient(...)` to inject the script;
+  the target app must enable gRPC-Web (`Grpc.AspNetCore.Web`, `UseGrpcWeb`). Scalar auth passes
+  through as gRPC-Web metadata (plain HTTP headers). Wired into the `GrpcGreeter` example.
+  *(Not yet published to any channel.)*
 - **Server-Sent Events (SSE) protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse`
   package providing a custom `sse` protocol with channel, operation, message and server bindings
   modelling the `text/event-stream` (`event`/`id`/`retry`/`data`) wire shape. *(Not yet published to any channel.)*

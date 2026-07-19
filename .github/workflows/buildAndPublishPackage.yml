@@ -14,8 +14,10 @@ on:
 permissions:
   contents: read
 
-# The npm package @bielu/scalar-signalr lives at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets;
-# the changeset workspace root is the repository root (package.json + .changeset).
+# The npm packages live at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets (@bielu/scalar-signalr)
+# and src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets (@bielu/scalar-grpc); the changeset workspace
+# root is the repository root (package.json + .changeset). The reusable templates take a single npm
+# working-directory, so the gRPC package gets its own npm-only job next to each combined job.
 #
 # NOTE: reusable-workflow refs use @main here. Pin them to the merged
 # bielu/bielu.GithubActions.Templates commit SHA before relying on this in anger, the same way the
@@ -32,6 +34,18 @@ jobs:
       suffix: "pr"
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+
+  # Pull request: build the second npm package (@bielu/scalar-grpc); NuGet is already covered by `ci`.
+  ciGrpcNpm:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
+    with:
+      suffix: "pr"
+      build-nuget: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
 
   # Pull request: require a changeset so the version bump + changelog are recorded.
   changeset-check:
@@ -88,6 +102,19 @@ jobs:
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
 
+  # Version PR merged: publish the second npm package (@bielu/scalar-grpc); NuGet is published by
+  # releaseStable above (publish-nuget: false avoids a double publish).
+  releaseStableGrpcNpm:
+    needs: version
+    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+
   # Record-keeping: tag + GitHub Release for the shared NuGet version, when not already present.
   # (Created with GITHUB_TOKEN, so it does not itself trigger the `release` job — publishing is done
   # by releaseStable above.)
@@ -134,6 +161,22 @@ jobs:
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
 
+  # In-flight prereleases for the second npm package (@bielu/scalar-grpc).
+  releaseBetaGrpcNpm:
+    needs: version
+    if: >-
+      always() && !cancelled()
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      suffix: "beta"
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+
   # Manual GitHub Release (escape hatch): build and publish stable packages. Independent of the
   # changeset-driven path above and idempotent, so the two cannot double-publish.
   release:
@@ -147,3 +190,14 @@ jobs:
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+
+  # Manual GitHub Release: the second npm package (@bielu/scalar-grpc).
+  releaseGrpcNpm:
+    if: github.event_name == 'release'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets

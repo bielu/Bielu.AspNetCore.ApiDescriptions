@@ -1,6 +1,6 @@
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc;
-using Bielu.AspNetCore.AsyncApi.UI;
+using Bielu.AspNetCore.AsyncApi.Scalar.Grpc;
 using GrpcGreeter.Services;
 using Scalar.AspNetCore;
 
@@ -66,15 +66,24 @@ var app = builder.Build();
 
 app.UseRouting();
 
-// 3. Map the gRPC service and the AsyncAPI document + UI endpoints.
+// 3. Enable gRPC-Web for every gRPC service — browsers cannot speak native gRPC (no HTTP/2
+// trailers), so the interactive Scalar console calls the service over gRPC-Web.
+app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
+
+// 4. Map the gRPC service and the AsyncAPI document endpoint.
 app.MapGrpcService<GreeterService>();
 app.MapAsyncApi();      // GET /asyncapi/grpc.json
-app.MapAsyncApiUi();    // GET /asyncapi
 
-// Render the generated AsyncAPI document with Scalar (served at /scalar).
+// Serve the gRPC-enabled Scalar bundle + protobuf descriptors (GET /bielu/scalar/grpc/plugin.js,
+// GET /bielu/scalar/grpc/descriptors).
+app.MapScalarGrpcAssets();
+
+// Render the generated AsyncAPI document with Scalar (served at /scalar) and wire the
+// interactive gRPC console.
 app.MapScalarApiReference(options =>
 {
     options.AddAsyncApiDocument("grpc", "gRPC Greeter", "/asyncapi/grpc.json");
+    options.WithGrpcClient();
 });
 
 app.Run();
