@@ -34,7 +34,8 @@
   "scripts": {
     "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm install && npm run build",
     "prebuild": "npm run build:core",
-    "build": "vite build && vue-tsc -p tsconfig.json",
+    "build": "vite build && npm run build:standalone && vue-tsc -p tsconfig.json",
+    "build:standalone": "node ../../Bielu.AspNetCore.AsyncApi.Scalar/assets/scripts/build-standalone.mjs",
     "pretypecheck": "npm run build:core",
     "typecheck": "vue-tsc --noEmit",
     "dev": "vite build --watch"
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@bielu/scalar-core": "file:../../Bielu.AspNetCore.AsyncApi.Scalar/assets",
+    "@scalar/api-reference": "1.62.9",
     "@vitejs/plugin-vue": "^5.2.1",
     "typescript": "^5.6.0",
     "vite": "^5.4.0",

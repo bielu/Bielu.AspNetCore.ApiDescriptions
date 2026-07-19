@@ -71,9 +71,14 @@ falls back to the sole document in Scalar's exported auth state.
 
 ```bash
 npm install
-npm run build      # -> dist/bielu-scalar-signalr.js (IIFE bundle)
+npm run build      # -> dist/plugin.js (IIFE) + dist/standalone.js (Scalar + plugin) + dist/types
 npm run typecheck
 ```
+
+`dist/plugin.js` hooks an already-loaded Scalar (`MapScalarSignalRAssets()` serves it next to
+Scalar's own bundle). `dist/standalone.js` prepends Scalar's prebuilt browser bundle for pages
+where nothing else loads Scalar — it is what `ScalarAspireOptions.BundleUrl` is pointed at in the
+Aspire setup, since that option *replaces* Scalar's bundle.
 
 ## License
 

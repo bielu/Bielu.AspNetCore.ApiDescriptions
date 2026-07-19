@@ -14,4 +14,11 @@
         <PackageReference Include="Scalar.Aspire" />
     </ItemGroup>
 
+    <!-- Generates the ScalarPluginBundleVersion constant from the npm package's version, so
+         DefaultBundleUrl pins the @bielu/scalar-grpc version released from this commit. -->
+    <PropertyGroup>
+        <ScalarPluginPackageJsonPath>$(MSBuildProjectDirectory)/../Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets/package.json</ScalarPluginPackageJsonPath>
+    </PropertyGroup>
+    <Import Project="..\Bielu.AspNetCore.AsyncApi.Scalar\build\ScalarPluginBundleVersion.targets" />
+
 </Project>

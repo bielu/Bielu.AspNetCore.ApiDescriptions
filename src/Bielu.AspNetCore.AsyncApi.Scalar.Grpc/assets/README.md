@@ -71,8 +71,13 @@ be entered in the console's metadata editor.
 
 ```bash
 npm install
-npm run build   # → dist/plugin.js (IIFE) + dist/types
+npm run build   # → dist/plugin.js (IIFE) + dist/standalone.js (Scalar + plugin) + dist/types
 ```
 
 The build inlines the private `@bielu/scalar-core` workspace package (document discovery, auth
 state, schema examples, Scalar bootstrap) — see that package's README for the shared contract.
+
+`dist/plugin.js` hooks an already-loaded Scalar (`MapScalarGrpcAssets()` serves it next to
+Scalar's own bundle). `dist/standalone.js` prepends Scalar's prebuilt browser bundle for pages
+where nothing else loads Scalar — it is what `ScalarAspireOptions.BundleUrl` is pointed at in the
+Aspire setup, since that option *replaces* Scalar's bundle.

@@ -1,0 +1,63 @@
+<Project>
+
+    <!--
+      Binds the CDN-pinned console bundle version to the npm package release. Reads `version` from
+      the console plugin's package.json at build time and generates an internal
+      `ScalarPluginBundleVersion.Value` constant in $(RootNamespace), which DefaultBundleUrl
+      concatenates into its jsDelivr URL. Changesets bump package.json in the Version PR, so the
+      constant always matches the npm version published from the same commit - no hand-maintained
+      version pin. The importing project must set $(ScalarPluginPackageJsonPath).
+
+      Note: beta npm publishes get their prerelease suffix appended in CI at publish time (the
+      committed package.json keeps the upcoming stable version), so a beta NuGet pins the upcoming
+      stable bundle URL, which resolves once that stable version is published.
+    -->
+
+    <Target Name="GenerateScalarPluginBundleVersion" BeforeTargets="BeforeCompile;CoreCompile">
+        <Error Condition="!Exists('$(ScalarPluginPackageJsonPath)')"
+               Text="ScalarPluginPackageJsonPath '$(ScalarPluginPackageJsonPath)' does not exist; set it before importing ScalarPluginBundleVersion.targets." />
+
+        <!-- Property functions instead of JsonPeek: that task ships with Visual Studio's MSBuild
+             but not the dotnet SDK's. The unquoted $(...) argument passes the JSON atomically, so
+             quotes/commas in other package.json fields cannot break the expression. -->
+        <PropertyGroup>
+            <_ScalarPluginPackageJsonContent>$([System.IO.File]::ReadAllText('$(ScalarPluginPackageJsonPath)'))</_ScalarPluginPackageJsonContent>
+            <_ScalarPluginNpmVersion>$([System.Text.RegularExpressions.Regex]::Match($(_ScalarPluginPackageJsonContent), '"version"\s*:\s*"([^"]+)"').Result('$1'))</_ScalarPluginNpmVersion>
+        </PropertyGroup>
+
+        <Error Condition="'$(_ScalarPluginNpmVersion)' == ''"
+               Text="Could not read a version from '$(ScalarPluginPackageJsonPath)'." />
+
+        <PropertyGroup>
+            <_ScalarPluginVersionFile>$(IntermediateOutputPath)ScalarPluginBundleVersion.g.cs</_ScalarPluginVersionFile>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <_ScalarPluginVersionLine Include="// &lt;auto-generated /&gt;" />
+            <_ScalarPluginVersionLine Include="// The npm version of the console plugin bundle, read from the plugin package.json at build" />
+            <_ScalarPluginVersionLine Include="// time (ScalarPluginBundleVersion.targets) so the pinned CDN URL tracks the released bundle." />
+            <_ScalarPluginVersionLine Include="namespace $(RootNamespace)%3B" />
+            <_ScalarPluginVersionLine Include="internal static class ScalarPluginBundleVersion" />
+            <_ScalarPluginVersionLine Include="{" />
+            <_ScalarPluginVersionLine Include="    public const string Value = &quot;$(_ScalarPluginNpmVersion)&quot;%3B" />
+            <_ScalarPluginVersionLine Include="}" />
+        </ItemGroup>
+
+        <!-- WriteOnlyWhenDifferent keeps the timestamp stable, so CoreCompile stays incremental. -->
+        <WriteLinesToFile File="$(_ScalarPluginVersionFile)"
+                          Lines="@(_ScalarPluginVersionLine)"
+                          Overwrite="true"
+                          WriteOnlyWhenDifferent="true" />
+
+        <ItemGroup>
+            <Compile Include="$(_ScalarPluginVersionFile)" Exclude="@(Compile)" />
+            <FileWrites Include="$(_ScalarPluginVersionFile)" />
+        </ItemGroup>
+    </Target>
+
+    <!-- A package.json version bump must defeat the fast up-to-date check and recompile. -->
+    <ItemGroup>
+        <UpToDateCheckInput Include="$(ScalarPluginPackageJsonPath)" />
+    </ItemGroup>
+
+</Project>
