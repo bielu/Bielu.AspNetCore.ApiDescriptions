@@ -212,6 +212,47 @@ If you host the UI yourself, point Scalar's standalone bundle at the generated d
 </script>
 ```
 
+#### Interactive protocol consoles
+
+Two companion packages add **live, invocable consoles** to the Scalar API Reference, driven entirely
+by the protocol bindings in your AsyncAPI document(s):
+
+- **`Bielu.AspNetCore.AsyncApi.Scalar.SignalR`** — connect to hubs, invoke client-to-server methods
+  and watch server-to-client events:
+
+  ```csharp
+  app.MapScalarSignalRAssets();                                  // serves the console bundle
+  app.MapScalarApiReference(options =>
+  {
+      options.AddAsyncApiDocument("signalr", "Chat", "/asyncapi/signalr.json");
+      options.WithSignalRClient();                               // injects the console into Scalar
+  });
+  ```
+
+- **`Bielu.AspNetCore.AsyncApi.Scalar.Grpc`** — invoke unary and server-streaming gRPC methods over
+  **gRPC-Web**, with the JSON request editor prefilled from the payload schema. Browsers cannot speak
+  native gRPC, so the target app must enable gRPC-Web (`Grpc.AspNetCore.Web`); and because AsyncAPI
+  payload schemas carry no protobuf field numbers, `MapScalarGrpcAssets()` also serves the mapped
+  services' protobuf descriptors (`{assetsPath}/descriptors`) that the console uses to encode wire
+  messages. Client-/bidi-streaming methods are shown as documentation only:
+
+  ```csharp
+  app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });  // Grpc.AspNetCore.Web
+  app.MapGrpcService<GreeterService>();
+  app.MapScalarGrpcAssets();                                     // console bundle + descriptors
+  app.MapScalarApiReference(options =>
+  {
+      options.AddAsyncApiDocument("grpc", "Greeter", "/asyncapi/grpc.json");
+      options.WithGrpcClient();                                  // injects the console into Scalar
+  });
+  ```
+
+Credentials entered in Scalar's Authentication panel flow into both consoles automatically (query
+parameters / access token for SignalR, call metadata headers for gRPC-Web). For .NET Aspire, the
+`Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire` and `Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire`
+packages point the Scalar container at the CDN-hosted console bundles. See the `SignalRChat` and
+`GrpcGreeter` examples.
+
 ### Built-in UI (deprecated)
 
 The `Bielu.AspNetCore.AsyncApi.UI` package (mapped with `app.MapAsyncApiUi()`, served at `/asyncapi`) is **deprecated** and will not receive further development. `MapAsyncApiUi` is marked `[Obsolete]` and the package will eventually be unlisted. Migrate to [Scalar](#recommended-scalar): the generated document endpoint (`MapAsyncApi()`) stays exactly the same — only the rendering layer changes. For interactive protocol consoles, see `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` and `Bielu.AspNetCore.AsyncApi.Scalar.Grpc`.

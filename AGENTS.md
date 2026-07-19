@@ -22,7 +22,12 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc` | gRPC protocol bindings |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse` | Server-Sent Events (SSE) protocol bindings |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc` | WebRTC protocol bindings |
+| `Bielu.AspNetCore.AsyncApi.Scalar` | Shared Scalar console-plugin infrastructure (+ private `@bielu/scalar-core` npm package) |
+| `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` (+ `.Aspire`) | Interactive SignalR console for Scalar (`@bielu/scalar-signalr` bundle) |
+| `Bielu.AspNetCore.AsyncApi.Scalar.Grpc` (+ `.Aspire`) | Interactive gRPC-Web console for Scalar (`@bielu/scalar-grpc` bundle + protobuf descriptor endpoint) |
 | `src/examples/StreetlightsAPI` | Minimal single-service example (best starting point) |
+| `src/examples/SignalRChat` | SignalR example with the interactive Scalar console |
+| `src/examples/GrpcGreeter` | gRPC example with the interactive Scalar console (gRPC-Web) |
 | `src/examples/aspire` | Distributed .NET Aspire microservices demo |
 
 ## Feature slices & layering

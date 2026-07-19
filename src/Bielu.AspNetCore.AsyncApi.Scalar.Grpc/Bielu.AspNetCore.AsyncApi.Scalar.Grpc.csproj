@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.Scalar.Grpc</RootNamespace>
+        <Description>Interactive gRPC console for the Scalar API Reference in ASP.NET Core. Serves a Scalar bundle that adds a gRPC-Web client driven by your gRPC AsyncAPI bindings, plus a protobuf descriptor endpoint for dynamic message encoding.</Description>
+        <PackageTags>scalar;grpc;grpc-web;asyncapi;aspnetcore;api-reference</PackageTags>
+        <DefaultItemExcludes>$(DefaultItemExcludes);assets/node_modules/**;assets/dist/**</DefaultItemExcludes>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="Scalar.AspNetCore" />
+        <!-- Google.Protobuf for FileDescriptorSet; Grpc.AspNetCore.Server for GrpcMethodMetadata,
+             so the descriptor endpoint can find the services mapped via MapGrpcService<T>(). -->
+        <PackageReference Include="Google.Protobuf" />
+        <PackageReference Include="Grpc.AspNetCore.Server" />
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Scalar\Bielu.AspNetCore.AsyncApi.Scalar.csproj" />
+    </ItemGroup>
+
+    <!-- The interactive client lives in the assets/ npm package (@bielu/scalar-grpc). The shared
+         targets rebuild and embed the IIFE bundle incrementally; see ScalarPluginBundle.targets. -->
+    <Import Project="..\Bielu.AspNetCore.AsyncApi.Scalar\build\ScalarPluginBundle.targets" />
+
+</Project>
