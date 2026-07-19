@@ -204,6 +204,13 @@ then `scripts/apply-nuget-version.mjs`, which writes the new version into `versi
 the generated notes into [`CHANGELOG.md`](./CHANGELOG.md). Maintainers do not edit `version.props` or
 the changelog by hand.
 
+> **Pre-release mode.** The repository is currently in changesets
+> [pre mode](https://github.com/changesets/changesets/blob/main/docs/prereleases.md) with the
+> `preview` tag (see [`.changeset/pre.json`](./.changeset/pre.json)): every Version Packages PR
+> produces `x.y.z-preview.N` prerelease versions instead of stable ones. This stays in place until
+> the upstream Scalar plugins PR merges; a maintainer then runs `npx changeset pre exit`, commits
+> the result, and the next Version Packages PR cuts the stable release.
+
 ### Version File
 
 The project version is managed centrally in the `version.props` file in the repository root (written
@@ -246,18 +253,16 @@ The build and publish workflow ([.github/workflows/buildAndPublishPackage.yml](.
 
 ### Creating a Release
 
-Releases are created by the repository maintainers:
+Releases are cut by merging the automated **"Version Packages"** PR that the changesets action
+keeps open on `main` while unreleased changesets exist:
 
-1. Ensure all changes are merged to `main`
-2. Create a tag with semantic versioning format: `v*.*.*` (e.g., `v1.0.0`)
-3. Push the tag to trigger the release workflow:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-4. The release workflow will:
-   - Build the packages
-   - Push to NuGet.org
+1. PRs merge to `main`, each carrying a changeset. The bot PR accumulates them into a version bump
+   and changelog entries. In the meantime every push to `main` also publishes an interim
+   `-beta.<build>` prerelease and surfaces it as a GitHub prerelease listing the pending changesets.
+2. A maintainer merges the Version Packages PR.
+3. The workflow then publishes the committed version to NuGet.org and npm, and creates a `vX.Y.Z`
+   GitHub Release whose notes are that version's [`CHANGELOG.md`](./CHANGELOG.md) section (marked
+   as a prerelease while pre mode is active).
 
 ### Version Guidelines
 
