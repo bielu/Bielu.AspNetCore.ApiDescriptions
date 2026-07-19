@@ -1,15 +1,16 @@
 {
-  "name": "@bielu/scalar-signalr",
+  "name": "@bielu/scalar-grpc",
   "version": "0.1.0",
-  "description": "Interactive SignalR console plugin for the Scalar API Reference. Reads SignalR AsyncAPI bindings and lets you connect to hubs, invoke methods and subscribe to server events.",
+  "description": "Interactive gRPC console plugin for the Scalar API Reference. Reads gRPC AsyncAPI bindings and lets you invoke unary and server-streaming methods over gRPC-Web.",
   "license": "MIT",
   "author": "Arkadiusz Biel",
   "type": "module",
   "main": "./dist/plugin.js",
-  "module": "./dist/plugin.js",
+  "module": "./dist/plugin.mjs",
   "types": "./dist/types/index.d.ts",
   "files": [
     "dist/plugin.js",
+    "dist/plugin.mjs",
     "dist/standalone.js",
     "dist/types",
     "src",
@@ -18,16 +19,17 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
+      "import": "./dist/plugin.mjs",
       "default": "./dist/plugin.js"
     }
   },
   "keywords": [
     "scalar",
-    "signalr",
+    "grpc",
+    "grpc-web",
     "asyncapi",
     "api-reference",
-    "plugin",
-    "websocket"
+    "plugin"
   ],
   "repository": {
     "type": "git",
@@ -43,7 +45,9 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
-    "@microsoft/signalr": "^8.0.7",
+    "@bufbuild/protobuf": "^2.2.0",
+    "@connectrpc/connect": "^2.0.0",
+    "@connectrpc/connect-web": "^2.0.0",
     "vue": "^3.5.13"
   },
   "devDependencies": {

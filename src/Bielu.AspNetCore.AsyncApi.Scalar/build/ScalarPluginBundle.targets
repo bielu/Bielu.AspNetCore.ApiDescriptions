@@ -53,8 +53,10 @@
     <Target Name="InstallScalarPluginDeps"
             Inputs="$(ScalarWorkspaceRoot)/package.json;$(ScalarWorkspaceRoot)/package-lock.json"
             Outputs="$(ScalarWorkspaceRoot)/node_modules/.npm-install.stamp">
-        <Exec Command="npm ci" WorkingDirectory="$(ScalarWorkspaceRoot)" />
-        <Touch Files="$(ScalarWorkspaceRoot)/node_modules/.npm-install.stamp" AlwaysCreate="true" />
+        <!-- The repo root uses npm workspaces, so we must run a single hoisted install at the root.
+             To avoid race conditions during parallel MSBuild project builds, we use a directory-based
+             lock and check the stamp file inside the lock to ensure only one process runs npm ci. -->
+        <Exec Command="node -e &quot;(async () => { const fs = require('fs'); const cp = require('child_process'); const lock = '.npm-ci.lock'; const stamp = 'node_modules/.npm-install.stamp'; const start = Date.now(); while (true) { try { fs.mkdirSync(lock); break; } catch (e) { if (Date.now() - start > 300000) { console.error('Timeout waiting for npm lock'); process.exit(1); } await new Promise(r => setTimeout(r, 100)); } } try { if (!fs.existsSync(stamp)) { console.log('Running npm ci at ' + process.cwd()); cp.execSync('npm ci', { stdio: 'inherit' }); fs.mkdirSync('node_modules', { recursive: true }); fs.writeFileSync(stamp, ''); } } catch (e) { console.error(e); process.exit(1); } finally { try { fs.rmdirSync(lock); } catch (e) {} } })();&quot;" WorkingDirectory="$(ScalarWorkspaceRoot)" />
     </Target>
 
     <Target Name="BuildScalarPluginBundle"
@@ -62,7 +64,9 @@
             Inputs="@(ScalarPluginAssetSource)"
             Outputs="$(ScalarPluginBundlePath)">
         <CallTarget Targets="InstallScalarPluginDeps" />
-        <Exec Command="npm run build" WorkingDirectory="$(ScalarPluginAssetsDir)" />
+        <!-- Building several plugin packages in parallel races in the shared core assets folder
+             (prebuild script). We use a shared lock to ensure npm builds run sequentially. -->
+        <Exec Command="node -e &quot;const fs = require('fs'); const cp = require('child_process'); const lock = '.npm-build.lock'; const start = Date.now(); while (true) { try { fs.mkdirSync(lock); break; } catch (e) { if (Date.now() - start > 600000) { console.error('Timeout waiting for build lock'); process.exit(1); } } } try { cp.execSync('npm run build', { stdio: 'inherit', cwd: '$([System.String]::new('$(ScalarPluginAssetsDir)').Replace('\', '/'))' }); } finally { try { fs.rmdirSync(lock); } catch (e) {} }&quot;" WorkingDirectory="$(ScalarWorkspaceRoot)" />
     </Target>
 
     <!--

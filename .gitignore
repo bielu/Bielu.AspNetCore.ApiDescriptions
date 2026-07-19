@@ -460,3 +460,4 @@ src/bielu.cdn.ui/vite.config.ts.timestamp-*.mjs
 # Changesets: transient changelog generated for the NuGet placeholder package; its content is
 # folded into the root CHANGELOG.md by scripts/apply-nuget-version.mjs and not committed on its own.
 build/changeset/nuget-suite/CHANGELOG.md
+src/.junie

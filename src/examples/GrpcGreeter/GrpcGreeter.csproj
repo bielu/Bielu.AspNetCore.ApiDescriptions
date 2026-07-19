@@ -9,13 +9,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
-    <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.UI\Bielu.AspNetCore.AsyncApi.UI.csproj" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc\Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.csproj" />
+    <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.Scalar.Grpc\Bielu.AspNetCore.AsyncApi.Scalar.Grpc.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.AspNetCore.Web" />
     <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>
 
