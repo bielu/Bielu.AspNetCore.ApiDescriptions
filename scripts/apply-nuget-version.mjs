@@ -16,17 +16,29 @@ const newVersion = JSON.parse(
   readFileSync(join(nugetPkgDir, "package.json"), "utf8"),
 ).version;
 
-// 1) Write the shared NuGet version into version.props <VersionPrefix>.
+// 1) Write the shared NuGet version into version.props. A prerelease version (e.g. from changesets
+// pre mode: 1.0.1-preview.0) is split into <VersionPrefix>1.0.1</VersionPrefix> +
+// <VersionSuffix>preview.0</VersionSuffix>; the .NET SDK recombines them at build/pack time. A
+// stable version clears the suffix.
+const dash = newVersion.indexOf("-");
+const versionPrefix = dash === -1 ? newVersion : newVersion.slice(0, dash);
+const versionSuffix = dash === -1 ? "" : newVersion.slice(dash + 1);
+
 const versionProps = readFileSync(versionPropsPath, "utf8");
-const updatedProps = versionProps.replace(
-  /(<VersionPrefix>)([^<]*)(<\/VersionPrefix>)/,
-  `$1${newVersion}$3`,
-);
-if (updatedProps === versionProps && !versionProps.includes(`<VersionPrefix>${newVersion}<`)) {
+if (!/<VersionPrefix>[^<]*<\/VersionPrefix>/.test(versionProps)) {
   throw new Error("Could not find <VersionPrefix> in version.props to update.");
 }
+if (!/<VersionSuffix>[^<]*<\/VersionSuffix>/.test(versionProps)) {
+  throw new Error("Could not find <VersionSuffix> in version.props to update.");
+}
+const updatedProps = versionProps
+  .replace(/(<VersionPrefix>)[^<]*(<\/VersionPrefix>)/, `$1${versionPrefix}$2`)
+  .replace(/(<VersionSuffix>)[^<]*(<\/VersionSuffix>)/, `$1${versionSuffix}$2`);
 writeFileSync(versionPropsPath, updatedProps);
-console.log(`version.props <VersionPrefix> -> ${newVersion}`);
+console.log(
+  `version.props <VersionPrefix> -> ${versionPrefix}` +
+    (versionSuffix ? `, <VersionSuffix> -> ${versionSuffix}` : ", <VersionSuffix> cleared"),
+);
 
 // 2) Fold the changeset-generated section into the curated root CHANGELOG.md.
 const nugetChangelogPath = join(nugetPkgDir, "CHANGELOG.md");

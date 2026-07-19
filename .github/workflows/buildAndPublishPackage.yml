@@ -84,9 +84,12 @@ jobs:
     with:
       working-directory: .
 
-  # Version PR merged (no changesets left): publish the stable NuGet + npm packages at the versions
-  # the Version PR committed. Both publish steps are idempotent (NuGet --skip-duplicate; npm skips
-  # already-published versions), so re-running on later non-changeset pushes is a safe no-op.
+  # Version PR merged (no changesets left): publish the NuGet + npm packages at the versions the
+  # Version PR committed. While changesets pre mode is active (.changeset/pre.json — no stable
+  # release until the upstream Scalar plugins PR merges), those versions are `-preview.N`
+  # prereleases; after `changeset pre exit` they become stable. Both publish steps are idempotent
+  # (NuGet --skip-duplicate; npm skips already-published versions), so re-running on later
+  # non-changeset pushes is a safe no-op.
   releaseStable:
     needs: version
     if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
@@ -116,8 +119,10 @@ jobs:
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
 
   # Record-keeping: tag + GitHub Release for the shared NuGet version, when not already present.
+  # Release notes are the version's section of CHANGELOG.md (written by the changeset adapter in
+  # the Version Packages PR); versions with a prerelease suffix are marked as GitHub prereleases.
   # (Created with GITHUB_TOKEN, so it does not itself trigger the `release` job — publishing is done
-  # by releaseStable above.)
+  # by the release job above.)
   tagRelease:
     needs: version
     if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
@@ -132,14 +137,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION=$(grep -oPm1 '(?<=<VersionPrefix>)[^<]+' version.props)
+          PREFIX=$(grep -oPm1 '(?<=<VersionPrefix>)[^<]+' version.props)
+          SUFFIX=$(grep -oPm1 '(?<=<VersionSuffix>)[^<]+' version.props || true)
+          VERSION="$PREFIX"; [ -n "$SUFFIX" ] && VERSION="$PREFIX-$SUFFIX"
           if gh release view "v$VERSION" >/dev/null 2>&1; then
             echo "Release v$VERSION already exists; nothing to tag."
-          else
-            echo "Creating release v$VERSION"
-            gh release create "v$VERSION" --title "v$VERSION" \
-              --notes "Automated release. See CHANGELOG.md for details."
+            exit 0
           fi
+          node scripts/release-notes.mjs > release-notes.md
+          PRERELEASE_FLAG=""; [ -n "$SUFFIX" ] && PRERELEASE_FLAG="--prerelease"
+          echo "Creating release v$VERSION $PRERELEASE_FLAG"
+          gh release create "v$VERSION" --title "v$VERSION" \
+            --notes-file release-notes.md $PRERELEASE_FLAG
 
   # In-flight prereleases: publish a beta of main while a release is still pending (changesets not yet
   # merged), and on manual dispatch. Skipped on the Version-PR-merge commit so it does not shadow the
@@ -176,6 +185,37 @@ jobs:
       suffix: "beta"
       publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+
+  # Record-keeping for interim betas: surface each published beta build as a GitHub prerelease,
+  # using the exact `-beta.<ticks>` version the build template stamped (release.yml's nuget-version
+  # output) and the pending — not yet versioned — changesets as the release notes.
+  tagBeta:
+    needs: releaseBeta
+    if: always() && !cancelled() && needs.releaseBeta.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Create GitHub prerelease for the beta build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.releaseBeta.outputs.nuget-version }}"
+          if [ -z "$VERSION" ]; then
+            echo "No NuGet version output from the beta build; skipping."
+            exit 0
+          fi
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists; nothing to tag."
+            exit 0
+          fi
+          node scripts/release-notes.mjs --pending > release-notes.md
+          echo "Creating prerelease v$VERSION"
+          gh release create "v$VERSION" --title "v$VERSION" \
+            --notes-file release-notes.md --prerelease
 
   # Manual GitHub Release (escape hatch): build and publish stable packages. Independent of the
   # changeset-driven path above and idempotent, so the two cannot double-publish.
