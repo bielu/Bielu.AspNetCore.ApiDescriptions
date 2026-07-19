@@ -6,10 +6,12 @@
   "author": "Arkadiusz Biel",
   "type": "module",
   "main": "./dist/plugin.js",
-  "module": "./dist/plugin.js",
+  "module": "./dist/plugin.mjs",
   "types": "./dist/types/index.d.ts",
   "files": [
     "dist/plugin.js",
+    "dist/plugin.mjs",
+    "dist/standalone.js",
     "dist/types",
     "src",
     "README.md"
@@ -17,6 +19,7 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
+      "import": "./dist/plugin.mjs",
       "default": "./dist/plugin.js"
     }
   },
@@ -33,7 +36,7 @@
     "url": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi"
   },
   "scripts": {
-    "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm install && npm run build",
+    "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm run build",
     "prebuild": "npm run build:core",
     "build": "vite build && npm run build:standalone && vue-tsc -p tsconfig.json",
     "build:standalone": "node ../../Bielu.AspNetCore.AsyncApi.Scalar/assets/scripts/build-standalone.mjs",

@@ -17,7 +17,7 @@ be loaded from a CDN or bundled by hand.
 ```html
 <div id="app"></div>
 <!-- Replaces the default scalar.js bundle -->
-<script src="https://cdn.jsdelivr.net/npm/@bielu/scalar-signalr"></script>
+<script src="https://cdn.jsdelivr.net/npm/@bielu/scalar-signalr/dist/standalone.js"></script>
 <script>
   window.__BIELU_SCALAR_SIGNALR__ = {
     documents: [{ name: 'signalr', url: '/asyncapi/signalr.json' }],

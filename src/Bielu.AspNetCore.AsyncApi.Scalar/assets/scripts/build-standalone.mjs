@@ -27,7 +27,7 @@ const scalarEntry = require.resolve('@scalar/api-reference')
 const scalarStandalonePath = join(dirname(scalarEntry), 'browser', 'standalone.js')
 
 const pluginPath = join(packageDir, 'dist', 'plugin.js')
-const standaloneDir = join(packageDir, 'dist', 'standalone')
+const standaloneDir = join(packageDir, 'standalone')
 const outputPath = join(standaloneDir, 'index.js')
 
 await mkdir(standaloneDir, { recursive: true })

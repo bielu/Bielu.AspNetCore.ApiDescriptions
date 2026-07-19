@@ -17,12 +17,15 @@ public class ScalarGrpcEndpointTests : IClassFixture<WebApplicationFactory<Progr
     public ScalarGrpcEndpointTests(WebApplicationFactory<Program> factory) => _factory = factory;
 
     [Fact]
-    public async Task PluginBundle_IsServed()
+    public async Task MapScalarGrpcAssets_PluginBundle_IsServed()
     {
+        // Arrange
         var client = _factory.CreateClient();
 
+        // Act
         var response = await client.GetAsync("/bielu/scalar/grpc/plugin.js");
 
+        // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.ShouldBe("text/javascript");
         var body = await response.Content.ReadAsStringAsync();
@@ -32,12 +35,15 @@ public class ScalarGrpcEndpointTests : IClassFixture<WebApplicationFactory<Progr
     }
 
     [Fact]
-    public async Task Descriptors_RoundTripToFileDescriptorSet()
+    public async Task MapScalarGrpcAssets_Descriptors_RoundTripToFileDescriptorSet()
     {
+        // Arrange
         var client = _factory.CreateClient();
 
+        // Act
         var response = await client.GetAsync("/bielu/scalar/grpc/descriptors");
 
+        // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.ShouldBe("application/x-protobuf");
 

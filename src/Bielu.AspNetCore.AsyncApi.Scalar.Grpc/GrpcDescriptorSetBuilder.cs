@@ -45,7 +45,7 @@ internal static class GrpcDescriptorSetBuilder
     /// </summary>
     private static ServiceDescriptor? ResolveServiceDescriptor(Type serviceType)
     {
-        for (var type = serviceType; type is not null; type = type.BaseType!)
+        for (Type? type = serviceType; type is not null; type = type.BaseType)
         {
             var container = type.DeclaringType;
             var property = container?.GetProperty("Descriptor", BindingFlags.Public | BindingFlags.Static);

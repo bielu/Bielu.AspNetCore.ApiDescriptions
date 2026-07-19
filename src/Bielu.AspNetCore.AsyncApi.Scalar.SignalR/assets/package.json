@@ -10,6 +10,7 @@
   "types": "./dist/types/index.d.ts",
   "files": [
     "dist/plugin.js",
+    "dist/standalone.js",
     "dist/types",
     "src",
     "README.md"
@@ -33,7 +34,7 @@
     "url": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi"
   },
   "scripts": {
-    "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm install && npm run build",
+    "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm run build",
     "prebuild": "npm run build:core",
     "build": "vite build && npm run build:standalone && vue-tsc -p tsconfig.json",
     "build:standalone": "node ../../Bielu.AspNetCore.AsyncApi.Scalar/assets/scripts/build-standalone.mjs",

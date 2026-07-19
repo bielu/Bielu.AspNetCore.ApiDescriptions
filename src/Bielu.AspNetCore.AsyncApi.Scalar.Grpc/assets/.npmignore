@@ -1,1 +1,7 @@
-dist/standalone
+*
+!dist/plugin.js
+!dist/standalone/
+!dist/types/
+!src/
+!package.json
+!README.md

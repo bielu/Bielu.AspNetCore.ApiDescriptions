@@ -14,6 +14,7 @@ const props = defineProps<{ options?: Record<string, any>; documents?: GrpcDocum
 type LogEntry = { time: string; dir: 'in' | 'out' | 'sys'; text: string }
 
 const loading = ref(true)
+const error = ref<string | null>(null)
 const services = ref<GrpcServiceModel[]>([])
 // The console's own root element, used to discover which Scalar document it is rendered under.
 const rootEl = ref<HTMLElement | null>(null)
@@ -284,15 +285,24 @@ function detectActiveDocumentSlug(): string | null {
 
 async function init() {
   loading.value = true
-  services.value = await loadGrpcServices(resolveDocuments(props.options, props.documents))
-  // Seed a default document for the picker; the active-document scope (when detected) overrides it.
-  if (services.value.length > 0 && !selectedDocumentName.value) {
-    selectedDocumentName.value = services.value[0].documentName
+  error.value = null
+  try {
+    services.value = await loadGrpcServices(resolveDocuments(props.options, props.documents))
+    // Seed a default document for the picker; the active-document scope (when detected) overrides it.
+    if (services.value.length > 0 && !selectedDocumentName.value) {
+      selectedDocumentName.value = services.value[0].documentName
+    }
+  } catch (e) {
+    console.error('[gRPC Console] Failed to load gRPC services:', e)
+    error.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
-void init()
+init().catch((e) => {
+  console.error('[gRPC Console] Unhandled error in init:', e)
+})
 onMounted(() => {
   activeDocumentSlug.value = detectActiveDocumentSlug()
 })
@@ -306,6 +316,10 @@ onMounted(() => {
     </header>
 
     <p v-if="loading" class="bgr__muted">Loading gRPC services…</p>
+    <div v-else-if="error" class="bgr__error">
+      <p>Failed to load gRPC services.</p>
+      <p class="bgr__muted">{{ error }}</p>
+    </div>
     <p v-else-if="filteredServices.length === 0" class="bgr__muted">
       No gRPC services found in {{ activeDocumentSlug ? 'this document' : 'the AsyncAPI document(s)' }}.
     </p>

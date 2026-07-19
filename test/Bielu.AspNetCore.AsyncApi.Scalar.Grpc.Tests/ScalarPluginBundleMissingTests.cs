@@ -20,8 +20,9 @@ public class ScalarPluginBundleMissingTests
     private const string MissingMessage = "Scalar gRPC bundle was not embedded. Build the assets npm package (npm run build).";
 
     [Fact]
-    public async Task MissingBundle_Returns404WithActionableMessage()
+    public async Task MapScalarPluginBundle_MissingBundle_Returns404WithActionableMessage()
     {
+        // Arrange
         using var host = await new HostBuilder()
             .ConfigureWebHost(webHost => webHost
                 .UseTestServer()
@@ -37,9 +38,11 @@ public class ScalarPluginBundleMissingTests
                 }))
             .StartAsync();
 
+        // Act
         var client = host.GetTestClient();
         var response = await client.GetAsync("/bielu/scalar/grpc/plugin.js");
 
+        // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await response.Content.ReadAsStringAsync()).ShouldBe(MissingMessage);
     }

@@ -30,8 +30,8 @@ export default defineConfig({
     lib: {
       entry: fileURLToPath(new URL('./src/index.ts', import.meta.url)),
       name: 'BieluScalarGrpc',
-      formats: ['iife'],
-      fileName: () => 'plugin.js',
+      formats: ['iife', 'es'],
+      fileName: (format) => (format === 'es' ? 'plugin.mjs' : 'plugin.js'),
     },
     rollupOptions: {
       output: {

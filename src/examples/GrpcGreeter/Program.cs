@@ -1,6 +1,7 @@
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc;
 using Bielu.AspNetCore.AsyncApi.Scalar.Grpc;
+using Grpc.AspNetCore.Web;
 using GrpcGreeter.Services;
 using Scalar.AspNetCore;
 
