@@ -19,6 +19,16 @@ if (args[0] == "merge")
     return RunMerge(args);
 }
 
+if (args[0] == "validate")
+{
+    return RunValidate(args);
+}
+
+if (args[0] == "diff")
+{
+    return RunDiff(args);
+}
+
 if (args[0] != "getdocument")
 {
     Console.Error.WriteLine($"Unknown command: {args[0]}");
@@ -161,15 +171,103 @@ static int RunMerge(string[] args)
     return mergeWorker.Process();
 }
 
+static int RunValidate(string[] args)
+{
+    var context = new ValidateCommandContext();
+
+    for (var i = 1; i < args.Length; i++)
+    {
+        switch (args[i])
+        {
+            case "--file":
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --file requires a value."); return 1; }
+                context.Files.Add(args[i]);
+                break;
+            case "--strict":
+                context.Strict = true;
+                break;
+            case "--format":
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --format requires a value."); return 1; }
+                context.Format = args[i];
+                break;
+            default:
+                Console.Error.WriteLine($"Unknown argument for validate: {args[i]}");
+                PrintUsage();
+                return 1;
+        }
+    }
+
+    if (context.Files.Count == 0)
+    {
+        Console.Error.WriteLine("Error: at least one --file is required for validate.");
+        return 1;
+    }
+
+    var worker = new ValidateCommandWorker(
+        context,
+        writeInfo: msg => Console.WriteLine($"info: {msg}"),
+        writeWarning: msg => Console.WriteLine($"warn: {msg}"),
+        writeError: msg => Console.Error.WriteLine($"error: {msg}"));
+
+    return worker.Process();
+}
+
+static int RunDiff(string[] args)
+{
+    var context = new DiffCommandContext();
+
+    for (var i = 1; i < args.Length; i++)
+    {
+        switch (args[i])
+        {
+            case "--base":
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --base requires a value."); return 1; }
+                context.BasePath = args[i];
+                break;
+            case "--head":
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --head requires a value."); return 1; }
+                context.HeadPath = args[i];
+                break;
+            case "--fail-on-breaking":
+                context.FailOnBreaking = true;
+                break;
+            case "--format":
+                if (++i >= args.Length) { Console.Error.WriteLine("Error: --format requires a value."); return 1; }
+                context.Format = args[i];
+                break;
+            default:
+                Console.Error.WriteLine($"Unknown argument for diff: {args[i]}");
+                PrintUsage();
+                return 1;
+        }
+    }
+
+    if (string.IsNullOrEmpty(context.BasePath) || string.IsNullOrEmpty(context.HeadPath))
+    {
+        Console.Error.WriteLine("Error: both --base and --head are required for diff.");
+        return 1;
+    }
+
+    var worker = new DiffCommandWorker(
+        context,
+        writeInfo: msg => Console.WriteLine($"info: {msg}"),
+        writeWarning: msg => Console.WriteLine($"warn: {msg}"),
+        writeError: msg => Console.Error.WriteLine($"error: {msg}"));
+
+    return worker.Process();
+}
+
 static void PrintUsage()
 {
-    Console.WriteLine("Bielu.AspNetCore.AsyncApi CLI - Generate and merge AsyncAPI documents");
+    Console.WriteLine("Bielu.AspNetCore.AsyncApi CLI - Generate, merge, and validate AsyncAPI documents");
     Console.WriteLine();
     Console.WriteLine("Usage: dotnet asyncapi <command> [options]");
     Console.WriteLine();
     Console.WriteLine("Commands:");
     Console.WriteLine("  getdocument    Generate AsyncAPI documents from ASP.NET Core applications");
     Console.WriteLine("  merge          Merge multiple AsyncAPI documents into one");
+    Console.WriteLine("  validate       Validate AsyncAPI documents");
+    Console.WriteLine("  diff           Compare two AsyncAPI documents for changes");
     Console.WriteLine();
     Console.WriteLine("getdocument options:");
     Console.WriteLine("  --assembly <name>        The assembly name to load (required)");
@@ -186,6 +284,17 @@ static void PrintUsage()
     Console.WriteLine("  --prefix <prefix>        Key prefix for the corresponding source (optional, repeatable)");
     Console.WriteLine("  --title <title>          Title for the merged document");
     Console.WriteLine("  --version <version>      Version for the merged document");
+    Console.WriteLine();
+    Console.WriteLine("validate options:");
+    Console.WriteLine("  --file <path>            Path or glob to AsyncAPI document(s) (required, repeatable)");
+    Console.WriteLine("  --strict                 Treat warnings as errors");
+    Console.WriteLine("  --format <text|json>     Output format (default: text)");
+    Console.WriteLine();
+    Console.WriteLine("diff options:");
+    Console.WriteLine("  --base <path>            Path to the base (old) AsyncAPI document (required)");
+    Console.WriteLine("  --head <path>            Path to the head (new) AsyncAPI document (required)");
+    Console.WriteLine("  --fail-on-breaking       Exit with code 1 if breaking changes are detected");
+    Console.WriteLine("  --format <text|json|markdown> Output format (default: text)");
     Console.WriteLine();
     Console.WriteLine("  -h, --help               Show this help message");
 }

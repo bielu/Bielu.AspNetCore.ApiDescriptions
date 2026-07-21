@@ -19,6 +19,8 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 ### Added
 
+- **CLI `validate` command** - New `dotnet asyncapi validate` command to validate AsyncAPI documents against the spec. Supports globbing, strict mode (warnings as errors), and JSON output for CI pipelines.
+- **CLI `diff` command** - New `dotnet asyncapi diff` command to compare two AsyncAPI documents. Detects breaking changes (removals, narrowing) and non-breaking changes (additions). Supports text, JSON, and Markdown reports.
 - **XML documentation support** - Automatic population of channel, operation, message and schema descriptions from C# XML documentation comments (`/// <summary>`, `/// <remarks>`). Use `options.IncludeXmlComments()` to register documentation sources.
 - **Message examples** - Support for embedding examples in AsyncAPI messages via `[MessageExample]` attribute or fluent `options.AddMessageExample()`. Scalar and protocol consoles can use these to prefill request editors.
 - **Interactive SignalR console for Scalar** - New `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` package
