@@ -2,8 +2,6 @@
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Merger</RootNamespace>
         <Description>Tool for merging multiple AsyncAPI documents into a single unified specification. Supports local and remote sources with caching and change detection.</Description>
     </PropertyGroup>

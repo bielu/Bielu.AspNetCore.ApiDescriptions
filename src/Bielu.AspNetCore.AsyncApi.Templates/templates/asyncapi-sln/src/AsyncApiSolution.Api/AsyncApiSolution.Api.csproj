@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="1.0.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.15" />
+    <ProjectReference Include="..\AsyncApiSolution.Contracts\AsyncApiSolution.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

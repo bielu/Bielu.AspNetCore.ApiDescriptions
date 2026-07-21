@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Arkadiusz Biel",
+  "classifications": [ "Solution", "AsyncAPI", "Web", "Console" ],
+  "name": "AsyncAPI Solution (Web API + Worker)",
+  "identity": "Bielu.AspNetCore.AsyncApi.Templates.Solution",
+  "shortName": "asyncapi-sln",
+  "sourceName": "AsyncApiSolution",
+  "preferNameDirectory": true,
+  "symbols": {
+    "Framework": {
+      "type": "parameter",
+      "description": "The target framework for the project.",
+      "datatype": "string",
+      "defaultValue": "net10.0"
+    }
+  }
+}

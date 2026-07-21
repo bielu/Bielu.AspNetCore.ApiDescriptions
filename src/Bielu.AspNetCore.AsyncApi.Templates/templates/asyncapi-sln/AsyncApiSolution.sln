@@ -1,0 +1,31 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncApiSolution.Api", "src\AsyncApiSolution.Api\AsyncApiSolution.Api.csproj", "{7C9F8A1B-1D2E-3F4G-5H6I-7J8K9L0M1N2O}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncApiSolution.Worker", "src\AsyncApiSolution.Worker\AsyncApiSolution.Worker.csproj", "{8D0E9F1G-2H3I-4J5K-6L7M-8N9O0P1Q2R3S}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncApiSolution.Contracts", "src\AsyncApiSolution.Contracts\AsyncApiSolution.Contracts.csproj", "{9E1F0G2H-3I4J-5K6L-7M8N-9O0P1Q2R3S4T}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7C9F8A1B-1D2E-3F4G-5H6I-7J8K9L0M1N2O}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C9F8A1B-1D2E-3F4G-5H6I-7J8K9L0M1N2O}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C9F8A1B-1D2E-3F4G-5H6I-7J8K9L0M1N2O}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C9F8A1B-1D2E-3F4G-5H6I-7J8K9L0M1N2O}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D0E9F1G-2H3I-4J5K-6L7M-8N9O0P1Q2R3S}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D0E9F1G-2H3I-4J5K-6L7M-8N9O0P1Q2R3S}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D0E9F1G-2H3I-4J5K-6L7M-8N9O0P1Q2R3S}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D0E9F1G-2H3I-4J5K-6L7M-8N9O0P1Q2R3S}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E1F0G2H-3I4J-5K6L-7M8N-9O0P1Q2R3S4T}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E1F0G2H-3I4J-5K6L-7M8N-9O0P1Q2R3S4T}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E1F0G2H-3I4J-5K6L-7M8N-9O0P1Q2R3S4T}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E1F0G2H-3I4J-5K6L-7M8N-9O0P1Q2R3S4T}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

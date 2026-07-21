@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Arkadiusz Biel",
+  "classifications": [ "Web", "AsyncAPI", "API" ],
+  "name": "ASP.NET Core Web API with AsyncAPI",
+  "identity": "Bielu.AspNetCore.AsyncApi.Templates.WebApi",
+  "shortName": "asyncapi-webapi",
+  "sourceName": "AsyncApiWebApi",
+  "preferNameDirectory": true,
+  "symbols": {
+    "Framework": {
+      "type": "parameter",
+      "description": "The target framework for the project.",
+      "datatype": "string",
+      "defaultValue": "net10.0"
+    }
+  }
+}

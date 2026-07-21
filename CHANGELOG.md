@@ -54,6 +54,7 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
   the target app must enable gRPC-Web (`Grpc.AspNetCore.Web`, `UseGrpcWeb`). Scalar auth passes
   through as gRPC-Web metadata (plain HTTP headers). Wired into the `GrpcGreeter` example.
   *(Not yet published to any channel.)*
+- **`dotnet new` template pack** - New `Bielu.AspNetCore.AsyncApi.Templates` package providing 5 templates (`asyncapi-webapi`, `asyncapi-signalr`, `asyncapi-grpc`, `asyncapi-console`, `asyncapi-sln`) to quickly bootstrap AsyncAPI-enabled projects. Includes interactive consoles and multi-project solution support.
 - **Server-Sent Events (SSE) protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse`
   package providing a custom `sse` protocol with channel, operation, message and server bindings
   modelling the `text/event-stream` (`event`/`id`/`retry`/`data`) wire shape. *(Not yet published to any channel.)*

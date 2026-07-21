@@ -44,6 +44,7 @@
     <Project Path="./Bielu.AspNetCore.AsyncApi.Cli/Bielu.AspNetCore.AsyncApi.Cli.csproj" />
     <Project Path="./Bielu.AspNetCore.AsyncApi.Analyzers/Bielu.AspNetCore.AsyncApi.Analyzers.csproj" />
     <Project Path="./Bielu.AspNetCore.AsyncApi.ApiDescription.Server/Bielu.AspNetCore.AsyncApi.ApiDescription.Server.csproj" />
+    <Project Path="./Bielu.AspNetCore.AsyncApi.Templates/Bielu.AspNetCore.AsyncApi.Templates.csproj" />
   </Folder>
   <Project Path="./Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.csproj" />
