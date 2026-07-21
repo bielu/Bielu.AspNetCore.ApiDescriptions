@@ -19,6 +19,7 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 ### Added
 
+- **Roslyn analyzers** - New `Bielu.AspNetCore.AsyncApi.Analyzers` package (bundled with the Attributes package) that provides compile-time diagnostics for common AsyncAPI attribute misuses. Includes checks for missing `[AsyncApi]` attributes, operations without channels, duplicate names, and invalid payload types.
 - **CLI `validate` command** - New `dotnet asyncapi validate` command to validate AsyncAPI documents against the spec. Supports globbing, strict mode (warnings as errors), and JSON output for CI pipelines.
 - **CLI `diff` command** - New `dotnet asyncapi diff` command to compare two AsyncAPI documents. Detects breaking changes (removals, narrowing) and non-breaking changes (additions). Supports text, JSON, and Markdown reports.
 - **XML documentation support** - Automatic population of channel, operation, message and schema descriptions from C# XML documentation comments (`/// <summary>`, `/// <remarks>`). Use `options.IncludeXmlComments()` to register documentation sources.
