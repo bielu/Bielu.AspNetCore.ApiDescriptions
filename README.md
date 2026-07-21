@@ -24,7 +24,7 @@ This project is based on and inspired by:
 - ✅ **Schema transformers** - Customize the generated schema via schema transformers
 - ✅ **Protocol bindings** - Support for AMQP, HTTP, MQTT, Kafka, SignalR, gRPC, SSE, WebRTC, and other protocol bindings
 - ✅ **Multiple documents** - Generate multiple AsyncAPI documents from a single application
- - ✅ **Interactive UI** - Render the document with [Scalar](https://scalar.com/) — see [Viewing the Documentation](#viewing-the-documentation). (The built-in `Bielu.AspNetCore.AsyncApi.UI` package is deprecated.)
+ - ✅ **Interactive UI** - Render the document with [Scalar](https://scalar.com/) — see [Viewing the Documentation](#viewing-the-documentation).
 - ✅ **Attribute-based configuration** - Decorate your classes with attributes to define channels and operations
 
 ## Installation
@@ -42,7 +42,6 @@ dotnet add package Bielu.AspNetCore.AsyncApi.Attributes
 dotnet add package Scalar.AspNetCore
 ```
 
-> ⚠️ **Deprecated:** the built-in UI package `Bielu.AspNetCore.AsyncApi.UI` is deprecated. Render the generated document with [Scalar](#recommended-scalar) instead.
 
 ## Examples
 
@@ -253,9 +252,6 @@ parameters / access token for SignalR, call metadata headers for gRPC-Web). For 
 packages point the Scalar container at the CDN-hosted console bundles. See the `SignalRChat` and
 `GrpcGreeter` examples.
 
-### Built-in UI (deprecated)
-
-The `Bielu.AspNetCore.AsyncApi.UI` package (mapped with `app.MapAsyncApiUi()`, served at `/asyncapi`) is **deprecated** and will not receive further development. `MapAsyncApiUi` is marked `[Obsolete]` and the package will eventually be unlisted. Migrate to [Scalar](#recommended-scalar): the generated document endpoint (`MapAsyncApi()`) stays exactly the same — only the rendering layer changes. For interactive protocol consoles, see `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` and `Bielu.AspNetCore.AsyncApi.Scalar.Grpc`.
 
 ## Main Types
 
