@@ -8,6 +8,7 @@ using System.Reflection;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Bielu.AspNetCore.AsyncApi.Helpers;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
+using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Models;
@@ -41,6 +42,9 @@ internal sealed class AsyncApiDocumentService(
     private readonly AsyncApiJsonSchemaService _componentService =
         serviceProvider.GetRequiredKeyedService<AsyncApiJsonSchemaService>(documentName);
 
+    private readonly XmlDocumentationProvider _xmlDocumentationProvider =
+        serviceProvider.GetRequiredKeyedService<XmlDocumentationProvider>(documentName);
+
     private readonly ConcurrentDictionary<string, AsyncApiOperationTransformerContext>
         _operationTransformerContextCache = new();
 
@@ -64,6 +68,11 @@ internal sealed class AsyncApiDocumentService(
             : [];
 
         InitializeTransformers(scopedServiceProvider, schemaTransformers, operationTransformers);
+
+        foreach (var file in _options.XmlDocumentationFiles)
+        {
+            _xmlDocumentationProvider.Load(file);
+        }
 
         var document = new AsyncApiDocument
         {
@@ -162,7 +171,7 @@ internal sealed class AsyncApiDocumentService(
                     if (_options.IncludeOnlyChannels.Count > 0 && !_options.IncludeOnlyChannels.Contains(channelKey))
                         continue;
 
-                    var channel = GetOrCreateChannel(document, channelAttr, channelKey);
+                    var channel = GetOrCreateChannel(document, channelAttr, channelKey, member);
 
                     ApplyChannelParametersFromAttributes(channel, member);
                     ApplyChannelServersFromAttributes(document, channel, channelAttr);
@@ -176,11 +185,11 @@ internal sealed class AsyncApiDocumentService(
         }
     }
 
-    private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr, string sanitizedKey)
+    private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr, string sanitizedKey, MemberInfo member)
     {
         if (document.Channels.TryGetValue(sanitizedKey, out var existing))
         {
-            existing.Description ??= channelAttr.Description;
+            existing.Description ??= channelAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(member)?.Summary;
             existing.Address ??= channelAttr.Name;
             AttachChannelBindings(document, existing, channelAttr.BindingsRef);
             return existing;
@@ -189,7 +198,7 @@ internal sealed class AsyncApiDocumentService(
         var created = new AsyncApiChannel
         {
             Address = channelAttr.Name,
-            Description = channelAttr.Description ?? string.Empty,
+            Description = channelAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(member)?.Summary ?? string.Empty,
         };
 
         AttachChannelBindings(document, created, channelAttr.BindingsRef);
@@ -238,16 +247,17 @@ internal sealed class AsyncApiDocumentService(
         }
     }
 
-    private static void ApplyChannelParametersFromAttributes(AsyncApiChannel channel, MemberInfo member)
+    private void ApplyChannelParametersFromAttributes(AsyncApiChannel channel, MemberInfo member)
     {
         var paramAttrs = member.GetCustomAttributes<ChannelParameterAttribute>(inherit: true);
+        var xmlDoc = _xmlDocumentationProvider.GetDocumentation(member);
         foreach (var p in paramAttrs)
         {
             if (!channel.Parameters.ContainsKey(p.Name))
             {
                 channel.Parameters[p.Name] = new AsyncApiParameter
                 {
-                    Description = p.Description,
+                    Description = p.Description ?? (xmlDoc?.Parameters?.TryGetValue(p.Name, out var paramDesc) == true ? paramDesc : null),
                     Location = p.Location
                 };
             }
@@ -340,8 +350,8 @@ internal sealed class AsyncApiDocumentService(
             {
                 Name = msgAttr.Name ?? messageKey,
                 Title = msgAttr.Title ?? messageKey,
-                Summary = msgAttr.Summary,
-                Description = msgAttr.Description,
+                Summary = msgAttr.Summary ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Summary,
+                Description = msgAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Remarks,
                 Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
             };
 
@@ -422,6 +432,8 @@ private async Task ApplyOperationsFromAttributes(
                 {
                     Name = messageKey,
                     Title = messageKey,
+                    Summary = _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Summary,
+                    Description = _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Remarks,
                     Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
                 };
                 document.Components.Messages[messageKey] = message;
@@ -438,8 +450,8 @@ private async Task ApplyOperationsFromAttributes(
         var op = new AsyncApiOperation
         {
             Title = opAttr.Title ?? opId,
-            Summary = opAttr.Summary,
-            Description = opAttr.Description,
+            Summary = opAttr.Summary ?? _xmlDocumentationProvider.GetDocumentation(member)?.Summary,
+            Description = opAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(member)?.Remarks,
         };
 
         op.Action = opAttr.OperationType == AttrOperationType.Subscribe

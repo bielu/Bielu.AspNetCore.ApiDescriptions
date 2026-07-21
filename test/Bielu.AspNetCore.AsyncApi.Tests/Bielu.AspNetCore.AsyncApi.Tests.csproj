@@ -32,7 +32,6 @@
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Merger\Bielu.AspNetCore.AsyncApi.Merger.csproj" />
-    <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.UI\Bielu.AspNetCore.AsyncApi.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
