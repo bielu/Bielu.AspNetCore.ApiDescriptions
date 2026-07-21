@@ -1,9 +1,12 @@
-name: Deploy static content to Pages
+name: Deploy documentation to Pages
 
 on:
   push:
-    branches: ["master"]
-
+    branches: ["main"]
+    paths:
+      - "docs/**"
+      - "src/**"
+      - ".github/workflows/deployDocs.yml"
   workflow_dispatch:
 
 permissions:
@@ -11,31 +14,42 @@ permissions:
   pages: write
   id-token: write
 
-
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install docfx
+        run: dotnet tool update -g docfx
+
+      - name: Build docs
+        run: docfx docs/docfx.json
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_site
+
+  deploy-docs:
+    needs: build-docs
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Unzip artifact
-        run: unzip -O UTF-8 -qq ./docs/webHelpADOC2-all.zip -d dir
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v2
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: dir
-
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
