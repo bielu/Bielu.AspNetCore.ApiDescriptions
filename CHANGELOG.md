@@ -19,6 +19,8 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 ### Added
 
+- **XML documentation support** - Automatic population of channel, operation, message and schema descriptions from C# XML documentation comments (`/// <summary>`, `/// <remarks>`). Use `options.IncludeXmlComments()` to register documentation sources.
+- **Message examples** - Support for embedding examples in AsyncAPI messages via `[MessageExample]` attribute or fluent `options.AddMessageExample()`. Scalar and protocol consoles can use these to prefill request editors.
 - **Interactive SignalR console for Scalar** - New `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` package
   (ASP.NET Core) and `Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire` package (Aspire hosting) that
   add a live SignalR client panel to the Scalar API Reference. The panel reads the SignalR bindings

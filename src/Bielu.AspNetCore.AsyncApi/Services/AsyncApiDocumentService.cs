@@ -5,6 +5,8 @@ using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Bielu.AspNetCore.AsyncApi.Helpers;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
@@ -35,9 +37,11 @@ internal sealed class AsyncApiDocumentService(
     IOptionsMonitor<AsyncApiOptions> optionsMonitor,
     IServiceProvider serviceProvider,
     ApplicationPartManager applicationPartManager,
+    IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions> jsonOptions,
     IServer? server = null) : IAsyncApiDocumentProvider
 {
     private readonly AsyncApiOptions _options = optionsMonitor.Get(documentName);
+    private readonly JsonSerializerOptions _jsonSerializerOptions = jsonOptions.Value.SerializerOptions;
 
     private readonly AsyncApiJsonSchemaService _componentService =
         serviceProvider.GetRequiredKeyedService<AsyncApiJsonSchemaService>(documentName);
@@ -355,6 +359,8 @@ internal sealed class AsyncApiDocumentService(
                 Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
             };
 
+            ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType, member, scopedServiceProvider);
+
             if (!document.Components.Messages.ContainsKey(messageKey))
             {
                 document.Components.Messages[messageKey] = message;
@@ -364,6 +370,68 @@ internal sealed class AsyncApiDocumentService(
         }
 
         return messageKeys;
+    }
+
+    private void ApplyMessageExamples(AsyncApiMessage message, AsyncApiJsonSchema? payloadSchema, Type payloadType, MemberInfo member, IServiceProvider scopedServiceProvider)
+    {
+        var examples = new List<AsyncApiMessageExample>();
+
+        // 1. From attributes on the member
+        var exampleAttrs = member.GetCustomAttributes<MessageExampleAttribute>(inherit: true);
+        foreach (var attr in exampleAttrs)
+        {
+            var example = new AsyncApiMessageExample
+            {
+                Name = attr.Name,
+                Summary = attr.Summary
+            };
+
+            if (!string.IsNullOrEmpty(attr.Json))
+            {
+                example.Payload = new AsyncApiAny(JsonNode.Parse(attr.Json));
+            }
+            else if (attr.ProviderType != null)
+            {
+                var provider = ActivatorUtilities.CreateInstance(scopedServiceProvider, attr.ProviderType) as IAsyncApiMessageExampleProvider;
+                var value = provider?.GetExample();
+                if (value != null)
+                {
+                    example.Payload = new AsyncApiAny(JsonSerializer.SerializeToNode(value, _jsonSerializerOptions));
+                }
+            }
+
+            examples.Add(example);
+        }
+
+        // 2. From fluent options
+        if (_options.MessageExamples.TryGetValue(payloadType, out var fluentExamples))
+        {
+            foreach (var fluentExample in fluentExamples)
+            {
+                var example = new AsyncApiMessageExample
+                {
+                    Name = fluentExample.Name,
+                    Summary = fluentExample.Summary,
+                    Payload = new AsyncApiAny(JsonSerializer.SerializeToNode(fluentExample.Value, _jsonSerializerOptions))
+                };
+
+                examples.Add(example);
+            }
+        }
+
+        if (examples.Count > 0)
+        {
+            message.Examples = examples;
+
+            if (_options.SetSchemaExampleFromMessageExample && payloadSchema != null)
+            {
+                payloadSchema.Examples ??= new List<AsyncApiAny>();
+                if (payloadSchema.Examples.Count == 0 && examples[0].Payload != null)
+                {
+                    payloadSchema.Examples.Add(examples[0].Payload);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -436,6 +504,7 @@ private async Task ApplyOperationsFromAttributes(
                     Description = _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Remarks,
                     Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
                 };
+                ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, opAttr.MessagePayloadType, member, scopedServiceProvider);
                 document.Components.Messages[messageKey] = message;
             }
 

@@ -405,4 +405,52 @@ public sealed class AsyncApiOptions
         var filePath = Path.Combine(Path.GetDirectoryName(assembly.Location) ?? string.Empty, $"{assembly.GetName().Name}.xml");
         return IncludeXmlComments(filePath);
     }
+
+    /// <summary>
+    /// Collection of message examples registered fluently.
+    /// Key is the payload type, value is a list of named examples.
+    /// </summary>
+    internal Dictionary<Type, List<MessageExample>> MessageExamples { get; } = [];
+
+    /// <summary>
+    /// When set to <see langword="true"/>, the first message example found for a payload type
+    /// will also be surfaced as the <c>example</c> property in its JSON schema.
+    /// Defaults to <see langword="false"/>.
+    /// </summary>
+    public bool SetSchemaExampleFromMessageExample { get; set; }
+
+    /// <summary>
+    /// Adds an example for a specific message payload type.
+    /// </summary>
+    /// <typeparam name="TPayload">The payload type.</typeparam>
+    /// <param name="name">A machine-friendly name for the example.</param>
+    /// <param name="payload">The example payload instance.</param>
+    /// <param name="summary">An optional short summary of the example.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions AddMessageExample<TPayload>(string name, TPayload payload, string? summary = null)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(payload);
+
+        var type = typeof(TPayload);
+        if (!MessageExamples.ContainsKey(type))
+        {
+            MessageExamples[type] = [];
+        }
+
+        MessageExamples[type].Add(new MessageExample
+        {
+            Name = name,
+            Value = payload,
+            Summary = summary
+        });
+        return this;
+    }
+}
+
+internal class MessageExample
+{
+    public string Name { get; set; }
+    public object Value { get; set; }
+    public string? Summary { get; set; }
 }
