@@ -108,7 +108,7 @@ jobs:
   # Version PR merged: publish the second npm package (@bielu/scalar-grpc); NuGet is published by
   # releaseStable above (publish-nuget: false avoids a double publish).
   releaseStableGrpcNpm:
-    needs: version
+    needs: [version, releaseStable]
     if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
     permissions:
@@ -172,7 +172,7 @@ jobs:
 
   # In-flight prereleases for the second npm package (@bielu/scalar-grpc).
   releaseBetaGrpcNpm:
-    needs: version
+    needs: [version, releaseBeta]
     if: >-
       always() && !cancelled()
       && (github.event_name == 'workflow_dispatch'
