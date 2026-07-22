@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Bielu.AspNetCore.AsyncApi.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI;
 using Microsoft.AspNetCore.Builder;
@@ -169,13 +170,12 @@ public static class AsyncApiEndpointRouteBuilderExtensions
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/problem+json;charset=utf-8";
 
-        var payload = JsonSerializer.SerializeToUtf8Bytes(new
-        {
-            type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
-            title = "An error occurred while producing the AsyncApi document.",
-            status = statusCode,
-            detail,
-        });
+        var payload = JsonSerializer.SerializeToUtf8Bytes(new AsyncApiProblemDetails(
+            "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+            "An error occurred while producing the AsyncApi document.",
+            statusCode,
+            detail
+        ), AsyncApiJsonSchemaContext.Default.AsyncApiProblemDetails);
 
         context.Response.ContentLength = payload.Length;
         await context.Response.Body.WriteAsync(payload, context.RequestAborted);

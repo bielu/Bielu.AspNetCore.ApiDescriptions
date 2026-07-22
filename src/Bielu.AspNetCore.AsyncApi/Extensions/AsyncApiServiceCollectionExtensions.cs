@@ -111,6 +111,7 @@ public static class AsyncApiServiceCollectionExtensions
     private static IServiceCollection AddAsyncApiCore(this IServiceCollection services, string documentName)
     {
         services.AddEndpointsApiExplorer();
+        services.TryAddKeyedSingleton<IAsyncApiMetadataProvider, ReflectionAsyncApiMetadataProvider>(documentName);
         services.AddKeyedSingleton<XmlDocumentationProvider>(documentName);
         services.AddKeyedSingleton<AsyncApiJsonSchemaService>(documentName);
         services.AddKeyedSingleton<AsyncApiDocumentService>(documentName);

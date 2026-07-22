@@ -85,17 +85,18 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
             if (asyncApiAttr == null) continue;
 
             var docName = asyncApiAttr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? "";
-            
+            var fullTypeName = symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
             sb.AppendLine($"        if (string.Equals(documentName, \"{docName}\", StringComparison.OrdinalIgnoreCase) || \"{docName}\" == \"\")");
             sb.AppendLine("        {");
             sb.AppendLine($"            yield return new AsyncApiTypeMetadata(");
-            sb.AppendLine($"                typeof({symbol.ToDisplayString()}),");
+            sb.AppendLine($"                typeof({fullTypeName}),");
             sb.AppendLine($"                new AsyncApiAttribute(\"{docName}\"),");
             sb.AppendLine("                new List<AsyncApiMemberMetadata>");
             sb.AppendLine("                {");
 
             var members = new List<ISymbol> { symbol };
-            members.AddRange(symbol.GetMembers().Where(m => m is IMethodSymbol || m is IPropertySymbol));
+            members.AddRange(symbol.GetMembers().Where(m => m is IMethodSymbol { MethodKind: MethodKind.Ordinary } || m is IPropertySymbol));
 
             foreach (var member in members)
             {
@@ -110,9 +111,22 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
 
                 sb.AppendLine("                    new AsyncApiMemberMetadata(");
                 if (SymbolEqualityComparer.Default.Equals(member, symbol))
-                    sb.AppendLine($"                        typeof({symbol.ToDisplayString()}),");
+                {
+                    sb.AppendLine($"                        typeof({fullTypeName}),");
+                }
+                else if (member is IMethodSymbol methodSymbol)
+                {
+                    var paramsTypes = string.Join(", ", methodSymbol.Parameters.Select(p => $"typeof({p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})"));
+                    sb.AppendLine($"                        typeof({fullTypeName}).GetMethod(\"{member.Name}\", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly, null, new Type[] {{ {paramsTypes} }}, null),");
+                }
+                else if (member is IPropertySymbol)
+                {
+                    sb.AppendLine($"                        typeof({fullTypeName}).GetProperty(\"{member.Name}\", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly),");
+                }
                 else
-                    sb.AppendLine($"                        typeof({symbol.ToDisplayString()}).GetMember(\"{member.Name}\", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)[0],");
+                {
+                    sb.AppendLine($"                        typeof({fullTypeName}).GetMember(\"{member.Name}\", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)[0],");
+                }
                 
                 if (channelAttr != null)
                 {
@@ -121,7 +135,9 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                     var descValue = description != null ? $"\"{description}\"" : "null";
                     var bindingsRef = channelAttr.NamedArguments.FirstOrDefault(x => x.Key == "BindingsRef").Value.Value as string;
                     var bindingsValue = bindingsRef != null ? $"\"{bindingsRef}\"" : "null";
-                    sb.AppendLine($"                        new ChannelAttribute(\"{name}\") {{ Description = {descValue}, BindingsRef = {bindingsValue} }},");
+                    var servers = channelAttr.NamedArguments.FirstOrDefault(x => x.Key == "Servers").Value;
+                    var serversValue = GetArrayInitialization(servers);
+                    sb.AppendLine($"                        new ChannelAttribute(\"{name}\") {{ Description = {descValue}, BindingsRef = {bindingsValue}, Servers = {serversValue} }},");
                 }
                 else
                 {
@@ -138,7 +154,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                     var descValue = description != null ? $"\"{description}\"" : "null";
                     var location = attr.NamedArguments.FirstOrDefault(x => x.Key == "Location").Value.Value as string;
                     var locationValue = location != null ? $"\"{location}\"" : "null";
-                    sb.AppendLine($"                            new ChannelParameterAttribute(\"{name}\", typeof({type?.ToDisplayString()})) {{ Description = {descValue}, Location = {locationValue} }},");
+                    sb.AppendLine($"                            new ChannelParameterAttribute(\"{name}\", typeof({type?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})) {{ Description = {descValue}, Location = {locationValue} }},");
                 }
                 sb.AppendLine("                        },");
 
@@ -146,7 +162,11 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                 sb.AppendLine("                        {");
                 foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute"))
                 {
+                    if (attr.ConstructorArguments.Length == 0) continue; // Should not happen for MessageAttribute
+
                     var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
+                    var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
+                    
                     var name = attr.NamedArguments.FirstOrDefault(x => x.Key == "Name").Value.Value as string;
                     var nameValue = name != null ? $"\"{name}\"" : "null";
                     var title = attr.NamedArguments.FirstOrDefault(x => x.Key == "Title").Value.Value as string;
@@ -159,7 +179,10 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                     var bindingsValue = bindingsRef != null ? $"\"{bindingsRef}\"" : "null";
                     var messageId = attr.NamedArguments.FirstOrDefault(x => x.Key == "MessageId").Value.Value as string;
                     var messageIdValue = messageId != null ? $"\"{messageId}\"" : "null";
-                    sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString()})) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue} }},");
+                    var headersType = attr.NamedArguments.FirstOrDefault(x => x.Key == "HeadersType").Value.Value as ITypeSymbol;
+                    var headersTypeValue = headersType != null ? $"typeof({headersType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})" : "null";
+                    
+                    sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue} }},");
                 }
                 sb.AppendLine("                        },");
 
@@ -168,23 +191,35 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                 foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString().EndsWith("OperationAttribute") == true))
                 {
                     var attrName = attr.AttributeClass?.ToDisplayString();
-                    var opType = attr.NamedArguments.FirstOrDefault(x => x.Key == "OperationType").Value.Value;
-                    // Note: OperationAttribute is abstract, so we check for Publish/Subscribe or the base if used (though base is abstract)
                     string ctor;
                     if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.PublishOperationAttribute")
                     {
-                        var payloadType = attr.ConstructorArguments.FirstOrDefault().Value as ITypeSymbol;
-                        ctor = $"new PublishOperationAttribute(typeof({payloadType?.ToDisplayString()}))";
+                        if (attr.ConstructorArguments.Length == 0)
+                        {
+                            ctor = "new PublishOperationAttribute()";
+                        }
+                        else
+                        {
+                            var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
+                            var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
+                            ctor = $"new PublishOperationAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})";
+                        }
                     }
                     else if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute")
                     {
-                        var payloadType = attr.ConstructorArguments.FirstOrDefault().Value as ITypeSymbol;
-                        ctor = $"new SubscribeOperationAttribute(typeof({payloadType?.ToDisplayString()}))";
+                        if (attr.ConstructorArguments.Length == 0)
+                        {
+                            ctor = "new SubscribeOperationAttribute()";
+                        }
+                        else
+                        {
+                            var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
+                            var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
+                            ctor = $"new SubscribeOperationAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})";
+                        }
                     }
                     else
                     {
-                        // Generic OperationAttribute handling if it was somehow used
-                        ctor = "null"; // Should not happen as it's abstract
                         continue;
                     }
 
@@ -215,7 +250,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                     // Escape json string if not null
                     var jsonValue = json != null ? $"@\"{json.Replace("\"", "\"\"")}\"" : "null";
                     var providerType = attr.NamedArguments.FirstOrDefault(x => x.Key == "ProviderType").Value.Value as ITypeSymbol;
-                    var providerValue = providerType != null ? $"typeof({providerType.ToDisplayString()})" : "null";
+                    var providerValue = providerType != null ? $"typeof({providerType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})" : "null";
 
                     sb.AppendLine($"                            new MessageExampleAttribute {{ Name = {nameValue}, Summary = {summaryValue}, Json = {jsonValue}, ProviderType = {providerValue} }},");
                 }
@@ -228,6 +263,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
             sb.AppendLine("        }");
         }
 
+        sb.AppendLine("}");
         sb.AppendLine("}");
         sb.AppendLine("}");
         sb.AppendLine();
@@ -249,6 +285,13 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
         sb.AppendLine("}");
 
         context.AddSource("GeneratedAsyncApiMetadataProvider.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+    }
+
+    private static string GetArrayInitialization(TypedConstant constant)
+    {
+        if (constant.Kind != TypedConstantKind.Array || constant.Values.IsDefaultOrEmpty) return "Array.Empty<string>()";
+        var values = constant.Values.Select(v => $"\"{v.Value}\"");
+        return $"new string[] {{ {string.Join(", ", values)} }}";
     }
 }
 }

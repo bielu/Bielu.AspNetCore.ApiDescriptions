@@ -21,7 +21,6 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -37,7 +36,6 @@ internal sealed class AsyncApiDocumentService(
     IHostEnvironment hostEnvironment,
     IOptionsMonitor<AsyncApiOptions> optionsMonitor,
     IServiceProvider serviceProvider,
-    ApplicationPartManager applicationPartManager,
     IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions> jsonOptions,
     IServer? server = null) : IAsyncApiDocumentProvider
 {

@@ -561,9 +561,18 @@ private static void RemoveNullIds(JsonNode? node)
 
     private JsonNode CreateSchema(Type type)
     {
-        var schema = JsonSchemaExporter.GetJsonSchemaAsNode(_jsonSerializerOptions, type, _configuration);
-        NormalizeSchemaTypes(schema);
-        return ResolveReferences(schema, schema);
+        try
+        {
+            var schema = JsonSchemaExporter.GetJsonSchemaAsNode(_jsonSerializerOptions, type, _configuration);
+            NormalizeSchemaTypes(schema);
+            return ResolveReferences(schema, schema);
+        }
+        catch (NotSupportedException ex) when (ex.Message.Contains("JsonTypeInfo"))
+        {
+            throw new InvalidOperationException(
+                $"JSON metadata for type '{type.FullName}' was not found. When using Native AOT, ensure that all message types are registered in a JsonSerializerContext and added to the TypeInfoResolverChain of your JsonOptions.",
+                ex);
+        }
     }
 
     private static void NormalizeSchemaTypes(JsonNode? node)

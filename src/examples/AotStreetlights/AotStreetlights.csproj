@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Scalar.AspNetCore" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

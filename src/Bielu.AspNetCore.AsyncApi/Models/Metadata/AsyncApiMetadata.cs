@@ -3,13 +3,13 @@ using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 
 namespace Bielu.AspNetCore.AsyncApi.Models.Metadata;
 
-internal record AsyncApiTypeMetadata(
+public record AsyncApiTypeMetadata(
     Type Type,
     AsyncApiAttribute AsyncApi,
     List<AsyncApiMemberMetadata> Members
 );
 
-internal record AsyncApiMemberMetadata(
+public record AsyncApiMemberMetadata(
     MemberInfo Member,
     ChannelAttribute? Channel,
     List<ChannelParameterAttribute> Parameters,
