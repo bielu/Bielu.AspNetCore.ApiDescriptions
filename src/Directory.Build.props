@@ -15,13 +15,15 @@
         <Authors>Arkadiusz Biel</Authors>
         <PackageOutputPath>$(MSBuildProjectDirectory)/../../dist</PackageOutputPath>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon>logo.png</PackageIcon>
         <RepositoryUrl>https://github.com/bielu/Bielu.AspNetCore.AsyncApi</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageProjectUrl>https://github.com/bielu/Bielu.AspNetCore.AsyncApi</PackageProjectUrl>
+        <PackageProjectUrl>https://asyncapi.bielu.pl/</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath="/" />
+        <None Include="$(MSBuildThisFileDirectory)../assets/logo.png" Pack="true" PackagePath="/" />
     </ItemGroup>
 
 </Project>

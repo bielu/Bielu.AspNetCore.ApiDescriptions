@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+    <title id="title">Bielu.AspNetCore.AsyncApi package icon</title>
+    <desc id="desc">An illustrated AsyncAPI document with messages flowing asynchronously between connected endpoints.</desc>
+    <defs>
+        <linearGradient id="background" x1="120" y1="80" x2="900" y2="940" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#F4F0FF"/>
+            <stop offset="0.58" stop-color="#E7EEFF"/>
+            <stop offset="1" stop-color="#DDF9FF"/>
+        </linearGradient>
+        <linearGradient id="document" x1="330" y1="240" x2="720" y2="795" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#8B5CF6"/>
+            <stop offset="0.55" stop-color="#6676F4"/>
+            <stop offset="1" stop-color="#25B9D6"/>
+        </linearGradient>
+        <linearGradient id="documentSide" x1="640" y1="335" x2="760" y2="770" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#4453CC"/>
+            <stop offset="1" stop-color="#167FAD"/>
+        </linearGradient>
+        <linearGradient id="flow" x1="160" y1="700" x2="865" y2="305" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#8B5CF6"/>
+            <stop offset="0.48" stop-color="#5B7CFA"/>
+            <stop offset="1" stop-color="#16B8D4"/>
+        </linearGradient>
+        <linearGradient id="messageOne" x1="170" y1="390" x2="360" y2="565" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#FFFFFF"/>
+            <stop offset="1" stop-color="#E9E5FF"/>
+        </linearGradient>
+        <linearGradient id="messageTwo" x1="675" y1="465" x2="865" y2="640" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#FFFFFF"/>
+            <stop offset="1" stop-color="#DDF8FF"/>
+        </linearGradient>
+        <filter id="outerShadow" x="-30%" y="-30%" width="160%" height="170%">
+            <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#29305D" flood-opacity=".22"/>
+        </filter>
+        <filter id="objectShadow" x="-40%" y="-40%" width="180%" height="190%">
+            <feDropShadow dx="0" dy="25" stdDeviation="20" flood-color="#242A52" flood-opacity=".32"/>
+        </filter>
+        <filter id="smallShadow" x="-50%" y="-50%" width="200%" height="210%">
+            <feDropShadow dx="0" dy="13" stdDeviation="11" flood-color="#242A52" flood-opacity=".24"/>
+        </filter>
+    </defs>
+
+    <!-- Package tile -->
+    <rect x="76" y="76" width="872" height="872" rx="216" fill="url(#background)" stroke="#252B50" stroke-width="24" filter="url(#outerShadow)"/>
+    <path d="M146 748 C255 868 426 912 598 885 C754 861 856 782 914 666"
+          fill="none" stroke="#FFFFFF" stroke-opacity=".58" stroke-width="25" stroke-linecap="round"/>
+    <circle cx="214" cy="252" r="40" fill="#FFFFFF" opacity=".62"/>
+    <circle cx="826" cy="222" r="24" fill="#FFFFFF" opacity=".72"/>
+    <circle cx="860" cy="775" r="34" fill="#FFFFFF" opacity=".48"/>
+
+    <!-- Async flow behind document -->
+    <path d="M251 506 C245 332 374 215 530 211 C680 207 807 304 826 435"
+          fill="none" stroke="#252B50" stroke-width="66" stroke-linecap="round"/>
+    <path d="M251 506 C245 332 374 215 530 211 C680 207 807 304 826 435"
+          fill="none" stroke="url(#flow)" stroke-width="38" stroke-linecap="round"/>
+    <path d="M783 390 L852 443 L777 473 Z" fill="#16B8D4" stroke="#252B50" stroke-width="18" stroke-linejoin="round"/>
+
+    <path d="M773 566 C762 729 636 826 482 822 C332 818 210 716 196 579"
+          fill="none" stroke="#252B50" stroke-width="66" stroke-linecap="round"/>
+    <path d="M773 566 C762 729 636 826 482 822 C332 818 210 716 196 579"
+          fill="none" stroke="url(#flow)" stroke-width="38" stroke-linecap="round"/>
+    <path d="M232 622 L171 566 L248 544 Z" fill="#8B5CF6" stroke="#252B50" stroke-width="18" stroke-linejoin="round"/>
+
+    <!-- Central illustrated AsyncAPI document -->
+    <g filter="url(#objectShadow)">
+        <!-- extruded side -->
+        <path d="M658 325 L742 369 L742 716 L658 770 Z"
+              fill="url(#documentSide)" stroke="#252B50" stroke-width="22" stroke-linejoin="round"/>
+        <!-- main document -->
+        <path d="M326 278 Q326 245 360 245 H624 L685 310 V734 Q685 770 649 770 H360 Q326 770 326 734 Z"
+              fill="url(#document)" stroke="#252B50" stroke-width="24" stroke-linejoin="round"/>
+        <!-- folded corner -->
+        <path d="M624 245 V310 H685" fill="#B9C9FF" stroke="#252B50" stroke-width="22" stroke-linejoin="round"/>
+        <path d="M624 245 L685 310 H624 Z" fill="#D9E4FF"/>
+
+        <!-- white inner API panel -->
+        <rect x="385" y="366" width="240" height="292" rx="38" fill="#FFFFFF" stroke="#252B50" stroke-width="18"/>
+        <!-- connected channel symbol -->
+        <circle cx="445" cy="440" r="25" fill="#8B5CF6" stroke="#252B50" stroke-width="13"/>
+        <circle cx="566" cy="440" r="25" fill="#24B9D6" stroke="#252B50" stroke-width="13"/>
+        <path d="M475 440 H532" stroke="#252B50" stroke-width="18" stroke-linecap="round"/>
+        <path d="M514 416 L543 440 L514 464" fill="none" stroke="#5B7CFA" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- API document lines -->
+        <rect x="422" y="505" width="167" height="22" rx="11" fill="#5A6389"/>
+        <rect x="422" y="553" width="118" height="22" rx="11" fill="#8B5CF6"/>
+        <rect x="422" y="601" width="146" height="22" rx="11" fill="#24B9D6"/>
+    </g>
+
+    <!-- Left message packet -->
+    <g filter="url(#smallShadow)" transform="rotate(-8 247 498)">
+        <rect x="152" y="412" width="196" height="156" rx="42" fill="url(#messageOne)" stroke="#252B50" stroke-width="20"/>
+        <path d="M184 454 L250 505 L316 454" fill="none" stroke="#685EF1" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M184 532 L225 497 M316 532 L275 497" fill="none" stroke="#A9A5E9" stroke-width="15" stroke-linecap="round"/>
+    </g>
+
+    <!-- Right message packet -->
+    <g filter="url(#smallShadow)" transform="rotate(8 770 557)">
+        <rect x="672" y="478" width="196" height="156" rx="42" fill="url(#messageTwo)" stroke="#252B50" stroke-width="20"/>
+        <path d="M704 520 L770 571 L836 520" fill="none" stroke="#1AAFCB" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M704 598 L745 563 M836 598 L795 563" fill="none" stroke="#9BCFDB" stroke-width="15" stroke-linecap="round"/>
+    </g>
+
+    <!-- Event dots -->
+    <g stroke="#252B50" stroke-width="12">
+        <circle cx="309" cy="285" r="22" fill="#8B5CF6"/>
+        <circle cx="751" cy="284" r="20" fill="#28B8D5"/>
+        <circle cx="807" cy="715" r="24" fill="#5B7CFA"/>
+        <circle cx="297" cy="750" r="18" fill="#FFFFFF"/>
+    </g>
+
+    <!-- Tiny async spark -->
+    <path d="M803 187 L818 219 L852 224 L827 248 L833 282 L803 266 L773 282 L779 248 L754 224 L788 219 Z"
+          fill="#FFD369" stroke="#252B50" stroke-width="12" stroke-linejoin="round"/>
+</svg>

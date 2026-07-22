@@ -5,9 +5,13 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Bielu.AspNetCore.AsyncApi.svg)](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+<p align="center">
+  <img src="docs/images/logo.svg" alt="Bielu.AspNetCore.AsyncApi Logo" width="200">
+</p>
+
 Bielu.AspNetCore.AsyncApi provides built-in support for generating [AsyncAPI](https://www.asyncapi.com/) documents from minimal or controller-based APIs in ASP.NET Core. This library brings the same developer experience as [Microsoft.AspNetCore.OpenApi](https://www.nuget.org/packages/Microsoft.AspNetCore.OpenApi) but for AsyncAPI specifications.
 
-📖 **Read the full documentation at: [https://bielu.github.io/Bielu.AspNetCore.AsyncApi/](https://bielu.github.io/Bielu.AspNetCore.AsyncApi/)**
+📖 **Read the full documentation at: [https://asyncapi.bielu.pl/](https://asyncapi.bielu.pl/)**
 
 ## Quick Start
 
@@ -61,12 +65,12 @@ public class MyService
 
 ## Documentation Sections
 
-- [Getting Started](https://bielu.github.io/Bielu.AspNetCore.AsyncApi/articles/getting-started.html)
-- [Attributes Reference](https://bielu.github.io/Bielu.AspNetCore.AsyncApi/articles/attributes.html)
-- [Configuration Guide](https://bielu.github.io/Bielu.AspNetCore.AsyncApi/articles/configuration.html)
-- [Scalar & Live Consoles](https://bielu.github.io/Bielu.AspNetCore.AsyncApi/articles/scalar-consoles.html)
-- [CLI Tool usage](https://bielu.github.io/Bielu.AspNetCore.AsyncApi/articles/cli.html)
-- [Migration from Saunter](https://bielu.github.io/Bielu.AspNetCore.AsyncApi/articles/migration-from-saunter.html)
+- [Getting Started](https://asyncapi.bielu.pl/articles/getting-started.html)
+- [Attributes Reference](https://asyncapi.bielu.pl/articles/attributes.html)
+- [Configuration Guide](https://asyncapi.bielu.pl/articles/configuration.html)
+- [Scalar & Live Consoles](https://asyncapi.bielu.pl/articles/scalar-consoles.html)
+- [CLI Tool usage](https://asyncapi.bielu.pl/articles/cli.html)
+- [Migration from Saunter](https://asyncapi.bielu.pl/articles/migration-from-saunter.html)
 
 ## License
 

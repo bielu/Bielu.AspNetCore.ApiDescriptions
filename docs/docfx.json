@@ -77,6 +77,7 @@
     "globalMetadata": {
       "_appName": "Bielu.AspNetCore.AsyncApi",
       "_appTitle": "Bielu.AspNetCore.AsyncApi",
+      "_appLogoPath": "images/logo.svg",
       "_enableSearch": true,
       "_enableNewTab": true,
       "repository": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi",

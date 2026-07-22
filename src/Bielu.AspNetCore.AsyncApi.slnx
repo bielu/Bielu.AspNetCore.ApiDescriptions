@@ -37,6 +37,7 @@
     <File Path="../CHANGELOG.md" />
     <File Path="../CODEOWNERS" />
     <File Path="../CONTRIBUTING.md" />
+    <File Path="../docs/images/logo.svg" />
     <File Path="../LICENSE" />
     <File Path="../README.md" />
     <File Path="../version.props" />
