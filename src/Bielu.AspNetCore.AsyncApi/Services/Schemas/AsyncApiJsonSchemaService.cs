@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Reflection;
 using System.Text.Json;
@@ -32,6 +33,8 @@ namespace Bielu.AspNetCore.AsyncApi.Services.Schemas;
 /// an AsyncApi document. In particular, this is the API that is used to
 /// interact with the JSON schemas that are managed by a given AsyncApi document.
 /// </summary>
+[RequiresUnreferencedCode("AsyncApiJsonSchemaService performs reflection for schema generation. This is not AOT compatible, use source generation and provide JsonSerializerContext.")]
+[RequiresDynamicCode("AsyncApiJsonSchemaService performs reflection for schema generation. This is not AOT compatible, use source generation and provide JsonSerializerContext.")]
 internal sealed class AsyncApiJsonSchemaService
 {
     private readonly string _documentName;

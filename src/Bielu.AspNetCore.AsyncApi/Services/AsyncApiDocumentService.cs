@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Bielu.AspNetCore.AsyncApi.Helpers;
+using Bielu.AspNetCore.AsyncApi.Models.Metadata;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Bielu.AspNetCore.AsyncApi.Transformers;
@@ -48,6 +49,9 @@ internal sealed class AsyncApiDocumentService(
 
     private readonly XmlDocumentationProvider _xmlDocumentationProvider =
         serviceProvider.GetRequiredKeyedService<XmlDocumentationProvider>(documentName);
+
+    private readonly IAsyncApiMetadataProvider _metadataProvider =
+        serviceProvider.GetRequiredKeyedService<IAsyncApiMetadataProvider>(documentName);
 
     private readonly ConcurrentDictionary<string, AsyncApiOperationTransformerContext>
         _operationTransformerContextCache = new();
@@ -144,47 +148,26 @@ internal sealed class AsyncApiDocumentService(
         document.Components.Schemas ??= new Dictionary<string, AsyncApiMultiFormatSchema>();
         document.Components.Messages ??= new Dictionary<string, AsyncApiMessage>();
 
-        foreach (var asm in GetCandidateAssembliesForAttributeScan())
+        foreach (var typeMetadata in _metadataProvider.GetMetadata(documentName))
         {
-            foreach (var type in SafeGetTypes(asm))
+            foreach (var memberMetadata in typeMetadata.Members)
             {
-                if(type is null) continue;
-                var asyncApiAttr = type.GetCustomAttribute<AsyncApiAttribute>(inherit: true);
-                if (asyncApiAttr is null)
+                var channelAttr = memberMetadata.Channel;
+                if (channelAttr is null) continue;
+
+                var channelKey = AsyncApiNamingHelper.SanitizeKey(channelAttr.Name);
+                if (_options.IncludeOnlyChannels.Count > 0 && !_options.IncludeOnlyChannels.Contains(channelKey))
                     continue;
 
-                if (asyncApiAttr.DocumentName is not null &&
-                    !string.Equals(asyncApiAttr.DocumentName, documentName, StringComparison.OrdinalIgnoreCase))
-                    continue;
+                var channel = GetOrCreateChannel(document, channelAttr, channelKey, memberMetadata.Member);
 
-                var members = new List<MemberInfo> { type };
-                members.AddRange(type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly));
+                ApplyChannelParametersFromMetadata(channel, memberMetadata);
+                ApplyChannelServersFromAttributes(document, channel, channelAttr);
 
-                foreach (var member in members)
-                {
-                    var channelAttr = member.GetCustomAttribute<ChannelAttribute>(inherit: true);
-                    if (channelAttr is null && member is MethodInfo)
-                    {
-                        channelAttr = type.GetCustomAttribute<ChannelAttribute>(inherit: true);
-                    }
+                var messageRefs = await ApplyChannelMessagesFromMetadataAsync(
+                    document, channel, memberMetadata, scopedServiceProvider, schemaTransformers, cancellationToken);
 
-                    if (channelAttr is null)
-                        continue;
-
-                    var channelKey = AsyncApiNamingHelper.SanitizeKey(channelAttr.Name);
-                    if (_options.IncludeOnlyChannels.Count > 0 && !_options.IncludeOnlyChannels.Contains(channelKey))
-                        continue;
-
-                    var channel = GetOrCreateChannel(document, channelAttr, channelKey, member);
-
-                    ApplyChannelParametersFromAttributes(channel, member);
-                    ApplyChannelServersFromAttributes(document, channel, channelAttr);
-
-                    var messageRefs = await ApplyChannelMessagesFromAttributesAsync(
-                        document, channel, member, scopedServiceProvider, schemaTransformers, cancellationToken);
-
-                    await ApplyOperationsFromAttributes(document, channel, member, messageRefs, scopedServiceProvider, schemaTransformers, cancellationToken);
-                }
+                await ApplyOperationsFromMetadata(document, channel, memberMetadata, messageRefs, scopedServiceProvider, schemaTransformers, cancellationToken);
             }
         }
     }
@@ -251,10 +234,10 @@ internal sealed class AsyncApiDocumentService(
         }
     }
 
-    private void ApplyChannelParametersFromAttributes(AsyncApiChannel channel, MemberInfo member)
+    private void ApplyChannelParametersFromMetadata(AsyncApiChannel channel, AsyncApiMemberMetadata memberMetadata)
     {
-        var paramAttrs = member.GetCustomAttributes<ChannelParameterAttribute>(inherit: true);
-        var xmlDoc = _xmlDocumentationProvider.GetDocumentation(member);
+        var paramAttrs = memberMetadata.Parameters;
+        var xmlDoc = _xmlDocumentationProvider.GetDocumentation(memberMetadata.Member);
         foreach (var p in paramAttrs)
         {
             if (!channel.Parameters.ContainsKey(p.Name))
@@ -310,16 +293,16 @@ internal sealed class AsyncApiDocumentService(
         }
     }
 
-    private async Task<List<string>> ApplyChannelMessagesFromAttributesAsync(
+    private async Task<List<string>> ApplyChannelMessagesFromMetadataAsync(
         AsyncApiDocument document,
         AsyncApiChannel channel,
-        MemberInfo member,
+        AsyncApiMemberMetadata memberMetadata,
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
         CancellationToken cancellationToken)
     {
         var messageKeys = new List<string>();
-        var messageAttrs = member.GetCustomAttributes<MessageAttribute>(inherit: true);
+        var messageAttrs = memberMetadata.Messages;
 
         foreach (var msgAttr in messageAttrs)
         {
@@ -359,7 +342,7 @@ internal sealed class AsyncApiDocumentService(
                 Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
             };
 
-            ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType, member, scopedServiceProvider);
+            ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType, memberMetadata.MessageExamples, scopedServiceProvider);
 
             if (!document.Components.Messages.ContainsKey(messageKey))
             {
@@ -372,12 +355,11 @@ internal sealed class AsyncApiDocumentService(
         return messageKeys;
     }
 
-    private void ApplyMessageExamples(AsyncApiMessage message, AsyncApiJsonSchema? payloadSchema, Type payloadType, MemberInfo member, IServiceProvider scopedServiceProvider)
+    private void ApplyMessageExamples(AsyncApiMessage message, AsyncApiJsonSchema? payloadSchema, Type payloadType, List<MessageExampleAttribute> exampleAttrs, IServiceProvider scopedServiceProvider)
     {
         var examples = new List<AsyncApiMessageExample>();
 
         // 1. From attributes on the member
-        var exampleAttrs = member.GetCustomAttributes<MessageExampleAttribute>(inherit: true);
         foreach (var attr in exampleAttrs)
         {
             var example = new AsyncApiMessageExample
@@ -447,22 +429,22 @@ internal sealed class AsyncApiDocumentService(
 /// <param name="scopedServiceProvider">Scoped service provider used to resolve services during schema creation.</param>
 /// <param name="schemaTransformers">Schema transformers applied when creating or retrieving payload schemas.</param>
 /// <param name="cancellationToken">Cancellation token to observe while performing async operations.</param>
-private async Task ApplyOperationsFromAttributes(
+private async Task ApplyOperationsFromMetadata(
     AsyncApiDocument document,
     AsyncApiChannel channel,
-    MemberInfo member,
+    AsyncApiMemberMetadata memberMetadata,
     List<string> messageKeys,
     IServiceProvider scopedServiceProvider,
     IAsyncApiSchemaTransformer[] schemaTransformers,
     CancellationToken cancellationToken)
 {
-    var opAttrs = member.GetCustomAttributes<OperationAttribute>(inherit: true);
+    var opAttrs = memberMetadata.Operations;
     foreach (var opAttr in opAttrs)
     {
         var opId = opAttr.OperationId;
         if (string.IsNullOrWhiteSpace(opId))
         {
-            opId = AsyncApiNamingHelper.SanitizeKey($"{member.DeclaringType?.Name ?? "Type"}_{member.Name}_{opAttr.OperationType}");
+            opId = AsyncApiNamingHelper.SanitizeKey($"{memberMetadata.Member.DeclaringType?.Name ?? "Type"}_{memberMetadata.Member.Name}_{opAttr.OperationType}");
         }
         else
         {
@@ -504,7 +486,7 @@ private async Task ApplyOperationsFromAttributes(
                     Description = _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Remarks,
                     Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
                 };
-                ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, opAttr.MessagePayloadType, member, scopedServiceProvider);
+                ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, opAttr.MessagePayloadType, memberMetadata.MessageExamples, scopedServiceProvider);
                 document.Components.Messages[messageKey] = message;
             }
 
@@ -519,8 +501,8 @@ private async Task ApplyOperationsFromAttributes(
         var op = new AsyncApiOperation
         {
             Title = opAttr.Title ?? opId,
-            Summary = opAttr.Summary ?? _xmlDocumentationProvider.GetDocumentation(member)?.Summary,
-            Description = opAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(member)?.Remarks,
+            Summary = opAttr.Summary ?? _xmlDocumentationProvider.GetDocumentation(memberMetadata.Member)?.Summary,
+            Description = opAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(memberMetadata.Member)?.Remarks,
         };
 
         op.Action = opAttr.OperationType == AttrOperationType.Subscribe
@@ -567,42 +549,6 @@ private async Task ApplyOperationsFromAttributes(
         if (string.IsNullOrEmpty(value))
             return value;
         return char.ToLowerInvariant(value[0]) + value.Substring(1);
-    }
-
-    /// <summary>
-    /// Collects assemblies to scan for AsyncApiAttribute usage.
-    /// </summary>
-    /// <returns>A sequence of distinct assemblies that reference the AsyncApiAttribute assembly, excluding the executing assembly and any dynamic assemblies; includes the entry assembly if present.</returns>
-    private IEnumerable<Assembly> GetCandidateAssembliesForAttributeScan()
-    {
-        var targetAssemblyName = typeof(AsyncApiAttribute).Assembly.GetName();
-        var partAssemblies = AppDomain.CurrentDomain.GetAssemblies()  .Where(a => a.FullName != (this).GetType().Assembly.FullName && !a.IsDynamic && 
-            a.GetReferencedAssemblies().Any(x=>x.Name == targetAssemblyName.Name));
-        var entry = Assembly.GetEntryAssembly();
-        return partAssemblies.Concat(entry is not null ? [entry] : []).Distinct();
-    }
-
-    /// <summary>
-    /// Gets the types declared in the given assembly, excluding any types that failed to load.
-    /// </summary>
-    /// <param name="asm">The assembly to retrieve types from.</param>
-    /// <returns>An enumeration of loaded <see cref="Type"/> objects; types that could not be loaded are omitted.</returns>
-    private static IEnumerable<Type?> SafeGetTypes(Assembly asm)
-    {
-        try { return asm.GetTypes(); }
-        catch (ReflectionTypeLoadException ex) { return ex.Types.Where(t => t is not null) ?? Enumerable.Empty<Type>(); }
-    }
-
-    private static bool TryGet(object target, string propertyName, out object? value)
-    {
-        var prop = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-        if (prop is null || !prop.CanRead)
-        {
-            value = null;
-            return false;
-        }
-        value = prop.GetValue(target);
-        return true;
     }
 
     internal void InitializeTransformers(
