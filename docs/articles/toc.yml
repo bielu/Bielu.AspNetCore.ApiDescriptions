@@ -1,0 +1,30 @@
+- name: Getting Started
+  href: getting-started.md
+- name: Templates
+  href: templates.md
+- name: Attributes
+  href: attributes.md
+- name: Configuration
+  href: configuration.md
+- name: Build-time Generation
+  href: build-time-generation.md
+- name: CLI
+  href: cli.md
+- name: Multiple Documents
+  href: multiple-documents.md
+- name: Protocols
+  items:
+    - name: SignalR
+      href: protocols-signalr.md
+    - name: gRPC
+      href: protocols-grpc.md
+    - name: SSE
+      href: protocols-sse.md
+    - name: WebRTC
+      href: protocols-webrtc.md
+- name: Scalar Consoles
+  href: scalar-consoles.md
+- name: Merger & Gateway
+  href: merger-gateway.md
+- name: Migration from Saunter
+  href: migration-from-saunter.md

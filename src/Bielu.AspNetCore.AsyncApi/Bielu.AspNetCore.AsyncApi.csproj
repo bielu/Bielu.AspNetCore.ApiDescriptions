@@ -2,8 +2,6 @@
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi</RootNamespace>
     </PropertyGroup>
@@ -26,8 +24,11 @@
     </ItemGroup>
     <ItemGroup>
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Tests" />
+      <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Versioning.Tests" />
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Merger" />
+      <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Versioning" />
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Cli" />
+      <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Attributes\" />

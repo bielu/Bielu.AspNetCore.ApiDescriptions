@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Transformers;
@@ -375,4 +376,81 @@ public sealed class AsyncApiOptions
         ChannelBindings[name].Add(binding);
         return this;
     }
+    /// <summary>
+    /// Gets the list of XML documentation files to use for populating descriptions.
+    /// </summary>
+    internal List<string> XmlDocumentationFiles { get; } = [];
+
+    /// <summary>
+    /// Includes the XML documentation from the specified file path to populate descriptions.
+    /// </summary>
+    /// <param name="filePath">The path to the XML documentation file.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions IncludeXmlComments(string filePath)
+    {
+        if (!string.IsNullOrEmpty(filePath))
+        {
+            XmlDocumentationFiles.Add(filePath);
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// Includes the XML documentation for the specified assembly to populate descriptions.
+    /// </summary>
+    /// <param name="assembly">The assembly to include XML documentation for.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions IncludeXmlComments(Assembly assembly)
+    {
+        var filePath = Path.Combine(Path.GetDirectoryName(assembly.Location) ?? string.Empty, $"{assembly.GetName().Name}.xml");
+        return IncludeXmlComments(filePath);
+    }
+
+    /// <summary>
+    /// Collection of message examples registered fluently.
+    /// Key is the payload type, value is a list of named examples.
+    /// </summary>
+    internal Dictionary<Type, List<MessageExample>> MessageExamples { get; } = [];
+
+    /// <summary>
+    /// When set to <see langword="true"/>, the first message example found for a payload type
+    /// will also be surfaced as the <c>example</c> property in its JSON schema.
+    /// Defaults to <see langword="false"/>.
+    /// </summary>
+    public bool SetSchemaExampleFromMessageExample { get; set; }
+
+    /// <summary>
+    /// Adds an example for a specific message payload type.
+    /// </summary>
+    /// <typeparam name="TPayload">The payload type.</typeparam>
+    /// <param name="name">A machine-friendly name for the example.</param>
+    /// <param name="payload">The example payload instance.</param>
+    /// <param name="summary">An optional short summary of the example.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions AddMessageExample<TPayload>(string name, TPayload payload, string? summary = null)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(payload);
+
+        var type = typeof(TPayload);
+        if (!MessageExamples.ContainsKey(type))
+        {
+            MessageExamples[type] = [];
+        }
+
+        MessageExamples[type].Add(new MessageExample
+        {
+            Name = name,
+            Value = payload,
+            Summary = summary
+        });
+        return this;
+    }
+}
+
+internal class MessageExample
+{
+    public string Name { get; set; }
+    public object Value { get; set; }
+    public string? Summary { get; set; }
 }

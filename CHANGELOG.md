@@ -19,6 +19,12 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 ### Added
 
+- **Documentation site** - New documentation site built with docfx, hosted on GitHub Pages. Provides comprehensive guides for attributes, configuration, protocols, and CLI usage.
+- **Roslyn analyzers** - New `Bielu.AspNetCore.AsyncApi.Analyzers` package (bundled with the Attributes package) that provides compile-time diagnostics for common AsyncAPI attribute misuses. Includes checks for missing `[AsyncApi]` attributes, operations without channels, duplicate names, and invalid payload types.
+- **CLI `validate` command** - New `dotnet asyncapi validate` command to validate AsyncAPI documents against the spec. Supports globbing, strict mode (warnings as errors), and JSON output for CI pipelines.
+- **CLI `diff` command** - New `dotnet asyncapi diff` command to compare two AsyncAPI documents. Detects breaking changes (removals, narrowing) and non-breaking changes (additions). Supports text, JSON, and Markdown reports.
+- **XML documentation support** - Automatic population of channel, operation, message and schema descriptions from C# XML documentation comments (`/// <summary>`, `/// <remarks>`). Use `options.IncludeXmlComments()` to register documentation sources.
+- **Message examples** - Support for embedding examples in AsyncAPI messages via `[MessageExample]` attribute or fluent `options.AddMessageExample()`. Scalar and protocol consoles can use these to prefill request editors.
 - **Interactive SignalR console for Scalar** - New `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` package
   (ASP.NET Core) and `Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire` package (Aspire hosting) that
   add a live SignalR client panel to the Scalar API Reference. The panel reads the SignalR bindings
@@ -48,6 +54,7 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
   the target app must enable gRPC-Web (`Grpc.AspNetCore.Web`, `UseGrpcWeb`). Scalar auth passes
   through as gRPC-Web metadata (plain HTTP headers). Wired into the `GrpcGreeter` example.
   *(Not yet published to any channel.)*
+- **`dotnet new` template pack** - New `Bielu.AspNetCore.AsyncApi.Templates` package providing 5 templates (`asyncapi-webapi`, `asyncapi-signalr`, `asyncapi-grpc`, `asyncapi-console`, `asyncapi-sln`) to quickly bootstrap AsyncAPI-enabled projects. Includes interactive consoles and multi-project solution support.
 - **Server-Sent Events (SSE) protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse`
   package providing a custom `sse` protocol with channel, operation, message and server bindings
   modelling the `text/event-stream` (`event`/`id`/`retry`/`data`) wire shape. *(Not yet published to any channel.)*

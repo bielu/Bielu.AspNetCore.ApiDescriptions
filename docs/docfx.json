@@ -1,0 +1,79 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "..",
+          "files": [
+            "src/**/*.csproj"
+          ],
+          "exclude": [
+            "**/bin/**",
+            "**/obj/**",
+            "src/examples/**",
+            "**/*.Tests/**",
+            "**/*.Tests.*/**",
+            "**/*.Test/**"
+          ]
+        }
+      ],
+      "dest": "api",
+      "disableGitFeatures": false,
+      "disableDefaultFilter": false
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "api/**.yml",
+          "api/index.md"
+        ]
+      },
+      {
+        "files": [
+          "articles/**.md",
+          "articles/**/toc.yml",
+          "toc.yml",
+          "index.md"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "overwrite": [
+      {
+        "files": [
+          "apidoc/**.md"
+        ],
+        "exclude": [
+          "obj/**",
+          "_site/**"
+        ]
+      }
+    ],
+    "dest": "_site",
+    "template": [
+      "default",
+      "modern"
+    ],
+    "postProcessors": [],
+    "markdownEngineName": "markdig",
+    "noIncrementalBuild": false,
+    "cleanupCacheHistory": false,
+    "disableGitFeatures": false,
+    "globalMetadata": {
+      "_appName": "Bielu.AspNetCore.AsyncApi",
+      "_appTitle": "Bielu.AspNetCore.AsyncApi",
+      "_enableSearch": true,
+      "_enableNewTab": true,
+      "repository": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi",
+      "docurl": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi/blob/main/docs"
+    }
+  }
+}

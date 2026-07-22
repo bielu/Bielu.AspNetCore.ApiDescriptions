@@ -2,8 +2,6 @@
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <IsAspireHost>false</IsAspireHost>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire</RootNamespace>
         <Description>Aspire hosting helper that adds the interactive SignalR console to a Scalar.Aspire API Reference resource by pointing it at the @bielu/scalar-signalr bundle.</Description>

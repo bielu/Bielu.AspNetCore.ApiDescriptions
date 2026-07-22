@@ -6,11 +6,13 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO.Pipelines;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Extensions;
+using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Bielu.AspNetCore.AsyncApi.Schemas;
 using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI.Models;
@@ -30,117 +32,144 @@ namespace Bielu.AspNetCore.AsyncApi.Services.Schemas;
 /// an AsyncApi document. In particular, this is the API that is used to
 /// interact with the JSON schemas that are managed by a given AsyncApi document.
 /// </summary>
-internal sealed class AsyncApiJsonSchemaService(
-    [ServiceKey] string documentName,
-    IOptions<JsonOptions> jsonOptions,
-    IOptionsMonitor<AsyncApiOptions> optionsMonitor)
+internal sealed class AsyncApiJsonSchemaService
 {
+    private readonly string _documentName;
+    private readonly IOptionsMonitor<AsyncApiOptions> _optionsMonitor;
+    private readonly XmlDocumentationProvider _xmlDocumentationProvider;
     private readonly ConcurrentDictionary<Type, string?> _schemaIdCache = new();
-    private readonly AsyncApiJsonSchemaContext _jsonSchemaContext = new(new(jsonOptions.Value.SerializerOptions));
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new(jsonOptions.Value.SerializerOptions)
-    {
-        // In order to properly handle the `RequiredAttribute` on type properties, add a modifier to support
-        // setting `JsonPropertyInfo.IsRequired` based on the presence of the `RequiredAttribute`.
-        TypeInfoResolver = jsonOptions.Value.SerializerOptions.TypeInfoResolver?.WithAddedModifier(jsonTypeInfo =>
-        {
-            if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
-            {
-                return;
-            }
-            foreach (var propertyInfo in jsonTypeInfo.Properties)
-            {
-                var hasRequiredAttribute = propertyInfo.AttributeProvider?
-                    .GetCustomAttributes(inherit: false)
-                    .Any(attr => attr is RequiredAttribute);
-                propertyInfo.IsRequired |= hasRequiredAttribute ?? false;
-            }
-        })
-    };
+    private readonly AsyncApiJsonSchemaContext _jsonSchemaContext;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
+    private readonly JsonSchemaExporterOptions _configuration;
 
-    private readonly JsonSchemaExporterOptions _configuration = new()
+    public AsyncApiJsonSchemaService(
+        [ServiceKey] string documentName,
+        IOptions<JsonOptions> jsonOptions,
+        IOptionsMonitor<AsyncApiOptions> optionsMonitor,
+        IServiceProvider serviceProvider)
     {
-        TreatNullObliviousAsNonNullable = true,
-        TransformSchemaNode = (context, schema) =>
+        _documentName = documentName;
+        _optionsMonitor = optionsMonitor;
+        _xmlDocumentationProvider = serviceProvider.GetRequiredKeyedService<XmlDocumentationProvider>(documentName);
+        _jsonSchemaContext = new AsyncApiJsonSchemaContext(new(jsonOptions.Value.SerializerOptions));
+        _jsonSerializerOptions = new JsonSerializerOptions(jsonOptions.Value.SerializerOptions)
         {
-            var type = context.TypeInfo.Type;
-            // Fix up schemas generated for IFormFile, IFormFileCollection, Stream, PipeReader and FileContentResult
-            // that appear as properties within complex types.
-            if (type == typeof(IFormFile) || type == typeof(Stream) || type == typeof(PipeReader) || type == typeof(FileContentResult))
+            // In order to properly handle the `RequiredAttribute` on type properties, add a modifier to support
+            // setting `JsonPropertyInfo.IsRequired` based on the presence of the `RequiredAttribute`.
+            TypeInfoResolver = jsonOptions.Value.SerializerOptions.TypeInfoResolver?.WithAddedModifier(jsonTypeInfo =>
             {
-                schema = new JsonObject
+                if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
                 {
-                    [AsyncApiJsonSchemaKeywords.TypeKeyword] = "string",
-                    [AsyncApiJsonSchemaKeywords.FormatKeyword] = "binary",
-                    [AsyncApiConstants.Id] = "IFormFile"
-                };
-            }
-            else if (type == typeof(IFormFileCollection))
+                    return;
+                }
+                foreach (var propertyInfo in jsonTypeInfo.Properties)
+                {
+                    var hasRequiredAttribute = propertyInfo.AttributeProvider?
+                        .GetCustomAttributes(inherit: false)
+                        .Any(attr => attr is RequiredAttribute);
+                    propertyInfo.IsRequired |= hasRequiredAttribute ?? false;
+                }
+            })
+        };
+
+        _configuration = new JsonSchemaExporterOptions()
+        {
+            TreatNullObliviousAsNonNullable = true,
+            TransformSchemaNode = (context, schema) =>
             {
-                schema = new JsonObject
+                var type = context.TypeInfo.Type;
+                // Fix up schemas generated for IFormFile, IFormFileCollection, Stream, PipeReader and FileContentResult
+                // that appear as properties within complex types.
+                if (type == typeof(IFormFile) || type == typeof(Stream) || type == typeof(PipeReader) || type == typeof(FileContentResult))
                 {
-                    [AsyncApiJsonSchemaKeywords.TypeKeyword] = "array",
-                    [AsyncApiJsonSchemaKeywords.ItemsKeyword] = new JsonObject
+                    schema = new JsonObject
                     {
                         [AsyncApiJsonSchemaKeywords.TypeKeyword] = "string",
                         [AsyncApiJsonSchemaKeywords.FormatKeyword] = "binary",
                         [AsyncApiConstants.Id] = "IFormFile"
-                    }
-                };
-            }
-            else if (type.IsJsonPatchDocument())
-            {
-                schema = CreateSchemaForJsonPatch();
-            }
-            // STJ uses `true` in place of an empty object to represent a schema that matches
-            // anything (like the `object` type) or types with user-defined converters. We override
-            // this default behavior here to match the format expected in AsyncApi v3.
-            if (schema.GetValueKind() == JsonValueKind.True)
-            {
-                schema = new JsonObject();
-            }
-            var createSchemaReferenceId = optionsMonitor.Get(documentName).CreateSchemaReferenceId;
-            schema.ApplyPrimitiveTypesAndFormats(context, createSchemaReferenceId);
-            schema.ApplySchemaReferenceId(context, createSchemaReferenceId);
-            schema.MapPolymorphismOptionsToDiscriminator(context, createSchemaReferenceId);
-            if (context.PropertyInfo is { } jsonPropertyInfo)
-            {
-                schema.ApplyNullabilityContextInfo(jsonPropertyInfo);
-            }
-            if (context.TypeInfo.Type.GetCustomAttributes(inherit: false).OfType<DescriptionAttribute>().LastOrDefault() is { } typeDescriptionAttribute)
-            {
-                schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = typeDescriptionAttribute.Description;
-            }
-            if (context.PropertyInfo is { AttributeProvider: { } attributeProvider })
-            {
-                var propertyAttributes = attributeProvider.GetCustomAttributes(inherit: false);
-                if (propertyAttributes.OfType<ValidationAttribute>() is { } validationAttributes)
-                {
-                    schema.ApplyValidationAttributes(validationAttributes);
+                    };
                 }
-                if (propertyAttributes.OfType<DefaultValueAttribute>().LastOrDefault() is { } defaultValueAttribute)
+                else if (type == typeof(IFormFileCollection))
                 {
-                    schema.ApplyDefaultValue(defaultValueAttribute.Value, context.TypeInfo);
-                }
-                var isInlinedSchema = !schema.WillBeComponentized();
-                if (isInlinedSchema)
-                {
-                    if (propertyAttributes.OfType<DescriptionAttribute>().LastOrDefault() is { } descriptionAttribute)
+                    schema = new JsonObject
                     {
-                        schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = descriptionAttribute.Description;
-                    }
+                        [AsyncApiJsonSchemaKeywords.TypeKeyword] = "array",
+                        [AsyncApiJsonSchemaKeywords.ItemsKeyword] = new JsonObject
+                        {
+                            [AsyncApiJsonSchemaKeywords.TypeKeyword] = "string",
+                            [AsyncApiJsonSchemaKeywords.FormatKeyword] = "binary",
+                            [AsyncApiConstants.Id] = "IFormFile"
+                        }
+                    };
+                }
+                else if (type.IsJsonPatchDocument())
+                {
+                    schema = CreateSchemaForJsonPatch();
+                }
+                // STJ uses `true` in place of an empty object to represent a schema that matches
+                // anything (like the `object` type) or types with user-defined converters. We override
+                // this default behavior here to match the format expected in AsyncApi v3.
+                if (schema.GetValueKind() == JsonValueKind.True)
+                {
+                    schema = new JsonObject();
+                }
+                var createSchemaReferenceId = _optionsMonitor.Get(_documentName).CreateSchemaReferenceId;
+                schema.ApplyPrimitiveTypesAndFormats(context, createSchemaReferenceId);
+                schema.ApplySchemaReferenceId(context, createSchemaReferenceId);
+                schema.MapPolymorphismOptionsToDiscriminator(context, createSchemaReferenceId);
+                if (context.PropertyInfo is { } jsonPropertyInfo)
+                {
+                    schema.ApplyNullabilityContextInfo(jsonPropertyInfo);
+                }
+                if (context.TypeInfo.Type.GetCustomAttributes(inherit: false).OfType<DescriptionAttribute>().LastOrDefault() is { } typeDescriptionAttribute)
+                {
+                    schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = typeDescriptionAttribute.Description;
                 }
                 else
                 {
-                    if (propertyAttributes.OfType<DescriptionAttribute>().LastOrDefault() is { } descriptionAttribute)
+                    var xmlDoc = _xmlDocumentationProvider.GetDocumentation(context.TypeInfo.Type);
+                    if (xmlDoc?.Summary != null)
                     {
-                        schema[AsyncApiGeneratorConstants.RefDescriptionAnnotation] = descriptionAttribute.Description;
+                        schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = xmlDoc.Summary;
                     }
                 }
+                if (context.PropertyInfo is { AttributeProvider: { } attributeProvider })
+                {
+                    var propertyAttributes = attributeProvider.GetCustomAttributes(inherit: false);
+                    if (propertyAttributes.OfType<ValidationAttribute>() is { } validationAttributes)
+                    {
+                        schema.ApplyValidationAttributes(validationAttributes);
+                    }
+                    if (propertyAttributes.OfType<DefaultValueAttribute>().LastOrDefault() is { } defaultValueAttribute)
+                    {
+                        schema.ApplyDefaultValue(defaultValueAttribute.Value, context.TypeInfo);
+                    }
+                    var isInlinedSchema = !schema.WillBeComponentized();
+                    var descriptionAttribute = propertyAttributes.OfType<DescriptionAttribute>().LastOrDefault();
+                    var description = descriptionAttribute?.Description;
+
+                    if (description == null && context.PropertyInfo.AttributeProvider is MemberInfo member)
+                    {
+                        description = _xmlDocumentationProvider.GetDocumentation(member)?.Summary;
+                    }
+
+                    if (description != null)
+                    {
+                        if (isInlinedSchema)
+                        {
+                            schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = description;
+                        }
+                        else
+                        {
+                            schema[AsyncApiGeneratorConstants.RefDescriptionAnnotation] = description;
+                        }
+                    }
+                }
+                schema.PruneNullTypeForComponentizedTypes();
+                return schema;
             }
-            schema.PruneNullTypeForComponentizedTypes();
-            return schema;
-        }
-    };
+        };
+    }
 
     private static JsonObject CreateSchemaForJsonPatch()
     {
@@ -336,7 +365,7 @@ private static void RemoveNullIds(JsonNode? node)
         var baseSchemaId = _schemaIdCache.GetOrAdd(type, t =>
         {
             var jsonTypeInfo = _jsonSerializerOptions.GetTypeInfo(t);
-            return optionsMonitor.Get(documentName).CreateSchemaReferenceId(jsonTypeInfo);
+            return _optionsMonitor.Get(_documentName).CreateSchemaReferenceId(jsonTypeInfo);
         });
 
         return ResolveReferenceForSchema(document, schema, baseSchemaId);
@@ -457,7 +486,7 @@ private static void RemoveNullIds(JsonNode? node)
         var jsonTypeInfo = _jsonSerializerOptions.GetTypeInfo(type);
         var context = new AsyncApiJsonSchemaTransformerContext
         {
-            DocumentName = documentName,
+            DocumentName = _documentName,
             JsonTypeInfo = jsonTypeInfo,
             JsonPropertyInfo = null,
             ParameterDescription = parameterDescription,

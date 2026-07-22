@@ -4,6 +4,7 @@
 using Bielu.AspNetCore.AsyncApi.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
+using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.ApiDescriptions;
 using Microsoft.Extensions.DependencyInjection;
@@ -110,6 +111,7 @@ public static class AsyncApiServiceCollectionExtensions
     private static IServiceCollection AddAsyncApiCore(this IServiceCollection services, string documentName)
     {
         services.AddEndpointsApiExplorer();
+        services.AddKeyedSingleton<XmlDocumentationProvider>(documentName);
         services.AddKeyedSingleton<AsyncApiJsonSchemaService>(documentName);
         services.AddKeyedSingleton<AsyncApiDocumentService>(documentName);
         services.AddKeyedSingleton<IAsyncApiDocumentProvider, AsyncApiDocumentService>(documentName);

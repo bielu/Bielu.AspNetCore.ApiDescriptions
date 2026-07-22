@@ -1,0 +1,2 @@
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(string filePath) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(System.Reflection.Assembly assembly) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions

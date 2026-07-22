@@ -2,12 +2,18 @@
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="ByteBard.AsyncAPI.NET" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Analyzers\Bielu.AspNetCore.AsyncApi.Analyzers.csproj" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\Bielu.AspNetCore.AsyncApi.Analyzers\bin\$(Configuration)\netstandard2.0\Bielu.AspNetCore.AsyncApi.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 
 </Project>

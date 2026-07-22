@@ -56,7 +56,8 @@ namespace StreetlightsAPI
                 e.WithDefaultContentType("application/json")
                     .WithDescription(
                         "The Smartylighting Streetlights API allows you to remotely manage the city lights.")
-                    .WithLicense("Apache 2.0", "https://www.apache.org/licenses/LICENSE-2.0");
+                    .WithLicense("Apache 2.0", "https://www.apache.org/licenses/LICENSE-2.0")
+                    .IncludeXmlComments(typeof(Startup).Assembly);
                 e.AddChannelBinding("amqpDev",
                         new ByteBard.AsyncAPI.Bindings.AMQP.AMQPChannelBinding()
                         {

@@ -2,8 +2,6 @@
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc</RootNamespace>
         <Description>WebRTC protocol bindings for Bielu.AspNetCore.AsyncApi. Adds a custom "webrtc" AsyncAPI protocol with channel, operation, message and server bindings covering data channels and SDP/ICE signaling.</Description>
         <PackageTags>asyncapi;webrtc;datachannel;signaling;bindings;protocol;aspnetcore</PackageTags>

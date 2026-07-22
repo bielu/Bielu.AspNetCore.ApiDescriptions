@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Arkadiusz Biel",
+  "classifications": [ "Web", "AsyncAPI", "gRPC" ],
+  "name": "ASP.NET Core gRPC Service with AsyncAPI",
+  "identity": "Bielu.AspNetCore.AsyncApi.Templates.Grpc",
+  "shortName": "asyncapi-grpc",
+  "sourceName": "AsyncApiGrpc",
+  "preferNameDirectory": true,
+  "symbols": {
+    "Framework": {
+      "type": "parameter",
+      "description": "The target framework for the project.",
+      "datatype": "string",
+      "defaultValue": "net10.0"
+    }
+  }
+}
