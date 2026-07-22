@@ -145,4 +145,84 @@ namespace Bielu.AspNetCore.AsyncApi.Extensions
         var diagnostics = await GetDiagnosticsAsync(testCode);
         diagnostics.ShouldContain(d => d.Id == "BASYNC004" && d.GetMessage().Contains("unused"));
     }
+
+    [Fact]
+    public async Task BASYNC006_InvalidJsonExample_ReportsError()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+
+[AsyncApi]
+public class TestHub
+{
+    [Channel(""test"")]
+    [MessageExample(Json = ""{ invalid json"")]
+    public void SendMessage() {}
+}
+";
+        var diagnostics = await GetDiagnosticsAsync(testCode);
+        diagnostics.ShouldContain(d => d.Id == "BASYNC006");
+    }
+
+    [Fact]
+    public async Task BASYNC007_ProviderMissingConstructor_ReportsWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using System;
+
+public class MyProvider : IAsyncApiMessageExampleProvider
+{
+    public MyProvider(string arg) {}
+}
+
+[AsyncApi]
+public class TestHub
+{
+    [Channel(""test"")]
+    [MessageExample(ProviderType = typeof(MyProvider))]
+    public void SendMessage() {}
+}
+";
+        var diagnostics = await GetDiagnosticsAsync(testCode);
+        diagnostics.ShouldContain(d => d.Id == "BASYNC007" && d.GetMessage().Contains("MyProvider"));
+    }
+
+    [Fact]
+    public async Task BASYNC008_DiscouragedCharacters_ReportsWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+
+[AsyncApi]
+public class TestHub
+{
+    [Channel(""test topic"")]
+    [PublishOperation(OperationId = ""my op"")]
+    [Message(typeof(string), MessageId = ""my msg"")]
+    public void SendMessage() {}
+}
+";
+        var diagnostics = await GetDiagnosticsAsync(testCode);
+        diagnostics.Count(d => d.Id == "BASYNC008").ShouldBe(3);
+    }
+
+    [Fact]
+    public async Task BASYNC009_MissingDocumentation_ReportsInfo()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+
+[AsyncApi]
+public class TestHub
+{
+    [Channel(""test"")]
+    [PublishOperation]
+    public void SendMessage() {}
+}
+";
+        var diagnostics = await GetDiagnosticsAsync(testCode);
+        // Reports for AsyncApi (TestHub) and PublishOperation (SendMessage)
+        diagnostics.Count(d => d.Id == "BASYNC009").ShouldBe(2);
+    }
 }

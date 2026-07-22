@@ -15,7 +15,11 @@ public class AsyncApiAttributeAnalyzer : DiagnosticAnalyzer
         RuleBASYNC002MissingChannel.Descriptor,
         RuleBASYNC003DuplicateName.Descriptor,
         RuleBASYNC004UnusedDocumentName.Descriptor,
-        RuleBASYNC005InvalidPayloadType.Descriptor);
+        RuleBASYNC005InvalidPayloadType.Descriptor,
+        RuleBASYNC006InvalidJsonExample.Descriptor,
+        RuleBASYNC007MissingParameterlessConstructor.Descriptor,
+        RuleBASYNC008DiscouragedCharacters.Descriptor,
+        RuleBASYNC009MissingDocumentation.Descriptor);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -29,6 +33,9 @@ public class AsyncApiAttributeAnalyzer : DiagnosticAnalyzer
             RuleBASYNC001MissingAsyncApi.AnalyzeNamedType(sc);
             RuleBASYNC003DuplicateName.AnalyzeNamedType(sc);
             RuleBASYNC005InvalidPayloadType.AnalyzeNamedType(sc);
+            RuleBASYNC007MissingParameterlessConstructor.AnalyzeNamedType(sc);
+            RuleBASYNC008DiscouragedCharacters.AnalyzeNamedType(sc);
+            RuleBASYNC009MissingDocumentation.AnalyzeNamedType(sc);
         }, SymbolKind.NamedType);
 
         context.RegisterSymbolAction(sc =>
@@ -37,6 +44,10 @@ public class AsyncApiAttributeAnalyzer : DiagnosticAnalyzer
             RuleBASYNC002MissingChannel.AnalyzeMethod(sc);
             RuleBASYNC003DuplicateName.AnalyzeMethod(sc);
             RuleBASYNC005InvalidPayloadType.AnalyzeMethod(sc);
+            RuleBASYNC006InvalidJsonExample.AnalyzeMethod(sc);
+            RuleBASYNC007MissingParameterlessConstructor.AnalyzeMethod(sc);
+            RuleBASYNC008DiscouragedCharacters.AnalyzeMethod(sc);
+            RuleBASYNC009MissingDocumentation.AnalyzeMethod(sc);
         }, SymbolKind.Method);
     }
 }
