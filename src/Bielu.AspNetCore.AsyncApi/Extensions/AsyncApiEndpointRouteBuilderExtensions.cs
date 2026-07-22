@@ -88,7 +88,7 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     }
                     catch (Exception ex)
                     {
-                        GetLogger(context).LogError(ex, "Failed to generate AsyncApi document '{DocumentName}'.", lowercasedDocumentName);
+                        GetLogger(context).LogError(ex, "Failed to generate AsyncApi document '{DocumentName}'.", SanitizeLog(lowercasedDocumentName));
                         await WriteProblemAsync(context, StatusCodes.Status500InternalServerError,
                             $"Failed to generate the AsyncApi document '{lowercasedDocumentName}'.");
                         return;
@@ -97,7 +97,7 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     // Guard against an empty/whitespace document being served as a successful 200.
                     if (string.IsNullOrWhiteSpace(serialized))
                     {
-                        GetLogger(context).LogError("AsyncApi document '{DocumentName}' serialized to an empty document.", lowercasedDocumentName);
+                        GetLogger(context).LogError("AsyncApi document '{DocumentName}' serialized to an empty document.", SanitizeLog(lowercasedDocumentName));
                         await WriteProblemAsync(context, StatusCodes.Status500InternalServerError,
                             $"The AsyncApi document '{lowercasedDocumentName}' serialized to an empty document.");
                         return;
@@ -145,6 +145,12 @@ public static class AsyncApiEndpointRouteBuilderExtensions
     private static bool UseYaml(string pattern) =>
         pattern.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) ||
         pattern.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);
+
+    private static string SanitizeLog(string? value)
+    {
+        if (value is null) return string.Empty;
+        return value.Replace("\r", "").Replace("\n", "");
+    }
 
     private static ILogger GetLogger(HttpContext context) =>
         context.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("Bielu.AspNetCore.AsyncApi")

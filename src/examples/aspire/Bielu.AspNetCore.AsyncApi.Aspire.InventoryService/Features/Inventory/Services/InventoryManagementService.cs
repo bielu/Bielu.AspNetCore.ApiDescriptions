@@ -8,6 +8,7 @@ using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Event
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Models;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
+using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Services;
@@ -72,7 +73,7 @@ public class InventoryManagementService(
             activity?.SetTag("reservation.success", true);
 
             logger.LogInformation("Inventory reserved for order {OrderId}: {Quantity} of {ProductId}",
-                orderEvent.OrderId, orderEvent.Quantity, orderEvent.ProductId);
+                orderEvent.OrderId, orderEvent.Quantity, orderEvent.ProductId.SanitizeLog());
         }
         else
         {
@@ -82,7 +83,7 @@ public class InventoryManagementService(
             activity?.SetTag("reservation.success", false);
 
             logger.LogWarning("Insufficient inventory for order {OrderId}: requested {Quantity} of {ProductId}",
-                orderEvent.OrderId, orderEvent.Quantity, orderEvent.ProductId);
+                orderEvent.OrderId, orderEvent.Quantity, orderEvent.ProductId.SanitizeLog());
         }
 
         // Publish event to Kafka
@@ -124,7 +125,7 @@ public class InventoryManagementService(
         metrics.InventoryChanged(productId);
 
         logger.LogInformation("Restocked {ProductId}: {Previous} -> {New}",
-            productId, previousQuantity, item.QuantityAvailable);
+            productId.SanitizeLog(), previousQuantity, item.QuantityAvailable);
 
         return item;
     }

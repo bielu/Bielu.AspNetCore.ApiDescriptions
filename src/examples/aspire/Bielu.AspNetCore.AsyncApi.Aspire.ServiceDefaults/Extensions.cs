@@ -35,7 +35,7 @@ public static class Extensions
             configure.Config.AutoOffsetReset = AutoOffsetReset.Earliest;
         });
         builder.Services.AddSingleton<IConnectionMultiplexer>((servicwes) =>
-            ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]));
+            ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"] ?? string.Empty));
         builder.ConfigureOpenTelemetry();
         builder.AddDefaultHealthChecks();
         builder.Services.AddServiceDiscovery();
@@ -152,5 +152,14 @@ public static class Extensions
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Sanitizes user input for logging by removing newline characters (CWE-117).
+    /// </summary>
+    public static string SanitizeLog(this string? value)
+    {
+        if (value is null) return string.Empty;
+        return value.Replace("\r", "").Replace("\n", "");
     }
 }

@@ -66,8 +66,13 @@ export function resolveServerBaseUrl(host: string | undefined): string {
     const protocol = url.protocol === 'wss:' ? 'https:' : url.protocol === 'ws:' ? 'http:' : url.protocol
     return `${protocol}//${url.host}`
   } catch {
-    // Best-effort fallback for an unparseable host: keep the previous behaviour.
-    return `${pageScheme()}://${trimmed.replace(/\/+$/, '')}`
+    // Best-effort fallback for an unparseable host: keep the previous behaviour,
+    // but without using a regex that might be flagged as polynomial.
+    let result = trimmed;
+    while (result.endsWith('/')) {
+      result = result.slice(0, -1);
+    }
+    return `${pageScheme()}://${result}`;
   }
 }
 

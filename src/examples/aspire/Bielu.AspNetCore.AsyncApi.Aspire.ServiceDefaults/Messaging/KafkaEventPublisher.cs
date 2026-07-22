@@ -6,6 +6,7 @@ using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
@@ -43,6 +44,6 @@ public class KafkaEventPublisher(
         messagingMetrics.EventPublished(topic);
 
         logger.LogInformation("Published {EventType} to {Topic} with key {Key}",
-            typeof(TEvent).Name, topic, key);
+            typeof(TEvent).Name, topic.SanitizeLog(), key.SanitizeLog());
     }
 }
