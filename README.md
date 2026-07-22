@@ -57,6 +57,7 @@ public class MyService
 - ✅ **XML Documentation** support
 - ✅ **CLI Tool** for validation and diffing
 - ✅ **Roslyn Analyzers** for compile-time safety
+- ✅ **API Versioning** integration for version-per-document support
 
 ## Documentation Sections
 

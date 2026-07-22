@@ -17,6 +17,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.Merger` | Merges multiple AsyncAPI documents (e.g. behind a gateway) |
 | `Bielu.AspNetCore.AsyncApi.Cli` | CLI tool for getting/merging documents at build time |
 | `Bielu.AspNetCore.AsyncApi.ApiDescription.Server` | MSBuild props/targets for build-time generation |
+| `Bielu.AspNetCore.AsyncApi.Versioning` | API Versioning integration (`Asp.Versioning`) |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` | SignalR protocol bindings |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc` | gRPC protocol bindings |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse` | Server-Sent Events (SSE) protocol bindings |

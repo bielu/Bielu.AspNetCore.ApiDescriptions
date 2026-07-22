@@ -76,6 +76,14 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
         // This type tracks registered document names.
         // See https://github.com/dotnet/runtime/issues/100105 for more info.
         var documentServices = serviceProvider.GetServices<NamedService<AsyncApiDocumentService>>();
-        return documentServices.Select(docService => docService.Name);
+        var names = documentServices.Select(docService => docService.Name).ToList();
+
+        var nameProviders = serviceProvider.GetServices<IAsyncApiDocumentNamesProvider>();
+        foreach (var provider in nameProviders)
+        {
+            names.AddRange(provider.GetDocumentNames());
+        }
+
+        return names.Distinct(StringComparer.OrdinalIgnoreCase);
     }
 }
