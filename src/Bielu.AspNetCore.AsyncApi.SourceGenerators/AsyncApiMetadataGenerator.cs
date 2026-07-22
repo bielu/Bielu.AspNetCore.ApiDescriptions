@@ -281,6 +281,11 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
         sb.AppendLine("        services.Replace(ServiceDescriptor.KeyedSingleton<IAsyncApiMetadataProvider, GeneratedAsyncApiMetadataProvider>(documentName));");
         sb.AppendLine("        return services;");
         sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    public static IServiceCollection AddAsyncApiGeneratedMetadata(this IServiceCollection services)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        return services.AddAsyncApiGeneratedMetadata(\"v1\");");
+        sb.AppendLine("    }");
         sb.AppendLine("}");
         sb.AppendLine("}");
 

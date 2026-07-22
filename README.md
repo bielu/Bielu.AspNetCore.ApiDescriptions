@@ -61,6 +61,7 @@ public class MyService
 - ✅ **XML Documentation** support
 - ✅ **CLI Tool** for validation and diffing
 - ✅ **Roslyn Analyzers** for compile-time safety
+- ✅ **Native AOT support**
 - ✅ **API Versioning** integration for version-per-document support
 
 ## Documentation Sections
@@ -69,6 +70,7 @@ public class MyService
 - [Attributes Reference](https://asyncapi.bielu.pl/articles/attributes.html)
 - [Configuration Guide](https://asyncapi.bielu.pl/articles/configuration.html)
 - [Scalar & Live Consoles](https://asyncapi.bielu.pl/articles/scalar-consoles.html)
+- [Native AOT Support](https://asyncapi.bielu.pl/articles/native-aot.html)
 - [CLI Tool usage](https://asyncapi.bielu.pl/articles/cli.html)
 - [Migration from Saunter](https://asyncapi.bielu.pl/articles/migration-from-saunter.html)
 
