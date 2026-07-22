@@ -12,6 +12,9 @@
             "**/obj/**",
             "src/examples/**",
             "src/Bielu.AspNetCore.AsyncApi.Templates/**",
+            "src/Bielu.AspNetCore.AsyncApi.Analyzers/**",
+            "src/Bielu.AspNetCore.AsyncApi/Microsoft.AspNetCore.OpenApi.csproj",
+            "src/Bielu.AspNetCore.AsyncApi.ApiDescription.Server/**",
             "**/*.Tests/**",
             "**/*.Tests.*/**",
             "**/*.Test/**"
