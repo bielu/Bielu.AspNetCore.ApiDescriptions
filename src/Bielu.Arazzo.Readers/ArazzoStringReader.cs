@@ -6,8 +6,14 @@ namespace Bielu.Arazzo.Readers;
 /// <summary>Reads an Arazzo document from a JSON or YAML string, auto-detecting the format by its first non-whitespace character.</summary>
 public static class ArazzoStringReader
 {
+    /// <summary>Reads the Arazzo document encoded in <paramref name="content"/>.</summary>
+    /// <param name="content">The JSON or YAML text to read the document from.</param>
+    /// <param name="settings">Optional reader settings; defaults are used when omitted.</param>
+    /// <returns>The parsed document together with any diagnostics collected while reading it.</returns>
     public static ArazzoReadResult Read(string content, ArazzoReaderSettings? settings = null)
     {
+        ArgumentNullException.ThrowIfNull(content);
+
         settings ??= new ArazzoReaderSettings();
         var diagnostics = new ArazzoDiagnostics();
         var ctx = new ParsingContext(settings, diagnostics);

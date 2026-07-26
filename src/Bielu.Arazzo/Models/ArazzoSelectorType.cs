@@ -21,12 +21,14 @@ public sealed class ArazzoSelectorType : IArazzoSerializable
 
     public bool IsExpressionTypeObject => Version is not null;
 
-    public static ArazzoSelectorType Simple { get; } = new() { Type = "simple" };
+    /// <summary>A fresh instance representing the implicit "simple" default; each access returns a new, independently mutable instance.</summary>
+    public static ArazzoSelectorType Simple => new() { Type = "simple" };
 
     public static implicit operator ArazzoSelectorType(string type) => new() { Type = type };
 
     public void SerializeAsV1(IArazzoWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(writer);
         if (!IsExpressionTypeObject)
         {
             writer.WriteValue(Type);

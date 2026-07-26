@@ -22,6 +22,7 @@ public sealed class ArazzoComponents : IArazzoSerializable, IArazzoExtensible
 
     public void SerializeAsV1(IArazzoWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(writer);
         writer.WriteStartObject();
         writer.WriteOptionalMapProperty("inputs", Inputs, writer.WriteRaw);
         writer.WriteOptionalMapProperty("parameters", Parameters, p => p.SerializeAsV1(writer));

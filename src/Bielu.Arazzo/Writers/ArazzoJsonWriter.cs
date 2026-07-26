@@ -7,6 +7,8 @@ public static class ArazzoJsonWriter
 {
     public static string Write(IArazzoSerializable document, bool indented = true)
     {
+        ArgumentNullException.ThrowIfNull(document);
+
         var nodeWriter = new ArazzoJsonNodeWriter();
         document.SerializeAsV1(nodeWriter);
         return nodeWriter.Result?.ToJsonString(new JsonSerializerOptions { WriteIndented = indented }) ?? "null";

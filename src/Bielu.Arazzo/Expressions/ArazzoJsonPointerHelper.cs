@@ -18,8 +18,8 @@ internal static class ArazzoJsonPointerHelper
         {
             // JsonNode -> JsonElement via text round-trip rather than JsonSerializer.Deserialize<JsonElement>,
             // to avoid a reflection-based serializer call in an IsAotCompatible project.
-            var element = JsonDocument.Parse(root.ToJsonString()).RootElement;
-            var result = JsonPointer.Parse(pointer).Evaluate(element);
+            using var document = JsonDocument.Parse(root.ToJsonString());
+            var result = JsonPointer.Parse(pointer).Evaluate(document.RootElement);
             return result is null ? null : JsonNode.Parse(result.Value.GetRawText());
         }
         catch (Exception)

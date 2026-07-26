@@ -17,6 +17,7 @@ public sealed class ArazzoSelector : IArazzoSerializable, IArazzoExtensible
 
     public void SerializeAsV1(IArazzoWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(writer);
         writer.WriteStartObject();
         writer.WritePropertyName("context");
         writer.WriteValue(Context);

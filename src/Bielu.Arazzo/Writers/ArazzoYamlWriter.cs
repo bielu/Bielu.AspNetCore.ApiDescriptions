@@ -24,6 +24,8 @@ public static class ArazzoYamlWriter
 
     public static string Write(IArazzoSerializable document)
     {
+        ArgumentNullException.ThrowIfNull(document);
+
         var nodeWriter = new ArazzoJsonNodeWriter();
         document.SerializeAsV1(nodeWriter);
 

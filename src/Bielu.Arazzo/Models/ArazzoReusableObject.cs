@@ -40,12 +40,19 @@ public sealed class ArazzoReferenceable<T> : IArazzoSerializable
 
     public void SerializeAsV1(IArazzoWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(writer);
+
         if (Reference is not null)
         {
             Reference.SerializeAsV1(writer);
             return;
         }
 
-        Value!.SerializeAsV1(writer);
+        if (Value is null)
+        {
+            throw new InvalidOperationException($"{nameof(ArazzoReferenceable<T>)} must have either {nameof(Value)} or {nameof(Reference)} set.");
+        }
+
+        Value.SerializeAsV1(writer);
     }
 }

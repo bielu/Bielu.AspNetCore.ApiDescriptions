@@ -11,9 +11,10 @@ namespace Bielu.Arazzo.Readers;
 /// of source format — the intent behind ByteBard.AsyncAPI.NET's unified ParseNode abstraction, achieved
 /// here by converting into the BCL's own node type instead of a bespoke one.
 /// </summary>
-internal static class YamlToJsonNodeConverter
+internal static partial class YamlToJsonNodeConverter
 {
-    private static readonly Regex JsonNumberPattern = new(@"^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$", RegexOptions.Compiled);
+    [GeneratedRegex(@"^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$")]
+    private static partial Regex JsonNumberPattern();
 
     public static JsonNode? Convert(TextReader reader)
     {
@@ -73,7 +74,7 @@ internal static class YamlToJsonNodeConverter
             return JsonValue.Create(boolValue);
         }
 
-        if (JsonNumberPattern.IsMatch(value))
+        if (JsonNumberPattern().IsMatch(value))
         {
             // Route through JsonNode.Parse rather than hand-picking long/double, so the resulting node
             // is JsonElement-backed exactly like a native JSON number would be. A CLR-boxed JsonValue<long>
