@@ -6,7 +6,7 @@
   "author": "Arkadiusz Biel",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi"
+    "url": "https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions"
   },
   "main": "./index.js",
   "files": [
