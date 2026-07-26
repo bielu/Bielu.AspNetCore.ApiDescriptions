@@ -11,6 +11,9 @@ namespace Bielu.Arazzo.Validation;
 /// </summary>
 public static class ArazzoValidator
 {
+    /// <summary>Validates the structural invariants of an Arazzo document.</summary>
+    /// <param name="document">The document to validate.</param>
+    /// <returns>The validation errors and warnings found in the document.</returns>
     public static IReadOnlyList<ArazzoError> Validate(ArazzoDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);

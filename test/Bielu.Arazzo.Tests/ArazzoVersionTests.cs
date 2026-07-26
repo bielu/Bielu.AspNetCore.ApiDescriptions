@@ -15,7 +15,13 @@ public class ArazzoVersionTests
     [InlineData("1.1.42", ArazzoVersion.V1_1)]
     public void TryParse_ValidPatchVersion_ReturnsTrueWithExpectedVersion(string input, ArazzoVersion expected)
     {
-        ArazzoVersionExtensions.TryParse(input, out var version).ShouldBeTrue();
+        // Arrange
+
+        // Act
+        var result = ArazzoVersionExtensions.TryParse(input, out var version);
+
+        // Assert
+        result.ShouldBeTrue();
         version.ShouldBe(expected);
     }
 
@@ -34,14 +40,26 @@ public class ArazzoVersionTests
     [InlineData("not-a-version")]
     public void TryParse_InvalidOrPrefixMatchingVersion_ReturnsFalse(string input)
     {
-        ArazzoVersionExtensions.TryParse(input, out var version).ShouldBeFalse();
+        // Arrange
+
+        // Act
+        var result = ArazzoVersionExtensions.TryParse(input, out var version);
+
+        // Assert
+        result.ShouldBeFalse();
         version.ShouldBe(default);
     }
 
     [Fact]
     public void TryParse_NullInput_ReturnsFalse()
     {
-        ArazzoVersionExtensions.TryParse(null, out var version).ShouldBeFalse();
+        // Arrange
+
+        // Act
+        var result = ArazzoVersionExtensions.TryParse(null, out var version);
+
+        // Assert
+        result.ShouldBeFalse();
         version.ShouldBe(default);
     }
 
@@ -50,6 +68,12 @@ public class ArazzoVersionTests
     [InlineData(ArazzoVersion.V1_1, "1.1.0")]
     public void ToVersionString_KnownVersion_ReturnsCanonicalString(ArazzoVersion version, string expected)
     {
-        version.ToVersionString().ShouldBe(expected);
+        // Arrange
+
+        // Act
+        var result = version.ToVersionString();
+
+        // Assert
+        result.ShouldBe(expected);
     }
 }

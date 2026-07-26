@@ -59,6 +59,9 @@ public sealed class ArazzoValue : IArazzoSerializable
     /// <summary><c>true</c> when <see cref="Kind"/> is <see cref="ArazzoValueKind.Literal"/>.</summary>
     public bool IsLiteral => Kind == ArazzoValueKind.Literal;
 
+    /// <summary>Creates an expression-variant value from a runtime expression string.</summary>
+    /// <param name="expression">The runtime expression.</param>
+    /// <returns>An expression-variant Arazzo value.</returns>
     public static implicit operator ArazzoValue(string expression) => FromExpression(expression);
 
     /// <summary>Creates a literal-variant value. <paramref name="literal"/> may itself be a JSON <c>null</c>, which is preserved as a genuine literal rather than treated as unset.</summary>
@@ -85,7 +88,12 @@ public sealed class ArazzoValue : IArazzoSerializable
         switch (Kind)
         {
             case ArazzoValueKind.Selector:
-                _selector!.SerializeAsV1(writer);
+                if (_selector is null)
+                {
+                    throw new InvalidOperationException("A selector value must contain a selector.");
+                }
+
+                _selector.SerializeAsV1(writer);
                 break;
             case ArazzoValueKind.Expression:
                 writer.WriteValue(_expression);

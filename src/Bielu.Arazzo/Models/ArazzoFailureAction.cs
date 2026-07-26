@@ -5,6 +5,7 @@ namespace Bielu.Arazzo.Models;
 /// <summary>Spec §5.8.8 Failure Action Object. <see cref="Type"/> is "end", "retry", or "goto".</summary>
 public sealed class ArazzoFailureAction : IArazzoSerializable, IArazzoExtensible
 {
+    /// <summary>The unique name of the failure action.</summary>
     public required string Name { get; set; }
 
     /// <summary>"end", "retry", or "goto".</summary>
@@ -25,12 +26,16 @@ public sealed class ArazzoFailureAction : IArazzoSerializable, IArazzoExtensible
     /// <summary>Only when Type is "retry". Maximum retry attempts.</summary>
     public int? RetryLimit { get; set; }
 
+    /// <summary>The criteria that determine whether this failure action is applied.</summary>
     public IList<ArazzoCriterion>? Criteria { get; set; }
 
+    /// <summary>Specification extensions keyed by names beginning with <c>x-</c>.</summary>
     public IDictionary<string, System.Text.Json.Nodes.JsonNode?>? Extensions { get; set; }
 
     public void SerializeAsV1(IArazzoWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(writer);
+
         writer.WriteStartObject();
         writer.WritePropertyName("name");
         writer.WriteValue(Name);
@@ -47,9 +52,15 @@ public sealed class ArazzoFailureAction : IArazzoSerializable, IArazzoExtensible
     }
 }
 
+/// <summary>Failure action type values defined by the Arazzo specification.</summary>
 public static class ArazzoFailureActionType
 {
+    /// <summary>Ends workflow execution.</summary>
     public const string End = "end";
+
+    /// <summary>Retries the failed operation.</summary>
     public const string Retry = "retry";
+
+    /// <summary>Continues execution at another workflow or step.</summary>
     public const string Goto = "goto";
 }

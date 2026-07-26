@@ -19,11 +19,15 @@ public sealed class ArazzoSelectorType : IArazzoSerializable
     /// </summary>
     public string? Version { get; set; }
 
+    /// <summary>Gets whether this selector is represented by an Expression Type Object.</summary>
     public bool IsExpressionTypeObject => Version is not null;
 
     /// <summary>A fresh instance representing the implicit "simple" default; each access returns a new, independently mutable instance.</summary>
     public static ArazzoSelectorType Simple => new() { Type = "simple" };
 
+    /// <summary>Creates a selector type from its string representation.</summary>
+    /// <param name="type">The selector type name.</param>
+    /// <returns>A selector type with the specified <see cref="Type"/>.</returns>
     public static implicit operator ArazzoSelectorType(string type) => new() { Type = type };
 
     public void SerializeAsV1(IArazzoWriter writer)
