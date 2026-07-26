@@ -11,6 +11,8 @@
             "**/bin/**",
             "**/obj/**",
             "src/examples/**",
+            "src/Bielu.Arazzo/**",
+            "src/Bielu.Arazzo.Readers/**",
             "src/Bielu.AspNetCore.AsyncApi.Templates/**",
             "src/Bielu.AspNetCore.AsyncApi.Analyzers/**",
             "src/Bielu.AspNetCore.AsyncApi.SourceGenerators/**",
@@ -22,7 +24,31 @@
           ]
         }
       ],
-      "dest": "api",
+      "dest": "api/asyncapi",
+      "disableGitFeatures": false,
+      "disableDefaultFilter": false,
+      "properties": {
+        "TargetFramework": "net10.0"
+      }
+    },
+    {
+      "src": [
+        {
+          "src": "..",
+          "files": [
+            "src/Bielu.Arazzo/**/*.csproj",
+            "src/Bielu.Arazzo.Readers/**/*.csproj"
+          ],
+          "exclude": [
+            "**/bin/**",
+            "**/obj/**",
+            "**/*.Tests/**",
+            "**/*.Tests.*/**",
+            "**/*.Test/**"
+          ]
+        }
+      ],
+      "dest": "api/arazzo",
       "disableGitFeatures": false,
       "disableDefaultFilter": false,
       "properties": {
@@ -34,8 +60,10 @@
     "content": [
       {
         "files": [
-          "api/**.yml",
-          "api/index.md"
+          "api/asyncapi/**.yml",
+          "api/asyncapi/index.md",
+          "api/arazzo/**.yml",
+          "api/arazzo/index.md"
         ]
       },
       {
@@ -77,8 +105,8 @@
     "cleanupCacheHistory": false,
     "disableGitFeatures": false,
     "globalMetadata": {
-      "_appName": "Bielu.AspNetCore.AsyncApi",
-      "_appTitle": "Bielu.AspNetCore.AsyncApi",
+      "_appName": "Bielu API Descriptions",
+      "_appTitle": "Bielu API Descriptions",
       "_appLogoPath": "images/logo.svg",
       "_enableSearch": true,
       "_enableNewTab": true,

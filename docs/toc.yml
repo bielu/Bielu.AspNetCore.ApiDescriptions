@@ -1,5 +1,16 @@
-- name: Articles
-  href: articles/
-- name: API Documentation
-  href: api/
-  homepage: api/index.md
+- name: AsyncAPI
+  items:
+    - name: Articles
+      href: articles/
+      homepage: articles/getting-started.md
+    - name: API Reference
+      href: api/asyncapi/
+      homepage: api/asyncapi/index.md
+- name: Arazzo
+  items:
+    - name: Articles
+      href: articles/arazzo/
+      homepage: articles/arazzo/overview.md
+    - name: API Reference
+      href: api/arazzo/
+      homepage: api/arazzo/index.md

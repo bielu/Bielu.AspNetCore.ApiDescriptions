@@ -18,7 +18,7 @@
         <PackageIcon>logo.png</PackageIcon>
         <RepositoryUrl>https://github.com/bielu/Bielu.AspNetCore.AsyncApi</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageProjectUrl>https://asyncapi.bielu.pl/</PackageProjectUrl>
+        <PackageProjectUrl>https://apidescriptions.bielu.pl/</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>

@@ -11,7 +11,7 @@
 
 Bielu.AspNetCore.AsyncApi provides built-in support for generating [AsyncAPI](https://www.asyncapi.com/) documents from minimal or controller-based APIs in ASP.NET Core. This library brings the same developer experience as [Microsoft.AspNetCore.OpenApi](https://www.nuget.org/packages/Microsoft.AspNetCore.OpenApi) but for AsyncAPI specifications.
 
-📖 **Read the full documentation at: [https://asyncapi.bielu.pl/](https://asyncapi.bielu.pl/)**
+📖 **Read the full documentation at: [https://apidescriptions.bielu.pl/](https://apidescriptions.bielu.pl/)**
 
 ## Quick Start
 
@@ -66,13 +66,14 @@ public class MyService
 
 ## Documentation Sections
 
-- [Getting Started](https://asyncapi.bielu.pl/articles/getting-started.html)
-- [Attributes Reference](https://asyncapi.bielu.pl/articles/attributes.html)
-- [Configuration Guide](https://asyncapi.bielu.pl/articles/configuration.html)
-- [Scalar & Live Consoles](https://asyncapi.bielu.pl/articles/scalar-consoles.html)
-- [Native AOT Support](https://asyncapi.bielu.pl/articles/native-aot.html)
-- [CLI Tool usage](https://asyncapi.bielu.pl/articles/cli.html)
-- [Migration from Saunter](https://asyncapi.bielu.pl/articles/migration-from-saunter.html)
+- [Getting Started](https://apidescriptions.bielu.pl/articles/getting-started.html)
+- [Attributes Reference](https://apidescriptions.bielu.pl/articles/attributes.html)
+- [Configuration Guide](https://apidescriptions.bielu.pl/articles/configuration.html)
+- [Scalar & Live Consoles](https://apidescriptions.bielu.pl/articles/scalar-consoles.html)
+- [Native AOT Support](https://apidescriptions.bielu.pl/articles/native-aot.html)
+- [CLI Tool usage](https://apidescriptions.bielu.pl/articles/cli.html)
+- [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)
+- [Arazzo Overview](https://apidescriptions.bielu.pl/articles/arazzo/overview.html)
 
 ## License
 

@@ -1,55 +1,50 @@
-# Bielu.AspNetCore.AsyncApi
+# Bielu API Descriptions
 
-Bielu.AspNetCore.AsyncApi provides built-in support for generating [AsyncAPI](https://www.asyncapi.com/) documents from minimal or controller-based APIs in ASP.NET Core. This library brings the same developer experience as [Microsoft.AspNetCore.OpenApi](https://www.nuget.org/packages/Microsoft.AspNetCore.OpenApi) but for AsyncAPI specifications.
+Tools for describing, generating, and validating API specifications for ASP.NET Core — spanning both
+request/response APIs and event-driven, workflow-based ones.
 
-> ⚠️ **Note:** Pre version 1.0.0, the API is regarded as unstable and **breaking changes may be introduced**.
+<div class="landing-cards">
 
-## Key Features
+<div class="landing-card">
 
-- ✅ **Runtime document generation** - View generated AsyncAPI documents at runtime via a parameterized endpoint (`/asyncapi/{documentName}.json`)
-- ✅ **Build-time document generation** - Generate AsyncAPI documents at build-time for static hosting
-- ✅ **Document transformers** - Customize the generated document via document transformers
-- ✅ **Schema transformers** - Customize the generated schema via schema transformers
-- ✅ **Protocol bindings** - Support for AMQP, HTTP, MQTT, Kafka, SignalR, gRPC, SSE, WebRTC, and other protocol bindings
-- ✅ **Multiple documents** - Generate multiple AsyncAPI documents from a single application
-- ✅ **Interactive UI** - Render the document with [Scalar](https://scalar.com/)
-- ✅ **Attribute-based configuration** - Decorate your classes with attributes to define channels and operations
-- ✅ **XML Documentation** - Automatically populate descriptions from C# XML comments
-- ✅ **Message Examples** - Embed examples directly in your message definitions
-- ✅ **CLI Tool** - Validate and diff documents in your CI/CD pipelines
-- ✅ **Roslyn Analyzers** - Catch attribute misuse at compile-time
+## AsyncAPI
 
-## Quick Start
+[Bielu.AspNetCore.AsyncApi](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi/) generates
+[AsyncAPI](https://www.asyncapi.com/) documents from minimal or controller-based APIs — the same
+developer experience as `Microsoft.AspNetCore.OpenApi`, for event-driven channels and messages.
 
-### 1. Installation
+- Runtime and build-time document generation
+- Document and schema transformers
+- Protocol bindings — AMQP, HTTP, MQTT, Kafka, SignalR, gRPC, SSE, WebRTC
+- Interactive UI via [Scalar](https://scalar.com/)
+- CLI validation/diff and Roslyn analyzers
 
-```bash
-dotnet add package Bielu.AspNetCore.AsyncApi
-```
+[Get started with AsyncAPI →](articles/getting-started.md)
+&nbsp;·&nbsp;
+[API reference →](api/asyncapi/index.md)
 
-### 2. Configure Services
+</div>
 
-```csharp
-builder.Services.AddAsyncApi(options =>
-{
-    options.WithInfo("My API", "1.0.0");
-});
+<div class="landing-card">
 
-var app = builder.Build();
-app.MapAsyncApi();
-app.Run();
-```
+## Arazzo
 
-### 3. Define Channels
+[Bielu.Arazzo.NET](https://www.nuget.org/packages/Bielu.Arazzo.NET/) is the object model, writers,
+validation, and reader for the [Arazzo Specification](https://spec.openapis.org/arazzo/latest.html) —
+describing multi-step API workflows that can span both OpenAPI and AsyncAPI sources.
 
-```csharp
-[AsyncApi]
-public class MyService
-{
-    [Channel("my/topic")]
-    [PublishOperation(typeof(MyMessage), "MyOperation")]
-    public void SendMessage(MyMessage msg) { }
-}
-```
+- `ArazzoDocument` model, JSON/YAML writers, structural validation
+- Runtime-expression parser/evaluator for the full spec §5.9 grammar
+- JSON and YAML readers with diagnostics (`Bielu.Arazzo.NET.Readers`)
+- `ArazzoWorkspace` — the seam for resolving workflow steps against live OpenAPI/AsyncAPI documents
 
-Learn more in the [Getting Started](articles/getting-started.md) guide.
+[Get started with Arazzo →](articles/arazzo/overview.md)
+&nbsp;·&nbsp;
+[API reference →](api/arazzo/index.md)
+
+</div>
+
+</div>
+
+> ⚠️ **Note:** Pre version 1.0.0, these libraries are regarded as unstable and **breaking changes may be
+> introduced**.
