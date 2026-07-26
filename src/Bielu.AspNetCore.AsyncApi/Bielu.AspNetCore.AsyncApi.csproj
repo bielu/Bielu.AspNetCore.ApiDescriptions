@@ -4,6 +4,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi</RootNamespace>
+        <IsAotCompatible>true</IsAotCompatible>
     </PropertyGroup>
 
     <ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -35,5 +36,9 @@
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
+      <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Include="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\bin\$(Configuration)\netstandard2.0\Bielu.AspNetCore.AsyncApi.SourceGenerators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 </Project>

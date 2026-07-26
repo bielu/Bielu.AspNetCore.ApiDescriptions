@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Bielu.AspNetCore.AsyncApi.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI;
 using Microsoft.AspNetCore.Builder;
@@ -88,7 +89,7 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     }
                     catch (Exception ex)
                     {
-                        GetLogger(context).LogError(ex, "Failed to generate AsyncApi document '{DocumentName}'.", lowercasedDocumentName);
+                        GetLogger(context).LogError(ex, "Failed to generate AsyncApi document '{DocumentName}'.", SanitizeLog(lowercasedDocumentName));
                         await WriteProblemAsync(context, StatusCodes.Status500InternalServerError,
                             $"Failed to generate the AsyncApi document '{lowercasedDocumentName}'.");
                         return;
@@ -97,7 +98,7 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     // Guard against an empty/whitespace document being served as a successful 200.
                     if (string.IsNullOrWhiteSpace(serialized))
                     {
-                        GetLogger(context).LogError("AsyncApi document '{DocumentName}' serialized to an empty document.", lowercasedDocumentName);
+                        GetLogger(context).LogError("AsyncApi document '{DocumentName}' serialized to an empty document.", SanitizeLog(lowercasedDocumentName));
                         await WriteProblemAsync(context, StatusCodes.Status500InternalServerError,
                             $"The AsyncApi document '{lowercasedDocumentName}' serialized to an empty document.");
                         return;
@@ -146,6 +147,12 @@ public static class AsyncApiEndpointRouteBuilderExtensions
         pattern.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) ||
         pattern.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);
 
+    private static string SanitizeLog(string? value)
+    {
+        if (value is null) return string.Empty;
+        return value.Replace("\r", "").Replace("\n", "");
+    }
+
     private static ILogger GetLogger(HttpContext context) =>
         context.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("Bielu.AspNetCore.AsyncApi")
         ?? NullLoggerInstance;
@@ -163,13 +170,12 @@ public static class AsyncApiEndpointRouteBuilderExtensions
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/problem+json;charset=utf-8";
 
-        var payload = JsonSerializer.SerializeToUtf8Bytes(new
-        {
-            type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
-            title = "An error occurred while producing the AsyncApi document.",
-            status = statusCode,
-            detail,
-        });
+        var payload = JsonSerializer.SerializeToUtf8Bytes(new AsyncApiProblemDetails(
+            "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+            "An error occurred while producing the AsyncApi document.",
+            statusCode,
+            detail
+        ), AsyncApiJsonSchemaContext.Default.AsyncApiProblemDetails);
 
         context.Response.ContentLength = payload.Length;
         await context.Response.Body.WriteAsync(payload, context.RequestAborted);

@@ -8,6 +8,7 @@
     <Project Path="./examples/StreetlightsAPI/StreetlightsAPI.csproj" />
     <Project Path="./examples/SignalRChat/SignalRChat.csproj" />
     <Project Path="./examples/GrpcGreeter/GrpcGreeter.csproj" />
+    <Project Path="examples/AotStreetlights/AotStreetlights.csproj" />
   </Folder>
     <Folder Name="/examples/aspire/">
         <Project Path="./examples/aspire/Bielu.AspNetCore.AsyncApi.Aspire.AppHost/Bielu.AspNetCore.AsyncApi.Aspire.AppHost.csproj" />

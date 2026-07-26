@@ -8,6 +8,8 @@
   href: configuration.md
 - name: Build-time Generation
   href: build-time-generation.md
+- name: Native AOT
+  href: native-aot.md
 - name: CLI
   href: cli.md
 - name: Multiple Documents

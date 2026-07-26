@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Text.Json;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
@@ -26,16 +28,16 @@ public class RedisCacheService(
 
         try
         {
-            var result = JsonSerializer.Deserialize<T>((ReadOnlySpan<byte>)cached!);
+            var result = JsonSerializer.Deserialize<T>((byte[])cached!);
             if (result is not null)
             {
-                logger.LogDebug("Cache hit for {CacheKey}", key);
+                logger.LogDebug("Cache hit for {CacheKey}", key.SanitizeLog());
                 return result;
             }
         }
         catch (JsonException ex)
         {
-            logger.LogWarning(ex, "Failed to deserialize cached value for {CacheKey}, returning null", key);
+            logger.LogWarning(ex, "Failed to deserialize cached value for {CacheKey}, returning null", key.SanitizeLog());
         }
 
         return null;
@@ -62,6 +64,6 @@ public class RedisCacheService(
         var db = redis.GetDatabase();
         var redisKeys = keys.Select(k => (RedisKey)k).ToArray();
         await db.KeyDeleteAsync(redisKeys);
-        logger.LogDebug("Invalidated cache keys: {CacheKeys}", string.Join(", ", keys));
+        logger.LogDebug("Invalidated cache keys: {CacheKeys}", string.Join(", ", keys).SanitizeLog());
     }
 }

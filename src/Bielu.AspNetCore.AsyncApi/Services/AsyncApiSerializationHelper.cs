@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Bielu.AspNetCore.AsyncApi.Schemas;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Writers;
 
@@ -103,10 +104,7 @@ internal static class AsyncApiSerializationHelper
                     // jsonObj["channels"] = new JsonObject();
                 }
 
-                return jsonObj.ToJsonString(new JsonSerializerOptions 
-                { 
-                    WriteIndented = false 
-                });
+                return jsonObj.ToJsonString(AsyncApiJsonSchemaContext.Default.Options);
             }
         }
         catch (JsonException)

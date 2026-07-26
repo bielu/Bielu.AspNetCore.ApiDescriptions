@@ -9,6 +9,7 @@ using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Models;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Caching;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
+using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Services;
@@ -96,7 +97,7 @@ public class OrderService(
         await eventPublisher.PublishAsync(OrderCreatedTopic, order.Id.ToString(), orderCreatedEvent);
         metrics.OrderCreated();
 
-        logger.LogInformation("Order {OrderId} created and published to {Topic}", order.Id, OrderCreatedTopic);
+        logger.LogInformation("Order {OrderId} created and published to {Topic}", order.Id, OrderCreatedTopic.SanitizeLog());
 
         return order;
     }
@@ -138,7 +139,7 @@ public class OrderService(
         metrics.StatusUpdated();
 
         logger.LogInformation("Order {OrderId} status changed from {PreviousStatus} to {NewStatus}",
-            id, previousStatus, newStatus);
+            id, previousStatus.SanitizeLog(), newStatus.SanitizeLog());
 
         return order;
     }

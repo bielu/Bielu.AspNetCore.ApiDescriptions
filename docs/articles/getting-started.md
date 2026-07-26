@@ -87,4 +87,5 @@ Once your app is running:
 For more advanced scenarios, see the following guides:
 - [Attributes](attributes.md)
 - [Configuration](configuration.md)
+- [Native AOT Support](native-aot.md)
 - [Scalar Consoles](scalar-consoles.md)
