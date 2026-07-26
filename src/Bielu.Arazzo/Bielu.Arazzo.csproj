@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsAotCompatible>true</IsAotCompatible>
+        <PackageId>Bielu.Arazzo.NET</PackageId>
+        <AssemblyName>Bielu.Arazzo</AssemblyName>
+        <RootNamespace>Bielu.Arazzo</RootNamespace>
+        <Description>Object model, writers and validation for the Arazzo Specification (OpenAPI workflows). Framework-free.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JsonPointer.Net" />
+        <PackageReference Include="JsonSchema.Net" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.Arazzo.Readers" />
+        <InternalsVisibleTo Include="Bielu.Arazzo.Tests" />
+    </ItemGroup>
+
+</Project>
