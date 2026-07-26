@@ -46,5 +46,5 @@ describing multi-step API workflows that can span both OpenAPI and AsyncAPI sour
 
 </div>
 
-> ⚠️ **Note:** Pre version 1.0.0, these libraries are regarded as unstable and **breaking changes may be
+> ⚠️ **Note:** Before version 1.0.0, these libraries are regarded as unstable and **breaking changes may be
 > introduced**.

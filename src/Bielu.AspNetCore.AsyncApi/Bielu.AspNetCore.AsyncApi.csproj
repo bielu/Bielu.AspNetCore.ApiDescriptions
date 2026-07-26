@@ -41,4 +41,15 @@
            under (see CI failures where the two configs desynced and left bin/Release missing). -->
       <None Include="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\bin\Release\netstandard2.0\Bielu.AspNetCore.AsyncApi.SourceGenerators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
+
+    <!-- CI packs with the NoBuild flag set, which skips the Build target (and with it, the
+         ProjectReference's own build) entirely, so AdditionalProperties on the ProjectReference
+         above never gets a chance to run. Build the analyzer explicitly right before packing so the
+         None item above always has something to find, independent of whatever configuration (or
+         build mode) produced this project's own output. -->
+    <Target Name="BuildAnalyzerForPack" BeforeTargets="Pack;GenerateNuspec">
+      <MSBuild Projects="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj"
+               Targets="Build"
+               Properties="Configuration=Release;NoBuild=false" />
+    </Target>
 </Project>

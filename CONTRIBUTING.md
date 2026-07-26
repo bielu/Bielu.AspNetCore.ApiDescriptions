@@ -19,8 +19,8 @@ Thank you for your interest in contributing to Bielu.AspNetCore.AsyncApi! We wel
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/Bielu.AspNetCore.AsyncApi.git
-   cd Bielu.AspNetCore.AsyncApi
+   git clone https://github.com/YOUR_USERNAME/Bielu.AspNetCore.ApiDescriptions.git
+   cd Bielu.AspNetCore.ApiDescriptions
    ```
 3. Add the upstream repository as a remote:
    ```bash

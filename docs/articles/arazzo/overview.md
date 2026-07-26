@@ -1,12 +1,12 @@
 # Arazzo overview
 
-`Bielu.Arazzo.NET` and `Bielu.Arazzo.NET.Readers` are a framework-free object model, writers, reader,
+`Bielu.Arazzo.NET` and `Bielu.Arazzo.NET.Readers` provide a framework-free object model, writers, reader,
 and validator for the [Arazzo Specification](https://spec.openapis.org/arazzo/latest.html) — a
 standard for describing multi-step API workflows. Arazzo 1.1 added `asyncapi` as a first-class
 `sourceDescriptions` type alongside `openapi`, so a single workflow can span HTTP operations and
 event/message channels.
 
-> ⚠️ **Note:** Pre version 1.0.0, these libraries are regarded as unstable and **breaking changes may
+> ⚠️ **Note:** Before version 1.0.0, these libraries are regarded as unstable and **breaking changes may
 > be introduced**. This page documents the spec library only; the ASP.NET Core integration
 > (`Bielu.AspNetCore.Arazzo`) and `dotnet arazzo` CLI are planned but not yet built — see
 > [ROADMAP.md](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ROADMAP.md).
@@ -69,8 +69,9 @@ var yaml = ArazzoYamlWriter.Write(document);
 ```
 
 Both writers serialize through the same `IArazzoWriter` tree-builder abstraction
-(`ArazzoJsonNodeWriter`), and each model type implements `IArazzoSerializable.SerializeAsV1` — the
-version-scoped serialization method ByteBard's AsyncAPI.NET uses the same pattern for.
+(`ArazzoJsonNodeWriter`), and each model type implements `IArazzoSerializable.SerializeAsV1` — a
+version-scoped serialization method, following the same pattern ByteBard's AsyncAPI.NET uses for its
+own model types.
 
 ## Runtime expressions
 

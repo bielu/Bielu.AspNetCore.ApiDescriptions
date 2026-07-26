@@ -17,6 +17,8 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.10" />
     <PackageVersion Include="System.Text.Json" Version="10.0.10" />
+    <!-- Arazzo ASP.NET Core integration (OpenAPI self-wiring source) -->
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <!-- Analyzers -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
