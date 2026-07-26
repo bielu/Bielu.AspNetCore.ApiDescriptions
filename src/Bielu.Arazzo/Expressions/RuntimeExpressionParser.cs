@@ -1,10 +1,23 @@
+using System.Text.RegularExpressions;
+using Json.Pointer;
+
 namespace Bielu.Arazzo.Expressions;
 
 /// <summary>Parses spec §5.9 Runtime Expression strings into a <see cref="RuntimeExpression"/> AST.</summary>
-public static class RuntimeExpressionParser
+public static partial class RuntimeExpressionParser
 {
+    /// <summary>Matches <c>identifier-strict</c>: step IDs, workflow IDs, and sourceDescription names (no dots).</summary>
+    [GeneratedRegex(@"^[A-Za-z0-9_-]+$")]
+    private static partial Regex IdentifierStrictPattern();
+
+    /// <summary>Matches <c>identifier</c>: component keys, input/output names, and workflow field names (dots allowed).</summary>
+    [GeneratedRegex(@"^[A-Za-z0-9._-]+$")]
+    private static partial Regex IdentifierPattern();
+
     public static bool TryParse(string input, out RuntimeExpression? expression, out string? error)
     {
+        ArgumentNullException.ThrowIfNull(input);
+
         expression = null;
         error = null;
 
@@ -102,6 +115,11 @@ public static class RuntimeExpressionParser
         if (rest == "body" || rest.StartsWith("body#", StringComparison.Ordinal))
         {
             var (_, pointer) = SplitPointer(rest);
+            if (!TryValidateJsonPointer(raw, pointer, out error))
+            {
+                return false;
+            }
+
             expression = factory(new RuntimeExpressionSource(RuntimeExpressionSourceKind.Body, null, pointer));
             return true;
         }
@@ -109,6 +127,11 @@ public static class RuntimeExpressionParser
         if (rest == "payload" || rest.StartsWith("payload#", StringComparison.Ordinal))
         {
             var (_, pointer) = SplitPointer(rest);
+            if (!TryValidateJsonPointer(raw, pointer, out error))
+            {
+                return false;
+            }
+
             expression = factory(new RuntimeExpressionSource(RuntimeExpressionSourceKind.Payload, null, pointer));
             return true;
         }
@@ -134,6 +157,17 @@ public static class RuntimeExpressionParser
             return false;
         }
 
+        if (!IdentifierPattern().IsMatch(name))
+        {
+            error = $"'{raw}' has an invalid name '{name}'; expected letters, digits, '.', '-', or '_'.";
+            return false;
+        }
+
+        if (!TryValidateJsonPointer(raw, pointer, out error))
+        {
+            return false;
+        }
+
         expression = factory(name, pointer);
         return true;
     }
@@ -151,6 +185,23 @@ public static class RuntimeExpressionParser
             return false;
         }
 
+        if (!IdentifierStrictPattern().IsMatch(parts[0]))
+        {
+            error = $"'{raw}' has an invalid stepId '{parts[0]}'; expected letters, digits, '-', or '_'.";
+            return false;
+        }
+
+        if (!IdentifierPattern().IsMatch(parts[2]))
+        {
+            error = $"'{raw}' has an invalid outputName '{parts[2]}'; expected letters, digits, '.', '-', or '_'.";
+            return false;
+        }
+
+        if (!TryValidateJsonPointer(raw, pointer, out error))
+        {
+            return false;
+        }
+
         expression = new RuntimeExpression.Steps(raw, parts[0], parts[2], pointer);
         return true;
     }
@@ -162,14 +213,30 @@ public static class RuntimeExpressionParser
 
         var (withoutPointer, pointer) = SplitPointer(rest);
         var parts = withoutPointer.Split('.', 3);
-        if (parts.Length < 2 || (parts[1] != "inputs" && parts[1] != "outputs") || parts[0].Length == 0)
+        if (parts.Length != 3 || (parts[1] != "inputs" && parts[1] != "outputs") || parts[0].Length == 0 || parts[2].Length == 0)
         {
-            error = $"'{raw}' must be in the form '$workflows.<workflowName>.(inputs|outputs)[.<fieldName>]'.";
+            error = $"'{raw}' must be in the form '$workflows.<workflowName>.(inputs|outputs).<fieldName>'.";
             return false;
         }
 
-        var fieldName = parts.Length > 2 ? parts[2] : null;
-        expression = new RuntimeExpression.Workflows(raw, parts[0], parts[1], fieldName, pointer);
+        if (!IdentifierStrictPattern().IsMatch(parts[0]))
+        {
+            error = $"'{raw}' has an invalid workflowName '{parts[0]}'; expected letters, digits, '-', or '_'.";
+            return false;
+        }
+
+        if (!IdentifierPattern().IsMatch(parts[2]))
+        {
+            error = $"'{raw}' has an invalid fieldName '{parts[2]}'; expected letters, digits, '.', '-', or '_'.";
+            return false;
+        }
+
+        if (!TryValidateJsonPointer(raw, pointer, out error))
+        {
+            return false;
+        }
+
+        expression = new RuntimeExpression.Workflows(raw, parts[0], parts[1], parts[2], pointer);
         return true;
     }
 
@@ -190,6 +257,12 @@ public static class RuntimeExpressionParser
         if (sourceName.Length == 0 || referenceId.Length == 0)
         {
             error = $"'{raw}' is missing a source name or reference id.";
+            return false;
+        }
+
+        if (!IdentifierStrictPattern().IsMatch(sourceName))
+        {
+            error = $"'{raw}' has an invalid source name '{sourceName}'; expected letters, digits, '-', or '_'.";
             return false;
         }
 
@@ -217,6 +290,18 @@ public static class RuntimeExpressionParser
             return false;
         }
 
+        if (field is not ("parameters" or "successActions" or "failureActions"))
+        {
+            error = $"'{raw}' has an unrecognized components field '{field}'; expected 'parameters', 'successActions', or 'failureActions'.";
+            return false;
+        }
+
+        if (!IdentifierPattern().IsMatch(name))
+        {
+            error = $"'{raw}' has an invalid component name '{name}'; expected letters, digits, '.', '-', or '_'.";
+            return false;
+        }
+
         expression = new RuntimeExpression.Components(raw, field, name);
         return true;
     }
@@ -237,5 +322,25 @@ public static class RuntimeExpressionParser
     {
         var hashIndex = input.IndexOf('#');
         return hashIndex < 0 ? (input, null) : (input[..hashIndex], input[(hashIndex + 1)..]);
+    }
+
+    private static bool TryValidateJsonPointer(string raw, string? pointer, out string? error)
+    {
+        error = null;
+        if (pointer is null)
+        {
+            return true;
+        }
+
+        try
+        {
+            JsonPointer.Parse(pointer);
+            return true;
+        }
+        catch (Exception)
+        {
+            error = $"'{raw}' has a malformed JSON Pointer after '#'.";
+            return false;
+        }
     }
 }

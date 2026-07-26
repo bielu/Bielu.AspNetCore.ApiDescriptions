@@ -45,6 +45,8 @@ public sealed class ArazzoWorkspace
     /// <summary>Looks up the document registered for <paramref name="sourceName"/>. Returns false if none was registered.</summary>
     public bool TryGetDocument(string sourceName, out object? document)
     {
+        ArgumentNullException.ThrowIfNull(sourceName);
+
         if (_documentsBySourceName.TryGetValue(sourceName, out var entry))
         {
             document = entry.Document;
@@ -56,7 +58,12 @@ public sealed class ArazzoWorkspace
     }
 
     /// <summary>Looks up the resolver registered for <paramref name="sourceType"/>. Returns false if none was registered.</summary>
-    public bool TryGetResolver(string sourceType, out IArazzoSourceResolver? resolver) => _resolversByType.TryGetValue(sourceType, out resolver);
+    public bool TryGetResolver(string sourceType, out IArazzoSourceResolver? resolver)
+    {
+        ArgumentNullException.ThrowIfNull(sourceType);
+
+        return _resolversByType.TryGetValue(sourceType, out resolver);
+    }
 
     /// <summary>
     /// Resolves a step's <see cref="ArazzoStep.OperationId"/> against the source description named
@@ -65,6 +72,9 @@ public sealed class ArazzoWorkspace
     /// </summary>
     public bool TryResolveOperation(string sourceName, string operationId, out System.Text.Json.Nodes.JsonNode? operation)
     {
+        ArgumentNullException.ThrowIfNull(sourceName);
+        ArgumentNullException.ThrowIfNull(operationId);
+
         operation = null;
         if (!_documentsBySourceName.TryGetValue(sourceName, out var entry))
         {

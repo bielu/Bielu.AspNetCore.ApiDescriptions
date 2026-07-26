@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Bielu.Arazzo.Models;
 using Bielu.Arazzo.Readers;
 using Bielu.Arazzo.Writers;
@@ -86,7 +86,7 @@ public class RoundTripTests
     };
 
     [Fact]
-    public void RoundTripsThroughJson()
+    public void WriteAndRead_JsonDocument_RoundTrips()
     {
         var original = BuildSampleDocument();
         var json = ArazzoJsonWriter.Write(original);
@@ -98,7 +98,7 @@ public class RoundTripTests
     }
 
     [Fact]
-    public void RoundTripsThroughYaml()
+    public void WriteAndRead_YamlDocument_RoundTrips()
     {
         var original = BuildSampleDocument();
         var yaml = ArazzoYamlWriter.Write(original);

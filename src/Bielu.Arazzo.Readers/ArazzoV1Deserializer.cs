@@ -34,7 +34,7 @@ internal static class ArazzoV1Deserializer
             Info = ReadInfo(Get(obj, "info"), "/info", ctx),
             SourceDescriptions = ReadRequiredArray(Get(obj, "sourceDescriptions"), "/sourceDescriptions", ctx, ReadSourceDescription),
             Workflows = ReadRequiredArray(Get(obj, "workflows"), "/workflows", ctx, ReadWorkflow),
-            Components = Get(obj, "components") is JsonObject c ? ReadComponents(c, "/components", ctx) : null,
+            Components = ReadOptionalObject(obj, "components", "/components", ctx) is { } c ? ReadComponents(c, "/components", ctx) : null,
             Extensions = ReadExtensions(obj, "/", known, ctx),
         };
     }
@@ -130,12 +130,12 @@ internal static class ArazzoV1Deserializer
             ChannelPath = ReadOptionalString(obj, "channelPath"),
             WorkflowId = ReadOptionalString(obj, "workflowId"),
             Parameters = ReadArray(Get(obj, "parameters"), $"{path}/parameters", ctx, ReadParameterReferenceable),
-            RequestBody = Get(obj, "requestBody") is JsonObject rb ? ReadRequestBody(rb, $"{path}/requestBody", ctx) : null,
+            RequestBody = ReadOptionalObject(obj, "requestBody", $"{path}/requestBody", ctx) is { } rb ? ReadRequestBody(rb, $"{path}/requestBody", ctx) : null,
             SuccessCriteria = ReadArray(Get(obj, "successCriteria"), $"{path}/successCriteria", ctx, ReadCriterion),
             OnSuccess = ReadArray(Get(obj, "onSuccess"), $"{path}/onSuccess", ctx, ReadSuccessActionReferenceable),
             OnFailure = ReadArray(Get(obj, "onFailure"), $"{path}/onFailure", ctx, ReadFailureActionReferenceable),
             Outputs = ReadValueMap(Get(obj, "outputs")),
-            Timeout = ReadOptionalInt(obj, "timeout"),
+            Timeout = ReadOptionalInt(obj, "timeout", $"{path}/timeout", ctx),
             CorrelationId = ReadOptionalString(obj, "correlationId"),
             Action = ReadOptionalString(obj, "action"),
             DependsOn = ReadStringArray(Get(obj, "dependsOn")),
@@ -228,7 +228,7 @@ internal static class ArazzoV1Deserializer
             StepId = ReadOptionalString(obj, "stepId"),
             Parameters = ReadArray(Get(obj, "parameters"), $"{path}/parameters", ctx, ReadParameterReferenceable),
             RetryAfter = ReadOptionalDouble(obj, "retryAfter"),
-            RetryLimit = ReadOptionalInt(obj, "retryLimit"),
+            RetryLimit = ReadOptionalInt(obj, "retryLimit", $"{path}/retryLimit", ctx),
             Criteria = ReadArray(Get(obj, "criteria"), $"{path}/criteria", ctx, ReadCriterion),
             Extensions = ReadExtensions(obj, path, known, ctx),
         };
@@ -239,7 +239,7 @@ internal static class ArazzoV1Deserializer
         var known = new HashSet<string> { "inputs", "parameters", "successActions", "failureActions" };
 
         Dictionary<string, JsonNode?>? inputs = null;
-        if (Get(obj, "inputs") is JsonObject inputsObj)
+        if (ReadOptionalObject(obj, "inputs", $"{path}/inputs", ctx) is { } inputsObj)
         {
             inputs = new Dictionary<string, JsonNode?>(StringComparer.Ordinal);
             foreach (var (key, value) in inputsObj)
@@ -249,7 +249,7 @@ internal static class ArazzoV1Deserializer
         }
 
         Dictionary<string, ArazzoParameter>? parameters = null;
-        if (Get(obj, "parameters") is JsonObject paramsObj)
+        if (ReadOptionalObject(obj, "parameters", $"{path}/parameters", ctx) is { } paramsObj)
         {
             parameters = new Dictionary<string, ArazzoParameter>(StringComparer.Ordinal);
             foreach (var (key, value) in paramsObj)
@@ -258,11 +258,15 @@ internal static class ArazzoV1Deserializer
                 {
                     parameters[key] = ReadParameter(po, $"{path}/parameters/{key}", ctx);
                 }
+                else
+                {
+                    ctx.Error($"{path}/parameters/{key}", "Component parameter must be an object.");
+                }
             }
         }
 
         Dictionary<string, ArazzoSuccessAction>? successActions = null;
-        if (Get(obj, "successActions") is JsonObject saObj)
+        if (ReadOptionalObject(obj, "successActions", $"{path}/successActions", ctx) is { } saObj)
         {
             successActions = new Dictionary<string, ArazzoSuccessAction>(StringComparer.Ordinal);
             foreach (var (key, value) in saObj)
@@ -271,11 +275,15 @@ internal static class ArazzoV1Deserializer
                 {
                     successActions[key] = ReadSuccessAction(so, $"{path}/successActions/{key}", ctx);
                 }
+                else
+                {
+                    ctx.Error($"{path}/successActions/{key}", "Component success action must be an object.");
+                }
             }
         }
 
         Dictionary<string, ArazzoFailureAction>? failureActions = null;
-        if (Get(obj, "failureActions") is JsonObject faObj)
+        if (ReadOptionalObject(obj, "failureActions", $"{path}/failureActions", ctx) is { } faObj)
         {
             failureActions = new Dictionary<string, ArazzoFailureAction>(StringComparer.Ordinal);
             foreach (var (key, value) in faObj)
@@ -283,6 +291,10 @@ internal static class ArazzoV1Deserializer
                 if (value is JsonObject fo)
                 {
                     failureActions[key] = ReadFailureAction(fo, $"{path}/failureActions/{key}", ctx);
+                }
+                else
+                {
+                    ctx.Error($"{path}/failureActions/{key}", "Component failure action must be an object.");
                 }
             }
         }
@@ -346,7 +358,7 @@ internal static class ArazzoV1Deserializer
     {
         if (node is JsonObject obj && obj.ContainsKey("context") && obj.ContainsKey("selector") && obj.ContainsKey("type"))
         {
-            return new ArazzoValue { Selector = ReadSelector(obj) };
+            return ArazzoValue.FromSelector(ReadSelector(obj));
         }
 
         if (node is JsonValue value && value.GetValueKind() == JsonValueKind.String)
@@ -354,7 +366,7 @@ internal static class ArazzoV1Deserializer
             var s = value.GetValue<string>();
             if (s.StartsWith('$'))
             {
-                return new ArazzoValue { Expression = s };
+                return ArazzoValue.FromExpression(s);
             }
         }
 
@@ -470,8 +482,40 @@ internal static class ArazzoV1Deserializer
     private static string? ReadOptionalString(JsonObject obj, string name) =>
         Get(obj, name) is JsonValue v && v.GetValueKind() == JsonValueKind.String ? v.GetValue<string>() : null;
 
-    private static int? ReadOptionalInt(JsonObject obj, string name) =>
-        Get(obj, name) is JsonValue v && v.GetValueKind() == JsonValueKind.Number ? v.GetValue<int>() : null;
+    private static int? ReadOptionalInt(JsonObject obj, string name, string path, ParsingContext ctx)
+    {
+        if (Get(obj, name) is not JsonValue v || v.GetValueKind() != JsonValueKind.Number)
+        {
+            return null;
+        }
+
+        try
+        {
+            return v.GetValue<int>();
+        }
+        catch (Exception ex) when (ex is FormatException or OverflowException or InvalidOperationException)
+        {
+            ctx.Error(path, $"Field '{name}' must be an integer.");
+            return null;
+        }
+    }
+
+    private static JsonObject? ReadOptionalObject(JsonObject obj, string name, string path, ParsingContext ctx)
+    {
+        var node = Get(obj, name);
+        if (node is null)
+        {
+            return null;
+        }
+
+        if (node is JsonObject o)
+        {
+            return o;
+        }
+
+        ctx.Error(path, $"Field '{name}' must be an object.");
+        return null;
+    }
 
     private static double? ReadOptionalDouble(JsonObject obj, string name) =>
         Get(obj, name) is JsonValue v && v.GetValueKind() == JsonValueKind.Number ? v.GetValue<double>() : null;

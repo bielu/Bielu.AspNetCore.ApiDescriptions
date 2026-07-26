@@ -13,6 +13,8 @@ public static class ArazzoValidator
 {
     public static IReadOnlyList<ArazzoError> Validate(ArazzoDocument document)
     {
+        ArgumentNullException.ThrowIfNull(document);
+
         var errors = new List<ArazzoError>();
 
         ValidateSourceDescriptions(document, errors);
@@ -67,6 +69,10 @@ public static class ArazzoValidator
                 ValidateSchemaShape($"{workflowPath}/inputs", workflow.Inputs, errors);
             }
 
+            ValidateReferenceableList(workflow.SuccessActions, $"{workflowPath}/successActions", errors, ValidateSuccessAction);
+            ValidateReferenceableList(workflow.FailureActions, $"{workflowPath}/failureActions", errors, ValidateFailureAction);
+            ValidateReferenceableList(workflow.Parameters, $"{workflowPath}/parameters", errors, ValidateParameter);
+
             ValidateSteps(workflow, workflowPath, errors);
         }
     }
@@ -109,6 +115,122 @@ public static class ArazzoValidator
             {
                 errors.Add(new ArazzoError($"{stepPath}/channelPath", "A channelPath step SHOULD specify 'action' (send or receive).", IsWarning: true));
             }
+
+            if (step.SuccessCriteria is not null)
+            {
+                for (var i = 0; i < step.SuccessCriteria.Count; i++)
+                {
+                    ValidateCriterion(step.SuccessCriteria[i], $"{stepPath}/successCriteria/{i}", errors);
+                }
+            }
+
+            ValidateReferenceableList(step.Parameters, $"{stepPath}/parameters", errors, ValidateParameter);
+            ValidateReferenceableList(step.OnSuccess, $"{stepPath}/onSuccess", errors, ValidateSuccessAction);
+            ValidateReferenceableList(step.OnFailure, $"{stepPath}/onFailure", errors, ValidateFailureAction);
+        }
+    }
+
+    private static void ValidateReferenceableList<T>(IList<ArazzoReferenceable<T>>? items, string path, List<ArazzoError> errors, Action<T, string, List<ArazzoError>> validateItem)
+        where T : IArazzoSerializable
+    {
+        if (items is null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (items[i].Value is { } value)
+            {
+                validateItem(value, $"{path}/{i}", errors);
+            }
+        }
+    }
+
+    private static void ValidateSuccessAction(ArazzoSuccessAction action, string path, List<ArazzoError> errors)
+    {
+        if (action.Type != ArazzoSuccessActionType.End && action.Type != ArazzoSuccessActionType.Goto)
+        {
+            errors.Add(new ArazzoError($"{path}/type", $"Unknown success action type '{action.Type}'; expected 'end' or 'goto'."));
+        }
+
+        if (action.WorkflowId is not null && action.StepId is not null)
+        {
+            errors.Add(new ArazzoError(path, "workflowId and stepId are mutually exclusive."));
+        }
+        else if (action.Type == ArazzoSuccessActionType.Goto && action.WorkflowId is null && action.StepId is null)
+        {
+            errors.Add(new ArazzoError(path, "A 'goto' success action requires either workflowId or stepId."));
+        }
+
+        if (action.Criteria is null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < action.Criteria.Count; i++)
+        {
+            ValidateCriterion(action.Criteria[i], $"{path}/criteria/{i}", errors);
+        }
+    }
+
+    private static void ValidateFailureAction(ArazzoFailureAction action, string path, List<ArazzoError> errors)
+    {
+        if (action.Type != ArazzoFailureActionType.End && action.Type != ArazzoFailureActionType.Retry && action.Type != ArazzoFailureActionType.Goto)
+        {
+            errors.Add(new ArazzoError($"{path}/type", $"Unknown failure action type '{action.Type}'; expected 'end', 'retry', or 'goto'."));
+        }
+
+        if (action.WorkflowId is not null && action.StepId is not null)
+        {
+            errors.Add(new ArazzoError(path, "workflowId and stepId are mutually exclusive."));
+        }
+        else if ((action.Type == ArazzoFailureActionType.Goto || action.Type == ArazzoFailureActionType.Retry) && action.WorkflowId is null && action.StepId is null)
+        {
+            errors.Add(new ArazzoError(path, $"A '{action.Type}' failure action requires either workflowId or stepId."));
+        }
+
+        if (action.Type != ArazzoFailureActionType.Retry && (action.RetryAfter is not null || action.RetryLimit is not null))
+        {
+            errors.Add(new ArazzoError(path, "retryAfter and retryLimit only apply when type is 'retry'."));
+        }
+
+        ValidateReferenceableList(action.Parameters, $"{path}/parameters", errors, ValidateParameter);
+
+        if (action.Criteria is null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < action.Criteria.Count; i++)
+        {
+            ValidateCriterion(action.Criteria[i], $"{path}/criteria/{i}", errors);
+        }
+    }
+
+    private static void ValidateParameter(ArazzoParameter parameter, string path, List<ArazzoError> errors)
+    {
+        if (parameter.In is null)
+        {
+            return;
+        }
+
+        if (parameter.In != ArazzoParameterLocation.Path
+            && parameter.In != ArazzoParameterLocation.Query
+            && parameter.In != ArazzoParameterLocation.QueryString
+            && parameter.In != ArazzoParameterLocation.Header
+            && parameter.In != ArazzoParameterLocation.Cookie)
+        {
+            errors.Add(new ArazzoError($"{path}/in", $"Unknown parameter location '{parameter.In}'."));
+        }
+    }
+
+    private static void ValidateCriterion(ArazzoCriterion criterion, string path, List<ArazzoError> errors)
+    {
+        var isSimple = criterion.Type is null || criterion.Type.Type == ArazzoCriterionType.Simple;
+        if (!isSimple && criterion.Context is null)
+        {
+            errors.Add(new ArazzoError($"{path}/context", "context is required when type is not 'simple'."));
         }
     }
 

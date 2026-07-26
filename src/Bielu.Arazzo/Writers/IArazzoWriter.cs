@@ -141,6 +141,7 @@ public interface IArazzoWriter
         WriteStartObject();
         foreach (var (key, value) in map)
         {
+            ArgumentNullException.ThrowIfNull(key);
             WritePropertyName(key);
             writeValue(value);
         }

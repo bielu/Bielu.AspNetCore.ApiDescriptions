@@ -35,7 +35,7 @@ public abstract record RuntimeExpression(string Raw)
     /// <summary><see cref="ReferenceId"/> is an operationId or workflowId — spec notes these have no character restrictions, so it is not dot-split further.</summary>
     public sealed record SourceDescriptions(string Raw, string SourceName, string ReferenceId) : RuntimeExpression(Raw);
 
-    /// <summary><see cref="Field"/> is one of "inputs", "parameters", "successActions", "failureActions"; <see cref="Name"/> may itself contain dots per the components key regex.</summary>
+    /// <summary><see cref="Field"/> is one of "parameters", "successActions", "failureActions"; <see cref="Name"/> may itself contain dots per the components key regex.</summary>
     public sealed record Components(string Raw, string Field, string Name) : RuntimeExpression(Raw);
 }
 

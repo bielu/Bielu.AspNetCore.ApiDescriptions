@@ -22,6 +22,9 @@ public static class ArazzoYamlWriter
         "true", "false", "null", "yes", "no", "on", "off", "~",
     };
 
+    /// <summary>Serializes <paramref name="document"/> to an Arazzo YAML document.</summary>
+    /// <param name="document">The model to serialize.</param>
+    /// <returns>The serialized YAML document.</returns>
     public static string Write(IArazzoSerializable document)
     {
         ArgumentNullException.ThrowIfNull(document);

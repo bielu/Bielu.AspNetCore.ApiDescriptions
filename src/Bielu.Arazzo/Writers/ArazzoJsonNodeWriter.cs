@@ -24,7 +24,12 @@ internal sealed class ArazzoJsonNodeWriter : IArazzoWriter
 
     public void WriteEndArray() => Pop();
 
-    public void WritePropertyName(string name) => _pendingPropertyName = name;
+    public void WritePropertyName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        _pendingPropertyName = name;
+    }
 
     public void WriteValue(string? value) => AttachToParent(JsonValue.Create(value));
 
