@@ -15,9 +15,12 @@ public interface IArazzoSourceResolver
     /// <summary>The source-description <c>type</c> this resolver handles: "openapi", "asyncapi", or "arazzo".</summary>
     string SourceType { get; }
 
+    /// <summary>Attempts to resolve an operation by its ID; returns false if the reference cannot be resolved against the given document.</summary>
     bool TryResolveOperation(object document, string operationId, out JsonNode? operation);
 
+    /// <summary>Attempts to resolve an operation by its JSON pointer path; returns false if the reference cannot be resolved against the given document.</summary>
     bool TryResolveOperationPath(object document, string jsonPointer, out JsonNode? operation);
 
+    /// <summary>Attempts to resolve a channel by its JSON pointer path; returns false if the reference cannot be resolved against the given document.</summary>
     bool TryResolveChannelPath(object document, string jsonPointer, out JsonNode? channel);
 }

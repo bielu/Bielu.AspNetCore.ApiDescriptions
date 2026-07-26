@@ -5,8 +5,11 @@ namespace Bielu.Arazzo.Expressions;
 /// <summary>Resolves a parsed <see cref="RuntimeExpression"/> against an <see cref="IRuntimeExpressionContext"/>.</summary>
 public static class RuntimeExpressionEvaluator
 {
+    /// <summary>Evaluates the given expression against the given context and returns the resolved JSON value, or null if the referenced value is absent.</summary>
     public static JsonNode? Evaluate(RuntimeExpression expression, IRuntimeExpressionContext context)
     {
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(context);
         return expression switch
         {
             RuntimeExpression.Url => JsonValue.Create(context.Url),

@@ -12,18 +12,25 @@ public sealed class ArazzoDocument : IArazzoSerializable, IArazzoExtensible
     /// <summary>Self-assigned URI for this document; also its base URI for resolving relative references. MUST NOT contain a fragment.</summary>
     public string? Self { get; set; }
 
+    /// <summary>Provides metadata about the Arazzo Description.</summary>
     public required ArazzoInfo Info { get; set; }
 
+    /// <summary>A list of source descriptions used in the Arazzo Description.</summary>
     public required IList<ArazzoSourceDescription> SourceDescriptions { get; set; }
 
+    /// <summary>A list of workflow objects that describe the sequences of operations.</summary>
     public required IList<ArazzoWorkflow> Workflows { get; set; }
 
+    /// <summary>An object to hold reusable objects for different aspects of the Arazzo Description.</summary>
     public ArazzoComponents? Components { get; set; }
 
+    /// <summary>A dictionary of extension properties.</summary>
     public IDictionary<string, JsonNode?>? Extensions { get; set; }
 
+    /// <summary>Writes this model's Arazzo 1.x representation via the given writer.</summary>
     public void SerializeAsV1(IArazzoWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(writer);
         writer.WriteStartObject();
         writer.WritePropertyName("arazzo");
         writer.WriteValue(Arazzo);

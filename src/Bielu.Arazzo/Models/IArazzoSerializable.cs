@@ -10,5 +10,6 @@ namespace Bielu.Arazzo.Models;
 /// </summary>
 public interface IArazzoSerializable
 {
+    /// <summary>Writes this model's Arazzo 1.x representation via the given writer.</summary>
     void SerializeAsV1(IArazzoWriter writer);
 }
