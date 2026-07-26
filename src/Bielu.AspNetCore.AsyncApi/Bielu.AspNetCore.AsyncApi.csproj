@@ -33,9 +33,12 @@
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
-      <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+      <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" AdditionalProperties="Configuration=Release" />
     </ItemGroup>
     <ItemGroup>
-      <None Include="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\bin\$(Configuration)\netstandard2.0\Bielu.AspNetCore.AsyncApi.SourceGenerators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <!-- Packaged analyzer is always built Release regardless of $(Configuration) here, so the
+           path below can't drift out of sync with whichever config this project happens to build
+           under (see CI failures where the two configs desynced and left bin/Release missing). -->
+      <None Include="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\bin\Release\netstandard2.0\Bielu.AspNetCore.AsyncApi.SourceGenerators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 </Project>
