@@ -1,0 +1,16 @@
+{
+  "name": "@bielu/scalar-signalr-standalone",
+  "version": "0.1.0",
+  "description": "Standalone browser bundle for @bielu/scalar-signalr. Includes Scalar and the plugin in one script.",
+  "license": "MIT",
+  "author": "Arkadiusz Biel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi"
+  },
+  "main": "./index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ]
+}

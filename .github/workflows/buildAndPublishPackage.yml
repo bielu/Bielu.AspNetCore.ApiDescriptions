@@ -34,6 +34,7 @@ jobs:
       suffix: "pr"
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+      artifact-name: npm-scalar-signalr
 
   # Pull request: build the second npm package (@bielu/scalar-grpc); NuGet is already covered by `ci`.
   ciGrpcNpm:
@@ -46,6 +47,7 @@ jobs:
       suffix: "pr"
       build-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+      artifact-name: npm-scalar-grpc
 
   # Pull request: require a changeset so the version bump + changelog are recorded.
   changeset-check:
@@ -102,6 +104,7 @@ jobs:
     with:
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+      artifact-name: npm-scalar-signalr
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
 
@@ -117,6 +120,7 @@ jobs:
     with:
       publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+      artifact-name: npm-scalar-grpc
 
   # Record-keeping: tag + GitHub Release for the shared NuGet version, when not already present.
   # Release notes are the version's section of CHANGELOG.md (written by the changeset adapter in
@@ -167,6 +171,7 @@ jobs:
       suffix: "beta"
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+      artifact-name: npm-scalar-signalr
     secrets:
       NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
 
@@ -185,6 +190,7 @@ jobs:
       suffix: "beta"
       publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+      artifact-name: npm-scalar-grpc
 
   # Record-keeping for interim betas: surface each published beta build as a GitHub prerelease,
   # using the exact `-beta.<ticks>` version the build template stamped (release.yml's nuget-version

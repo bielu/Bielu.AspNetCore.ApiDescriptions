@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Asp.Versioning;
@@ -52,6 +52,7 @@ public static class AsyncApiVersioningServiceCollectionExtensions
         // We use KeyedService.AnyKey to match any version name requested at runtime
         services.AddEndpointsApiExplorer();
 
+        services.TryAddKeyedSingleton<IAsyncApiMetadataProvider, ReflectionAsyncApiMetadataProvider>(KeyedService.AnyKey);
         services.TryAddKeyedSingleton<XmlDocumentationProvider>(KeyedService.AnyKey, (sp, key) => ActivatorUtilities.CreateInstance<XmlDocumentationProvider>(sp));
         services.TryAddKeyedSingleton<AsyncApiJsonSchemaService>(KeyedService.AnyKey, (sp, key) =>
         {
