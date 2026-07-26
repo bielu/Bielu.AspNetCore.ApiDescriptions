@@ -110,8 +110,8 @@
       "_appLogoPath": "images/logo.svg",
       "_enableSearch": true,
       "_enableNewTab": true,
-      "repository": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi",
-      "docurl": "https://github.com/bielu/Bielu.AspNetCore.AsyncApi/blob/main/docs"
+      "repository": "https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions",
+      "docurl": "https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/docs"
     }
   }
 }

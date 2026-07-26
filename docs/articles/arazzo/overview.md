@@ -9,7 +9,7 @@ event/message channels.
 > ⚠️ **Note:** Pre version 1.0.0, these libraries are regarded as unstable and **breaking changes may
 > be introduced**. This page documents the spec library only; the ASP.NET Core integration
 > (`Bielu.AspNetCore.Arazzo`) and `dotnet arazzo` CLI are planned but not yet built — see
-> [ROADMAP.md](https://github.com/bielu/Bielu.AspNetCore.AsyncApi/blob/main/ROADMAP.md).
+> [ROADMAP.md](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ROADMAP.md).
 
 ## Installation
 
@@ -113,6 +113,6 @@ startup failure instead of a production one.
 
 ## What's next
 
-See the [Arazzo proposal](https://github.com/bielu/Bielu.AspNetCore.AsyncApi/blob/main/ARAZZO-PROPOSAL.md)
-and [roadmap](https://github.com/bielu/Bielu.AspNetCore.AsyncApi/blob/main/ROADMAP.md) for the
+See the [Arazzo proposal](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ARAZZO-PROPOSAL.md)
+and [roadmap](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ROADMAP.md) for the
 ASP.NET Core builder/self-wiring package, the `dotnet arazzo` CLI, and the workflow runtime.

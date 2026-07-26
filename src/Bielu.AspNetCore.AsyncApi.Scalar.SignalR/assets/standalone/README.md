@@ -8,7 +8,7 @@ built as a drop-in replacement for the default `scalar.js` bundle: loading it re
 `window.Scalar.createApiReference` with the SignalR plugin already registered.
 
 This package is produced from, and consumed by, the
-[`Bielu.AspNetCore.AsyncApi.Scalar.SignalR`](https://github.com/bielu/Bielu.AspNetCore.AsyncApi)
+[`Bielu.AspNetCore.AsyncApi.Scalar.SignalR`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions)
 .NET package (which embeds the built bundle), but it is also published standalone to npm so it can
 be loaded from a CDN or bundled by hand.
 

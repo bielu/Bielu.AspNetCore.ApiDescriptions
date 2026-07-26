@@ -16,7 +16,7 @@
         <PackageOutputPath>$(MSBuildProjectDirectory)/../../dist</PackageOutputPath>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageIcon>logo.png</PackageIcon>
-        <RepositoryUrl>https://github.com/bielu/Bielu.AspNetCore.AsyncApi</RepositoryUrl>
+        <RepositoryUrl>https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageProjectUrl>https://apidescriptions.bielu.pl/</PackageProjectUrl>
     </PropertyGroup>

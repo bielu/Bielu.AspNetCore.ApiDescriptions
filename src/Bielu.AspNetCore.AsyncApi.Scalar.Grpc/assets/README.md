@@ -14,7 +14,7 @@ wire messages from real protobuf descriptors fetched from the companion .NET pac
 `@bufbuild/protobuf` + `@connectrpc/connect-web` — fully dynamic, no codegen in the browser.
 
 This package is produced from, and consumed by, the
-[`Bielu.AspNetCore.AsyncApi.Scalar.Grpc`](https://github.com/bielu/Bielu.AspNetCore.AsyncApi)
+[`Bielu.AspNetCore.AsyncApi.Scalar.Grpc`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions)
 .NET package (which embeds the built bundle), but it is also published standalone to npm so it can
 be loaded from a CDN or bundled by hand.
 

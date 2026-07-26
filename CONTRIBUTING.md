@@ -24,7 +24,7 @@ Thank you for your interest in contributing to Bielu.AspNetCore.AsyncApi! We wel
    ```
 3. Add the upstream repository as a remote:
    ```bash
-   git remote add upstream https://github.com/bielu/Bielu.AspNetCore.AsyncApi.git
+   git remote add upstream https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions.git
    ```
 4. Create a branch for your changes:
    ```bash
