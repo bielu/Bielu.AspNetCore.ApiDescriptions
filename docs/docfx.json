@@ -14,6 +14,9 @@
             "src/Bielu.Arazzo/**",
             "src/Bielu.Arazzo.Readers/**",
             "src/Bielu.AspNetCore.Arazzo/**",
+            "src/Bielu.Overlay/**",
+            "src/Bielu.Overlay.Readers/**",
+            "src/Bielu.Spec.Shared/**",
             "src/Bielu.AspNetCore.AsyncApi.Templates/**",
             "src/Bielu.AspNetCore.AsyncApi.Analyzers/**",
             "src/Bielu.AspNetCore.AsyncApi.SourceGenerators/**",
@@ -56,6 +59,31 @@
       "properties": {
         "TargetFramework": "net10.0"
       }
+    },
+    {
+      "src": [
+        {
+          "src": "..",
+          "files": [
+            "src/Bielu.Overlay/**/*.csproj",
+            "src/Bielu.Overlay.Readers/**/*.csproj",
+            "src/Bielu.Spec.Shared/**/*.csproj"
+          ],
+          "exclude": [
+            "**/bin/**",
+            "**/obj/**",
+            "**/*.Tests/**",
+            "**/*.Tests.*/**",
+            "**/*.Test/**"
+          ]
+        }
+      ],
+      "dest": "api/overlay",
+      "disableGitFeatures": false,
+      "disableDefaultFilter": false,
+      "properties": {
+        "TargetFramework": "net10.0"
+      }
     }
   ],
   "build": {
@@ -66,7 +94,9 @@
           "api/asyncapi/**.yml",
           "api/asyncapi/index.md",
           "api/arazzo/**.yml",
-          "api/arazzo/index.md"
+          "api/arazzo/index.md",
+          "api/overlay/**.yml",
+          "api/overlay/index.md"
         ]
       },
       {

@@ -29,10 +29,14 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.Arazzo` (package id `Bielu.Arazzo.NET`) | Arazzo Specification object model, JSON/YAML writers, validation — framework-free, no dependency on the AsyncAPI packages |
 | `Bielu.Arazzo.Readers` (package id `Bielu.Arazzo.NET.Readers`) | JSON/YAML readers for Arazzo documents, producing `Bielu.Arazzo` documents with diagnostics |
 | `Bielu.AspNetCore.Arazzo` | ASP.NET Core integration for Arazzo: `AddArazzo`/`MapArazzo`, fluent workflow builder, self-wiring `sourceDescriptions` against this app's own live AsyncAPI/OpenAPI documents, startup cross-spec reference validation |
+| `Bielu.Overlay` (package id `Bielu.Overlay.NET`) | OpenAPI Overlay Specification object model, validator, and apply engine (1.0.0 + 1.1.0). Operates on `JsonNode`, so overlays apply to OpenAPI, AsyncAPI, or Arazzo documents alike — framework-free |
+| `Bielu.Overlay.Readers` (package id `Bielu.Overlay.NET.Readers`) | JSON/YAML readers for Overlay documents, producing `Bielu.Overlay` documents with diagnostics |
+| `Bielu.Spec.Shared` | Document-parsing primitives shared by the spec libraries (YAML→`JsonNode` conversion), so the subtle plain-scalar type inference exists exactly once |
 | `src/examples/StreetlightsAPI` | Minimal single-service example (best starting point) |
 | `src/examples/SignalRChat` | SignalR example with the interactive Scalar console |
 | `src/examples/GrpcGreeter` | gRPC example with the interactive Scalar console (gRPC-Web) |
 | `src/examples/aspire` | Distributed .NET Aspire microservices demo |
+| `src/examples/OverlayDemo` | Applies an OpenAPI Overlay to an AsyncAPI document (console) |
 
 ## Feature slices & layering
 

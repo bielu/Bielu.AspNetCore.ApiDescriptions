@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsAotCompatible>true</IsAotCompatible>
+        <PackageId>Bielu.Spec.Shared</PackageId>
+        <AssemblyName>Bielu.Spec.Shared</AssemblyName>
+        <RootNamespace>Bielu.Spec.Shared</RootNamespace>
+        <Description>Shared document-parsing primitives for the Bielu API-description spec libraries: YAML-to-JsonNode conversion producing the same System.Text.Json tree a JSON document would. Framework-free.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="YamlDotNet" />
+    </ItemGroup>
+
+</Project>
