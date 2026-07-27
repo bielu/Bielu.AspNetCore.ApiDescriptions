@@ -1,101 +1,119 @@
-// Applies an OpenAPI Overlay to an AsyncAPI document.
+// Applies an OpenAPI Overlay to an AsyncAPI document, and then to an Arazzo one.
 //
 // The Overlay Specification is written against OpenAPI, but its mechanism — select nodes by JSONPath,
 // then merge/copy/remove — carries no OpenAPI-specific assumptions. Bielu.Overlay.NET therefore operates
-// on System.Text.Json's JsonNode, which makes an AsyncAPI description just as valid a target. That is
-// what this sample demonstrates.
+// on System.Text.Json's JsonNode, which makes any JSON/YAML API description a valid target.
+//
+// Running the same engine over two differently-shaped specifications is the point of this sample:
+//
+//   AsyncAPI  channels/servers are MAPS   -> targets are plain key lookups   ($.channels.internalDebug)
+//   Arazzo    workflows/steps  are ARRAYS -> targets need RFC 9535 filters   ($.workflows[?@.workflowId == '...'])
 
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Bielu.Overlay;
 using Bielu.Overlay.Readers;
 using Bielu.Overlay.Validation;
 
-var documentPath = Path.Combine(AppContext.BaseDirectory, "asyncapi.json");
-var overlayPath = Path.Combine(AppContext.BaseDirectory, "public.overlay.yaml");
+var exitCode = 0;
 
-// ---------------------------------------------------------------- read the overlay
+exitCode |= Run(
+    "AsyncAPI",
+    "asyncapi.json",
+    "public.overlay.yaml",
+    SummarizeAsyncApi);
 
-var read = OverlayStringReader.Read(File.ReadAllText(overlayPath));
+Console.WriteLine();
+Console.WriteLine(new string('=', 78));
+Console.WriteLine();
 
-if (read.HasErrors)
+exitCode |= Run(
+    "Arazzo",
+    "arazzo.json",
+    "arazzo-public.overlay.yaml",
+    SummarizeArazzo);
+
+return exitCode;
+
+static int Run(string label, string documentFile, string overlayFile, Func<JsonNode, string> summarize)
 {
-    Console.Error.WriteLine("The overlay could not be read:");
-    foreach (var diagnostic in read.Diagnostics)
-    {
-        Console.Error.WriteLine($"  {diagnostic}");
-    }
+    var documentPath = Path.Combine(AppContext.BaseDirectory, documentFile);
+    var overlayPath = Path.Combine(AppContext.BaseDirectory, overlayFile);
 
-    return 1;
-}
-
-var overlay = read.Document!;
-Console.WriteLine($"Overlay : {overlay.Info.Title}");
-Console.WriteLine($"Version : {overlay.Overlay}  ({overlay.Actions.Count} actions)");
-
-// ---------------------------------------------------------------- validate it on its own terms
-
-var validationDiagnostics = OverlayValidator.Validate(overlay);
-if (validationDiagnostics.Count > 0)
-{
+    Console.WriteLine($"### {label}  ({documentFile}  +  {overlayFile})");
     Console.WriteLine();
-    Console.WriteLine("Validation:");
-    foreach (var diagnostic in validationDiagnostics)
+
+    // ------------------------------------------------------------ read the overlay
+
+    var read = OverlayStringReader.Read(File.ReadAllText(overlayPath));
+
+    if (read.HasErrors)
     {
-        Console.WriteLine($"  {diagnostic}");
+        Console.Error.WriteLine("The overlay could not be read:");
+        foreach (var diagnostic in read.Diagnostics)
+        {
+            Console.Error.WriteLine($"  {diagnostic}");
+        }
+
+        return 1;
     }
-}
 
-// ---------------------------------------------------------------- apply it
+    var overlay = read.Document!;
+    Console.WriteLine($"Overlay : {overlay.Info.Title}");
+    Console.WriteLine($"Version : {overlay.Overlay}  ({overlay.Actions.Count} actions)");
 
-var document = JsonNode.Parse(File.ReadAllText(documentPath))!;
+    // ------------------------------------------------------------ validate it on its own terms
 
-Console.WriteLine();
-Console.WriteLine("=== BEFORE ===");
-Console.WriteLine(Summarize(document));
+    foreach (var diagnostic in OverlayValidator.Validate(overlay))
+    {
+        Console.WriteLine($"  validation: {diagnostic}");
+    }
 
-// Strict: a target that matches nothing becomes an error rather than a warning. In a publishing
-// pipeline that is what you want — a silently unmatched target means the overlay has drifted out of
-// sync with the document it is supposed to transform.
-var result = OverlayApplier.Apply(document, overlay, new OverlayApplyOptions { Strict = true });
+    // ------------------------------------------------------------ apply it
 
-if (result.Diagnostics.Count > 0)
-{
+    var document = JsonNode.Parse(File.ReadAllText(documentPath))!;
+
     Console.WriteLine();
-    Console.WriteLine("Diagnostics:");
-    foreach (var diagnostic in result.Diagnostics)
+    Console.WriteLine("--- BEFORE ---");
+    Console.WriteLine(summarize(document));
+
+    // Strict: a target matching nothing becomes an error rather than a warning. In a publishing pipeline
+    // that is what you want — a silently unmatched target means the overlay has drifted out of sync with
+    // the document it is supposed to transform.
+    var result = OverlayApplier.Apply(document, overlay, new OverlayApplyOptions { Strict = true });
+
+    if (result.Diagnostics.Count > 0)
     {
-        Console.WriteLine($"  {diagnostic}");
+        Console.WriteLine();
+        Console.WriteLine("Diagnostics:");
+        foreach (var diagnostic in result.Diagnostics)
+        {
+            Console.WriteLine($"  {diagnostic}");
+        }
     }
+
+    if (result.HasErrors)
+    {
+        Console.Error.WriteLine();
+        Console.Error.WriteLine("Overlay application reported errors; not publishing the result.");
+        return 1;
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("--- AFTER ---");
+    Console.WriteLine(summarize(result.Document!));
+
+    // Apply works on a deep copy, so the caller's document is never touched and one overlay can be
+    // applied to many documents in turn.
+    Console.WriteLine();
+    Console.WriteLine($"source document unchanged : {summarize(document).ReplaceLineEndings(" | ").Trim()}");
+
+    return 0;
 }
 
-if (result.HasErrors)
+static string SummarizeAsyncApi(JsonNode document)
 {
-    Console.Error.WriteLine();
-    Console.Error.WriteLine("Overlay application reported errors; not publishing the result.");
-    return 1;
-}
-
-Console.WriteLine();
-Console.WriteLine("=== AFTER ===");
-Console.WriteLine(Summarize(result.Document!));
-
-// The source document is untouched: Apply works on a deep copy, so the same overlay can be applied to
-// several documents in turn without one run contaminating the next.
-Console.WriteLine();
-Console.WriteLine($"Source document still has 'internalDebug' channel : {document["channels"]!.AsObject().ContainsKey("internalDebug")}");
-Console.WriteLine($"Source document title unchanged                   : {document["info"]!["title"]!.GetValue<string>()}");
-
-Console.WriteLine();
-Console.WriteLine("=== FULL RESULT ===");
-Console.WriteLine(result.Document!.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-
-return 0;
-
-static string Summarize(JsonNode document)
-{
-    var channels = document["channels"]?.AsObject().Select(c => c.Key) ?? [];
     var servers = document["servers"]?.AsObject().Select(s => s.Key) ?? [];
+    var channels = document["channels"]?.AsObject().Select(c => c.Key) ?? [];
     var operations = document["operations"]?.AsObject().Select(o => o.Key) ?? [];
 
     return $"""
@@ -104,5 +122,26 @@ static string Summarize(JsonNode document)
               servers    : {string.Join(", ", servers)}
               channels   : {string.Join(", ", channels)}
               operations : {string.Join(", ", operations)}
+            """;
+}
+
+static string SummarizeArazzo(JsonNode document)
+{
+    var sources = document["sourceDescriptions"]?.AsArray()
+        .Select(s => $"{s!["name"]!.GetValue<string>()}({s["type"]?.GetValue<string>()})") ?? [];
+
+    var workflows = document["workflows"]?.AsArray().Select(w =>
+    {
+        var steps = w!["steps"]!.AsArray().Select(s => s!["stepId"]!.GetValue<string>());
+        return $"{w["workflowId"]!.GetValue<string>()} [{string.Join(" -> ", steps)}]";
+    }) ?? [];
+
+    var workflowList = string.Join(Environment.NewLine + "               ", workflows);
+
+    return $"""
+              title      : {document["info"]?["title"]?.GetValue<string>()}
+              description: {document["workflows"]?[0]?["description"]?.GetValue<string>() ?? "<none on first workflow>"}
+              sources    : {string.Join(", ", sources)}
+              workflows  : {workflowList}
             """;
 }

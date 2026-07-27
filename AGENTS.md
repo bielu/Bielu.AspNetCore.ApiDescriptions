@@ -36,7 +36,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `src/examples/SignalRChat` | SignalR example with the interactive Scalar console |
 | `src/examples/GrpcGreeter` | gRPC example with the interactive Scalar console (gRPC-Web) |
 | `src/examples/aspire` | Distributed .NET Aspire microservices demo |
-| `src/examples/OverlayDemo` | Applies an OpenAPI Overlay to an AsyncAPI document (console) |
+| `src/examples/OverlayDemo` | Applies an OpenAPI Overlay to an AsyncAPI document and to an Arazzo one, showing map-keyed vs array-keyed targeting (console) |
 
 ## Feature slices & layering
 

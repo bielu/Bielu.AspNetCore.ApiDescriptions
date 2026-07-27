@@ -468,37 +468,6 @@ public class OverlayApplierTests
         result.Document!["tags"]!.AsArray().Count.ShouldBe(2); // 1.1.0 concatenation
     }
 
-    // ---------------------------------------------------------------- spec-agnostic targets
-
-    [Fact]
-    public void AppliesToAnAsyncApiDocument_NotJustOpenApi()
-    {
-        // The differentiating claim: the engine sees a JsonNode, so an AsyncAPI description is as valid a
-        // target as an OpenAPI one. Strip an internal channel before sharing the document externally.
-        var asyncApi = Doc("""
-        {
-          "asyncapi": "3.0.0",
-          "info": { "title": "Streetlights", "version": "1.0.0" },
-          "channels": {
-            "lightMeasured": { "address": "light/measured" },
-            "internalDebug":  { "address": "internal/debug" }
-          }
-        }
-        """);
-
-        var result = ApplyOk(asyncApi, """
-        overlay: 1.1.0
-        info: { title: Strip internal channels, version: 1.0.0 }
-        actions:
-          - target: $.channels.internalDebug
-            remove: true
-          - target: $.info
-            update:
-              description: Public distribution
-        """);
-
-        result["channels"]!.AsObject().ContainsKey("internalDebug").ShouldBeFalse();
-        result["channels"]!.AsObject().ContainsKey("lightMeasured").ShouldBeTrue();
-        result["info"]!["description"]!.GetValue<string>().ShouldBe("Public distribution");
-    }
+    // Targets in specifications other than OpenAPI — AsyncAPI and Arazzo — live in CrossSpecTargetTests,
+    // because the map-keyed and array-keyed shapes exercise materially different code paths.
 }

@@ -1,0 +1,39 @@
+overlay: 1.1.0
+info:
+  title: Public distribution of the Streetlights workflows
+  version: 1.0.0
+  description: >
+    The same transformation shape as public.overlay.yaml, but against an Arazzo document.
+    Note how every target is a filter expression: Arazzo keys workflows, steps and
+    sourceDescriptions as arrays of objects carrying an id field, where OpenAPI and AsyncAPI
+    use maps. There is no `$.workflows.internalDiagnostics` to target.
+
+actions:
+  # 1. Drop an entire workflow, selected by its id out of the workflows array.
+  - target: $.workflows[?@.workflowId == 'internalDiagnostics']
+    description: Operator-only workflow
+    remove: true
+
+  # 2. Drop a step from whichever workflow contains it — a filter inside a filter.
+  - target: $.workflows[*].steps[?@.stepId == 'dumpDebugState']
+    description: Debug step that should not be published
+    remove: true
+
+  # 3. Merge into a workflow selected by id. Object targets merge, so `summary` survives.
+  - target: $.workflows[?@.workflowId == 'measureAndAlert']
+    description: Document the surviving workflow
+    update:
+      description: Publishes a measurement, then waits for the alert it triggers.
+
+  # 4. Append to an array reached through a filter.
+  - target: $.sourceDescriptions
+    description: The AsyncAPI source the awaitAlert step already references
+    update:
+      name: events
+      url: https://example.com/asyncapi.json
+      type: asyncapi
+
+  # 5. Replace a primitive in place (1.1.0), selected through two filters.
+  - target: $.info.title
+    description: Use the public product name
+    update: Streetlights workflows (Public)

@@ -140,6 +140,54 @@ actions:
 Applying it yields a document with `internalDebug` gone and `info` enriched — with the original
 untouched on disk.
 
+## Targeting Arazzo documents
+
+Arazzo works too, but it is worth knowing that it targets differently, because of how the specification
+shapes its collections:
+
+| Specification | Collection | Shape | Targeting |
+|---------------|-----------|-------|-----------|
+| OpenAPI | `paths` | **map** keyed by path | `$.paths['/items']` |
+| AsyncAPI | `channels` | **map** keyed by name | `$.channels.lightMeasured` |
+| Arazzo | `workflows`, `steps`, `sourceDescriptions` | **array** of objects carrying an id field | `$.workflows[?@.workflowId == 'measureAndAlert']` |
+
+There is no `$.workflows.measureAndAlert` to target — a workflow is an array element, not a map entry, so
+**every Arazzo target is a filter expression**. That leans directly on RFC 9535 filters, which is one
+practical reason to declare `overlay: 1.1.0`: 1.0.0 never pinned the JSONPath dialect, so filter support
+there varies between tools.
+
+```yaml
+overlay: 1.1.0
+info:
+  title: Public distribution of the Streetlights workflows
+  version: 1.0.0
+actions:
+  # Remove a whole workflow, selected out of the array by its id
+  - target: $.workflows[?@.workflowId == 'internalDiagnostics']
+    remove: true
+
+  # Remove a step from whichever workflow contains it — a filter inside a filter
+  - target: $.workflows[*].steps[?@.stepId == 'dumpDebugState']
+    remove: true
+
+  # Merge into a workflow; `summary` and `steps` survive because object targets merge
+  - target: $.workflows[?@.workflowId == 'measureAndAlert']
+    update:
+      description: Publishes a measurement, then waits for the alert it triggers.
+
+  # Append to an array
+  - target: $.sourceDescriptions
+    update:
+      name: events
+      url: https://example.com/asyncapi.json
+      type: asyncapi
+```
+
+Because removals here delete *array elements*, several matches in the same array shift each other's
+indexes. The engine resolves each match's index against the live array at removal time, so
+`$.workflows[*].steps[?@.stepId == 'debug']` correctly removes every matching step across every workflow
+regardless of the order matches come back in.
+
 ## Action semantics
 
 Actions apply **in sequence, each against the result of the previous one**. That is what lets an overlay
@@ -196,8 +244,9 @@ about to transform is the one the overlay expected.
 ## Example project
 
 A runnable end-to-end sample lives in
-[`src/examples/OverlayDemo`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/OverlayDemo):
-it applies an overlay to an AsyncAPI document and prints the before/after, plus the diagnostics.
+[`src/examples/OverlayDemo`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/OverlayDemo).
+It runs the same engine twice — once over an AsyncAPI document and once over an Arazzo one — printing
+before/after and diagnostics for each, so the map-keyed and array-keyed targeting styles sit side by side.
 
 ```bash
 cd src/examples/OverlayDemo
