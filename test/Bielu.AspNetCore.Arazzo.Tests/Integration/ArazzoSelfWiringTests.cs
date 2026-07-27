@@ -240,7 +240,16 @@ public class ArazzoSelfWiringTests
             });
 
         var host = builder.Build();
-        await host.StartAsync();
+        try
+        {
+            await host.StartAsync();
+        }
+        catch
+        {
+            host.Dispose();
+            throw;
+        }
+
         return host;
     }
 
@@ -279,7 +288,16 @@ public class ArazzoSelfWiringTests
             });
 
         var host = builder.Build();
-        await host.StartAsync();
+        try
+        {
+            await host.StartAsync();
+        }
+        catch
+        {
+            host.Dispose();
+            throw;
+        }
+
         return host;
     }
 
@@ -354,7 +372,16 @@ public class ArazzoSelfWiringTests
             });
 
         var host = builder.Build();
-        await host.StartAsync();
+        try
+        {
+            await host.StartAsync();
+        }
+        catch
+        {
+            host.Dispose();
+            throw;
+        }
+
         return host;
     }
 
@@ -392,7 +419,16 @@ public class ArazzoSelfWiringTests
             });
 
         var host = builder.Build();
-        await host.StartAsync();
+        try
+        {
+            await host.StartAsync();
+        }
+        catch
+        {
+            host.Dispose();
+            throw;
+        }
+
         return host;
     }
 }

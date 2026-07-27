@@ -25,6 +25,7 @@ public sealed class ArazzoWorkflowBuilder
     /// <summary>Sets the workflow's summary.</summary>
     public ArazzoWorkflowBuilder WithSummary(string summary)
     {
+        ArgumentNullException.ThrowIfNull(summary);
         Summary = summary;
         return this;
     }
@@ -32,6 +33,7 @@ public sealed class ArazzoWorkflowBuilder
     /// <summary>Sets the workflow's description.</summary>
     public ArazzoWorkflowBuilder WithDescription(string description)
     {
+        ArgumentNullException.ThrowIfNull(description);
         Description = description;
         return this;
     }
