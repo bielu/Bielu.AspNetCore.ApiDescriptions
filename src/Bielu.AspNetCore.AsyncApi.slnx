@@ -32,6 +32,8 @@
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Versioning.Tests/Bielu.AspNetCore.AsyncApi.Versioning.Tests.csproj" />
     <Project Path="../test/Bielu.Arazzo.Tests/Bielu.Arazzo.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.Arazzo.Tests/Bielu.AspNetCore.Arazzo.Tests.csproj" />
+    <Project Path="../test/Bielu.Cli.Shared.Tests/Bielu.Cli.Shared.Tests.csproj" />
+    <Project Path="../test/Bielu.Arazzo.Cli.Tests/Bielu.Arazzo.Cli.Tests.csproj" />
   </Folder>
   <Folder Name="/Solution Files/">
     <File Path="../.dockerignore" />
@@ -47,6 +49,7 @@
   </Folder>
   <Folder Name="/tools/">
     <Project Path="./Bielu.AspNetCore.AsyncApi.Cli/Bielu.AspNetCore.AsyncApi.Cli.csproj" />
+    <Project Path="./Bielu.Arazzo.Cli/Bielu.Arazzo.Cli.csproj" />
     <Project Path="./Bielu.AspNetCore.AsyncApi.Analyzers/Bielu.AspNetCore.AsyncApi.Analyzers.csproj" />
     <Project Path="./Bielu.AspNetCore.AsyncApi.ApiDescription.Server/Bielu.AspNetCore.AsyncApi.ApiDescription.Server.csproj" />
     <Project Path="./Bielu.AspNetCore.AsyncApi.Templates/Bielu.AspNetCore.AsyncApi.Templates.csproj" />
@@ -54,6 +57,7 @@
   <Project Path="./Bielu.Arazzo/Bielu.Arazzo.csproj" />
   <Project Path="./Bielu.Arazzo.Readers/Bielu.Arazzo.Readers.csproj" />
   <Project Path="./Bielu.AspNetCore.Arazzo/Bielu.AspNetCore.Arazzo.csproj" />
+  <Project Path="./Bielu.Cli.Shared/Bielu.Cli.Shared.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.csproj" />

@@ -3,15 +3,18 @@
 
 using System.Reflection;
 using Bielu.AspNetCore.AsyncApi.Cli.Commands;
+using Bielu.Cli.Shared;
 
 // Parse command line arguments
 // Usage: dotnet asyncapi getdocument --assembly <name> --assembly-path <path> --output <dir> --project <name> [--document <name>] [--file-list <path>] [--file-name <name>]
 // Usage: dotnet asyncapi merge --source <uri> [--source <uri> ...] --output <path> [--prefix <prefix> ...] [--title <title>] [--version <version>]
 
+var logger = new ConsoleCliLogger();
+
 if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
 {
     PrintUsage();
-    return 0;
+    return CliExitCode.Success;
 }
 
 if (args[0] == "merge")
@@ -31,14 +34,12 @@ if (args[0] == "diff")
 
 if (args[0] != "getdocument")
 {
-    Console.Error.WriteLine($"Unknown command: {args[0]}");
+    logger.Error($"Unknown command: {args[0]}");
     PrintUsage();
-    return 1;
+    return CliExitCode.Failure;
 }
 
 var context = new GetDocumentCommandContext();
-var additionalProbingPaths = new List<string>();
-var additionalDeps = new List<string>();
 
 for (var i = 1; i < args.Length; i++)
 {
@@ -66,23 +67,25 @@ for (var i = 1; i < args.Length; i++)
             context.FileName = args[++i];
             break;
         default:
-            Console.Error.WriteLine($"Unknown argument: {args[i]}");
+            logger.Error($"Unknown argument: {args[i]}");
             PrintUsage();
-            return 1;
+            return CliExitCode.Failure;
     }
 }
 
 // Validate required arguments
 if (string.IsNullOrEmpty(context.AssemblyName))
 {
-    Console.Error.WriteLine("Error: --assembly is required.");
-    return 1;
+    logger.Error("--assembly is required.");
+    return CliExitCode.Failure;
 }
+
 if (string.IsNullOrEmpty(context.OutputDirectory))
 {
-    Console.Error.WriteLine("Error: --output is required.");
-    return 1;
+    logger.Error("--output is required.");
+    return CliExitCode.Failure;
 }
+
 if (string.IsNullOrEmpty(context.ProjectName))
 {
     context.ProjectName = context.AssemblyName;
@@ -95,14 +98,15 @@ if (!string.IsNullOrEmpty(context.AssemblyPath))
     if (directory != null)
     {
         // Add the assembly's directory to the resolution path
-        AppDomain.CurrentDomain.AssemblyResolve += (sender, resolveArgs) =>
+        AppDomain.CurrentDomain.AssemblyResolve += (_, resolveArgs) =>
         {
-            var name = new System.Reflection.AssemblyName(resolveArgs.Name);
+            var name = new AssemblyName(resolveArgs.Name);
             var candidatePath = Path.Combine(directory, name.Name + ".dll");
             if (File.Exists(candidatePath))
             {
-                return System.Reflection.Assembly.LoadFrom(candidatePath);
+                return Assembly.LoadFrom(candidatePath);
             }
+
             return null;
         };
     }
@@ -110,151 +114,191 @@ if (!string.IsNullOrEmpty(context.AssemblyPath))
 
 var worker = new GetDocumentCommandWorker(
     context,
-    writeInfo: msg => Console.WriteLine($"info: {msg}"),
-    writeWarning: msg => Console.WriteLine($"warn: {msg}"),
-    writeError: msg => Console.Error.WriteLine($"error: {msg}"));
+    writeInfo: logger.Info,
+    writeWarning: logger.Warning,
+    writeError: logger.Error);
 
 return worker.Process();
 
-static int RunMerge(string[] args)
+int RunMerge(string[] mergeArgs)
 {
     var mergeContext = new MergeCommandContext();
 
-    for (var i = 1; i < args.Length; i++)
+    for (var i = 1; i < mergeArgs.Length; i++)
     {
-        switch (args[i])
+        switch (mergeArgs[i])
         {
             case "--source":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --source requires a value."); return 1; }
-                mergeContext.Sources.Add(args[i]);
+                if (!CliArgumentReader.TryReadValue(mergeArgs, ref i, "--source", logger, out var source))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                mergeContext.Sources.Add(source);
                 break;
             case "--output":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --output requires a value."); return 1; }
-                mergeContext.OutputPath = args[i];
+                if (!CliArgumentReader.TryReadValue(mergeArgs, ref i, "--output", logger, out var output))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                mergeContext.OutputPath = output;
                 break;
             case "--prefix":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --prefix requires a value."); return 1; }
-                mergeContext.Prefixes.Add(args[i]);
+                if (!CliArgumentReader.TryReadValue(mergeArgs, ref i, "--prefix", logger, out var prefix))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                mergeContext.Prefixes.Add(prefix);
                 break;
             case "--title":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --title requires a value."); return 1; }
-                mergeContext.Title = args[i];
+                if (!CliArgumentReader.TryReadValue(mergeArgs, ref i, "--title", logger, out var title))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                mergeContext.Title = title;
                 break;
             case "--version":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --version requires a value."); return 1; }
-                mergeContext.Version = args[i];
+                if (!CliArgumentReader.TryReadValue(mergeArgs, ref i, "--version", logger, out var version))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                mergeContext.Version = version;
                 break;
             default:
-                Console.Error.WriteLine($"Unknown argument for merge: {args[i]}");
+                logger.Error($"Unknown argument for merge: {mergeArgs[i]}");
                 PrintUsage();
-                return 1;
+                return CliExitCode.Failure;
         }
     }
 
     if (mergeContext.Sources.Count == 0)
     {
-        Console.Error.WriteLine("Error: at least one --source is required for merge.");
-        return 1;
+        logger.Error("At least one --source is required for merge.");
+        return CliExitCode.Failure;
     }
 
     if (string.IsNullOrEmpty(mergeContext.OutputPath))
     {
-        Console.Error.WriteLine("Error: --output is required for merge.");
-        return 1;
+        logger.Error("--output is required for merge.");
+        return CliExitCode.Failure;
     }
 
     var mergeWorker = new MergeCommandWorker(
         mergeContext,
-        writeInfo: msg => Console.WriteLine($"info: {msg}"),
-        writeError: msg => Console.Error.WriteLine($"error: {msg}"));
+        writeInfo: logger.Info,
+        writeError: logger.Error);
 
     return mergeWorker.Process();
 }
 
-static int RunValidate(string[] args)
+int RunValidate(string[] validateArgs)
 {
-    var context = new ValidateCommandContext();
+    var validateContext = new ValidateCommandContext();
 
-    for (var i = 1; i < args.Length; i++)
+    for (var i = 1; i < validateArgs.Length; i++)
     {
-        switch (args[i])
+        switch (validateArgs[i])
         {
             case "--file":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --file requires a value."); return 1; }
-                context.Files.Add(args[i]);
+                if (!CliArgumentReader.TryReadValue(validateArgs, ref i, "--file", logger, out var file))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                validateContext.Files.Add(file);
                 break;
             case "--strict":
-                context.Strict = true;
+                validateContext.Strict = true;
                 break;
             case "--format":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --format requires a value."); return 1; }
-                context.Format = args[i];
+                if (!CliArgumentReader.TryReadValue(validateArgs, ref i, "--format", logger, out var format))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                validateContext.Format = format;
                 break;
             default:
-                Console.Error.WriteLine($"Unknown argument for validate: {args[i]}");
+                logger.Error($"Unknown argument for validate: {validateArgs[i]}");
                 PrintUsage();
-                return 1;
+                return CliExitCode.Failure;
         }
     }
 
-    if (context.Files.Count == 0)
+    if (validateContext.Files.Count == 0)
     {
-        Console.Error.WriteLine("Error: at least one --file is required for validate.");
-        return 1;
+        logger.Error("At least one --file is required for validate.");
+        return CliExitCode.Failure;
     }
 
-    var worker = new ValidateCommandWorker(
-        context,
-        writeInfo: msg => Console.WriteLine($"info: {msg}"),
-        writeWarning: msg => Console.WriteLine($"warn: {msg}"),
-        writeError: msg => Console.Error.WriteLine($"error: {msg}"));
+    var validateWorker = new ValidateCommandWorker(
+        validateContext,
+        writeInfo: logger.Info,
+        writeWarning: logger.Warning,
+        writeError: logger.Error);
 
-    return worker.Process();
+    return validateWorker.Process();
 }
 
-static int RunDiff(string[] args)
+int RunDiff(string[] diffArgs)
 {
-    var context = new DiffCommandContext();
+    var diffContext = new DiffCommandContext();
 
-    for (var i = 1; i < args.Length; i++)
+    for (var i = 1; i < diffArgs.Length; i++)
     {
-        switch (args[i])
+        switch (diffArgs[i])
         {
             case "--base":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --base requires a value."); return 1; }
-                context.BasePath = args[i];
+                if (!CliArgumentReader.TryReadValue(diffArgs, ref i, "--base", logger, out var basePath))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                diffContext.BasePath = basePath;
                 break;
             case "--head":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --head requires a value."); return 1; }
-                context.HeadPath = args[i];
+                if (!CliArgumentReader.TryReadValue(diffArgs, ref i, "--head", logger, out var headPath))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                diffContext.HeadPath = headPath;
                 break;
             case "--fail-on-breaking":
-                context.FailOnBreaking = true;
+                diffContext.FailOnBreaking = true;
                 break;
             case "--format":
-                if (++i >= args.Length) { Console.Error.WriteLine("Error: --format requires a value."); return 1; }
-                context.Format = args[i];
+                if (!CliArgumentReader.TryReadValue(diffArgs, ref i, "--format", logger, out var format))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                diffContext.Format = format;
                 break;
             default:
-                Console.Error.WriteLine($"Unknown argument for diff: {args[i]}");
+                logger.Error($"Unknown argument for diff: {diffArgs[i]}");
                 PrintUsage();
-                return 1;
+                return CliExitCode.Failure;
         }
     }
 
-    if (string.IsNullOrEmpty(context.BasePath) || string.IsNullOrEmpty(context.HeadPath))
+    if (string.IsNullOrEmpty(diffContext.BasePath) || string.IsNullOrEmpty(diffContext.HeadPath))
     {
-        Console.Error.WriteLine("Error: both --base and --head are required for diff.");
-        return 1;
+        logger.Error("Both --base and --head are required for diff.");
+        return CliExitCode.Failure;
     }
 
-    var worker = new DiffCommandWorker(
-        context,
-        writeInfo: msg => Console.WriteLine($"info: {msg}"),
-        writeWarning: msg => Console.WriteLine($"warn: {msg}"),
-        writeError: msg => Console.Error.WriteLine($"error: {msg}"));
+    var diffWorker = new DiffCommandWorker(
+        diffContext,
+        writeInfo: logger.Info,
+        writeWarning: logger.Warning,
+        writeError: logger.Error);
 
-    return worker.Process();
+    return diffWorker.Process();
 }
 
 static void PrintUsage()

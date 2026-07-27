@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>Bielu.Arazzo.Cli</RootNamespace>
+        <AssemblyName>Bielu.Arazzo.Cli</AssemblyName>
+
+        <!-- .NET Tool packaging -->
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>dotnet-arazzo</ToolCommandName>
+        <PackageId>Bielu.Arazzo.Cli</PackageId>
+        <Description>CLI tool for validating, linting, and diffing Arazzo workflow documents.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.Arazzo.Cli.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.Arazzo\Bielu.Arazzo.csproj" />
+        <ProjectReference Include="..\Bielu.Arazzo.Readers\Bielu.Arazzo.Readers.csproj" />
+        <ProjectReference Include="..\Bielu.Cli.Shared\Bielu.Cli.Shared.csproj" />
+    </ItemGroup>
+
+</Project>

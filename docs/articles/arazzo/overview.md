@@ -7,8 +7,7 @@ standard for describing multi-step API workflows. Arazzo 1.1 added `asyncapi` as
 event/message channels.
 
 > ⚠️ **Note:** Before version 1.0.0, these libraries — and `Bielu.AspNetCore.Arazzo`, the ASP.NET Core
-> integration covered below — are regarded as unstable and **breaking changes may be introduced**. The
-> `dotnet arazzo` CLI is still planned.
+> integration covered below — are regarded as unstable and **breaking changes may be introduced**.
 
 ## Installation
 
@@ -201,7 +200,12 @@ can adopt the generic form incrementally.
 > [ARAZZO-PROPOSAL.md](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ARAZZO-PROPOSAL.md)
 > risk R4).
 
+## CLI Tool: `dotnet arazzo`
+
+`Bielu.Arazzo.Cli` provides `validate`, `lint`, and `diff` commands for Arazzo documents — see the
+[CLI Tool](cli.md) article for details.
+
 ## What's next
 
 See the [Arazzo proposal](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ARAZZO-PROPOSAL.md)
-for the `dotnet arazzo` CLI and the workflow runtime.
+for the workflow runtime (`arazzo run`/`arazzo test`).

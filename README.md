@@ -74,6 +74,7 @@ public class MyService
 - [CLI Tool usage](https://apidescriptions.bielu.pl/articles/cli.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)
 - [Arazzo Overview](https://apidescriptions.bielu.pl/articles/arazzo/overview.html)
+- [Arazzo CLI Tool usage](https://apidescriptions.bielu.pl/articles/arazzo/cli.html)
 
 ## License
 

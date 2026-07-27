@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Bielu.Arazzo.Readers;
 using Bielu.Cli.Shared;
 using Bielu.Cli.Shared.Diff;
-using ByteBard.AsyncAPI.Readers;
 
-namespace Bielu.AspNetCore.AsyncApi.Cli.Commands;
+namespace Bielu.Arazzo.Cli.Commands;
 
 /// <summary>
-/// Worker that compares two AsyncAPI documents and reports differences.
+/// Worker that compares two Arazzo documents and reports differences.
 /// </summary>
 internal sealed class DiffCommandWorker
 {
@@ -39,17 +39,19 @@ internal sealed class DiffCommandWorker
             return CliExitCode.Failure;
         }
 
-        var baseContent = File.ReadAllText(_context.BasePath);
-        var headContent = File.ReadAllText(_context.HeadPath);
+        var baseResult = ArazzoStringReader.Read(File.ReadAllText(_context.BasePath));
+        var headResult = ArazzoStringReader.Read(File.ReadAllText(_context.HeadPath));
 
-        var reader = new AsyncApiStringReader();
-        var baseDoc = reader.Read(baseContent, out _);
-        var headDoc = reader.Read(headContent, out _);
+        if (baseResult.Document is null || headResult.Document is null)
+        {
+            _logger.Error("Unable to parse one or both documents.");
+            return CliExitCode.Failure;
+        }
 
-        var comparer = new AsyncApiDocumentComparer();
-        var changes = comparer.Compare(baseDoc, headDoc).ToList();
+        var comparer = new ArazzoDocumentComparer();
+        var changes = comparer.Compare(baseResult.Document, headResult.Document).ToList();
 
-        DiffReportWriter.Write(changes, _context.Format, "AsyncAPI Diff Report", _logger);
+        DiffReportWriter.Write(changes, _context.Format, "Arazzo Diff Report", _logger);
 
         return DiffReportWriter.HasBreakingChanges(changes) && _context.FailOnBreaking
             ? CliExitCode.Failure
