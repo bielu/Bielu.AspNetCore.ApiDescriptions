@@ -13,6 +13,7 @@
             "src/examples/**",
             "src/Bielu.Arazzo/**",
             "src/Bielu.Arazzo.Readers/**",
+            "src/Bielu.AspNetCore.Arazzo/**",
             "src/Bielu.AspNetCore.AsyncApi.Templates/**",
             "src/Bielu.AspNetCore.AsyncApi.Analyzers/**",
             "src/Bielu.AspNetCore.AsyncApi.SourceGenerators/**",
@@ -37,7 +38,8 @@
           "src": "..",
           "files": [
             "src/Bielu.Arazzo/**/*.csproj",
-            "src/Bielu.Arazzo.Readers/**/*.csproj"
+            "src/Bielu.Arazzo.Readers/**/*.csproj",
+            "src/Bielu.AspNetCore.Arazzo/**/*.csproj"
           ],
           "exclude": [
             "**/bin/**",

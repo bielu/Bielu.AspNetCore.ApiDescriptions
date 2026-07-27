@@ -6,10 +6,9 @@ standard for describing multi-step API workflows. Arazzo 1.1 added `asyncapi` as
 `sourceDescriptions` type alongside `openapi`, so a single workflow can span HTTP operations and
 event/message channels.
 
-> ⚠️ **Note:** Before version 1.0.0, these libraries are regarded as unstable and **breaking changes may
-> be introduced**. This page documents the spec library only; the ASP.NET Core integration
-> (`Bielu.AspNetCore.Arazzo`) and `dotnet arazzo` CLI are planned but not yet built — see
-> [ROADMAP.md](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ROADMAP.md).
+> ⚠️ **Note:** Before version 1.0.0, these libraries — and `Bielu.AspNetCore.Arazzo`, the ASP.NET Core
+> integration covered below — are regarded as unstable and **breaking changes may be introduced**. The
+> `dotnet arazzo` CLI is still planned.
 
 ## Installation
 
@@ -108,12 +107,101 @@ if (workspace.TryResolveOperation("events", "sendLightMeasurement", out var oper
 ```
 
 Implement `IArazzoSourceResolver` per source type (`openapi`, `asyncapi`, `arazzo`). This is the hook
-the planned `Bielu.AspNetCore.Arazzo` package plugs into so a running app can self-wire its own
-`IAsyncApiDocumentProvider` and OpenAPI documents — turning a renamed channel or operation into a
-startup failure instead of a production one.
+`Bielu.AspNetCore.Arazzo` plugs into so a running app can self-wire its own `IAsyncApiDocumentProvider`
+and OpenAPI documents — turning a renamed channel or operation into a startup failure instead of a
+production one.
+
+## ASP.NET Core integration: `Bielu.AspNetCore.Arazzo`
+
+`Bielu.AspNetCore.Arazzo` mirrors the core AsyncAPI package's shape: a fluent options builder,
+`AddArazzo`/`MapArazzo`, and — the differentiating feature — self-wiring `sourceDescriptions` against
+the *same app's* live AsyncAPI/OpenAPI documents.
+
+```bash
+dotnet add package Bielu.AspNetCore.Arazzo
+```
+
+```csharp
+using Bielu.Arazzo.Models;
+using Bielu.AspNetCore.Arazzo.Extensions;
+
+builder.Services.AddOpenApi("v1");
+builder.Services.AddAsyncApi("v1");
+
+builder.Services.AddArazzo(options =>
+{
+    options.WithInfo("Streetlights workflows", "1.0.0");
+    options.AddAsyncApiSource("events", "v1");   // self-wires against the app's own AsyncAPI document
+    options.AddOpenApiSource("api", "v1");       // self-wires against the app's own OpenAPI document
+
+    options.AddWorkflow("measureAndAlert", wf => wf
+        .Step("publishMeasurement", s => s
+            .Channel("events", "lightMeasured", ArazzoStepAction.Send)
+            .Output("measurementId", "$message.payload#/id"))
+        .Step("awaitAlert", s => s
+            .DependsOn("publishMeasurement")
+            .Channel("events", "lightingAlert", ArazzoStepAction.Receive)
+            .SuccessCriteria("$message.payload#/measurementId == $steps.publishMeasurement.outputs.measurementId")));
+});
+
+var app = builder.Build();
+app.MapAsyncApi();
+app.MapOpenApi();
+app.MapArazzo();   // → /arazzo/{documentName}.json (default route; JSON only)
+app.Run();
+```
+
+By default, `MapArazzo()` serves only JSON at `/arazzo/{documentName}.json`. To also serve YAML, map a
+second route with a `.yaml`/`.yml` pattern:
+
+```csharp
+app.MapArazzo("/arazzo/{documentName}.yaml");
+```
+
+By default (`ArazzoOptions.ValidateSourceReferencesOnStartup = true`), every step's
+`operationId`/`operationPath`/`channelPath` is resolved against the live, in-memory AsyncAPI/OpenAPI
+documents once at app startup — a renamed channel or operation throws `ArazzoStartupValidationException`
+and fails startup, rather than failing the first time a workflow actually runs in production.
+
+### Identifying workflows and steps by type
+
+Workflow and step ids are cross-referenced by string (`dependsOn`, a step targeting another workflow),
+which makes a typo a runtime problem rather than a compile-time one. Every id-taking builder method has
+a generic overload that takes a marker type instead, so renaming the type moves every reference with it:
+
+```csharp
+// Marker types — they carry no members; the type itself is the identifier.
+sealed class MeasureAndAlert;
+sealed class PublishMeasurement;
+sealed class AwaitAlert;
+
+options.AddWorkflow<MeasureAndAlert>(wf => wf
+    .Step<PublishMeasurement>(s => s
+        .Channel("events", "lightMeasured", ArazzoStepAction.Send)
+        .Output("measurementId", "$message.payload#/id"))
+    .Step<AwaitAlert>(s => s
+        .DependsOn<PublishMeasurement>()
+        .Channel("events", "lightingAlert", ArazzoStepAction.Receive)));
+
+options.AddWorkflow<ReportDaily>(wf => wf
+    .DependsOn<MeasureAndAlert>()                       // workflow-level dependsOn
+    .Step<Summarise>(s => s.Workflow<MeasureAndAlert>()) // a step targeting another workflow
+);
+```
+
+The mapping is `ArazzoId.FromType<T>()`: the type name camel-cased, so `MeasureAndAlert` becomes
+`measureAndAlert` (and `HTTPHealthCheck` becomes `httpHealthCheck`). That keeps the emitted document's
+casing idiomatic while the marker types stay idiomatic C#, and it means the two forms interoperate —
+`AddWorkflow("measureAndAlert", …)` and `DependsOn<MeasureAndAlert>()` refer to the same workflow, so you
+can adopt the generic form incrementally.
+
+> ⚠️ **Security note:** `Bielu.AspNetCore.Arazzo` only *serves* and *validates* workflow documents — it
+> does not execute them. An execution engine (`arazzo run`/`arazzo test`) is planned separately and will
+> be CLI/test-only by design, never exposed as a default ASP.NET Core endpoint (see
+> [ARAZZO-PROPOSAL.md](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ARAZZO-PROPOSAL.md)
+> risk R4).
 
 ## What's next
 
 See the [Arazzo proposal](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ARAZZO-PROPOSAL.md)
-and [roadmap](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ROADMAP.md) for the
-ASP.NET Core builder/self-wiring package, the `dotnet arazzo` CLI, and the workflow runtime.
+for the `dotnet arazzo` CLI and the workflow runtime.

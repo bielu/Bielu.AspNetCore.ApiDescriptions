@@ -28,6 +28,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.Scalar.Grpc` (+ `.Aspire`) | Interactive gRPC-Web console for Scalar (`@bielu/scalar-grpc` bundle + protobuf descriptor endpoint) |
 | `Bielu.Arazzo` (package id `Bielu.Arazzo.NET`) | Arazzo Specification object model, JSON/YAML writers, validation — framework-free, no dependency on the AsyncAPI packages |
 | `Bielu.Arazzo.Readers` (package id `Bielu.Arazzo.NET.Readers`) | JSON/YAML readers for Arazzo documents, producing `Bielu.Arazzo` documents with diagnostics |
+| `Bielu.AspNetCore.Arazzo` | ASP.NET Core integration for Arazzo: `AddArazzo`/`MapArazzo`, fluent workflow builder, self-wiring `sourceDescriptions` against this app's own live AsyncAPI/OpenAPI documents, startup cross-spec reference validation |
 | `src/examples/StreetlightsAPI` | Minimal single-service example (best starting point) |
 | `src/examples/SignalRChat` | SignalR example with the interactive Scalar console |
 | `src/examples/GrpcGreeter` | gRPC example with the interactive Scalar console (gRPC-Web) |
