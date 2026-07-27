@@ -102,6 +102,16 @@ public sealed class ArazzoOptions
         return this;
     }
 
+    /// <summary>
+    /// Adds a workflow identified by the marker type <typeparamref name="TWorkflow"/>, whose
+    /// <c>workflowId</c> follows the <see cref="ArazzoId"/> convention. Lets other workflows and steps
+    /// reference it as <c>DependsOn&lt;TWorkflow&gt;()</c>/<c>Workflow&lt;TWorkflow&gt;()</c> instead of
+    /// repeating a string id.
+    /// </summary>
+    /// <typeparam name="TWorkflow">The marker type naming this workflow.</typeparam>
+    public ArazzoOptions AddWorkflow<TWorkflow>(Action<ArazzoWorkflowBuilder> configure)
+        => AddWorkflow(ArazzoId.FromType<TWorkflow>(), configure);
+
     /// <summary>Associates a self-wired source description with the document name it resolves against at runtime.</summary>
     internal readonly record struct SourceWiring(string SourceName, string SourceType, string DocumentName);
 }

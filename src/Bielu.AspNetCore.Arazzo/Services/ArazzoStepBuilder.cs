@@ -63,7 +63,8 @@ public sealed class ArazzoStepBuilder
         ArgumentException.ThrowIfNullOrEmpty(sourceName);
         ArgumentException.ThrowIfNullOrEmpty(path);
         ArgumentException.ThrowIfNullOrEmpty(httpMethod);
-        OperationPathValue = $"{{$sourceDescriptions.{sourceName}.url}}#/paths/{EscapePointerSegment(path)}/{httpMethod.ToLowerInvariant()}";
+        OperationPathValue =
+            $"{{$sourceDescriptions.{sourceName}.url}}#/paths/{EscapePointerSegment(path)}/{httpMethod.ToLowerInvariant()}";
         return this;
     }
 
@@ -99,12 +100,27 @@ public sealed class ArazzoStepBuilder
         return this;
     }
 
+    /// <summary>
+    /// Targets the workflow identified by the marker type <typeparamref name="TWorkflow"/> (see
+    /// <see cref="ArazzoId"/>). Mutually exclusive with <see cref="Operation"/>,
+    /// <see cref="OperationPath"/>, and <see cref="Channel"/>.
+    /// </summary>
+    /// <typeparam name="TWorkflow">The marker type naming the workflow this step targets.</typeparam>
+    public ArazzoStepBuilder Workflow<TWorkflow>() => Workflow(ArazzoId.FromType<TWorkflow>());
+
     /// <summary>Adds stepIds that must complete before this step executes.</summary>
     public ArazzoStepBuilder DependsOn(params string[] stepIds)
     {
         _dependsOn.AddRange(stepIds);
         return this;
     }
+
+    /// <summary>
+    /// Adds the step identified by the marker type <typeparamref name="TStep"/> (see <see cref="ArazzoId"/>)
+    /// as one that must complete before this step executes. Chain the call to depend on several steps.
+    /// </summary>
+    /// <typeparam name="TStep">The marker type naming the step depended on.</typeparam>
+    public ArazzoStepBuilder DependsOn<TStep>() => DependsOn(ArazzoId.FromType<TStep>());
 
     /// <summary>Sets the step's request body payload from a literal JSON value.</summary>
     public ArazzoStepBuilder Payload(JsonNode payload, string? contentType = null)
@@ -118,7 +134,8 @@ public sealed class ArazzoStepBuilder
     public ArazzoStepBuilder PayloadExpression(string expression, string? contentType = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(expression);
-        RequestBody = new ArazzoRequestBody { Payload = ArazzoValue.FromExpression(expression), ContentType = contentType };
+        RequestBody =
+            new ArazzoRequestBody { Payload = ArazzoValue.FromExpression(expression), ContentType = contentType };
         return this;
     }
 
@@ -144,7 +161,10 @@ public sealed class ArazzoStepBuilder
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         ArgumentException.ThrowIfNullOrEmpty(valueExpression);
-        _parameters.Add(ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = name, In = location, Value = ArazzoValue.FromExpression(valueExpression) }));
+        _parameters.Add(ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter
+        {
+            Name = name, In = location, Value = ArazzoValue.FromExpression(valueExpression)
+        }));
         return this;
     }
 

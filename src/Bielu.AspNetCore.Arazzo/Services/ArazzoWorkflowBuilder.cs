@@ -70,6 +70,14 @@ public sealed class ArazzoWorkflowBuilder
         return this;
     }
 
+    /// <summary>
+    /// Adds the workflow identified by the marker type <typeparamref name="TWorkflow"/> (see
+    /// <see cref="ArazzoId"/>) as one that must complete before this workflow can be processed. Chain the
+    /// call to depend on several workflows.
+    /// </summary>
+    /// <typeparam name="TWorkflow">The marker type naming the workflow depended on.</typeparam>
+    public ArazzoWorkflowBuilder DependsOn<TWorkflow>() => DependsOn(ArazzoId.FromType<TWorkflow>());
+
     /// <summary>Adds a step to the workflow, in execution order.</summary>
     public ArazzoWorkflowBuilder Step(string stepId, Action<ArazzoStepBuilder> configure)
     {
@@ -80,6 +88,15 @@ public sealed class ArazzoWorkflowBuilder
         _steps.Add(builder.Build());
         return this;
     }
+
+    /// <summary>
+    /// Adds a step identified by the marker type <typeparamref name="TStep"/>, whose <c>stepId</c> follows
+    /// the <see cref="ArazzoId"/> convention, in execution order. Lets later steps reference it as
+    /// <c>DependsOn&lt;TStep&gt;()</c> instead of repeating a string id.
+    /// </summary>
+    /// <typeparam name="TStep">The marker type naming this step.</typeparam>
+    public ArazzoWorkflowBuilder Step<TStep>(Action<ArazzoStepBuilder> configure)
+        => Step(ArazzoId.FromType<TStep>(), configure);
 
     internal ArazzoWorkflow Build()
     {

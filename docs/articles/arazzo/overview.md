@@ -154,6 +154,38 @@ By default (`ArazzoOptions.ValidateSourceReferencesOnStartup = true`), every ste
 documents once at app startup — a renamed channel or operation throws `ArazzoStartupValidationException`
 and fails startup, rather than failing the first time a workflow actually runs in production.
 
+### Identifying workflows and steps by type
+
+Workflow and step ids are cross-referenced by string (`dependsOn`, a step targeting another workflow),
+which makes a typo a runtime problem rather than a compile-time one. Every id-taking builder method has
+a generic overload that takes a marker type instead, so renaming the type moves every reference with it:
+
+```csharp
+// Marker types — they carry no members; the type itself is the identifier.
+sealed class MeasureAndAlert;
+sealed class PublishMeasurement;
+sealed class AwaitAlert;
+
+options.AddWorkflow<MeasureAndAlert>(wf => wf
+    .Step<PublishMeasurement>(s => s
+        .Channel("events", "lightMeasured", ArazzoStepAction.Send)
+        .Output("measurementId", "$message.payload#/id"))
+    .Step<AwaitAlert>(s => s
+        .DependsOn<PublishMeasurement>()
+        .Channel("events", "lightingAlert", ArazzoStepAction.Receive)));
+
+options.AddWorkflow<ReportDaily>(wf => wf
+    .DependsOn<MeasureAndAlert>()                       // workflow-level dependsOn
+    .Step<Summarise>(s => s.Workflow<MeasureAndAlert>()) // a step targeting another workflow
+);
+```
+
+The mapping is `ArazzoId.FromType<T>()`: the type name camel-cased, so `MeasureAndAlert` becomes
+`measureAndAlert` (and `HTTPHealthCheck` becomes `httpHealthCheck`). That keeps the emitted document's
+casing idiomatic while the marker types stay idiomatic C#, and it means the two forms interoperate —
+`AddWorkflow("measureAndAlert", …)` and `DependsOn<MeasureAndAlert>()` refer to the same workflow, so you
+can adopt the generic form incrementally.
+
 > ⚠️ **Security note:** `Bielu.AspNetCore.Arazzo` only *serves* and *validates* workflow documents — it
 > does not execute them. An execution engine (`arazzo run`/`arazzo test`) is planned separately and will
 > be CLI/test-only by design, never exposed as a default ASP.NET Core endpoint (see
