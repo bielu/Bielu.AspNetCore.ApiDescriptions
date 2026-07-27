@@ -6,10 +6,9 @@ standard for describing multi-step API workflows. Arazzo 1.1 added `asyncapi` as
 `sourceDescriptions` type alongside `openapi`, so a single workflow can span HTTP operations and
 event/message channels.
 
-> ⚠️ **Note:** Before version 1.0.0, these libraries are regarded as unstable and **breaking changes may
-> be introduced**. This page documents the spec library only; the ASP.NET Core integration
-> (`Bielu.AspNetCore.Arazzo`) and `dotnet arazzo` CLI are planned but not yet built — see
-> [ROADMAP.md](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ROADMAP.md).
+> ⚠️ **Note:** Before version 1.0.0, these libraries — and `Bielu.AspNetCore.Arazzo`, the ASP.NET Core
+> integration covered below — are regarded as unstable and **breaking changes may be introduced**. The
+> `dotnet arazzo` CLI is still planned.
 
 ## Installation
 
@@ -123,6 +122,9 @@ dotnet add package Bielu.AspNetCore.Arazzo
 ```
 
 ```csharp
+using Bielu.Arazzo.Models;
+using Bielu.AspNetCore.Arazzo.Extensions;
+
 builder.Services.AddOpenApi("v1");
 builder.Services.AddAsyncApi("v1");
 
@@ -145,8 +147,15 @@ builder.Services.AddArazzo(options =>
 var app = builder.Build();
 app.MapAsyncApi();
 app.MapOpenApi();
-app.MapArazzo();   // → /arazzo/{documentName}.json | .yaml
+app.MapArazzo();   // → /arazzo/{documentName}.json (default route; JSON only)
 app.Run();
+```
+
+By default, `MapArazzo()` serves only JSON at `/arazzo/{documentName}.json`. To also serve YAML, map a
+second route with a `.yaml`/`.yml` pattern:
+
+```csharp
+app.MapArazzo("/arazzo/{documentName}.yaml");
 ```
 
 By default (`ArazzoOptions.ValidateSourceReferencesOnStartup = true`), every step's
@@ -195,5 +204,4 @@ can adopt the generic form incrementally.
 ## What's next
 
 See the [Arazzo proposal](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ARAZZO-PROPOSAL.md)
-and [roadmap](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ROADMAP.md) for the
-`dotnet arazzo` CLI and the workflow runtime.
+for the `dotnet arazzo` CLI and the workflow runtime.

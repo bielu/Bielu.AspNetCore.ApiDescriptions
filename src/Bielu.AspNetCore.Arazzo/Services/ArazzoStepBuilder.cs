@@ -49,6 +49,7 @@ public sealed class ArazzoStepBuilder
     public ArazzoStepBuilder Operation(string operationId)
     {
         ArgumentException.ThrowIfNullOrEmpty(operationId);
+        EnsureNoTargetSet(nameof(Operation));
         OperationId = operationId;
         return this;
     }
@@ -60,9 +61,10 @@ public sealed class ArazzoStepBuilder
     /// </summary>
     public ArazzoStepBuilder OperationPath(string sourceName, string path, string httpMethod)
     {
-        ArgumentException.ThrowIfNullOrEmpty(sourceName);
+        ArazzoIdentifier.Validate(sourceName, nameof(sourceName));
         ArgumentException.ThrowIfNullOrEmpty(path);
         ArgumentException.ThrowIfNullOrEmpty(httpMethod);
+        EnsureNoTargetSet(nameof(OperationPath));
         OperationPathValue =
             $"{{$sourceDescriptions.{sourceName}.url}}#/paths/{EscapePointerSegment(path)}/{httpMethod.ToLowerInvariant()}";
         return this;
@@ -76,9 +78,10 @@ public sealed class ArazzoStepBuilder
     /// </summary>
     public ArazzoStepBuilder Channel(string sourceName, string channelName, string action)
     {
-        ArgumentException.ThrowIfNullOrEmpty(sourceName);
+        ArazzoIdentifier.Validate(sourceName, nameof(sourceName));
         ArgumentException.ThrowIfNullOrEmpty(channelName);
         ArgumentException.ThrowIfNullOrEmpty(action);
+        EnsureNoTargetSet(nameof(Channel));
         ChannelPathValue = $"{{$sourceDescriptions.{sourceName}.url}}#/channels/{EscapePointerSegment(channelName)}";
         ActionValue = action;
         return this;
@@ -95,9 +98,21 @@ public sealed class ArazzoStepBuilder
     /// <summary>Targets another workflow by id. Mutually exclusive with <see cref="Operation"/>, <see cref="OperationPath"/>, and <see cref="Channel"/>.</summary>
     public ArazzoStepBuilder Workflow(string workflowId)
     {
-        ArgumentException.ThrowIfNullOrEmpty(workflowId);
+        ArazzoIdentifier.Validate(workflowId, nameof(workflowId));
+        EnsureNoTargetSet(nameof(Workflow));
         WorkflowIdValue = workflowId;
         return this;
+    }
+
+    /// <summary>Throws if a target is already set, since <c>Operation</c>/<c>OperationPath</c>/<c>Channel</c>/<c>Workflow</c> are mutually exclusive — including calling the same method twice.</summary>
+    private void EnsureNoTargetSet(string methodName)
+    {
+        if (OperationId is not null || OperationPathValue is not null || ChannelPathValue is not null ||
+            WorkflowIdValue is not null)
+        {
+            throw new InvalidOperationException(
+                $"Step '{_stepId}' already has a target set; {methodName} is mutually exclusive with Operation/OperationPath/Channel/Workflow, and only one may be called per step.");
+        }
     }
 
     /// <summary>
@@ -111,6 +126,12 @@ public sealed class ArazzoStepBuilder
     /// <summary>Adds stepIds that must complete before this step executes.</summary>
     public ArazzoStepBuilder DependsOn(params string[] stepIds)
     {
+        ArgumentNullException.ThrowIfNull(stepIds);
+        foreach (var stepId in stepIds)
+        {
+            ArazzoIdentifier.Validate(stepId, nameof(stepIds));
+        }
+
         _dependsOn.AddRange(stepIds);
         return this;
     }
@@ -187,6 +208,7 @@ public sealed class ArazzoStepBuilder
     /// <summary>Sets the maximum time, in milliseconds, to wait for this step before aborting and failing it.</summary>
     public ArazzoStepBuilder WithTimeout(int milliseconds)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(milliseconds, 0);
         TimeoutValue = milliseconds;
         return this;
     }

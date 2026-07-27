@@ -77,6 +77,9 @@ public sealed class OpenApiSourceResolver : IArazzoSourceResolver
     /// <summary>OpenAPI documents have no channels; always returns false.</summary>
     public bool TryResolveChannelPath(object document, string jsonPointer, out JsonNode? channel)
     {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(jsonPointer);
+
         channel = null;
         return false;
     }
@@ -94,12 +97,11 @@ public sealed class OpenApiSourceResolver : IArazzoSourceResolver
 
         var remainder = jsonPointer[prefix.Length..];
         var lastSlash = remainder.LastIndexOf('/');
-        if (lastSlash < 0)
+        if (lastSlash < 0 || !JsonPointerSegment.TryUnescape(remainder[..lastSlash], out path))
         {
             return false;
         }
 
-        path = UnescapePointerSegment(remainder[..lastSlash]);
         try
         {
             method = HttpMethod.Parse(remainder.AsSpan(lastSlash + 1));
@@ -111,8 +113,6 @@ public sealed class OpenApiSourceResolver : IArazzoSourceResolver
 
         return true;
     }
-
-    private static string UnescapePointerSegment(string segment) => segment.Replace("~1", "/").Replace("~0", "~");
 
     private static JsonNode? Serialize(OpenApiOperation operation)
     {

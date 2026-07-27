@@ -26,7 +26,7 @@ public class ArazzoEndpointTests
         var response = await client.GetAsync(GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        response.Content.Headers.ContentType?.MediaType.ShouldBe("application/json");
+        response.Content.Headers.ContentType?.MediaType.ShouldBe("application/vnd.oai.workflows+json");
 
         var json = await response.Content.ReadAsStringAsync();
         using var document = JsonDocument.Parse(json);
@@ -43,9 +43,7 @@ public class ArazzoEndpointTests
         var response = await client.GetAsync($"/arazzo/{ArazzoDefaults.DefaultDocumentName}.yaml");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var mediaType = response.Content.Headers.ContentType?.MediaType;
-        mediaType.ShouldNotBeNullOrEmpty();
-        mediaType.ShouldContain("yaml");
+        response.Content.Headers.ContentType?.MediaType.ShouldBe("application/vnd.oai.workflows+yaml");
     }
 
     [Fact]
@@ -70,6 +68,83 @@ public class ArazzoEndpointTests
 
         response1.Headers.ETag.ShouldNotBeNull();
         response1.Headers.ETag!.Tag.ShouldBe(response2.Headers.ETag!.Tag);
+    }
+
+    [Fact]
+    public async Task MapArazzo_ConditionalRequestWithMatchingETag_Returns304()
+    {
+        using var host = await CreateTestHostAsync();
+        var client = host.GetTestClient();
+
+        var response1 = await client.GetAsync(GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
+        response1.Headers.ETag.ShouldNotBeNull();
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
+        request.Headers.IfNoneMatch.Add(response1.Headers.ETag!);
+        var response2 = await client.SendAsync(request);
+
+        response2.StatusCode.ShouldBe(HttpStatusCode.NotModified);
+    }
+
+    [Fact]
+    public async Task MapArazzo_ConditionalRequestWithWeakEquivalentETag_Returns304()
+    {
+        using var host = await CreateTestHostAsync();
+        var client = host.GetTestClient();
+
+        var response1 = await client.GetAsync(GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
+        response1.Headers.ETag.ShouldNotBeNull();
+
+        // If-None-Match uses weak comparison (RFC 9110 §13.1.2): a weak validator with the same opaque
+        // tag as our strong ETag must still count as a match.
+        using var request = new HttpRequestMessage(HttpMethod.Get, GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
+        request.Headers.IfNoneMatch.Add(new System.Net.Http.Headers.EntityTagHeaderValue(response1.Headers.ETag!.Tag, isWeak: true));
+        var response2 = await client.SendAsync(request);
+
+        response2.StatusCode.ShouldBe(HttpStatusCode.NotModified);
+    }
+
+    [Fact]
+    public async Task MapArazzo_ConditionalRequestWithWildcard_Returns304()
+    {
+        using var host = await CreateTestHostAsync();
+        var client = host.GetTestClient();
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
+        request.Headers.TryAddWithoutValidation("If-None-Match", "*");
+        var response = await client.SendAsync(request);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotModified);
+    }
+
+    [Fact]
+    public async Task MapArazzo_ConditionalRequestWithTagInMultiValueList_Returns304()
+    {
+        using var host = await CreateTestHostAsync();
+        var client = host.GetTestClient();
+
+        var response1 = await client.GetAsync(GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
+        response1.Headers.ETag.ShouldNotBeNull();
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
+        request.Headers.TryAddWithoutValidation("If-None-Match", $"\"bogus\", {response1.Headers.ETag}");
+        var response2 = await client.SendAsync(request);
+
+        response2.StatusCode.ShouldBe(HttpStatusCode.NotModified);
+    }
+
+    [Fact]
+    public async Task MapArazzo_ConditionalRequestWithNonMatchingETag_ReturnsFullBody()
+    {
+        using var host = await CreateTestHostAsync();
+        var client = host.GetTestClient();
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
+        request.Headers.IfNoneMatch.Add(new System.Net.Http.Headers.EntityTagHeaderValue("\"bogus\""));
+        var response = await client.SendAsync(request);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Headers.ETag.ShouldNotBeNull();
     }
 
     private static async Task<IHost> CreateTestHostAsync(

@@ -33,6 +33,70 @@ public class ArazzoOptionsTests
         source.Type.ShouldBe(ArazzoSourceDescriptionType.OpenApi);
     }
 
+    [Theory]
+    [InlineData(null, "v1")]
+    [InlineData("", "v1")]
+    [InlineData("events", null)]
+    [InlineData("events", "")]
+    public void AddAsyncApiSource_RejectsNullOrEmptyArguments(string? sourceName, string? asyncApiDocumentName)
+    {
+        var options = new ArazzoOptions();
+
+        Should.Throw<ArgumentException>(() => options.AddAsyncApiSource(sourceName!, asyncApiDocumentName!));
+    }
+
+    [Theory]
+    [InlineData(null, "v1")]
+    [InlineData("", "v1")]
+    [InlineData("orders", null)]
+    [InlineData("orders", "")]
+    public void AddOpenApiSource_RejectsNullOrEmptyArguments(string? sourceName, string? openApiDocumentName)
+    {
+        var options = new ArazzoOptions();
+
+        Should.Throw<ArgumentException>(() => options.AddOpenApiSource(sourceName!, openApiDocumentName!));
+    }
+
+    [Theory]
+    [InlineData("events.v2")]
+    [InlineData("events/v2")]
+    [InlineData("events v2")]
+    public void AddAsyncApiSource_RejectsSourceNameOutsideIdentifierGrammar(string sourceName)
+    {
+        var options = new ArazzoOptions();
+
+        Should.Throw<ArgumentException>(() => options.AddAsyncApiSource(sourceName, "v1"));
+    }
+
+    [Fact]
+    public void AddWorkflow_RejectsWorkflowIdOutsideIdentifierGrammar()
+    {
+        var options = new ArazzoOptions();
+
+        Should.Throw<ArgumentException>(() => options.AddWorkflow("measure.and.alert", _ => { }));
+    }
+
+    [Fact]
+    public void Step_RejectsStepIdOutsideIdentifierGrammar()
+    {
+        var options = new ArazzoOptions();
+
+        Should.Throw<ArgumentException>(() => options.AddWorkflow("wf", wf => wf.Step("step.one", _ => { })));
+    }
+
+    [Fact]
+    public void DependsOn_RejectsNullElement()
+    {
+        var options = new ArazzoOptions();
+        options.AddAsyncApiSource("events", "v1");
+
+        Should.Throw<ArgumentException>(() => options.AddWorkflow("wf", wf => wf
+            .Step("a", s => s.Channel("events", "ch", ArazzoStepAction.Send))
+            .Step("b", s => s
+                .DependsOn("a", null!)
+                .Channel("events", "ch2", ArazzoStepAction.Send))));
+    }
+
     [Fact]
     public void AddWorkflow_WithStepsAndOutputs_BuildsExpectedModel()
     {

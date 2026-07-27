@@ -50,19 +50,20 @@ internal sealed partial class ArazzoStartupValidationStartupFilter(
                 continue;
             }
 
-            var arazzoDocument = await serviceProvider
-                .GetRequiredKeyedService<IArazzoDocumentProvider>(documentName)
-                .GetArazzoDocumentAsync(cancellationToken);
-            var workspace = await serviceProvider
-                .GetRequiredKeyedService<ArazzoWorkspaceFactory>(documentName)
-                .CreateAsync(cancellationToken);
-
-            foreach (var workflow in arazzoDocument.Workflows)
+            // Document generation runs arbitrary user-supplied transformers (AddDocumentTransformer /
+            // AddOperationTransformer). Cancellation is cooperative, so a transformer that ignores the
+            // token could still block indefinitely if we only *asked* it to stop — WaitAsync enforces the
+            // deadline at the waiter instead, regardless of whether the awaited work ever observes it.
+            try
             {
-                foreach (var step in workflow.Steps)
-                {
-                    ValidateStep(documentName, workflow, step, workspace, options.SourceWirings, errors);
-                }
+                await ValidateDocumentAsync(documentName, options, errors, cancellationToken)
+                    .WaitAsync(options.StartupValidationTimeout, cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+                errors.Add(
+                    $"{documentName}: startup validation did not complete within {options.StartupValidationTimeout} " +
+                    "(a self-wired document provider or transformer may be hanging).");
             }
         }
 
@@ -72,20 +73,49 @@ internal sealed partial class ArazzoStartupValidationStartupFilter(
         }
     }
 
+    private async Task ValidateDocumentAsync(
+        string documentName, ArazzoOptions options, List<string> errors, CancellationToken cancellationToken)
+    {
+        var arazzoDocument = await serviceProvider
+            .GetRequiredKeyedService<IArazzoDocumentProvider>(documentName)
+            .GetArazzoDocumentAsync(cancellationToken);
+        var (workspace, failedSourceNames) = await serviceProvider
+            .GetRequiredKeyedService<ArazzoWorkspaceFactory>(documentName)
+            .CreateAsync(errors, cancellationToken);
+
+        foreach (var workflow in arazzoDocument.Workflows)
+        {
+            foreach (var step in workflow.Steps)
+            {
+                ValidateStep(documentName, workflow, step, workspace, options.SourceWirings, failedSourceNames, errors);
+            }
+        }
+    }
+
     private static void ValidateStep(
         string documentName,
         ArazzoWorkflow workflow,
         ArazzoStep step,
         ArazzoWorkspace workspace,
         IReadOnlyList<ArazzoOptions.SourceWiring> wirings,
+        HashSet<string> failedSourceNames,
         List<string> errors)
     {
         var location = $"{documentName}:{workflow.WorkflowId}.{step.StepId}";
 
         if (step.OperationPath is not null)
         {
-            if (!TryParseSourceReference(step.OperationPath, out var sourceName, out var pointer) ||
-                !workspace.TryResolveOperationPath(sourceName, pointer, out _))
+            if (TryParseSourceReference(step.OperationPath, out var sourceName, out var pointer))
+            {
+                // A missing provider for this source already produced a root-cause error in
+                // ArazzoWorkspaceFactory.CreateAsync; don't also report every step that references it.
+                if (!failedSourceNames.Contains(sourceName) &&
+                    !workspace.TryResolveOperationPath(sourceName, pointer, out _))
+                {
+                    errors.Add($"{location}: operationPath '{step.OperationPath}' did not resolve.");
+                }
+            }
+            else
             {
                 errors.Add($"{location}: operationPath '{step.OperationPath}' did not resolve.");
             }
@@ -95,8 +125,15 @@ internal sealed partial class ArazzoStartupValidationStartupFilter(
 
         if (step.ChannelPath is not null)
         {
-            if (!TryParseSourceReference(step.ChannelPath, out var sourceName, out var pointer) ||
-                !workspace.TryResolveChannelPath(sourceName, pointer, out _))
+            if (TryParseSourceReference(step.ChannelPath, out var sourceName, out var pointer))
+            {
+                if (!failedSourceNames.Contains(sourceName) &&
+                    !workspace.TryResolveChannelPath(sourceName, pointer, out _))
+                {
+                    errors.Add($"{location}: channelPath '{step.ChannelPath}' did not resolve.");
+                }
+            }
+            else
             {
                 errors.Add($"{location}: channelPath '{step.ChannelPath}' did not resolve.");
             }
@@ -104,10 +141,16 @@ internal sealed partial class ArazzoStartupValidationStartupFilter(
             return;
         }
 
-        if (step.OperationId is not null &&
-            !wirings.Any(wiring => workspace.TryResolveOperation(wiring.SourceName, step.OperationId, out _)))
+        if (step.OperationId is not null)
         {
-            errors.Add($"{location}: operationId '{step.OperationId}' did not resolve against any registered source.");
+            var candidateWirings = wirings.Where(wiring => !failedSourceNames.Contains(wiring.SourceName)).ToList();
+            if (candidateWirings.Count > 0 &&
+                !candidateWirings.Any(wiring =>
+                    workspace.TryResolveOperation(wiring.SourceName, step.OperationId, out _)))
+            {
+                errors.Add(
+                    $"{location}: operationId '{step.OperationId}' did not resolve against any registered source.");
+            }
         }
     }
 

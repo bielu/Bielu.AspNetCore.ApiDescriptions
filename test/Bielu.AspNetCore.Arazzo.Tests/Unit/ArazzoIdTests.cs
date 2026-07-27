@@ -14,12 +14,24 @@ internal sealed class AwaitAlert;
 
 internal sealed class HTTPHealthCheck;
 
+internal sealed class GenericMarker<T>;
+
 public class ArazzoIdTests
 {
     [Fact]
     public void FromType_CamelCasesTheTypeName()
     {
         ArazzoId.FromType<MeasureAndAlert>().ShouldBe("measureAndAlert");
+    }
+
+    [Fact]
+    public void FromType_GenericMarkerType_ThrowsInsteadOfProducingAnInvalidId()
+    {
+        // Type.Name for a generic includes a backtick + arity suffix (e.g. `GenericMarker`1`), which
+        // camel-cases into something outside the identifier-strict grammar — reject it rather than
+        // silently registering a workflow/step id that will fail to parse later.
+        var exception = Should.Throw<ArgumentException>(() => ArazzoId.FromType<GenericMarker<int>>());
+        exception.ParamName.ShouldBe("type");
     }
 
     [Fact]

@@ -66,6 +66,12 @@ public sealed class ArazzoWorkflowBuilder
     /// <summary>Adds workflowIds that must complete before this workflow can be processed.</summary>
     public ArazzoWorkflowBuilder DependsOn(params string[] workflowIds)
     {
+        ArgumentNullException.ThrowIfNull(workflowIds);
+        foreach (var workflowId in workflowIds)
+        {
+            ArazzoIdentifier.Validate(workflowId, nameof(workflowIds));
+        }
+
         _dependsOn.AddRange(workflowIds);
         return this;
     }
@@ -81,7 +87,7 @@ public sealed class ArazzoWorkflowBuilder
     /// <summary>Adds a step to the workflow, in execution order.</summary>
     public ArazzoWorkflowBuilder Step(string stepId, Action<ArazzoStepBuilder> configure)
     {
-        ArgumentException.ThrowIfNullOrEmpty(stepId);
+        ArazzoIdentifier.Validate(stepId, nameof(stepId));
         ArgumentNullException.ThrowIfNull(configure);
         var builder = new ArazzoStepBuilder(stepId);
         configure(builder);

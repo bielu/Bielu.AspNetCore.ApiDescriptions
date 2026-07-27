@@ -21,8 +21,12 @@ public static class ArazzoEndpointRouteBuilderExtensions
     /// <param name="endpoints">The <see cref="IEndpointRouteBuilder"/>.</param>
     /// <param name="pattern">The route to register the endpoint on. Must include the 'documentName' route parameter.</param>
     /// <returns>An <see cref="IEndpointConventionBuilder"/> that can be used to further customize the endpoint, e.g. <c>.RequireAuthorization()</c>.</returns>
-    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The handler delegate has two simple, non-generic parameters (HttpContext, string); RequestDelegateFactory's reflection-based binding for this shape is trim-safe in practice.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The handler delegate has two simple, non-generic parameters (HttpContext, string); RequestDelegateFactory's reflection-based binding for this shape does not require runtime code generation.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification =
+            "The handler delegate has two simple, non-generic parameters (HttpContext, string); RequestDelegateFactory's reflection-based binding for this shape is trim-safe in practice.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050",
+        Justification =
+            "The handler delegate has two simple, non-generic parameters (HttpContext, string); RequestDelegateFactory's reflection-based binding for this shape does not require runtime code generation.")]
     public static IEndpointConventionBuilder MapArazzo(this IEndpointRouteBuilder endpoints,
         [StringSyntax("Route")] string pattern = ArazzoDefaults.DefaultArazzoRoute)
     {
@@ -82,15 +86,16 @@ public static class ArazzoEndpointRouteBuilderExtensions
         var etag = ComputeETag(serialized);
         context.Response.Headers.ETag = etag;
 
-        if (context.Request.Headers.TryGetValue(HeaderNames.IfNoneMatch, out var ifNoneMatch) &&
-            ifNoneMatch.ToString().Trim() == etag)
+        if (IsNotModified(context.Request, etag))
         {
             context.Response.StatusCode = StatusCodes.Status304NotModified;
             return;
         }
 
         var payload = Encoding.UTF8.GetBytes(serialized);
-        context.Response.ContentType = isYaml ? "text/plain+yaml;charset=utf-8" : "application/json;charset=utf-8";
+        context.Response.ContentType = isYaml
+            ? "application/vnd.oai.workflows+yaml;charset=utf-8"
+            : "application/vnd.oai.workflows+json;charset=utf-8";
         context.Response.ContentLength = payload.Length;
 
         await context.Response.StartAsync();
@@ -106,6 +111,31 @@ public static class ArazzoEndpointRouteBuilderExtensions
     {
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
         return $"\"{Convert.ToHexStringLower(hashBytes)}\"";
+    }
+
+    /// <summary>
+    /// Implements RFC 9110 §13.1.2 If-None-Match: a request matches (and so gets 304) if it carries "*", or
+    /// any entity-tag in a comma-separated list matches under *weak* comparison — opaque-tags compared
+    /// verbatim, ignoring the <c>W/</c> prefix on either side.
+    /// </summary>
+    private static bool IsNotModified(HttpRequest request, string etag)
+    {
+        var ifNoneMatch = request.GetTypedHeaders().IfNoneMatch;
+        if (ifNoneMatch is not { Count: > 0 } || !EntityTagHeaderValue.TryParse(etag, out var responseTag))
+        {
+            return false;
+        }
+
+        foreach (var candidate in ifNoneMatch)
+        {
+            if (candidate.Tag.Equals(EntityTagHeaderValue.Any.Tag, StringComparison.Ordinal) ||
+                candidate.Tag.Equals(responseTag.Tag, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool UseYaml(string pattern) =>

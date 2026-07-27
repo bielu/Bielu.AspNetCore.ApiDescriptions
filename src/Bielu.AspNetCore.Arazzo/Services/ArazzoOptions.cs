@@ -18,6 +18,28 @@ public sealed class ArazzoOptions
     /// </summary>
     public bool ValidateSourceReferencesOnStartup { get; set; } = true;
 
+    private TimeSpan _startupValidationTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// The maximum time startup validation waits for this document's self-wired AsyncAPI/OpenAPI documents
+    /// to be generated before failing startup with a timeout error instead of hanging indefinitely (a
+    /// misbehaving document transformer can otherwise block <c>host.StartAsync()</c> forever). Defaults to
+    /// 30 seconds; only applies when <see cref="ValidateSourceReferencesOnStartup"/> is true.
+    /// </summary>
+    public TimeSpan StartupValidationTimeout
+    {
+        get => _startupValidationTimeout;
+        set
+        {
+            if (value <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "StartupValidationTimeout must be positive.");
+            }
+
+            _startupValidationTimeout = value;
+        }
+    }
+
     internal List<ArazzoSourceDescription> SourceDescriptions { get; } = [];
 
     internal List<ArazzoWorkflow> Workflows { get; } = [];
@@ -45,7 +67,7 @@ public sealed class ArazzoOptions
     /// <summary>Adds a source description pointing at an arbitrary URL. Prefer <see cref="AddAsyncApiSource"/>/<see cref="AddOpenApiSource"/> to self-wire against a document served by this same app.</summary>
     public ArazzoOptions AddSourceDescription(string name, string url, string type)
     {
-        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArazzoIdentifier.Validate(name, nameof(name));
         ArgumentException.ThrowIfNullOrEmpty(url);
         ArgumentException.ThrowIfNullOrEmpty(type);
         SourceDescriptions.Add(new ArazzoSourceDescription { Name = name, Url = url, Type = type });
@@ -94,7 +116,7 @@ public sealed class ArazzoOptions
     /// <summary>Adds a workflow to the document.</summary>
     public ArazzoOptions AddWorkflow(string workflowId, Action<ArazzoWorkflowBuilder> configure)
     {
-        ArgumentException.ThrowIfNullOrEmpty(workflowId);
+        ArazzoIdentifier.Validate(workflowId, nameof(workflowId));
         ArgumentNullException.ThrowIfNull(configure);
         var builder = new ArazzoWorkflowBuilder(workflowId);
         configure(builder);

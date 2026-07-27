@@ -35,8 +35,12 @@ public sealed class AsyncApiSourceResolver : IArazzoSourceResolver
     /// <summary>AsyncAPI operations are not addressed by JSON Pointer in this package's builder; resolves an <c>/operations/{id}</c> pointer as a convenience, otherwise returns false.</summary>
     public bool TryResolveOperationPath(object document, string jsonPointer, out JsonNode? operation)
     {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(jsonPointer);
+
         operation = null;
-        if (document is not AsyncApiDocument asyncApiDocument || !TryParseMapPointer(jsonPointer, "/operations/", out var name))
+        if (document is not AsyncApiDocument asyncApiDocument ||
+            !TryParseMapPointer(jsonPointer, "/operations/", out var name))
         {
             return false;
         }
@@ -53,8 +57,12 @@ public sealed class AsyncApiSourceResolver : IArazzoSourceResolver
     /// <summary>Resolves an <c>/channels/{name}</c> JSON Pointer, as produced by <c>ArazzoStepBuilder.Channel</c>.</summary>
     public bool TryResolveChannelPath(object document, string jsonPointer, out JsonNode? channel)
     {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(jsonPointer);
+
         channel = null;
-        if (document is not AsyncApiDocument asyncApiDocument || !TryParseMapPointer(jsonPointer, "/channels/", out var name))
+        if (document is not AsyncApiDocument asyncApiDocument ||
+            !TryParseMapPointer(jsonPointer, "/channels/", out var name))
         {
             return false;
         }
@@ -71,13 +79,8 @@ public sealed class AsyncApiSourceResolver : IArazzoSourceResolver
     private static bool TryParseMapPointer(string jsonPointer, string prefix, out string name)
     {
         name = string.Empty;
-        if (!jsonPointer.StartsWith(prefix, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        name = jsonPointer[prefix.Length..].Replace("~1", "/").Replace("~0", "~");
-        return true;
+        return jsonPointer.StartsWith(prefix, StringComparison.Ordinal) &&
+               JsonPointerSegment.TryUnescape(jsonPointer[prefix.Length..], out name);
     }
 
     private static JsonNode? Serialize(AsyncApiOperation operation) => Serialize(operation.SerializeV3);

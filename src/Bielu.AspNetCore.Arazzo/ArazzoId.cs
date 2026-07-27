@@ -21,7 +21,21 @@ public static class ArazzoId
     public static string FromType(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
-        return JsonNamingPolicy.CamelCase.ConvertName(type.Name);
+        var id = JsonNamingPolicy.CamelCase.ConvertName(type.Name);
+        try
+        {
+            ArazzoIdentifier.Validate(id, nameof(type));
+        }
+        catch (ArgumentException ex)
+        {
+            throw new ArgumentException(
+                $"Marker type '{type}' camel-cases to the id '{id}', which is not a valid Arazzo identifier " +
+                "('^[A-Za-z0-9_-]+$'). This typically happens with generic marker types (the backtick/arity " +
+                "suffix isn't valid) — use a non-generic marker type or the string-id overload instead.",
+                nameof(type), ex);
+        }
+
+        return id;
     }
 
     /// <summary>Returns the id <typeparamref name="T"/> identifies.</summary>
