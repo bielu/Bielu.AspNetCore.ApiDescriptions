@@ -11,7 +11,9 @@ namespace Bielu.Arazzo;
 /// </summary>
 public sealed class ArazzoWorkspace
 {
-    private readonly Dictionary<string, (string SourceType, object Document)> _documentsBySourceName = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (string SourceType, object Document)> _documentsBySourceName =
+        new(StringComparer.Ordinal);
+
     private readonly Dictionary<string, IArazzoSourceResolver> _resolversByType = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -70,7 +72,8 @@ public sealed class ArazzoWorkspace
     /// <paramref name="sourceName"/>, using the resolver registered for that source's declared type.
     /// Returns false if the source isn't registered or has no resolver for its declared type.
     /// </summary>
-    public bool TryResolveOperation(string sourceName, string operationId, out System.Text.Json.Nodes.JsonNode? operation)
+    public bool TryResolveOperation(string sourceName, string operationId,
+        out System.Text.Json.Nodes.JsonNode? operation)
     {
         ArgumentNullException.ThrowIfNull(sourceName);
         ArgumentNullException.ThrowIfNull(operationId);
@@ -82,6 +85,48 @@ public sealed class ArazzoWorkspace
         }
 
         return _resolversByType.TryGetValue(entry.SourceType, out var resolver)
-            && resolver.TryResolveOperation(entry.Document, operationId, out operation);
+               && resolver.TryResolveOperation(entry.Document, operationId, out operation);
+    }
+
+    /// <summary>
+    /// Resolves a step's <see cref="ArazzoStep.OperationPath"/> JSON Pointer against the source description
+    /// named <paramref name="sourceName"/>, using the resolver registered for that source's declared type.
+    /// Returns false if the source isn't registered or has no resolver for its declared type.
+    /// </summary>
+    public bool TryResolveOperationPath(string sourceName, string jsonPointer,
+        out System.Text.Json.Nodes.JsonNode? operation)
+    {
+        ArgumentNullException.ThrowIfNull(sourceName);
+        ArgumentNullException.ThrowIfNull(jsonPointer);
+
+        operation = null;
+        if (!_documentsBySourceName.TryGetValue(sourceName, out var entry))
+        {
+            return false;
+        }
+
+        return _resolversByType.TryGetValue(entry.SourceType, out var resolver)
+               && resolver.TryResolveOperationPath(entry.Document, jsonPointer, out operation);
+    }
+
+    /// <summary>
+    /// Resolves a step's <see cref="ArazzoStep.ChannelPath"/> JSON Pointer against the source description
+    /// named <paramref name="sourceName"/>, using the resolver registered for that source's declared type.
+    /// Returns false if the source isn't registered or has no resolver for its declared type.
+    /// </summary>
+    public bool TryResolveChannelPath(string sourceName, string jsonPointer,
+        out System.Text.Json.Nodes.JsonNode? channel)
+    {
+        ArgumentNullException.ThrowIfNull(sourceName);
+        ArgumentNullException.ThrowIfNull(jsonPointer);
+
+        channel = null;
+        if (!_documentsBySourceName.TryGetValue(sourceName, out var entry))
+        {
+            return false;
+        }
+
+        return _resolversByType.TryGetValue(entry.SourceType, out var resolver)
+               && resolver.TryResolveChannelPath(entry.Document, jsonPointer, out channel);
     }
 }
