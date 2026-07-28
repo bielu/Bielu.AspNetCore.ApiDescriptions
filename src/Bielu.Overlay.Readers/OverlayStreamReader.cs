@@ -11,7 +11,8 @@ public static class OverlayStreamReader
     {
         ArgumentNullException.ThrowIfNull(stream);
 
-        using var reader = new StreamReader(stream);
+        // leaveOpen: reading a document should not dispose a stream the caller still owns.
+        using var reader = new StreamReader(stream, leaveOpen: true);
         return OverlayStringReader.Read(reader.ReadToEnd(), settings);
     }
 }

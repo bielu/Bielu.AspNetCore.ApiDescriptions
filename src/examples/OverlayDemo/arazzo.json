@@ -26,7 +26,7 @@
         },
         {
           "stepId": "awaitAlert",
-          "channelPath": "$sourceDescriptions.events#/channels/lightingAlert",
+          "channelPath": "{$sourceDescriptions.events.url}#/channels/lightingAlert",
           "action": "receive"
         }
       ]

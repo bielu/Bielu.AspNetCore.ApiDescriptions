@@ -55,6 +55,38 @@ public class OverlayReaderTests
     }
 
     [Fact]
+    public void Read_RootLevelYamlFlowMapping_StillParses()
+    {
+        // A YAML flow mapping is valid YAML that begins with '{', so sniffing the first character alone
+        // would route it to the JSON parser and fail it. JSON is tried first, then YAML.
+        var result = OverlayStringReader.Read(
+            "{ overlay: 1.1.0, info: { title: t, version: 1.0.0 }, actions: [ { target: $.a, remove: true } ] }");
+
+        result.HasErrors.ShouldBeFalse(string.Join("; ", result.Diagnostics));
+        result.Document.ShouldNotBeNull();
+        result.Document!.Overlay.ShouldBe("1.1.0");
+        result.Document.Actions.Count.ShouldBe(1);
+        result.Document.Actions[0].Remove.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Read_DoesNotDisposeTheCallerSuppliedStream()
+    {
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("""
+        overlay: 1.1.0
+        info: { title: t, version: 1.0.0 }
+        actions:
+          - target: $.a
+            remove: true
+        """));
+
+        var result = OverlayStreamReader.Read(stream);
+
+        result.HasErrors.ShouldBeFalse();
+        stream.CanRead.ShouldBeTrue("the reader must not dispose a stream it does not own");
+    }
+
+    [Fact]
     public void Read_MalformedInput_ReturnsDiagnosticsRatherThanThrowing()
     {
         var result = OverlayStringReader.Read("{ this is not: valid json ]");

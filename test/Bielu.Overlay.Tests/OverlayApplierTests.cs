@@ -437,6 +437,40 @@ public class OverlayApplierTests
     }
 
     [Fact]
+    public void NullValuedMatch_IsReportedAsSuch_NotAsZeroMatches()
+    {
+        // A JSON null has no JsonNode instance in System.Text.Json's model, so it survives JSONPath
+        // selection but cannot be reached through Parent. Reporting it as "matched no nodes" would send
+        // the author looking for a selector bug that isn't there.
+        var result = OverlayApplier.Apply(Doc("""{"info":{"description":null}}"""), Overlay("""
+        overlay: 1.1.0
+        info: { title: t, version: 1.0.0 }
+        actions:
+          - target: $.info.description
+            update: set
+        """));
+
+        result.Diagnostics.ShouldContain(d => d.Message.Contains("matched 1 JSON null value"));
+        result.Diagnostics.ShouldNotContain(d => d.Message.Contains("matched no nodes"));
+    }
+
+    [Fact]
+    public void Copy_SelectingASingleNullNode_IsNotReportedAsZeroSources()
+    {
+        var result = OverlayApplier.Apply(Doc("""{"a":{},"b":null}"""), Overlay("""
+        overlay: 1.1.0
+        info: { title: t, version: 1.0.0 }
+        actions:
+          - target: $.a
+            copy: $.b
+        """));
+
+        result.HasErrors.ShouldBeTrue();
+        result.Diagnostics.ShouldContain(d => d.Message.Contains("selects a JSON null"));
+        result.Diagnostics.ShouldNotContain(d => d.Message.Contains("selected 0"));
+    }
+
+    [Fact]
     public void InvalidTargetExpression_IsReportedAndSkipped_WithoutAbortingLaterActions()
     {
         var result = OverlayApplier.Apply(Doc("""{"info":{}}"""), Overlay("""

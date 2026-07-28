@@ -25,6 +25,8 @@ public static partial class YamlToJsonNodeConverter
     /// <returns>The converted tree, or <see langword="null"/> if the input contained no document.</returns>
     public static JsonNode? Convert(TextReader reader)
     {
+        ArgumentNullException.ThrowIfNull(reader);
+
         var yamlStream = new YamlStream();
         yamlStream.Load(reader);
         return yamlStream.Documents.Count == 0 ? null : ConvertNode(yamlStream.Documents[0].RootNode);

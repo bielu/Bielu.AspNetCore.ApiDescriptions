@@ -57,7 +57,12 @@ static int Run(string label, string documentFile, string overlayFile, Func<JsonN
         return 1;
     }
 
-    var overlay = read.Document!;
+    if (read.Document is not { } overlay)
+    {
+        Console.Error.WriteLine("The overlay produced no document.");
+        return 1;
+    }
+
     Console.WriteLine($"Overlay : {overlay.Info.Title}");
     Console.WriteLine($"Version : {overlay.Overlay}  ({overlay.Actions.Count} actions)");
 
@@ -70,7 +75,11 @@ static int Run(string label, string documentFile, string overlayFile, Func<JsonN
 
     // ------------------------------------------------------------ apply it
 
-    var document = JsonNode.Parse(File.ReadAllText(documentPath))!;
+    if (JsonNode.Parse(File.ReadAllText(documentPath)) is not { } document)
+    {
+        Console.Error.WriteLine($"{documentFile} did not contain a JSON document.");
+        return 1;
+    }
 
     Console.WriteLine();
     Console.WriteLine("--- BEFORE ---");
@@ -98,9 +107,15 @@ static int Run(string label, string documentFile, string overlayFile, Func<JsonN
         return 1;
     }
 
+    if (result.Document is not { } transformed)
+    {
+        Console.Error.WriteLine("Overlay application produced no document.");
+        return 1;
+    }
+
     Console.WriteLine();
     Console.WriteLine("--- AFTER ---");
-    Console.WriteLine(summarize(result.Document!));
+    Console.WriteLine(summarize(transformed));
 
     // Apply works on a deep copy, so the caller's document is never touched and one overlay can be
     // applied to many documents in turn.
@@ -127,14 +142,23 @@ static string SummarizeAsyncApi(JsonNode document)
 
 static string SummarizeArazzo(JsonNode document)
 {
-    var sources = document["sourceDescriptions"]?.AsArray()
-        .Select(s => $"{s!["name"]!.GetValue<string>()}({s["type"]?.GetValue<string>()})") ?? [];
+    // Arazzo keys its collections as arrays of objects, so every lookup here is a pattern match rather
+    // than a key access — the same shape difference that makes Arazzo overlay targets filter expressions.
+    IEnumerable<string> sources = document["sourceDescriptions"] is JsonArray sourceArray
+        ? sourceArray.OfType<JsonNode>()
+            .Select(s => $"{s["name"]?.GetValue<string>()}({s["type"]?.GetValue<string>()})")
+        : [];
 
-    var workflows = document["workflows"]?.AsArray().Select(w =>
-    {
-        var steps = w!["steps"]!.AsArray().Select(s => s!["stepId"]!.GetValue<string>());
-        return $"{w["workflowId"]!.GetValue<string>()} [{string.Join(" -> ", steps)}]";
-    }) ?? [];
+    IEnumerable<string> workflows = document["workflows"] is JsonArray workflowArray
+        ? workflowArray.OfType<JsonNode>().Select(w =>
+        {
+            IEnumerable<string> steps = w["steps"] is JsonArray stepArray
+                ? stepArray.OfType<JsonNode>().Select(s => s["stepId"]?.GetValue<string>() ?? "?")
+                : [];
+
+            return $"{w["workflowId"]?.GetValue<string>()} [{string.Join(" -> ", steps)}]";
+        })
+        : [];
 
     var workflowList = string.Join(Environment.NewLine + "               ", workflows);
 

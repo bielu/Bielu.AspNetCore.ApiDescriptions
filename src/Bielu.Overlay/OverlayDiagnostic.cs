@@ -10,6 +10,12 @@ namespace Bielu.Overlay;
 /// <param name="IsWarning">Whether this is advisory rather than fatal.</param>
 public sealed record OverlayDiagnostic(string Path, string Message, bool IsWarning = false)
 {
+    /// <summary>Where in the overlay document the finding originates.</summary>
+    public string Path { get; init; } = Path ?? throw new ArgumentNullException(nameof(Path));
+
+    /// <summary>A human-readable description of the finding.</summary>
+    public string Message { get; init; } = Message ?? throw new ArgumentNullException(nameof(Message));
+
     /// <inheritdoc />
     public override string ToString() => $"{(IsWarning ? "warning" : "error")} at {Path}: {Message}";
 }

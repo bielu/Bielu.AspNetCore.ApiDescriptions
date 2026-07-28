@@ -84,15 +84,30 @@ public static class OverlayApplier
 
         // Materialize before mutating: the match list must not be re-evaluated against a tree we are
         // in the middle of editing.
-        var matches = target.Evaluate(root).Matches
-            .Select(m => m.Value)
-            .OfType<JsonNode>()
-            .ToList();
+        var rawMatches = target.Evaluate(root).Matches;
 
-        if (matches.Count == 0)
+        // A JSON null has no JsonNode instance in System.Text.Json's model — the match's Value is a CLR
+        // null — so it survives selection but cannot be reached through Parent to update or remove.
+        // Counting raw matches separately keeps "matched nothing" distinct from "matched only nulls".
+        var matches = rawMatches.Select(m => m.Value).OfType<JsonNode>().ToList();
+
+        if (rawMatches.Count == 0)
         {
             diagnostics.Add(new OverlayDiagnostic($"{path}/target",
                 $"Target '{action.Target}' matched no nodes.", IsWarning: !options.Strict));
+            return;
+        }
+
+        if (matches.Count < rawMatches.Count)
+        {
+            var nullCount = rawMatches.Count - matches.Count;
+            diagnostics.Add(new OverlayDiagnostic($"{path}/target",
+                $"Target '{action.Target}' matched {nullCount} JSON null value(s), which have no node identity to update, copy into, or remove; those matches were skipped.",
+                IsWarning: !options.Strict));
+        }
+
+        if (matches.Count == 0)
+        {
             return;
         }
 
@@ -105,9 +120,9 @@ public static class OverlayApplier
             return;
         }
 
-        if (action.Copy is not null)
+        if (action.Copy is { } copyExpression)
         {
-            ApplyCopy(root, matches, action, path, version, diagnostics);
+            ApplyCopy(root, matches, copyExpression, path, version, diagnostics);
             return;
         }
 
@@ -138,7 +153,7 @@ public static class OverlayApplier
         }
     }
 
-    private static void ApplyCopy(JsonNode root, List<JsonNode> matches, OverlayAction action, string path,
+    private static void ApplyCopy(JsonNode root, List<JsonNode> matches, string copyExpression, string path,
         OverlayVersion version, List<OverlayDiagnostic> diagnostics)
     {
         if (version == OverlayVersion.V1_0)
@@ -148,25 +163,34 @@ public static class OverlayApplier
             return;
         }
 
-        if (!JsonPath.TryParse(action.Copy!, out var copyPath))
+        if (!JsonPath.TryParse(copyExpression, out var copyPath))
         {
             diagnostics.Add(new OverlayDiagnostic($"{path}/copy",
-                $"'{action.Copy}' is not a valid RFC 9535 JSONPath expression."));
+                $"'{copyExpression}' is not a valid RFC 9535 JSONPath expression."));
             return;
         }
 
-        var sources = copyPath.Evaluate(root).Matches.Select(m => m.Value).OfType<JsonNode>().ToList();
-        if (sources.Count != 1)
+        // Count raw matches, not non-null ones: a path selecting a single JSON null has selected exactly
+        // one node, and reporting it as zero would send the author looking for the wrong problem.
+        var sourceMatches = copyPath.Evaluate(root).Matches;
+        if (sourceMatches.Count != 1)
         {
             // The spec defines `copy` as "selecting a single node"; anything else is ambiguous.
             diagnostics.Add(new OverlayDiagnostic($"{path}/copy",
-                $"'{action.Copy}' must select exactly one node, but selected {sources.Count}."));
+                $"'{copyExpression}' must select exactly one node, but selected {sourceMatches.Count}."));
+            return;
+        }
+
+        if (sourceMatches[0].Value is not { } sourceNode)
+        {
+            diagnostics.Add(new OverlayDiagnostic($"{path}/copy",
+                $"'{copyExpression}' selects a JSON null, which has no node to copy."));
             return;
         }
 
         // Snapshot the source before editing: a copy whose target overlaps its source would otherwise
         // observe its own partial writes.
-        var source = sources[0].DeepClone();
+        var source = sourceNode.DeepClone();
 
         foreach (var match in matches)
         {
