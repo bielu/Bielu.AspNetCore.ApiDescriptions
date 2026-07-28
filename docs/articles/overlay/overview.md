@@ -26,6 +26,24 @@ trees**, and all three are valid targets.
 Applying an overlay to an AsyncAPI document is not something other tooling can do, and it is the reason
 this library exists in a repository that generates AsyncAPI.
 
+> ⚠️ **Applying overlays to non-OpenAPI documents is not officially supported by the specification.**
+>
+> The OAI closed [Overlay-Specification#268](https://github.com/OAI/Overlay-Specification/issues/268) as
+> `not planned` in February 2026, reasoning that although it *"might technically be possible today"*, it
+> *"is not a 'core function' of this specification, which is intended for OpenAPI descriptions"*.
+>
+> We are trying to change that. [#367](https://github.com/OAI/Overlay-Specification/issues/367) revisits
+> the question with a draft PR, arguing chiefly that the OAI has **already** made this commitment
+> elsewhere: released Arazzo 1.1.0 normatively defines a Source Description's `type` as
+> `"openapi" | "asyncapi" | "arazzo"`, has AsyncAPI-specific behaviour (`correlationId` is *"only
+> applicable to asyncapi steps with action receive"*), and resolves references against *"an OpenAPI or
+> AsyncAPI description"*. So Overlay could adopt an existing OAI value set rather than invent a registry.
+>
+> That discussion is open and the working group remains broadly aligned with the original decision, so
+> **treat AsyncAPI and Arazzo targeting as an extension this library offers, not a conformance claim.**
+> Behaviour against OpenAPI documents stays spec-exact regardless, so overlays you write for OpenAPI
+> remain portable to other tooling.
+
 ## Installation
 
 ```bash
@@ -141,6 +159,10 @@ Applying it yields a document with `internalDebug` gone and `info` enriched — 
 untouched on disk.
 
 ## Targeting Arazzo documents
+
+> ⚠️ As above, Arazzo is not a specification-sanctioned overlay target — see
+> [#268](https://github.com/OAI/Overlay-Specification/issues/268) (closed `not planned`) and the open
+> [#367](https://github.com/OAI/Overlay-Specification/issues/367) we filed to revisit it.
 
 Arazzo works too, but it is worth knowing that it targets differently, because of how the specification
 shapes its collections:

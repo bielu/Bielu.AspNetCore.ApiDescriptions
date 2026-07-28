@@ -15,6 +15,14 @@ overlay *mechanism* is OpenAPI-specific, though, so `Bielu.Overlay.NET` operates
 `System.Text.Json.Nodes.JsonNode`, and any JSON/YAML API description is a valid target. Running one
 engine over two differently-shaped specifications is the point of this sample.
 
+> ⚠️ **Not officially supported by the spec.** The OAI closed
+> [Overlay-Specification#268](https://github.com/OAI/Overlay-Specification/issues/268) as `not planned`
+> in February 2026 — overlays are *"intended for OpenAPI descriptions"*. We are trying to change that in
+> [#367](https://github.com/OAI/Overlay-Specification/issues/367), whose central argument is that
+> released Arazzo 1.1.0 already defines a source `type` of `"openapi" | "asyncapi" | "arazzo"`, so the
+> OAI has made this commitment once already. Until that lands, treat the AsyncAPI and Arazzo halves of
+> this sample as a capability of this library rather than a conformance claim.
+
 ### AsyncAPI — map-keyed collections
 
 [`public.overlay.yaml`](public.overlay.yaml) turns the internal [`asyncapi.json`](asyncapi.json) into the

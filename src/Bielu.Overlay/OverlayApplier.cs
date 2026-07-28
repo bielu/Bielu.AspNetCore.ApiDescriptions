@@ -15,6 +15,16 @@ namespace Bielu.Overlay;
 /// merge/copy/remove — carries no OpenAPI-specific assumptions.
 /// </para>
 /// <para>
+/// <b>Targeting anything other than OpenAPI is not sanctioned by the specification today.</b> The OAI
+/// closed <see href="https://github.com/OAI/Overlay-Specification/issues/268">Overlay-Specification#268</see>
+/// as <c>not planned</c> in February 2026, on the grounds that this "is not a 'core function' of this
+/// specification, which is intended for OpenAPI descriptions". The question is being revisited in
+/// <see href="https://github.com/OAI/Overlay-Specification/issues/367">#367</see> with a draft PR, but
+/// the working group remains broadly aligned with the original decision, so treat AsyncAPI and Arazzo
+/// targeting as an extension this library offers rather than a conformance claim. Behaviour against
+/// OpenAPI documents stays spec-exact either way, so overlays remain portable to other tooling.
+/// </para>
+/// <para>
 /// Actions are applied <b>in sequence, each against the result of the last</b> (spec §4.4.1), which is
 /// what lets an overlay delete a node in one action and re-create it in a later one. Application is
 /// best-effort: an action that fails is reported and skipped, and the remaining actions still run.

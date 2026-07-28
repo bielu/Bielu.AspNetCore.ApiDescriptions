@@ -12,11 +12,21 @@ namespace Bielu.Overlay.Tests;
 /// built on, and because the three specifications stress different parts of the engine.
 /// </summary>
 /// <remarks>
+/// <para>
 /// OpenAPI and AsyncAPI key their collections as <b>maps</b> (<c>paths</c>, <c>channels</c>), so targets
 /// are plain key lookups. Arazzo keys <c>sourceDescriptions</c>, <c>workflows</c>, and <c>steps</c> as
 /// <b>arrays of objects carrying an id field</b>, so every Arazzo target needs an RFC 9535 filter
 /// expression, and every removal goes through array index handling rather than a map key. Different code
 /// paths, hence separate coverage.
+/// </para>
+/// <para>
+/// These are tests of <em>our</em> behaviour, not of specification conformance: the OAI closed
+/// <see href="https://github.com/OAI/Overlay-Specification/issues/268">Overlay-Specification#268</see> as
+/// <c>not planned</c>, so non-OpenAPI targets are an extension this library offers while
+/// <see href="https://github.com/OAI/Overlay-Specification/issues/367">#367</see> is open. If that
+/// proposal lands, these become conformance tests; if it is declined, they still describe behaviour we
+/// intend to keep.
+/// </para>
 /// </remarks>
 public class CrossSpecTargetTests
 {
