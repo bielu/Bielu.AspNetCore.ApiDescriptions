@@ -97,4 +97,25 @@ public class ArazzoReaderTests
         result.Document!.Workflows[0].Steps[0].Timeout.ShouldBeNull();
         result.Document.Workflows[0].Steps[0].OnFailure![0].Value!.RetryLimit.ShouldBeNull();
     }
+
+    [Fact]
+    public void Read_RootLevelYamlFlowMapping_StillParses()
+    {
+        // Arrange
+        // A YAML flow mapping is valid YAML that begins with '{', so sniffing only the first non-
+        // whitespace character routes it to the JSON parser, which then fails on the unquoted keys.
+        const string content =
+            "{ arazzo: 1.1.0, info: { title: t, version: 1.0.0 }, sourceDescriptions: [], " +
+            "workflows: [ { workflowId: w, steps: [ { stepId: s, operationId: op } ] } ] }";
+
+        // Act
+        var result = ArazzoStringReader.Read(content);
+
+        // Assert
+        result.Diagnostics.Errors.ShouldBeEmpty();
+        result.Document.ShouldNotBeNull();
+        result.Document!.Arazzo.ShouldBe("1.1.0");
+        result.Document.Workflows.Count.ShouldBe(1);
+        result.Document.Workflows[0].Steps[0].StepId.ShouldBe("s");
+    }
 }

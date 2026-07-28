@@ -1,10 +1,11 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Bielu.Arazzo;
 using Bielu.Spec.Shared;
 
 namespace Bielu.Arazzo.Readers;
 
-/// <summary>Reads an Arazzo document from a JSON or YAML string, auto-detecting the format by its first non-whitespace character.</summary>
+/// <summary>Reads an Arazzo document from a JSON or YAML string, auto-detecting the format from its content.</summary>
 public static class ArazzoStringReader
 {
     /// <summary>Reads the Arazzo document encoded in <paramref name="content"/>.</summary>
@@ -22,9 +23,7 @@ public static class ArazzoStringReader
         JsonNode? root;
         try
         {
-            root = LooksLikeJson(content)
-                ? JsonNode.Parse(content)
-                : YamlToJsonNodeConverter.Convert(new StringReader(content));
+            root = ParseRoot(content);
         }
         catch (Exception ex)
         {
@@ -43,6 +42,33 @@ public static class ArazzoStringReader
         }
 
         return new ArazzoReadResult { Document = document, Diagnostics = diagnostics };
+    }
+
+    /// <summary>
+    /// Parses <paramref name="content"/> as JSON when it looks like JSON, falling back to YAML if that
+    /// fails.
+    /// </summary>
+    /// <remarks>
+    /// The fallback matters because the two formats overlap at the opening brace: a YAML <em>flow
+    /// mapping</em> such as <c>{ arazzo: 1.1.0, workflows: [...] }</c> is valid YAML that begins with
+    /// <c>{</c>, so a first-character sniff alone would route it to the JSON parser and fail it. JSON is
+    /// still tried first, so genuine JSON never pays for the YAML parser.
+    /// </remarks>
+    private static JsonNode? ParseRoot(string content)
+    {
+        if (LooksLikeJson(content))
+        {
+            try
+            {
+                return JsonNode.Parse(content);
+            }
+            catch (JsonException)
+            {
+                // Not JSON after all — fall through and let the YAML parser try.
+            }
+        }
+
+        return YamlToJsonNodeConverter.Convert(new StringReader(content));
     }
 
     private static bool LooksLikeJson(string content)
