@@ -1,0 +1,50 @@
+{
+  "arazzo": "1.1.0",
+  "info": {
+    "title": "Streetlights workflows",
+    "version": "1.0.0"
+  },
+  "sourceDescriptions": [
+    {
+      "name": "streetlightsApi",
+      "url": "https://internal.example.com/openapi.json",
+      "type": "openapi"
+    },
+    {
+      "name": "events",
+      "url": "https://internal.example.com/asyncapi.json",
+      "type": "asyncapi"
+    }
+  ],
+  "workflows": [
+    {
+      "workflowId": "measureAndAlert",
+      "summary": "Measure a streetlight and await the alert it triggers",
+      "steps": [
+        {
+          "stepId": "publishMeasurement",
+          "operationId": "$sourceDescriptions.streetlightsApi.postMeasurement"
+        },
+        {
+          "stepId": "dumpDebugState",
+          "operationId": "$sourceDescriptions.streetlightsApi.debugDump"
+        },
+        {
+          "stepId": "awaitAlert",
+          "channelPath": "{$sourceDescriptions.events.url}#/channels/lightingAlert",
+          "action": "receive"
+        }
+      ]
+    },
+    {
+      "workflowId": "internalDiagnostics",
+      "summary": "Operator-only diagnostics, not for partners",
+      "steps": [
+        {
+          "stepId": "dumpState",
+          "operationId": "$sourceDescriptions.streetlightsApi.dumpState"
+        }
+      ]
+    }
+  ]
+}

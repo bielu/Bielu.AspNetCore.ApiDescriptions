@@ -14,3 +14,11 @@
     - name: API Reference
       href: api/arazzo/
       homepage: api/arazzo/index.md
+- name: Overlay
+  items:
+    - name: Articles
+      href: articles/overlay/
+      homepage: articles/overlay/overview.md
+    - name: API Reference
+      href: api/overlay/
+      homepage: api/overlay/index.md

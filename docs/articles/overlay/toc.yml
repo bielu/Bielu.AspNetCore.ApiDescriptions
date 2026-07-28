@@ -1,6 +1,4 @@
 - name: Overview
   href: overview.md
-- name: CLI Tool
-  href: cli.md
 - name: AsyncAPI docs →
   href: ../getting-started.md

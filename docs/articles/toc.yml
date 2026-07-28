@@ -30,3 +30,5 @@
   href: merger-gateway.md
 - name: Migration from Saunter
   href: migration-from-saunter.md
+- name: Arazzo docs →
+  href: arazzo/overview.md

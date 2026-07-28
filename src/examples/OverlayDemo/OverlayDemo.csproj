@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>OverlayDemo</RootNamespace>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Bielu.Overlay\Bielu.Overlay.csproj" />
+        <ProjectReference Include="..\..\Bielu.Overlay.Readers\Bielu.Overlay.Readers.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="asyncapi.json" CopyToOutputDirectory="PreserveNewest" />
+        <None Update="public.overlay.yaml" CopyToOutputDirectory="PreserveNewest" />
+        <None Update="arazzo.json" CopyToOutputDirectory="PreserveNewest" />
+        <None Update="arazzo-public.overlay.yaml" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>
