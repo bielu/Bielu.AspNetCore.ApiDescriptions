@@ -3,21 +3,30 @@ using System.Text.RegularExpressions;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
-namespace Bielu.Arazzo.Readers;
+namespace Bielu.Spec.Shared;
 
 /// <summary>
 /// Converts a parsed YAML document into the same <see cref="JsonNode"/> tree a JSON document would
-/// produce, so <see cref="ArazzoV1Deserializer"/> has exactly one tree-walking implementation regardless
-/// of source format — the intent behind ByteBard.AsyncAPI.NET's unified ParseNode abstraction, achieved
-/// here by converting into the BCL's own node type instead of a bespoke one.
+/// produce, so a spec deserializer has exactly one tree-walking implementation regardless of source
+/// format — the intent behind ByteBard.AsyncAPI.NET's unified ParseNode abstraction, achieved here by
+/// converting into the BCL's own node type instead of a bespoke one.
 /// </summary>
-internal static partial class YamlToJsonNodeConverter
+/// <remarks>
+/// Shared by every spec library in this repository that accepts YAML input (Arazzo, Overlay). The
+/// plain-scalar type inference below is subtle enough that it should exist exactly once.
+/// </remarks>
+public static partial class YamlToJsonNodeConverter
 {
     [GeneratedRegex(@"^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$")]
     private static partial Regex JsonNumberPattern();
 
+    /// <summary>Reads a YAML document from <paramref name="reader"/> and converts it into a <see cref="JsonNode"/> tree.</summary>
+    /// <param name="reader">The reader positioned at the start of a YAML document.</param>
+    /// <returns>The converted tree, or <see langword="null"/> if the input contained no document.</returns>
     public static JsonNode? Convert(TextReader reader)
     {
+        ArgumentNullException.ThrowIfNull(reader);
+
         var yamlStream = new YamlStream();
         yamlStream.Load(reader);
         return yamlStream.Documents.Count == 0 ? null : ConvertNode(yamlStream.Documents[0].RootNode);

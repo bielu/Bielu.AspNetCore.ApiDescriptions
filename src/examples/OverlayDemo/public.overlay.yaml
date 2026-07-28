@@ -1,0 +1,42 @@
+overlay: 1.1.0
+info:
+  title: Public distribution of the Streetlights API
+  version: 1.0.0
+  description: >
+    Reshapes the internally generated AsyncAPI document into the version shared with partners:
+    internal channels and servers are stripped, and partner-facing metadata is added.
+
+actions:
+  # 1. Drop the internal diagnostics channel and the operation that references it.
+  - target: $.channels.internalDebug
+    description: Internal diagnostics channel, not for partners
+    remove: true
+
+  - target: $.operations.receiveInternalDebug
+    description: The operation bound to the channel removed above
+    remove: true
+
+  # 2. Drop any server that is not reachable from outside the network.
+  #    A filter, rather than a hard-coded name, so new internal servers are caught automatically.
+  #    `search` is RFC 9535's substring-regex function; note that its pattern is a JSONPath string
+  #    literal, where the only legal escapes are \b \f \n \r \t \/ \\ \' \" and \uXXXX — so a regex
+  #    like `.*\.internal` would have to be written `.*\\.internal`. Avoided here by matching a plain
+  #    substring instead.
+  - target: $.servers[?search(@.host, 'internal')]
+    description: Any server on an internal hostname
+    remove: true
+
+  # 3. Enrich the info block. Object targets merge, so title/version survive.
+  - target: $.info
+    description: Partner-facing metadata
+    update:
+      description: Public event API for the Streetlights platform
+      contact:
+        name: Platform Team
+        email: platform@example.com
+      x-audience: partner
+
+  # 4. Replace a primitive in place — 1.1.0 only; under 1.0.0 you would target $.info instead.
+  - target: $.info.title
+    description: Use the public product name
+    update: Streetlights (Public)

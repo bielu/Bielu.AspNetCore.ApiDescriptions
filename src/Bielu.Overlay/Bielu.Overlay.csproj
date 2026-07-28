@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsAotCompatible>true</IsAotCompatible>
+        <PackageId>Bielu.Overlay.NET</PackageId>
+        <AssemblyName>Bielu.Overlay</AssemblyName>
+        <RootNamespace>Bielu.Overlay</RootNamespace>
+        <Description>Object model, validation, and apply engine for the OpenAPI Overlay Specification (1.0.0 and 1.1.0). Operates on System.Text.Json JsonNode trees, so overlays apply to any JSON/YAML API description — OpenAPI, AsyncAPI, or Arazzo. Framework-free.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JsonPath.Net" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.Overlay.Readers" />
+        <InternalsVisibleTo Include="Bielu.Overlay.Tests" />
+    </ItemGroup>
+
+</Project>

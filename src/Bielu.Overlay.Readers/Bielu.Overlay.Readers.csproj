@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsAotCompatible>true</IsAotCompatible>
+        <PackageId>Bielu.Overlay.NET.Readers</PackageId>
+        <AssemblyName>Bielu.Overlay.Readers</AssemblyName>
+        <RootNamespace>Bielu.Overlay.Readers</RootNamespace>
+        <Description>JSON and YAML readers for the OpenAPI Overlay Specification, producing Bielu.Overlay.NET documents with diagnostics.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.Overlay\Bielu.Overlay.csproj" />
+        <ProjectReference Include="..\Bielu.Spec.Shared\Bielu.Spec.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.Overlay.Tests" />
+    </ItemGroup>
+
+</Project>

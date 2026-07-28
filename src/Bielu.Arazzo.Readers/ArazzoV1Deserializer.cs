@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Bielu.Arazzo.Models;
+using Bielu.Spec.Shared;
 
 namespace Bielu.Arazzo.Readers;
 
