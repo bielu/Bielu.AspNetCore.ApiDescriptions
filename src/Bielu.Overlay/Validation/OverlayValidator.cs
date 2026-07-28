@@ -27,7 +27,7 @@ public static class OverlayValidator
         if (!OverlayVersionExtensions.TryParse(overlay.Overlay, out var version))
         {
             diagnostics.Add(new OverlayDiagnostic("/overlay",
-                $"Unrecognized Overlay version '{overlay.Overlay}'; expected 1.0.x or 1.1.x.", IsWarning: true));
+                $"Unrecognized Overlay version '{overlay.Overlay}'; expected 1.0.x or 1.1.x.", isWarning: true));
             version = OverlayVersion.V1_1;
         }
 
@@ -96,18 +96,18 @@ public static class OverlayValidator
         if (action.Remove && (action.Copy is not null || action.Update is not null))
         {
             diagnostics.Add(new OverlayDiagnostic(path,
-                "'remove' is set, so 'copy'/'update' on this action have no effect.", IsWarning: true));
+                "'remove' is set, so 'copy'/'update' on this action have no effect.", isWarning: true));
         }
         else if (action.Copy is not null && action.Update is not null)
         {
             diagnostics.Add(new OverlayDiagnostic(path,
-                "'copy' is set, so 'update' on this action has no effect.", IsWarning: true));
+                "'copy' is set, so 'update' on this action has no effect.", isWarning: true));
         }
 
         if (!action.Remove && action.Copy is null && action.Update is null)
         {
             diagnostics.Add(new OverlayDiagnostic(path,
-                "Action has no effect: none of 'update', 'copy', or 'remove' is set.", IsWarning: true));
+                "Action has no effect: none of 'update', 'copy', or 'remove' is set.", isWarning: true));
         }
     }
 }

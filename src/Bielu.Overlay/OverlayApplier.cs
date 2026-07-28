@@ -19,9 +19,10 @@ namespace Bielu.Overlay;
 /// closed <see href="https://github.com/OAI/Overlay-Specification/issues/268">Overlay-Specification#268</see>
 /// as <c>not planned</c> in February 2026, on the grounds that this "is not a 'core function' of this
 /// specification, which is intended for OpenAPI descriptions". The question is being revisited in
-/// <see href="https://github.com/OAI/Overlay-Specification/issues/367">#367</see> with a draft PR, but
-/// the working group remains broadly aligned with the original decision, so treat AsyncAPI and Arazzo
-/// targeting as an extension this library offers rather than a conformance claim. Behaviour against
+/// <see href="https://github.com/OAI/Overlay-Specification/issues/367">#367</see>, with draft PR
+/// <see href="https://github.com/OAI/Overlay-Specification/pull/370">#370</see>, but an OAI maintainer
+/// has said the group remains "pretty well aligned" with the original reasoning, so treat AsyncAPI and
+/// Arazzo targeting as an extension this library offers rather than a conformance claim. Behaviour against
 /// OpenAPI documents stays spec-exact either way, so overlays remain portable to other tooling.
 /// </para>
 /// <para>
@@ -50,7 +51,7 @@ public static class OverlayApplier
             // apply an otherwise well-formed document.
             diagnostics.Add(new OverlayDiagnostic("/overlay",
                 $"Unrecognized Overlay version '{overlay.Overlay}'; expected 1.0.x or 1.1.x. Applying 1.1.0 semantics.",
-                IsWarning: true));
+                isWarning: true));
             version = OverlayVersion.V1_1;
         }
 
@@ -94,7 +95,7 @@ public static class OverlayApplier
         if (rawMatches.Count == 0)
         {
             diagnostics.Add(new OverlayDiagnostic($"{path}/target",
-                $"Target '{action.Target}' matched no nodes.", IsWarning: !options.Strict));
+                $"Target '{action.Target}' matched no nodes.", isWarning: !options.Strict));
             return;
         }
 
@@ -103,7 +104,7 @@ public static class OverlayApplier
             var nullCount = rawMatches.Count - matches.Count;
             diagnostics.Add(new OverlayDiagnostic($"{path}/target",
                 $"Target '{action.Target}' matched {nullCount} JSON null value(s), which have no node identity to update, copy into, or remove; those matches were skipped.",
-                IsWarning: !options.Strict));
+                isWarning: !options.Strict));
         }
 
         if (matches.Count == 0)
@@ -137,7 +138,7 @@ public static class OverlayApplier
         }
 
         diagnostics.Add(new OverlayDiagnostic(path,
-            "Action has no effect: none of 'update', 'copy', or 'remove' is set.", IsWarning: true));
+            "Action has no effect: none of 'update', 'copy', or 'remove' is set.", isWarning: true));
     }
 
     private static void ApplyRemove(List<JsonNode> matches, OverlayAction action, string path,

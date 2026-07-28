@@ -48,7 +48,7 @@ and AsyncAPI use maps — so there is no `$.workflows.internalDiagnostics` to ta
 | remove `$.workflows[?@.workflowId == 'internalDiagnostics']` | deleting an **array element** selected by its id |
 | remove `$.workflows[*].steps[?@.stepId == 'dumpDebugState']` | a filter **inside** a filter, across every workflow |
 | update `$.workflows[?@.workflowId == 'measureAndAlert']` | merging into a filtered object — `summary` and `steps` survive |
-| update `$.sourceDescriptions` | appending to an array |
+| update `$.sourceDescriptions[?@.name == '...']` | merging into an array **element** selected by filter — only `url` changes, `name` and `type` survive |
 | update `$.info.title` | primitive replacement in place |
 
 Because these removals delete array elements, several matches in one array shift each other's indexes.

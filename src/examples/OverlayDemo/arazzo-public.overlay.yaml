@@ -25,13 +25,17 @@ actions:
     update:
       description: Publishes a measurement, then waits for the alert it triggers.
 
-  # 4. Append to an array reached through a filter.
-  - target: $.sourceDescriptions
-    description: The AsyncAPI source the awaitAlert step already references
+  # 4. Repoint each source at its public endpoint. The filter selects an array *element*, and object
+  #    targets merge, so `name` and `type` survive while only `url` changes.
+  - target: $.sourceDescriptions[?@.name == 'streetlightsApi']
+    description: Publish the OpenAPI source under its public host
     update:
-      name: events
-      url: https://example.com/asyncapi.json
-      type: asyncapi
+      url: https://api.example.com/openapi.json
+
+  - target: $.sourceDescriptions[?@.name == 'events']
+    description: Publish the AsyncAPI source under its public host
+    update:
+      url: https://api.example.com/asyncapi.json
 
   # 5. Replace a primitive in place (1.1.0), selected through two filters.
   - target: $.info.title

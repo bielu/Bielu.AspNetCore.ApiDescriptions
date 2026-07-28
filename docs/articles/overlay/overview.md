@@ -33,7 +33,8 @@ this library exists in a repository that generates AsyncAPI.
 > *"is not a 'core function' of this specification, which is intended for OpenAPI descriptions"*.
 >
 > We are trying to change that. [#367](https://github.com/OAI/Overlay-Specification/issues/367) revisits
-> the question with a draft PR, arguing chiefly that the OAI has **already** made this commitment
+> the question, with draft PR [#370](https://github.com/OAI/Overlay-Specification/pull/370) proposing a
+> `targetFormat` declaration. It argues chiefly that the OAI has **already** made this commitment
 > elsewhere: released Arazzo 1.1.0 normatively defines a Source Description's `type` as
 > `"openapi" | "asyncapi" | "arazzo"`, has AsyncAPI-specific behaviour (`correlationId` is *"only
 > applicable to asyncapi steps with action receive"*), and resolves references against *"an OpenAPI or

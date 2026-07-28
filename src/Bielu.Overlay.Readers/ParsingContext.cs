@@ -14,5 +14,5 @@ internal sealed class ParsingContext
 
     public void Error(string path, string message) => Diagnostics.Add(new OverlayDiagnostic(path, message));
 
-    public void Warn(string path, string message) => Diagnostics.Add(new OverlayDiagnostic(path, message, IsWarning: true));
+    public void Warn(string path, string message) => Diagnostics.Add(new OverlayDiagnostic(path, message, isWarning: true));
 }

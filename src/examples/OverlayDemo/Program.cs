@@ -146,7 +146,7 @@ static string SummarizeArazzo(JsonNode document)
     // than a key access — the same shape difference that makes Arazzo overlay targets filter expressions.
     IEnumerable<string> sources = document["sourceDescriptions"] is JsonArray sourceArray
         ? sourceArray.OfType<JsonNode>()
-            .Select(s => $"{s["name"]?.GetValue<string>()}({s["type"]?.GetValue<string>()})")
+            .Select(s => $"{s["name"]?.GetValue<string>()}({s["type"]?.GetValue<string>()})@{Host(s["url"]?.GetValue<string>())}")
         : [];
 
     IEnumerable<string> workflows = document["workflows"] is JsonArray workflowArray
@@ -161,6 +161,11 @@ static string SummarizeArazzo(JsonNode document)
         : [];
 
     var workflowList = string.Join(Environment.NewLine + "               ", workflows);
+
+    // Only the host is shown, so the overlay repointing each source at its public endpoint is visible
+    // without the summary running to three lines per entry.
+    static string Host(string? url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.Host : url ?? "<none>";
 
     return $"""
               title      : {document["info"]?["title"]?.GetValue<string>()}

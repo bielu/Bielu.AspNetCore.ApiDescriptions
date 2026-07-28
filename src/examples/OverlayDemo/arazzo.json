@@ -7,8 +7,13 @@
   "sourceDescriptions": [
     {
       "name": "streetlightsApi",
-      "url": "https://example.com/openapi.json",
+      "url": "https://internal.example.com/openapi.json",
       "type": "openapi"
+    },
+    {
+      "name": "events",
+      "url": "https://internal.example.com/asyncapi.json",
+      "type": "asyncapi"
     }
   ],
   "workflows": [
