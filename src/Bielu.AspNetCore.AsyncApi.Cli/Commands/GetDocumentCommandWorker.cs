@@ -47,7 +47,12 @@ internal sealed class GetDocumentCommandWorker
         Action<string> writeWarning,
         Action<string> writeError)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(writeInfo);
+        ArgumentNullException.ThrowIfNull(writeWarning);
+        ArgumentNullException.ThrowIfNull(writeError);
+
+        _context = context;
         _writeInfo = writeInfo;
         _writeWarning = writeWarning;
         _writeError = writeError;

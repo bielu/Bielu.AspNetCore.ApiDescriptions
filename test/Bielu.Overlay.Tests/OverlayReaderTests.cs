@@ -9,6 +9,7 @@ public class OverlayReaderTests
     [Fact]
     public void Read_JsonAndYaml_ProduceEquivalentDocuments()
     {
+        // Arrange & Act
         var fromJson = OverlayStringReader.Read("""
         {
           "overlay": "1.1.0",
@@ -37,6 +38,7 @@ public class OverlayReaderTests
             remove: true
         """);
 
+        // Assert
         fromJson.HasErrors.ShouldBeFalse();
         fromYaml.HasErrors.ShouldBeFalse();
 
@@ -59,9 +61,11 @@ public class OverlayReaderTests
     {
         // A YAML flow mapping is valid YAML that begins with '{', so sniffing the first character alone
         // would route it to the JSON parser and fail it. JSON is tried first, then YAML.
+        // Arrange & Act
         var result = OverlayStringReader.Read(
             "{ overlay: 1.1.0, info: { title: t, version: 1.0.0 }, actions: [ { target: $.a, remove: true } ] }");
 
+        // Assert
         result.HasErrors.ShouldBeFalse(string.Join("; ", result.Diagnostics));
         result.Document.ShouldNotBeNull();
         result.Document!.Overlay.ShouldBe("1.1.0");
@@ -72,6 +76,7 @@ public class OverlayReaderTests
     [Fact]
     public void Read_DoesNotDisposeTheCallerSuppliedStream()
     {
+        // Arrange
         using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("""
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -80,8 +85,10 @@ public class OverlayReaderTests
             remove: true
         """));
 
+        // Act
         var result = OverlayStreamReader.Read(stream);
 
+        // Assert
         result.HasErrors.ShouldBeFalse();
         stream.CanRead.ShouldBeTrue("the reader must not dispose a stream it does not own");
     }
@@ -89,8 +96,10 @@ public class OverlayReaderTests
     [Fact]
     public void Read_MalformedInput_ReturnsDiagnosticsRatherThanThrowing()
     {
+        // Arrange & Act
         var result = OverlayStringReader.Read("{ this is not: valid json ]");
 
+        // Assert
         result.Document.ShouldBeNull();
         result.HasErrors.ShouldBeTrue();
     }
@@ -98,12 +107,14 @@ public class OverlayReaderTests
     [Fact]
     public void Read_MissingRequiredFields_ReportsErrors()
     {
+        // Arrange & Act
         var result = OverlayStringReader.Read("""
         overlay: 1.1.0
         info:
           title: Only a title
         """);
 
+        // Assert
         result.HasErrors.ShouldBeTrue();
         result.Diagnostics.ShouldContain(d => d.Path == "/info/version");
         result.Diagnostics.ShouldContain(d => d.Path == "/actions");
@@ -112,6 +123,7 @@ public class OverlayReaderTests
     [Fact]
     public void Read_UnrecognizedVersion_Warns()
     {
+        // Arrange & Act
         var result = OverlayStringReader.Read("""
         overlay: 2.0.0
         info: { title: t, version: 1.0.0 }
@@ -120,6 +132,7 @@ public class OverlayReaderTests
             update: { a: 1 }
         """);
 
+        // Assert
         result.HasErrors.ShouldBeFalse();
         result.Diagnostics.ShouldContain(d => d.IsWarning && d.Message.Contains("Unrecognized Overlay version"));
     }
@@ -127,6 +140,7 @@ public class OverlayReaderTests
     [Fact]
     public void Read_CapturesSpecificationExtensions()
     {
+        // Arrange & Act
         var result = OverlayStringReader.Read("""
         overlay: 1.1.0
         x-internal-id: abc
@@ -137,6 +151,7 @@ public class OverlayReaderTests
             x-note: hello
         """);
 
+        // Assert
         result.HasErrors.ShouldBeFalse();
         result.Document!.Extensions!["x-internal-id"]!.GetValue<string>().ShouldBe("abc");
         result.Document.Actions[0].Extensions!["x-note"]!.GetValue<string>().ShouldBe("hello");
@@ -145,6 +160,7 @@ public class OverlayReaderTests
     [Fact]
     public void Read_WrongFieldType_IsReported()
     {
+        // Arrange & Act
         var result = OverlayStringReader.Read("""
         {
           "overlay": "1.1.0",
@@ -153,6 +169,7 @@ public class OverlayReaderTests
         }
         """);
 
+        // Assert
         result.HasErrors.ShouldBeTrue();
         result.Diagnostics.ShouldContain(d => d.Path == "/actions/0/remove");
     }
@@ -160,12 +177,14 @@ public class OverlayReaderTests
     [Fact]
     public void Read_ActionsNotAnArray_IsReported()
     {
+        // Arrange & Act
         var result = OverlayStringReader.Read("""
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
         actions: nope
         """);
 
+        // Assert
         result.HasErrors.ShouldBeTrue();
         result.Diagnostics.ShouldContain(d => d.Path == "/actions");
     }

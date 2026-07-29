@@ -7,7 +7,7 @@ namespace Bielu.Arazzo.Validation;
 /// Structural invariants a well-formed Arazzo document must satisfy, beyond what the type system already
 /// enforces (required fields). Reference resolution against actual source documents
 /// (does <c>operationId</c> exist? is <c>stepId</c> in <c>dependsOn</c> real?) needs an
-/// <see cref="ArazzoWorkspace"/> and is PR 14/18 scope, not this validator's.
+/// <see cref="ArazzoWorkspace"/>, and is not this validator's concern.
 /// </summary>
 public static class ArazzoValidator
 {

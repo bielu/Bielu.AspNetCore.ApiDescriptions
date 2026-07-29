@@ -25,7 +25,11 @@ internal sealed class MergeCommandWorker
         Action<string> writeInfo,
         Action<string> writeError)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(writeInfo);
+        ArgumentNullException.ThrowIfNull(writeError);
+
+        _context = context;
         _writeInfo = writeInfo;
         _writeError = writeError;
     }

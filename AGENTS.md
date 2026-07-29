@@ -32,6 +32,9 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.Overlay` (package id `Bielu.Overlay.NET`) | OpenAPI Overlay Specification object model, validator, and apply engine (1.0.0 + 1.1.0). Operates on `JsonNode`, so overlays apply to OpenAPI, AsyncAPI, or Arazzo documents alike — framework-free. Non-OpenAPI targets are our extension, not spec-sanctioned: OAI closed [Overlay-Specification#268](https://github.com/OAI/Overlay-Specification/issues/268) `not planned`; we filed [#367](https://github.com/OAI/Overlay-Specification/issues/367) to revisit |
 | `Bielu.Overlay.Readers` (package id `Bielu.Overlay.NET.Readers`) | JSON/YAML readers for Overlay documents, producing `Bielu.Overlay` documents with diagnostics |
 | `Bielu.Spec.Shared` | Document-parsing primitives shared by the spec libraries (YAML→`JsonNode` conversion), so the subtle plain-scalar type inference exists exactly once |
+| `Bielu.Cli.Shared` | Shared console-CLI infrastructure (logging, argument parsing, file globbing, validate/diff report formatting) used by `dotnet-asyncapi`, `dotnet-arazzo`, and `dotnet-overlay` |
+| `Bielu.Arazzo.Cli` (tool command `dotnet-arazzo`) | CLI tool for validating, linting, and diffing Arazzo documents |
+| `Bielu.Overlay.Cli` (tool command `dotnet-overlay`) | CLI tool for applying overlays to, and validating, any JSON/YAML API description |
 | `src/examples/StreetlightsAPI` | Minimal single-service example (best starting point) |
 | `src/examples/SignalRChat` | SignalR example with the interactive Scalar console |
 | `src/examples/GrpcGreeter` | gRPC example with the interactive Scalar console (gRPC-Web) |

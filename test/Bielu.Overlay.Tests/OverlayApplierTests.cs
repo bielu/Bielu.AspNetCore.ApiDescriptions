@@ -25,6 +25,7 @@ public class OverlayApplierTests
 
     private static JsonNode ApplyOk(JsonNode document, string overlay, OverlayApplyOptions? options = null)
     {
+        // Arrange & Act
         var result = OverlayApplier.Apply(document, Overlay(overlay), options);
         result.Diagnostics.Where(d => !d.IsWarning).ShouldBeEmpty();
         return result.Document!;
@@ -35,8 +36,10 @@ public class OverlayApplierTests
     [Fact]
     public void Update_MergesPropertiesIntoObjectTarget()
     {
+        // Arrange
         var doc = Doc("""{"info":{"title":"Example","version":"1.0.0"}}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -47,6 +50,7 @@ public class OverlayApplierTests
               title: Replaced
         """);
 
+        // Assert
         result["info"]!["description"]!.GetValue<string>().ShouldBe("Added by overlay");
         result["info"]!["title"]!.GetValue<string>().ShouldBe("Replaced");
         result["info"]!["version"]!.GetValue<string>().ShouldBe("1.0.0");
@@ -55,8 +59,10 @@ public class OverlayApplierTests
     [Fact]
     public void Update_MergesNestedObjectsRecursively()
     {
+        // Arrange
         var doc = Doc("""{"a":{"b":{"keep":1,"change":1}}}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -68,6 +74,7 @@ public class OverlayApplierTests
                 added: 3
         """);
 
+        // Assert
         result["a"]!["b"]!["keep"]!.GetValue<int>().ShouldBe(1);
         result["a"]!["b"]!["change"]!.GetValue<int>().ShouldBe(2);
         result["a"]!["b"]!["added"]!.GetValue<int>().ShouldBe(3);
@@ -79,8 +86,10 @@ public class OverlayApplierTests
         // Interpretation, documented on OverlayApplier.MergeObject: the concatenate/append rule is defined
         // for a target that *selects* an array, not for arrays met partway through a recursive merge —
         // otherwise an array could never be overwritten.
+        // Arrange
         var doc = Doc("""{"a":{"tags":["old"]}}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -90,6 +99,7 @@ public class OverlayApplierTests
               tags: [new]
         """);
 
+        // Assert
         result["a"]!["tags"]!.AsArray().Count.ShouldBe(1);
         result["a"]!["tags"]![0]!.GetValue<string>().ShouldBe("new");
     }
@@ -98,8 +108,10 @@ public class OverlayApplierTests
     public void Update_AppendsObjectToArrayTarget()
     {
         // Spec §4.5.4: "Array elements can be added using the update action."
+        // Arrange
         var doc = Doc("""{"paths":{"/a":{"get":{"parameters":[{"name":"top","in":"query"}]}}}}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.0.0
         info: { title: t, version: 1.0.0 }
@@ -110,6 +122,7 @@ public class OverlayApplierTests
               in: query
         """);
 
+        // Assert
         var parameters = result["paths"]!["/a"]!["get"]!["parameters"]!.AsArray();
         parameters.Count.ShouldBe(2);
         parameters[1]!["name"]!.GetValue<string>().ShouldBe("newParam");
@@ -120,6 +133,7 @@ public class OverlayApplierTests
     {
         const string json = """{"tags":["a"]}""";
 
+        // Act
         var v11 = ApplyOk(Doc(json), """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -132,6 +146,7 @@ public class OverlayApplierTests
         v11["tags"]!.AsArray().Count.ShouldBe(3);
         v11["tags"]![2]!.GetValue<string>().ShouldBe("c");
 
+        // Act
         var v10 = ApplyOk(Doc(json), """
         overlay: 1.0.0
         info: { title: t, version: 1.0.0 }
@@ -148,8 +163,10 @@ public class OverlayApplierTests
     [Fact]
     public void Update_PrimitiveTarget_ReplacesUnder_1_1()
     {
+        // Arrange
         var doc = Doc("""{"info":{"title":"Old"}}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -158,6 +175,7 @@ public class OverlayApplierTests
             update: New
         """);
 
+        // Assert
         result["info"]!["title"]!.GetValue<string>().ShouldBe("New");
     }
 
@@ -166,6 +184,7 @@ public class OverlayApplierTests
     {
         // 1.0.0: "The result of the target JSONPath expression MUST be zero or more objects or arrays
         // (not primitive types or null values)."
+        // Arrange & Act
         var result = OverlayApplier.Apply(Doc("""{"info":{"title":"Old"}}"""), Overlay("""
         overlay: 1.0.0
         info: { title: t, version: 1.0.0 }
@@ -174,6 +193,7 @@ public class OverlayApplierTests
             update: New
         """));
 
+        // Assert
         result.HasErrors.ShouldBeTrue();
         result.Diagnostics.ShouldContain(d => d.Message.Contains("Overlay 1.0.0 does not permit"));
         result.Document!["info"]!["title"]!.GetValue<string>().ShouldBe("Old");
@@ -185,8 +205,10 @@ public class OverlayApplierTests
     public void Remove_DeletesObjectsMatchedByFilter()
     {
         // Spec §4.5.4 remove example.
+        // Arrange
         var doc = Doc("""{"paths":{"/a":{"get":{"parameters":[{"name":"top"},{"name":"dummy"}]}}}}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.0.0
         info: { title: t, version: 1.0.0 }
@@ -195,6 +217,7 @@ public class OverlayApplierTests
             remove: true
         """);
 
+        // Assert
         var parameters = result["paths"]!["/a"]!["get"]!["parameters"]!.AsArray();
         parameters.Count.ShouldBe(1);
         parameters[0]!["name"]!.GetValue<string>().ShouldBe("top");
@@ -204,8 +227,10 @@ public class OverlayApplierTests
     public void Remove_DeletesPrimitiveArrayItems_Under_1_1()
     {
         // Spec §4.5.4: "This also works for primitive target nodes" — new in 1.1.0.
+        // Arrange
         var doc = Doc("""{"paths":{"/a":{"get":{"tags":["public","dummy","beta"]}}}}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -214,6 +239,7 @@ public class OverlayApplierTests
             remove: true
         """);
 
+        // Assert
         var tags = result["paths"]!["/a"]!["get"]!["tags"]!.AsArray();
         tags.Count.ShouldBe(2);
         tags.Select(t => t!.GetValue<string>()).ShouldBe(["public", "beta"]);
@@ -224,8 +250,10 @@ public class OverlayApplierTests
     {
         // Guards the index-shifting trap: indexes are resolved live at removal time, so several matches
         // in one array stay correct regardless of the order they are returned in.
+        // Arrange
         var doc = Doc("""{"tags":["dummy","keep","dummy","dummy"]}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -234,6 +262,7 @@ public class OverlayApplierTests
             remove: true
         """);
 
+        // Assert
         result["tags"]!.AsArray().Count.ShouldBe(1);
         result["tags"]![0]!.GetValue<string>().ShouldBe("keep");
     }
@@ -243,10 +272,12 @@ public class OverlayApplierTests
     {
         // RFC 9535 defines function extensions (length, count, match, search, value). `search` is the
         // substring-regex one, and is the natural way to strip "everything internal" from a document.
+        // Arrange
         var doc = Doc("""
         {"servers":{"prod":{"host":"mqtt.example.com"},"stg":{"host":"mqtt.staging.internal"}}}
         """);
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -255,6 +286,7 @@ public class OverlayApplierTests
             remove: true
         """);
 
+        // Assert
         result["servers"]!.AsObject().ContainsKey("stg").ShouldBeFalse();
         result["servers"]!.AsObject().ContainsKey("prod").ShouldBeTrue();
     }
@@ -265,6 +297,7 @@ public class OverlayApplierTests
         // A JSONPath string literal permits only \b \f \n \r \t \/ \\ \' \" and \uXXXX, so the regex
         // `.*\.internal` must be written `.*\\.internal`. Getting this wrong is an easy authoring
         // mistake, and it must surface as a diagnostic rather than silently matching nothing.
+        // Arrange & Act
         var result = OverlayApplier.Apply(Doc("""{"servers":{"a":{"host":"x.internal"}}}"""), Overlay("""
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -273,6 +306,7 @@ public class OverlayApplierTests
             remove: true
         """));
 
+        // Assert
         result.HasErrors.ShouldBeTrue();
         result.Diagnostics.ShouldContain(d => d.Message.Contains("not a valid RFC 9535 JSONPath expression"));
     }
@@ -280,8 +314,10 @@ public class OverlayApplierTests
     [Fact]
     public void Remove_DeletesObjectProperty()
     {
+        // Arrange
         var doc = Doc("""{"paths":{"/a":{"get":{}},"/b":{"get":{}}}}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.0.0
         info: { title: t, version: 1.0.0 }
@@ -290,6 +326,7 @@ public class OverlayApplierTests
             remove: true
         """);
 
+        // Assert
         result["paths"]!.AsObject().ContainsKey("/b").ShouldBeFalse();
         result["paths"]!.AsObject().ContainsKey("/a").ShouldBeTrue();
     }
@@ -300,6 +337,7 @@ public class OverlayApplierTests
     public void Copy_MergesSourceNodeIntoTarget_SpecExample()
     {
         // Spec §4.5.6.1: copy all operations from the "items" path item to "some-items".
+        // Arrange
         var doc = Doc("""
         {
           "openapi": "3.1.0",
@@ -310,6 +348,7 @@ public class OverlayApplierTests
         }
         """);
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -318,6 +357,7 @@ public class OverlayApplierTests
             copy: '$.paths["/items"]'
         """);
 
+        // Assert
         var someItems = result["paths"]!["/some-items"]!;
         someItems["get"].ShouldNotBeNull();                 // copied in
         someItems["delete"].ShouldNotBeNull();              // copy merges, it does not replace
@@ -327,6 +367,7 @@ public class OverlayApplierTests
     [Fact]
     public void Copy_IsRejectedUnder_1_0()
     {
+        // Arrange & Act
         var result = OverlayApplier.Apply(Doc("""{"a":{},"b":{"x":1}}"""), Overlay("""
         overlay: 1.0.0
         info: { title: t, version: 1.0.0 }
@@ -335,6 +376,7 @@ public class OverlayApplierTests
             copy: $.b
         """));
 
+        // Assert
         result.HasErrors.ShouldBeTrue();
         result.Diagnostics.ShouldContain(d => d.Message.Contains("requires Overlay 1.1.0"));
     }
@@ -342,6 +384,7 @@ public class OverlayApplierTests
     [Fact]
     public void Copy_SelectingMultipleNodes_IsAnError()
     {
+        // Arrange & Act
         var result = OverlayApplier.Apply(Doc("""{"a":{},"b":{"x":1},"c":{"y":2}}"""), Overlay("""
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -350,6 +393,7 @@ public class OverlayApplierTests
             copy: $['b','c']
         """));
 
+        // Assert
         result.HasErrors.ShouldBeTrue();
         // Asserting the count too: "selected 0" would also satisfy "must select exactly one node", so a
         // union expression that silently matched nothing would otherwise pass this test for the wrong reason.
@@ -363,8 +407,10 @@ public class OverlayApplierTests
     {
         // Spec §4.4.1: "Actions are applied to the result of the previous action. This enables objects to
         // be deleted in one action and then re-created in a subsequent action."
+        // Arrange
         var doc = Doc("""{"paths":{"/a":{"get":{"summary":"old"}}}}""");
 
+        // Act
         var result = ApplyOk(doc, """
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -377,12 +423,14 @@ public class OverlayApplierTests
                 get: { summary: recreated }
         """);
 
+        // Assert
         result["paths"]!["/a"]!["get"]!["summary"]!.GetValue<string>().ShouldBe("recreated");
     }
 
     [Fact]
     public void Apply_DoesNotMutateTheInputDocument()
     {
+        // Arrange
         var doc = Doc("""{"info":{"title":"Original"}}""");
 
         ApplyOk(doc, """
@@ -399,6 +447,7 @@ public class OverlayApplierTests
     [Fact]
     public void Apply_SameOverlayCanBeAppliedToSeveralDocuments()
     {
+        // Arrange
         var overlay = Overlay("""
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -407,9 +456,11 @@ public class OverlayApplierTests
             update: { x-owner: platform }
         """);
 
+        // Act
         var first = OverlayApplier.Apply(Doc("""{"info":{"title":"A"}}"""), overlay);
         var second = OverlayApplier.Apply(Doc("""{"info":{"title":"B"}}"""), overlay);
 
+        // Assert
         first.HasErrors.ShouldBeFalse();
         second.HasErrors.ShouldBeFalse();
         first.Document!["info"]!["x-owner"]!.GetValue<string>().ShouldBe("platform");
@@ -419,6 +470,7 @@ public class OverlayApplierTests
     [Fact]
     public void ZeroMatchTarget_WarnsByDefault_AndErrorsUnderStrict()
     {
+        // Arrange
         var doc = Doc("""{"info":{}}""");
         const string overlay = """
         overlay: 1.1.0
@@ -428,6 +480,7 @@ public class OverlayApplierTests
             update: { a: 1 }
         """;
 
+        // Act
         var lenient = OverlayApplier.Apply(doc, Overlay(overlay));
         lenient.HasErrors.ShouldBeFalse();
         lenient.Diagnostics.ShouldContain(d => d.IsWarning && d.Message.Contains("matched no nodes"));
@@ -442,6 +495,7 @@ public class OverlayApplierTests
         // A JSON null has no JsonNode instance in System.Text.Json's model, so it survives JSONPath
         // selection but cannot be reached through Parent. Reporting it as "matched no nodes" would send
         // the author looking for a selector bug that isn't there.
+        // Arrange & Act
         var result = OverlayApplier.Apply(Doc("""{"info":{"description":null}}"""), Overlay("""
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -450,6 +504,7 @@ public class OverlayApplierTests
             update: set
         """));
 
+        // Assert
         result.Diagnostics.ShouldContain(d => d.Message.Contains("matched 1 JSON null value"));
         result.Diagnostics.ShouldNotContain(d => d.Message.Contains("matched no nodes"));
     }
@@ -457,6 +512,7 @@ public class OverlayApplierTests
     [Fact]
     public void Copy_SelectingASingleNullNode_IsNotReportedAsZeroSources()
     {
+        // Arrange & Act
         var result = OverlayApplier.Apply(Doc("""{"a":{},"b":null}"""), Overlay("""
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -465,6 +521,7 @@ public class OverlayApplierTests
             copy: $.b
         """));
 
+        // Assert
         result.HasErrors.ShouldBeTrue();
         result.Diagnostics.ShouldContain(d => d.Message.Contains("selects a JSON null"));
         result.Diagnostics.ShouldNotContain(d => d.Message.Contains("selected 0"));
@@ -473,6 +530,7 @@ public class OverlayApplierTests
     [Fact]
     public void InvalidTargetExpression_IsReportedAndSkipped_WithoutAbortingLaterActions()
     {
+        // Arrange & Act
         var result = OverlayApplier.Apply(Doc("""{"info":{}}"""), Overlay("""
         overlay: 1.1.0
         info: { title: t, version: 1.0.0 }
@@ -483,6 +541,7 @@ public class OverlayApplierTests
             update: { b: 2 }
         """));
 
+        // Assert
         result.HasErrors.ShouldBeTrue();
         // The second action still ran.
         result.Document!["info"]!["b"]!.GetValue<int>().ShouldBe(2);
@@ -491,6 +550,7 @@ public class OverlayApplierTests
     [Fact]
     public void UnknownOverlayVersion_WarnsAndAppliesLatestSemantics()
     {
+        // Arrange & Act
         var result = OverlayApplier.Apply(Doc("""{"tags":["a"]}"""), new OverlayDocument
         {
             Overlay = "9.9.9",
@@ -498,6 +558,7 @@ public class OverlayApplierTests
             Actions = [new OverlayAction { Target = "$.tags", Update = JsonNode.Parse("""["b"]""") }],
         });
 
+        // Assert
         result.Diagnostics.ShouldContain(d => d.IsWarning && d.Message.Contains("Unrecognized Overlay version"));
         result.Document!["tags"]!.AsArray().Count.ShouldBe(2); // 1.1.0 concatenation
     }

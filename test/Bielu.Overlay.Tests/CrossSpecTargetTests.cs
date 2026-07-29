@@ -58,6 +58,7 @@ public class CrossSpecTargetTests
     [Fact]
     public void AsyncApi_ChannelsAreMapKeyed_SoTargetsArePlainLookups()
     {
+        // Arrange & Act
         var result = ApplyOk(Doc(AsyncApiDocument), """
         overlay: 1.1.0
         info: { title: Public distribution, version: 1.0.0 }
@@ -69,6 +70,7 @@ public class CrossSpecTargetTests
               description: Public distribution
         """);
 
+        // Assert
         result["channels"]!.AsObject().ContainsKey("internalDebug").ShouldBeFalse();
         result["channels"]!.AsObject().ContainsKey("lightMeasured").ShouldBeTrue();
         result["info"]!["description"]!.GetValue<string>().ShouldBe("Public distribution");
@@ -108,6 +110,7 @@ public class CrossSpecTargetTests
     public void Arazzo_RemovesAWorkflowByWorkflowIdFilter()
     {
         // No map key to target — the workflow must be selected by filtering the array on its id.
+        // Arrange & Act
         var result = ApplyOk(Doc(ArazzoDocument), """
         overlay: 1.1.0
         info: { title: Strip internal workflows, version: 1.0.0 }
@@ -116,6 +119,7 @@ public class CrossSpecTargetTests
             remove: true
         """);
 
+        // Assert
         var workflows = result["workflows"]!.AsArray();
         workflows.Count.ShouldBe(1);
         workflows[0]!["workflowId"]!.GetValue<string>().ShouldBe("measureAndAlert");
@@ -124,6 +128,7 @@ public class CrossSpecTargetTests
     [Fact]
     public void Arazzo_RemovesAStepFromANestedArrayByStepIdFilter()
     {
+        // Arrange & Act
         var result = ApplyOk(Doc(ArazzoDocument), """
         overlay: 1.1.0
         info: { title: Strip debug steps, version: 1.0.0 }
@@ -132,6 +137,7 @@ public class CrossSpecTargetTests
             remove: true
         """);
 
+        // Assert
         var steps = result["workflows"]![0]!["steps"]!.AsArray();
         steps.Count.ShouldBe(2);
         steps.Select(s => s!["stepId"]!.GetValue<string>()).ShouldBe(["publishMeasurement", "awaitAlert"]);
@@ -140,6 +146,7 @@ public class CrossSpecTargetTests
     [Fact]
     public void Arazzo_MergesIntoAWorkflowSelectedByFilter()
     {
+        // Arrange & Act
         var result = ApplyOk(Doc(ArazzoDocument), """
         overlay: 1.1.0
         info: { title: Document the workflow, version: 1.0.0 }
@@ -149,6 +156,7 @@ public class CrossSpecTargetTests
               description: Publishes a measurement, then waits for the alert it triggers
         """);
 
+        // Assert
         var workflow = result["workflows"]![0]!;
         workflow["description"]!.GetValue<string>().ShouldBe("Publishes a measurement, then waits for the alert it triggers");
         // A merge, so the existing summary survives.
@@ -160,6 +168,7 @@ public class CrossSpecTargetTests
     public void Arazzo_AppendsAStepToAWorkflowSelectedByFilter()
     {
         // Array target + object update = append, reached through a filter.
+        // Arrange & Act
         var result = ApplyOk(Doc(ArazzoDocument), """
         overlay: 1.1.0
         info: { title: Add an audit step, version: 1.0.0 }
@@ -170,6 +179,7 @@ public class CrossSpecTargetTests
               operationId: $sourceDescriptions.streetlightsApi.recordAudit
         """);
 
+        // Assert
         var steps = result["workflows"]![0]!["steps"]!.AsArray();
         steps.Count.ShouldBe(4);
         steps[3]!["stepId"]!.GetValue<string>().ShouldBe("recordAudit");
@@ -178,6 +188,7 @@ public class CrossSpecTargetTests
     [Fact]
     public void Arazzo_AppendsASourceDescription()
     {
+        // Arrange & Act
         var result = ApplyOk(Doc(ArazzoDocument), """
         overlay: 1.1.0
         info: { title: Wire up the event source, version: 1.0.0 }
@@ -189,6 +200,7 @@ public class CrossSpecTargetTests
               type: asyncapi
         """);
 
+        // Assert
         var sources = result["sourceDescriptions"]!.AsArray();
         sources.Count.ShouldBe(2);
         sources[1]!["type"]!.GetValue<string>().ShouldBe("asyncapi");
@@ -198,6 +210,7 @@ public class CrossSpecTargetTests
     public void Arazzo_ReplacesAStepFieldViaFilterAndPrimitiveTarget()
     {
         // Combines an array filter with 1.1.0's in-place primitive replacement.
+        // Arrange & Act
         var result = ApplyOk(Doc(ArazzoDocument), """
         overlay: 1.1.0
         info: { title: Retarget a step, version: 1.0.0 }
@@ -206,6 +219,7 @@ public class CrossSpecTargetTests
             update: send
         """);
 
+        // Assert
         result["workflows"]![0]!["steps"]![2]!["action"]!.GetValue<string>().ShouldBe("send");
     }
 
@@ -214,6 +228,7 @@ public class CrossSpecTargetTests
     {
         // Matches span two different arrays and shift indexes in both; resolving each index live at
         // removal time is what keeps this correct.
+        // Arrange
         var document = Doc("""
         {
           "arazzo": "1.1.0",
@@ -226,6 +241,7 @@ public class CrossSpecTargetTests
         }
         """);
 
+        // Act
         var result = ApplyOk(document, """
         overlay: 1.1.0
         info: { title: Strip debug steps everywhere, version: 1.0.0 }
@@ -234,6 +250,7 @@ public class CrossSpecTargetTests
             remove: true
         """);
 
+        // Assert
         result["workflows"]![0]!["steps"]!.AsArray().Select(s => s!["stepId"]!.GetValue<string>()).ShouldBe(["keep"]);
         result["workflows"]![1]!["steps"]!.AsArray().Select(s => s!["stepId"]!.GetValue<string>()).ShouldBe(["keep2"]);
     }
@@ -243,6 +260,7 @@ public class CrossSpecTargetTests
     {
         // Both sides YAML: the document arrives through the shared YamlToJsonNodeConverter, the overlay
         // through the reader, and they meet as one JsonNode tree.
+        // Arrange
         var yamlDocument = Bielu.Spec.Shared.YamlToJsonNodeConverter.Convert(new StringReader("""
         arazzo: 1.1.0
         info:
@@ -261,6 +279,7 @@ public class CrossSpecTargetTests
               - stepId: two
         """))!;
 
+        // Act
         var result = ApplyOk(yamlDocument, """
         overlay: 1.1.0
         info: { title: Strip internal, version: 1.0.0 }
@@ -269,6 +288,7 @@ public class CrossSpecTargetTests
             remove: true
         """);
 
+        // Assert
         result["workflows"]!.AsArray().Count.ShouldBe(1);
         result["workflows"]![0]!["workflowId"]!.GetValue<string>().ShouldBe("public");
     }

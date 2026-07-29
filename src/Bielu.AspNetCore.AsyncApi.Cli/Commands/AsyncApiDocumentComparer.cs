@@ -1,23 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Bielu.Cli.Shared.Diff;
 using ByteBard.AsyncAPI.Models;
 
 namespace Bielu.AspNetCore.AsyncApi.Cli.Commands;
 
-internal enum ChangeSeverity
-{
-    Breaking,
-    NonBreaking
-}
-
-internal record AsyncApiChange(string Path, string Message, ChangeSeverity Severity);
-
 internal sealed class AsyncApiDocumentComparer
 {
-    public IEnumerable<AsyncApiChange> Compare(AsyncApiDocument @base, AsyncApiDocument head)
+    public IEnumerable<DocumentChange> Compare(AsyncApiDocument @base, AsyncApiDocument head)
     {
-        var changes = new List<AsyncApiChange>();
+        var changes = new List<DocumentChange>();
 
         // Compare Servers
         CompareDictionaries(@base.Servers, head.Servers, "servers", "Server", changes);
@@ -37,7 +30,8 @@ internal sealed class AsyncApiDocumentComparer
         return changes;
     }
 
-    private void CompareDictionaries<T>(IDictionary<string, T>? @base, IDictionary<string, T>? head, string path, string typeName, List<AsyncApiChange> changes)
+    private void CompareDictionaries<T>(IDictionary<string, T>? @base, IDictionary<string, T>? head, string path,
+        string typeName, List<DocumentChange> changes)
     {
         @base ??= new Dictionary<string, T>();
         head ??= new Dictionary<string, T>();
@@ -46,7 +40,8 @@ internal sealed class AsyncApiDocumentComparer
         {
             if (!head.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"{path}/{key}", $"{typeName} '{key}' was removed.", ChangeSeverity.Breaking));
+                changes.Add(new DocumentChange($"{path}/{key}", $"{typeName} '{key}' was removed.",
+                    ChangeSeverity.Breaking));
             }
         }
 
@@ -54,12 +49,14 @@ internal sealed class AsyncApiDocumentComparer
         {
             if (!@base.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"{path}/{key}", $"{typeName} '{key}' was added.", ChangeSeverity.NonBreaking));
+                changes.Add(new DocumentChange($"{path}/{key}", $"{typeName} '{key}' was added.",
+                    ChangeSeverity.NonBreaking));
             }
         }
     }
 
-    private void CompareChannels(IDictionary<string, AsyncApiChannel>? @base, IDictionary<string, AsyncApiChannel>? head, List<AsyncApiChange> changes)
+    private void CompareChannels(IDictionary<string, AsyncApiChannel>? @base,
+        IDictionary<string, AsyncApiChannel>? head, List<DocumentChange> changes)
     {
         @base ??= new Dictionary<string, AsyncApiChannel>();
         head ??= new Dictionary<string, AsyncApiChannel>();
@@ -68,7 +65,8 @@ internal sealed class AsyncApiDocumentComparer
         {
             if (!head.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"channels/{key}", $"Channel '{key}' was removed.", ChangeSeverity.Breaking));
+                changes.Add(new DocumentChange($"channels/{key}", $"Channel '{key}' was removed.",
+                    ChangeSeverity.Breaking));
                 continue;
             }
 
@@ -77,7 +75,9 @@ internal sealed class AsyncApiDocumentComparer
 
             if (bChannel.Address != hChannel.Address)
             {
-                changes.Add(new AsyncApiChange($"channels/{key}/address", $"Channel '{key}' address changed from '{bChannel.Address}' to '{hChannel.Address}'.", ChangeSeverity.Breaking));
+                changes.Add(new DocumentChange($"channels/{key}/address",
+                    $"Channel '{key}' address changed from '{bChannel.Address}' to '{hChannel.Address}'.",
+                    ChangeSeverity.Breaking));
             }
         }
 
@@ -85,12 +85,14 @@ internal sealed class AsyncApiDocumentComparer
         {
             if (!@base.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"channels/{key}", $"Channel '{key}' was added.", ChangeSeverity.NonBreaking));
+                changes.Add(new DocumentChange($"channels/{key}", $"Channel '{key}' was added.",
+                    ChangeSeverity.NonBreaking));
             }
         }
     }
 
-    private void CompareOperations(IDictionary<string, AsyncApiOperation>? @base, IDictionary<string, AsyncApiOperation>? head, List<AsyncApiChange> changes)
+    private void CompareOperations(IDictionary<string, AsyncApiOperation>? @base,
+        IDictionary<string, AsyncApiOperation>? head, List<DocumentChange> changes)
     {
         @base ??= new Dictionary<string, AsyncApiOperation>();
         head ??= new Dictionary<string, AsyncApiOperation>();
@@ -99,7 +101,8 @@ internal sealed class AsyncApiDocumentComparer
         {
             if (!head.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"operations/{key}", $"Operation '{key}' was removed.", ChangeSeverity.Breaking));
+                changes.Add(new DocumentChange($"operations/{key}", $"Operation '{key}' was removed.",
+                    ChangeSeverity.Breaking));
                 continue;
             }
 
@@ -108,7 +111,9 @@ internal sealed class AsyncApiDocumentComparer
 
             if (bOp.Action != hOp.Action)
             {
-                changes.Add(new AsyncApiChange($"operations/{key}/action", $"Operation '{key}' action changed from '{bOp.Action}' to '{hOp.Action}'.", ChangeSeverity.Breaking));
+                changes.Add(new DocumentChange($"operations/{key}/action",
+                    $"Operation '{key}' action changed from '{bOp.Action}' to '{hOp.Action}'.",
+                    ChangeSeverity.Breaking));
             }
 
             // Simplified: compare channel references
@@ -116,7 +121,8 @@ internal sealed class AsyncApiDocumentComparer
             var hChannelRef = hOp.Channel?.Reference;
             if (bChannelRef != hChannelRef)
             {
-                changes.Add(new AsyncApiChange($"operations/{key}/channel", $"Operation '{key}' channel reference changed.", ChangeSeverity.Breaking));
+                changes.Add(new DocumentChange($"operations/{key}/channel",
+                    $"Operation '{key}' channel reference changed.", ChangeSeverity.Breaking));
             }
         }
 
@@ -124,12 +130,14 @@ internal sealed class AsyncApiDocumentComparer
         {
             if (!@base.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"operations/{key}", $"Operation '{key}' was added.", ChangeSeverity.NonBreaking));
+                changes.Add(new DocumentChange($"operations/{key}", $"Operation '{key}' was added.",
+                    ChangeSeverity.NonBreaking));
             }
         }
     }
 
-    private void CompareMessages(IDictionary<string, AsyncApiMessage>? @base, IDictionary<string, AsyncApiMessage>? head, string path, List<AsyncApiChange> changes)
+    private void CompareMessages(IDictionary<string, AsyncApiMessage>? @base,
+        IDictionary<string, AsyncApiMessage>? head, string path, List<DocumentChange> changes)
     {
         @base ??= new Dictionary<string, AsyncApiMessage>();
         head ??= new Dictionary<string, AsyncApiMessage>();
@@ -138,7 +146,8 @@ internal sealed class AsyncApiDocumentComparer
         {
             if (!head.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"{path}/{key}", $"Message '{key}' was removed.", ChangeSeverity.Breaking));
+                changes.Add(new DocumentChange($"{path}/{key}", $"Message '{key}' was removed.",
+                    ChangeSeverity.Breaking));
             }
         }
 
@@ -146,12 +155,14 @@ internal sealed class AsyncApiDocumentComparer
         {
             if (!@base.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"{path}/{key}", $"Message '{key}' was added.", ChangeSeverity.NonBreaking));
+                changes.Add(new DocumentChange($"{path}/{key}", $"Message '{key}' was added.",
+                    ChangeSeverity.NonBreaking));
             }
         }
     }
 
-    private void CompareSchemas(IDictionary<string, AsyncApiMultiFormatSchema>? @base, IDictionary<string, AsyncApiMultiFormatSchema>? head, string path, List<AsyncApiChange> changes)
+    private void CompareSchemas(IDictionary<string, AsyncApiMultiFormatSchema>? @base,
+        IDictionary<string, AsyncApiMultiFormatSchema>? head, string path, List<DocumentChange> changes)
     {
         @base ??= new Dictionary<string, AsyncApiMultiFormatSchema>();
         head ??= new Dictionary<string, AsyncApiMultiFormatSchema>();
@@ -160,19 +171,20 @@ internal sealed class AsyncApiDocumentComparer
         {
             if (!head.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"{path}/{key}", $"Schema '{key}' was removed.", ChangeSeverity.Breaking));
-                continue;
-            }
+                changes.Add(
+                    new DocumentChange($"{path}/{key}", $"Schema '{key}' was removed.", ChangeSeverity.Breaking));
 
-            // Deep comparison of schemas is complex, for MVP let's just check for removal.
-            // Ideally we should check for narrowing changes here.
+                // Deep comparison of schemas is complex, for MVP let's just check for removal.
+                // Ideally we should check for narrowing changes here.
+            }
         }
 
         foreach (var key in head.Keys)
         {
             if (!@base.ContainsKey(key))
             {
-                changes.Add(new AsyncApiChange($"{path}/{key}", $"Schema '{key}' was added.", ChangeSeverity.NonBreaking));
+                changes.Add(new DocumentChange($"{path}/{key}", $"Schema '{key}' was added.",
+                    ChangeSeverity.NonBreaking));
             }
         }
     }

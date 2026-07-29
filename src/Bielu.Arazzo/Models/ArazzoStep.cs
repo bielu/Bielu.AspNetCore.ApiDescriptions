@@ -1,4 +1,4 @@
-using Bielu.Arazzo.Writers;
+﻿using Bielu.Arazzo.Writers;
 
 namespace Bielu.Arazzo.Models;
 
@@ -7,8 +7,8 @@ namespace Bielu.Arazzo.Models;
 /// are the AsyncAPI-specific fields new in 1.1.0: a step targets either an operation
 /// (<see cref="OperationId"/>/<see cref="OperationPath"/>), a workflow (<see cref="WorkflowId"/>), or —
 /// for AsyncAPI sources — a channel (<see cref="ChannelPath"/>) with an explicit send/receive
-/// <see cref="Action"/>. This resolves ARAZZO-PROPOSAL.md risk R2: the spec already defines AsyncAPI step
-/// semantics precisely, it is not left to interpretation.
+/// <see cref="Action"/>. The specification defines these AsyncAPI step semantics precisely; they are not
+/// left to interpretation.
 /// </summary>
 public sealed class ArazzoStep : IArazzoSerializable, IArazzoExtensible
 {

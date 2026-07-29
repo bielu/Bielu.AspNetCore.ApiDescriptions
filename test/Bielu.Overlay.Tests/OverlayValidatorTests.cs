@@ -18,23 +18,28 @@ public class OverlayValidatorTests
     [Fact]
     public void Validate_WellFormedDocument_ReturnsNoDiagnostics()
     {
+        // Arrange & Act
         var diagnostics = OverlayValidator.Validate(Build(
             new OverlayAction { Target = "$.info", Update = JsonNode.Parse("""{"a":1}""") }));
 
+        // Assert
         diagnostics.ShouldBeEmpty();
     }
 
     [Fact]
     public void Validate_EmptyActions_IsAnError()
     {
+        // Arrange & Act
         var diagnostics = OverlayValidator.Validate(Build());
 
+        // Assert
         diagnostics.ShouldContain(d => !d.IsWarning && d.Path == "/actions");
     }
 
     [Fact]
     public void Validate_MissingInfoFields_AreErrors()
     {
+        // Arrange
         var document = new OverlayDocument
         {
             Overlay = "1.1.0",
@@ -42,8 +47,10 @@ public class OverlayValidatorTests
             Actions = [new OverlayAction { Target = "$.info", Remove = true }],
         };
 
+        // Act
         var diagnostics = OverlayValidator.Validate(document);
 
+        // Assert
         diagnostics.ShouldContain(d => !d.IsWarning && d.Path == "/info/title");
         diagnostics.ShouldContain(d => !d.IsWarning && d.Path == "/info/version");
     }
@@ -51,15 +58,18 @@ public class OverlayValidatorTests
     [Fact]
     public void Validate_UnparseableTarget_IsAnError()
     {
+        // Arrange & Act
         var diagnostics = OverlayValidator.Validate(Build(
             new OverlayAction { Target = "$.$$!!nope", Remove = true }));
 
+        // Assert
         diagnostics.ShouldContain(d => !d.IsWarning && d.Path == "/actions/0/target");
     }
 
     [Fact]
     public void Validate_CopyOn_1_0_Document_IsAnError()
     {
+        // Arrange
         var document = new OverlayDocument
         {
             Overlay = "1.0.0",
@@ -67,8 +77,10 @@ public class OverlayValidatorTests
             Actions = [new OverlayAction { Target = "$.a", Copy = "$.b" }],
         };
 
+        // Act
         var diagnostics = OverlayValidator.Validate(document);
 
+        // Assert
         diagnostics.ShouldContain(d => !d.IsWarning && d.Path == "/actions/0/copy");
     }
 
@@ -76,9 +88,11 @@ public class OverlayValidatorTests
     public void Validate_RedundantFields_AreWarningsNotErrors()
     {
         // The spec does not make these mutually exclusive — `update` simply has no impact when outranked.
+        // Arrange & Act
         var diagnostics = OverlayValidator.Validate(Build(
             new OverlayAction { Target = "$.a", Remove = true, Update = JsonNode.Parse("""{"a":1}""") }));
 
+        // Assert
         diagnostics.ShouldNotBeEmpty();
         diagnostics.ShouldAllBe(d => d.IsWarning);
         diagnostics.ShouldContain(d => d.Message.Contains("have no effect"));
@@ -87,14 +101,17 @@ public class OverlayValidatorTests
     [Fact]
     public void Validate_ActionWithNoOperation_IsAWarning()
     {
+        // Arrange & Act
         var diagnostics = OverlayValidator.Validate(Build(new OverlayAction { Target = "$.a" }));
 
+        // Assert
         diagnostics.ShouldContain(d => d.IsWarning && d.Message.Contains("no effect"));
     }
 
     [Fact]
     public void Validate_UnrecognizedVersion_IsAWarning()
     {
+        // Arrange
         var document = new OverlayDocument
         {
             Overlay = "3.0.0",
@@ -102,8 +119,10 @@ public class OverlayValidatorTests
             Actions = [new OverlayAction { Target = "$.a", Remove = true }],
         };
 
+        // Act
         var diagnostics = OverlayValidator.Validate(document);
 
+        // Assert
         diagnostics.ShouldContain(d => d.IsWarning && d.Path == "/overlay");
     }
 }

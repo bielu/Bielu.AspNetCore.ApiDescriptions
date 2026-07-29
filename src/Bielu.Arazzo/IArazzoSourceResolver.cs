@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 
 namespace Bielu.Arazzo;
 
@@ -6,7 +6,7 @@ namespace Bielu.Arazzo;
 /// Resolves an <c>operationId</c>/<c>operationPath</c>/<c>channelPath</c>/<c>workflowId</c> reference
 /// against one registered source document. Bielu.Arazzo.NET stays framework-free — it has no dependency
 /// on ByteBard.AsyncAPI.NET or Microsoft.OpenApi — so it does not know how to look inside an OpenAPI or
-/// AsyncAPI document itself. <c>Bielu.AspNetCore.Arazzo</c> (proposal PR 14) supplies the real resolvers,
+/// AsyncAPI document itself. <c>Bielu.AspNetCore.Arazzo</c> supplies the real resolvers,
 /// one per <see cref="Models.ArazzoSourceDescription.Type"/>, and is where the self-wiring against an
 /// app's own live AsyncAPI/OpenAPI documents happens.
 /// </summary>

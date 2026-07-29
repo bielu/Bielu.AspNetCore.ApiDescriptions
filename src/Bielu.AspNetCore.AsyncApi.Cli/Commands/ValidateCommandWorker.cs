@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text.Json;
+using Bielu.Cli.Shared;
+using Bielu.Cli.Shared.Diagnostics;
 using ByteBard.AsyncAPI.Readers;
-using ByteBard.AsyncAPI.Models;
 
 namespace Bielu.AspNetCore.AsyncApi.Cli.Commands;
 
@@ -13,9 +13,7 @@ namespace Bielu.AspNetCore.AsyncApi.Cli.Commands;
 internal sealed class ValidateCommandWorker
 {
     private readonly ValidateCommandContext _context;
-    private readonly Action<string> _writeInfo;
-    private readonly Action<string> _writeWarning;
-    private readonly Action<string> _writeError;
+    private readonly ICliLogger _logger;
 
     public ValidateCommandWorker(
         ValidateCommandContext context,
@@ -23,112 +21,69 @@ internal sealed class ValidateCommandWorker
         Action<string> writeWarning,
         Action<string> writeError)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-        _writeInfo = writeInfo;
-        _writeWarning = writeWarning;
-        _writeError = writeError;
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(writeInfo);
+        ArgumentNullException.ThrowIfNull(writeWarning);
+        ArgumentNullException.ThrowIfNull(writeError);
+
+        _context = context;
+        _logger = new DelegatingCliLogger(writeInfo, writeWarning, writeError);
     }
 
     public int Process()
     {
-        var files = new List<string>();
-        foreach (var filePattern in _context.Files)
-        {
-            if (filePattern.Contains('*') || filePattern.Contains('?'))
-            {
-                var directory = Path.GetDirectoryName(filePattern);
-                if (string.IsNullOrEmpty(directory)) directory = ".";
-                var pattern = Path.GetFileName(filePattern);
-                files.AddRange(Directory.GetFiles(directory, pattern, SearchOption.TopDirectoryOnly));
-            }
-            else
-            {
-                files.Add(filePattern);
-            }
-        }
+        var files = CliFileResolver.ExpandFilePatterns(_context.Files);
 
         if (files.Count == 0)
         {
-            _writeError("No files found to validate.");
-            return 1;
+            _logger.Error("No files found to validate.");
+            return CliExitCode.Failure;
         }
 
-        var allDiagnostics = new List<FileDiagnostic>();
-        var hasErrors = false;
+        var reports = new List<FileDiagnosticReport>();
 
         foreach (var file in files)
         {
             if (!File.Exists(file))
             {
-                _writeError($"File not found: {file}");
-                hasErrors = true;
+                _logger.Error($"File not found: {file}");
+                reports.Add(new FileDiagnosticReport
+                {
+                    FilePath = file, Errors = [new DiagnosticItem("File not found.", null)],
+                });
                 continue;
             }
 
-            var content = File.ReadAllText(file);
+            string content;
+            try
+            {
+                content = File.ReadAllText(file);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Report against the file and carry on, exactly as a missing file does — one locked or
+                // unreadable document in a glob must not abandon the rest of the run.
+                _logger.Error($"Could not read file: {file}");
+                reports.Add(new FileDiagnosticReport
+                {
+                    FilePath = file, Errors = [new DiagnosticItem($"Could not read file: {ex.Message}", null)],
+                });
+                continue;
+            }
+
             var reader = new AsyncApiStringReader();
             reader.Read(content, out var diagnostic);
 
-            var fileDiag = new FileDiagnostic
+            reports.Add(new FileDiagnosticReport
             {
                 FilePath = file,
-                Errors = diagnostic.Errors.Select(e => new DiagnosticItem { Message = e.Message, Pointer = e.Pointer }).ToList(),
-                Warnings = diagnostic.Warnings.Select(w => new DiagnosticItem { Message = w.Message, Pointer = w.Pointer }).ToList()
-            };
-
-            allDiagnostics.Add(fileDiag);
-
-            if (fileDiag.Errors.Count > 0 || (_context.Strict && fileDiag.Warnings.Count > 0))
-            {
-                hasErrors = true;
-            }
+                Errors = diagnostic.Errors.Select(e => new DiagnosticItem(e.Message, e.Pointer)).ToList(),
+                Warnings = diagnostic.Warnings.Select(w => new DiagnosticItem(w.Message, w.Pointer)).ToList(),
+            });
         }
 
-        if (_context.Format.Equals("json", StringComparison.OrdinalIgnoreCase))
-        {
-            Console.WriteLine(JsonSerializer.Serialize(allDiagnostics, new JsonSerializerOptions { WriteIndented = true }));
-        }
-        else
-        {
-            foreach (var fileDiag in allDiagnostics)
-            {
-                _writeInfo($"Validating {fileDiag.FilePath}...");
-                foreach (var error in fileDiag.Errors)
-                {
-                    _writeError($"  Error: {error.Message} (at {error.Pointer})");
-                }
-                foreach (var warning in fileDiag.Warnings)
-                {
-                    if (_context.Strict)
-                    {
-                        _writeError($"  Warning (Strict): {warning.Message} (at {warning.Pointer})");
-                    }
-                    else
-                    {
-                        _writeWarning($"  Warning: {warning.Message} (at {warning.Pointer})");
-                    }
-                }
+        ValidateReportWriter.Write(reports, _context.Format, _context.Strict, _logger);
 
-                if (fileDiag.Errors.Count == 0 && fileDiag.Warnings.Count == 0)
-                {
-                    _writeInfo("  OK");
-                }
-            }
-        }
-
-        return hasErrors ? 1 : 0;
-    }
-
-    private class FileDiagnostic
-    {
-        public string FilePath { get; set; } = string.Empty;
-        public List<DiagnosticItem> Errors { get; set; } = [];
-        public List<DiagnosticItem> Warnings { get; set; } = [];
-    }
-
-    private class DiagnosticItem
-    {
-        public string Message { get; set; } = string.Empty;
-        public string? Pointer { get; set; }
+        return ValidateReportWriter.HasFailures(reports, _context.Strict) ? CliExitCode.Failure : CliExitCode.Success;
     }
 }

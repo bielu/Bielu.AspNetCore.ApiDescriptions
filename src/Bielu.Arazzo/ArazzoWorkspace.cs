@@ -1,13 +1,13 @@
-using Bielu.Arazzo.Models;
+﻿using Bielu.Arazzo.Models;
 
 namespace Bielu.Arazzo;
 
 /// <summary>
 /// Registers the documents an <see cref="ArazzoDocument"/>'s <c>sourceDescriptions</c> point at, and
 /// resolves <c>operationId</c>/<c>operationPath</c>/<c>channelPath</c>/<c>workflowId</c> references into
-/// them. This is the seam PR 14's self-wiring plugs into: an ASP.NET Core app registers its own live
+/// them. This is the seam self-wiring plugs into: an ASP.NET Core app registers its own live
 /// <c>AsyncApiDocument</c> and <c>OpenApiDocument</c> instances here so a step's reference can be
-/// validated at startup instead of failing in production (see ARAZZO-PROPOSAL.md §3.B).
+/// validated at startup instead of failing in production.
 /// </summary>
 public sealed class ArazzoWorkspace
 {

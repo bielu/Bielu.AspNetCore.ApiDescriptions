@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -8,7 +8,7 @@ namespace Bielu.Arazzo.Writers;
 
 /// <summary>
 /// Hand-rolled block-style YAML emitter — no YamlDotNet dependency in this package (that stays confined
-/// to Bielu.Arazzo.Readers, see ARAZZO-PROPOSAL.md §3.A). Renders the same <see cref="JsonNode"/> tree
+/// to Bielu.Arazzo.Readers). Renders the same <see cref="JsonNode"/> tree
 /// <see cref="ArazzoJsonWriter"/> produces via <see cref="ArazzoJsonNodeWriter"/>. Optimized for
 /// correctness and round-tripping through <c>Bielu.Arazzo.Readers</c>, not for matching hand-authored
 /// formatting or preserving comments.

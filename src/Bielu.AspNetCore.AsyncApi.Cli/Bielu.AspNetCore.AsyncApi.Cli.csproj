@@ -23,6 +23,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Merger\Bielu.AspNetCore.AsyncApi.Merger.csproj" />
+        <ProjectReference Include="..\Bielu.Cli.Shared\Bielu.Cli.Shared.csproj" />
     </ItemGroup>
 
 </Project>

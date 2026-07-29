@@ -44,6 +44,27 @@ describing multi-step API workflows that can span both OpenAPI and AsyncAPI sour
 
 </div>
 
+<div class="landing-card">
+
+## Overlay
+
+[Bielu.Overlay.NET](https://www.nuget.org/packages/Bielu.Overlay.NET/) implements the
+[Overlay Specification](https://spec.openapis.org/overlay/latest.html) — declarative, repeatable
+transformations of an API description, so reshaping a generated document is a reviewable artifact
+instead of imperative code.
+
+- `OverlayDocument` model, structural validation, and apply engine
+- Overlay 1.0.0 and 1.1.0, with version-gated semantics
+- Works on a `JsonNode` tree, so OpenAPI, AsyncAPI, and Arazzo descriptions are all valid targets
+- JSON and YAML readers with diagnostics (`Bielu.Overlay.NET.Readers`)
+- `dotnet overlay` CLI for applying and validating overlays
+
+[Get started with Overlay →](articles/overlay/overview.md)
+&nbsp;·&nbsp;
+[API reference →](api/overlay/index.md)
+
+</div>
+
 </div>
 
 > ⚠️ **Note:** Before version 1.0.0, these libraries are regarded as unstable and **breaking changes may be

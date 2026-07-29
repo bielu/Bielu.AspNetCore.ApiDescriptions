@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Text.Json;
+using Bielu.Cli.Shared;
+using Bielu.Cli.Shared.Diff;
 using ByteBard.AsyncAPI.Readers;
 
 namespace Bielu.AspNetCore.AsyncApi.Cli.Commands;
@@ -13,9 +13,7 @@ namespace Bielu.AspNetCore.AsyncApi.Cli.Commands;
 internal sealed class DiffCommandWorker
 {
     private readonly DiffCommandContext _context;
-    private readonly Action<string> _writeInfo;
-    private readonly Action<string> _writeWarning;
-    private readonly Action<string> _writeError;
+    private readonly ICliLogger _logger;
 
     public DiffCommandWorker(
         DiffCommandContext context,
@@ -23,28 +21,42 @@ internal sealed class DiffCommandWorker
         Action<string> writeWarning,
         Action<string> writeError)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-        _writeInfo = writeInfo;
-        _writeWarning = writeWarning;
-        _writeError = writeError;
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(writeInfo);
+        ArgumentNullException.ThrowIfNull(writeWarning);
+        ArgumentNullException.ThrowIfNull(writeError);
+
+        _context = context;
+        _logger = new DelegatingCliLogger(writeInfo, writeWarning, writeError);
     }
 
     public int Process()
     {
         if (!File.Exists(_context.BasePath))
         {
-            _writeError($"Base file not found: {_context.BasePath}");
-            return 1;
+            _logger.Error($"Base file not found: {_context.BasePath}");
+            return CliExitCode.Failure;
         }
 
         if (!File.Exists(_context.HeadPath))
         {
-            _writeError($"Head file not found: {_context.HeadPath}");
-            return 1;
+            _logger.Error($"Head file not found: {_context.HeadPath}");
+            return CliExitCode.Failure;
         }
 
-        var baseContent = File.ReadAllText(_context.BasePath);
-        var headContent = File.ReadAllText(_context.HeadPath);
+        string baseContent;
+        string headContent;
+        try
+        {
+            // File.Exists above does not rule out a file that is locked or unreadable.
+            baseContent = File.ReadAllText(_context.BasePath);
+            headContent = File.ReadAllText(_context.HeadPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.Error($"Failed to read input: {ex.Message}");
+            return CliExitCode.Failure;
+        }
 
         var reader = new AsyncApiStringReader();
         var baseDoc = reader.Read(baseContent, out _);
@@ -53,65 +65,10 @@ internal sealed class DiffCommandWorker
         var comparer = new AsyncApiDocumentComparer();
         var changes = comparer.Compare(baseDoc, headDoc).ToList();
 
-        var hasBreaking = changes.Any(c => c.Severity == ChangeSeverity.Breaking);
+        DiffReportWriter.Write(changes, _context.Format, "AsyncAPI Diff Report", _logger);
 
-        if (_context.Format.Equals("json", StringComparison.OrdinalIgnoreCase))
-        {
-            Console.WriteLine(JsonSerializer.Serialize(changes, new JsonSerializerOptions { WriteIndented = true }));
-        }
-        else if (_context.Format.Equals("markdown", StringComparison.OrdinalIgnoreCase))
-        {
-            Console.WriteLine(BuildMarkdownReport(changes));
-        }
-        else
-        {
-            if (changes.Count == 0)
-            {
-                _writeInfo("No changes detected.");
-            }
-            else
-            {
-                foreach (var group in changes.GroupBy(c => c.Severity))
-                {
-                    _writeInfo($"{group.Key}:");
-                    foreach (var change in group)
-                    {
-                        if (group.Key == ChangeSeverity.Breaking)
-                            _writeError($"  - {change.Path}: {change.Message}");
-                        else
-                            _writeInfo($"  - {change.Path}: {change.Message}");
-                    }
-                }
-            }
-        }
-
-        return (hasBreaking && _context.FailOnBreaking) ? 1 : 0;
-    }
-
-    private string BuildMarkdownReport(List<AsyncApiChange> changes)
-    {
-        if (changes.Count == 0)
-        {
-            return "No changes detected.";
-        }
-
-        var sb = new StringBuilder();
-        sb.AppendLine("### AsyncAPI Diff Report");
-        sb.AppendLine();
-
-        foreach (var group in changes.GroupBy(c => c.Severity))
-        {
-            sb.AppendLine($"#### {group.Key} Changes");
-            sb.AppendLine();
-            sb.AppendLine("| Path | Change |");
-            sb.AppendLine("| --- | --- |");
-            foreach (var change in group)
-            {
-                sb.AppendLine($"| `{change.Path}` | {change.Message} |");
-            }
-            sb.AppendLine();
-        }
-
-        return sb.ToString();
+        return DiffReportWriter.HasBreakingChanges(changes) && _context.FailOnBreaking
+            ? CliExitCode.Failure
+            : CliExitCode.Success;
     }
 }
