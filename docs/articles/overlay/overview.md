@@ -264,6 +264,16 @@ it on the model but **never fetches it**. Resolving it over the network from ins
 would let an overlay file drive outbound requests; use it at most to verify that the document you are
 about to transform is the one the overlay expected.
 
+## CLI Tool: `dotnet overlay`
+
+`Bielu.Overlay.Cli` provides `apply` and `validate` commands for overlays and the descriptions they
+transform — see the [CLI Tool](cli.md) article.
+
+```bash
+dotnet tool install -g Bielu.Overlay.Cli
+dotnet overlay apply --file asyncapi.json --overlay public.overlay.yaml --output public.json --strict
+```
+
 ## Example project
 
 A runnable end-to-end sample lives in

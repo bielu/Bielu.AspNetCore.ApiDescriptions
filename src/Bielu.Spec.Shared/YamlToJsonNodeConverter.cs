@@ -73,7 +73,10 @@ public static partial class YamlToJsonNodeConverter
             return JsonValue.Create(value);
         }
 
-        if (value is null || value == "~" || value.Equals("null", StringComparison.OrdinalIgnoreCase))
+        // An *empty* plain scalar is YAML's null — `description:` with nothing after it. Only plain
+        // scalars reach here, so an explicitly quoted `""` has already returned above as an empty string,
+        // which is a different value and must stay one.
+        if (value is null || value.Length == 0 || value == "~" || value.Equals("null", StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }

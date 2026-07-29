@@ -36,6 +36,8 @@
     <Project Path="../test/Bielu.AspNetCore.Arazzo.Tests/Bielu.AspNetCore.Arazzo.Tests.csproj" />
     <Project Path="../test/Bielu.Cli.Shared.Tests/Bielu.Cli.Shared.Tests.csproj" />
     <Project Path="../test/Bielu.Arazzo.Cli.Tests/Bielu.Arazzo.Cli.Tests.csproj" />
+    <Project Path="../test/Bielu.Overlay.Cli.Tests/Bielu.Overlay.Cli.Tests.csproj" />
+    <Project Path="../test/Bielu.Spec.Shared.Tests/Bielu.Spec.Shared.Tests.csproj" />
   </Folder>
   <Folder Name="/Solution Files/">
     <File Path="../.dockerignore" />
@@ -52,6 +54,7 @@
   <Folder Name="/tools/">
     <Project Path="./Bielu.AspNetCore.AsyncApi.Cli/Bielu.AspNetCore.AsyncApi.Cli.csproj" />
     <Project Path="./Bielu.Arazzo.Cli/Bielu.Arazzo.Cli.csproj" />
+    <Project Path="./Bielu.Overlay.Cli/Bielu.Overlay.Cli.csproj" />
     <Project Path="./Bielu.AspNetCore.AsyncApi.Analyzers/Bielu.AspNetCore.AsyncApi.Analyzers.csproj" />
     <Project Path="./Bielu.AspNetCore.AsyncApi.ApiDescription.Server/Bielu.AspNetCore.AsyncApi.ApiDescription.Server.csproj" />
     <Project Path="./Bielu.AspNetCore.AsyncApi.Templates/Bielu.AspNetCore.AsyncApi.Templates.csproj" />

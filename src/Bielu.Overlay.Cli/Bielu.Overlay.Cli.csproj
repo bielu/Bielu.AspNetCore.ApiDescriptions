@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>Bielu.Overlay.Cli</RootNamespace>
+        <AssemblyName>Bielu.Overlay.Cli</AssemblyName>
+
+        <!-- .NET Tool packaging -->
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>dotnet-overlay</ToolCommandName>
+        <PackageId>Bielu.Overlay.Cli</PackageId>
+        <Description>CLI tool for applying OpenAPI Overlays to, and validating overlays against, any JSON or YAML API description.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.Overlay.Cli.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.Overlay\Bielu.Overlay.csproj" />
+        <ProjectReference Include="..\Bielu.Overlay.Readers\Bielu.Overlay.Readers.csproj" />
+        <ProjectReference Include="..\Bielu.Spec.Shared\Bielu.Spec.Shared.csproj" />
+        <ProjectReference Include="..\Bielu.Cli.Shared\Bielu.Cli.Shared.csproj" />
+    </ItemGroup>
+
+</Project>
