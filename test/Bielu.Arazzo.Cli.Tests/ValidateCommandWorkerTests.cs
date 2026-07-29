@@ -78,47 +78,93 @@ public class ValidateCommandWorkerTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
+    private static ValidateCommandContext Context(string file)
+    {
+        var context = new ValidateCommandContext();
+        context.Files.Add(file);
+        return context;
+    }
+
+    private static int Run(ValidateCommandContext context) =>
+        new ValidateCommandWorker(context, _ => { }, _ => { }, _ => { }).Process();
+
     [Fact]
     public void Process_WithValidFile_ReturnsZero()
     {
-        var context = new ValidateCommandContext();
-        context.Files.Add(_validDocPath);
+        // Arrange
+        var context = Context(_validDocPath);
 
-        var worker = new ValidateCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(0);
+        // Assert
+        result.ShouldBe(0);
     }
 
     [Fact]
     public void Process_WithDuplicateWorkflowIdAndMutuallyExclusiveTargets_ReturnsOne()
     {
-        var context = new ValidateCommandContext();
-        context.Files.Add(_invalidDocPath);
+        // Arrange
+        var context = Context(_invalidDocPath);
 
-        var worker = new ValidateCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(1);
+        // Assert
+        result.ShouldBe(1);
     }
 
     [Fact]
     public void Process_WithMissingFile_ReturnsOne()
     {
-        var context = new ValidateCommandContext();
-        context.Files.Add(Path.Combine(_tempDir, "missing.json"));
+        // Arrange
+        var context = Context(Path.Combine(_tempDir, "missing.json"));
 
-        var worker = new ValidateCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(1);
+        // Assert
+        result.ShouldBe(1);
     }
 
     [Fact]
-    public void Process_WithGlob_FindsBothFiles()
+    public void Process_Glob_MatchingOnlyValidDocuments_ReturnsZero()
     {
-        var context = new ValidateCommandContext();
-        context.Files.Add(Path.Combine(_tempDir, "*.json"));
+        // Arrange
+        // Asserting 0 is what makes this meaningful: a glob that expanded to nothing also returns 1,
+        // so only a success proves the expansion actually found and validated files.
+        var context = Context(Path.Combine(_tempDir, "valid*.json"));
 
-        var worker = new ValidateCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(1);
+        // Assert
+        result.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Process_Glob_IncludingAnInvalidDocument_ReturnsOne()
+    {
+        // Arrange
+        var context = Context(Path.Combine(_tempDir, "*.json"));
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Process_Glob_MatchingNothing_ReturnsOne()
+    {
+        // Arrange
+        var context = Context(Path.Combine(_tempDir, "nothing-here-*.json"));
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
     }
 }

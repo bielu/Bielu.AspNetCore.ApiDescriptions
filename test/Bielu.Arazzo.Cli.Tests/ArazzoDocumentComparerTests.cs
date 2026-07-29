@@ -33,55 +33,70 @@ public class ArazzoDocumentComparerTests
     [Fact]
     public void Compare_RemovedStep_IsBreaking()
     {
+        // Arrange
         var @base = BuildDocument([Workflow("wf", Step("a", "op1"), Step("b", "op2"))]);
         var head = BuildDocument([Workflow("wf", Step("a", "op1"))]);
 
+        // Act
         var changes = new ArazzoDocumentComparer().Compare(@base, head).ToList();
 
+        // Assert
         changes.ShouldContain(c => c.Severity == ChangeSeverity.Breaking && c.Message.Contains("Step 'b' was removed"));
     }
 
     [Fact]
     public void Compare_AddedStep_IsNonBreaking()
     {
+        // Arrange
         var @base = BuildDocument([Workflow("wf", Step("a", "op1"))]);
         var head = BuildDocument([Workflow("wf", Step("a", "op1"), Step("b", "op2"))]);
 
+        // Act
         var changes = new ArazzoDocumentComparer().Compare(@base, head).ToList();
 
+        // Assert
         changes.ShouldContain(c => c.Severity == ChangeSeverity.NonBreaking && c.Message.Contains("Step 'b' was added"));
     }
 
     [Fact]
     public void Compare_StepTargetChanged_IsBreaking()
     {
+        // Arrange
         var @base = BuildDocument([Workflow("wf", Step("a", "op1"))]);
         var head = BuildDocument([Workflow("wf", Step("a", "op2"))]);
 
+        // Act
         var changes = new ArazzoDocumentComparer().Compare(@base, head).ToList();
 
+        // Assert
         changes.ShouldContain(c => c.Severity == ChangeSeverity.Breaking && c.Message.Contains("target changed"));
     }
 
     [Fact]
     public void Compare_RemovedWorkflow_IsBreaking()
     {
+        // Arrange
         var @base = BuildDocument([Workflow("wf1", Step("a", "op1")), Workflow("wf2", Step("a", "op1"))]);
         var head = BuildDocument([Workflow("wf1", Step("a", "op1"))]);
 
+        // Act
         var changes = new ArazzoDocumentComparer().Compare(@base, head).ToList();
 
+        // Assert
         changes.ShouldContain(c => c.Severity == ChangeSeverity.Breaking && c.Message.Contains("Workflow 'wf2' was removed"));
     }
 
     [Fact]
     public void Compare_IdenticalDocuments_ReturnsNoChanges()
     {
+        // Arrange
         var @base = BuildDocument([Workflow("wf", Step("a", "op1"))]);
         var head = BuildDocument([Workflow("wf", Step("a", "op1"))]);
 
+        // Act
         var changes = new ArazzoDocumentComparer().Compare(@base, head).ToList();
 
+        // Assert
         changes.ShouldBeEmpty();
     }
 }

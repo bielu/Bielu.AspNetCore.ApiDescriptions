@@ -73,47 +73,64 @@ public class DiffCommandWorkerTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
+    private static int Run(DiffCommandContext context) =>
+        new DiffCommandWorker(context, _ => { }, _ => { }, _ => { }).Process();
+
     [Fact]
     public void Process_WithRemovedStep_ReturnsZeroWithoutFailOnBreaking()
     {
+        // Arrange
         var context = new DiffCommandContext { BasePath = _basePath, HeadPath = _headPath };
 
-        var worker = new DiffCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(0);
+        // Assert
+        // Breaking changes are reported, but only --fail-on-breaking turns them into a failing exit code.
+        result.ShouldBe(0);
     }
 
     [Fact]
     public void Process_WithRemovedStepAndFailOnBreaking_ReturnsOne()
     {
+        // Arrange
         var context = new DiffCommandContext { BasePath = _basePath, HeadPath = _headPath, FailOnBreaking = true };
 
-        var worker = new DiffCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(1);
+        // Assert
+        result.ShouldBe(1);
     }
 
     [Fact]
     public void Process_WithMissingBaseFile_ReturnsOne()
     {
+        // Arrange
         var context = new DiffCommandContext
         {
             BasePath = Path.Combine(_tempDir, "missing.json"),
             HeadPath = _headPath,
         };
 
-        var worker = new DiffCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(1);
+        // Assert
+        result.ShouldBe(1);
     }
 
     [Fact]
     public void Process_WithIdenticalDocuments_ReturnsZero()
     {
+        // Arrange
         var context = new DiffCommandContext { BasePath = _basePath, HeadPath = _basePath, FailOnBreaking = true };
 
-        var worker = new DiffCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(0);
+        // Assert
+        // No changes at all, so --fail-on-breaking has nothing to trip on.
+        result.ShouldBe(0);
     }
 }

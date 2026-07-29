@@ -26,6 +26,7 @@ public class ArazzoLinterTests
     [Fact]
     public void Lint_StepWithSelfReferentialDependsOn_ReportsCycle()
     {
+        // Arrange
         var document = BuildDocument(
         [
             new ArazzoWorkflow
@@ -40,14 +41,17 @@ public class ArazzoLinterTests
             },
         ]);
 
+        // Act
         var findings = ArazzoLinter.Lint(document);
 
+        // Assert
         findings.ShouldContain(f => !f.IsWarning && f.Message.Contains("Circular dependsOn"));
     }
 
     [Fact]
     public void Lint_StepDependsOnUnknownStepId_ReportsError()
     {
+        // Arrange
         var document = BuildDocument(
         [
             new ArazzoWorkflow
@@ -61,14 +65,17 @@ public class ArazzoLinterTests
             },
         ]);
 
+        // Act
         var findings = ArazzoLinter.Lint(document);
 
+        // Assert
         findings.ShouldContain(f => !f.IsWarning && f.Message.Contains("unknown stepId 'ghost'"));
     }
 
     [Fact]
     public void Lint_WorkflowMissingSummaryAndDescription_ReportsWarning()
     {
+        // Arrange
         var document = BuildDocument(
         [
             new ArazzoWorkflow
@@ -78,14 +85,17 @@ public class ArazzoLinterTests
             },
         ]);
 
+        // Act
         var findings = ArazzoLinter.Lint(document);
 
+        // Assert
         findings.ShouldContain(f => f.IsWarning && f.Message.Contains("neither a summary nor a description"));
     }
 
     [Fact]
     public void Lint_UnreferencedComponent_ReportsWarning()
     {
+        // Arrange
         var document = BuildDocument(
             [
                 new ArazzoWorkflow
@@ -103,14 +113,17 @@ public class ArazzoLinterTests
                 },
             });
 
+        // Act
         var findings = ArazzoLinter.Lint(document);
 
+        // Assert
         findings.ShouldContain(f => f.IsWarning && f.Message.Contains("'unused'") && f.Message.Contains("never referenced"));
     }
 
     [Fact]
     public void Lint_ReferencedComponent_DoesNotReportUnused()
     {
+        // Arrange
         var document = BuildDocument(
             [
                 new ArazzoWorkflow
@@ -132,14 +145,17 @@ public class ArazzoLinterTests
                 },
             });
 
+        // Act
         var findings = ArazzoLinter.Lint(document);
 
+        // Assert
         findings.ShouldNotContain(f => f.Message.Contains("never referenced"));
     }
 
     [Fact]
     public void Lint_FullyDocumentedCleanDocument_ReturnsNoFindings()
     {
+        // Arrange
         var document = BuildDocument(
         [
             new ArazzoWorkflow
@@ -150,8 +166,10 @@ public class ArazzoLinterTests
             },
         ]);
 
+        // Act
         var findings = ArazzoLinter.Lint(document);
 
+        // Assert
         findings.ShouldBeEmpty();
     }
 }

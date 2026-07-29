@@ -74,36 +74,49 @@ public class LintCommandWorkerTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
+    private static int Run(LintCommandContext context) =>
+        new LintCommandWorker(context, _ => { }, _ => { }, _ => { }).Process();
+
     [Fact]
     public void Process_WithCleanDocument_ReturnsZero()
     {
+        // Arrange
         var context = new LintCommandContext();
         context.Files.Add(_cleanDocPath);
 
-        var worker = new LintCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(0);
+        // Assert
+        result.ShouldBe(0);
     }
 
     [Fact]
     public void Process_WithDependsOnCycle_ReturnsOne()
     {
+        // Arrange
         var context = new LintCommandContext();
         context.Files.Add(_cyclicDocPath);
 
-        var worker = new LintCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(1);
+        // Assert
+        result.ShouldBe(1);
     }
 
     [Fact]
     public void Process_WithCleanDocumentInStrictMode_StillReturnsZero()
     {
+        // Arrange
         var context = new LintCommandContext { Strict = true };
         context.Files.Add(_cleanDocPath);
 
-        var worker = new LintCommandWorker(context, _ => { }, _ => { }, _ => { });
+        // Act
+        var result = Run(context);
 
-        worker.Process().ShouldBe(0);
+        // Assert
+        // Clean means no findings at all, so promoting warnings to errors changes nothing.
+        result.ShouldBe(0);
     }
 }

@@ -12,8 +12,10 @@ public class CommandContextTests
     [Fact]
     public void ValidateCommandContext_DefaultValues_AreCorrect()
     {
+        // Arrange & Act
         var context = new ValidateCommandContext();
 
+        // Assert
         context.Files.ShouldBeEmpty();
         context.Strict.ShouldBeFalse();
         context.Format.ShouldBe("text");
@@ -22,8 +24,10 @@ public class CommandContextTests
     [Fact]
     public void LintCommandContext_DefaultValues_AreCorrect()
     {
+        // Arrange & Act
         var context = new LintCommandContext();
 
+        // Assert
         context.Files.ShouldBeEmpty();
         context.Strict.ShouldBeFalse();
         context.Format.ShouldBe("text");
@@ -32,8 +36,10 @@ public class CommandContextTests
     [Fact]
     public void DiffCommandContext_DefaultValues_AreCorrect()
     {
+        // Arrange & Act
         var context = new DiffCommandContext();
 
+        // Assert
         context.BasePath.ShouldBe(string.Empty);
         context.HeadPath.ShouldBe(string.Empty);
         context.FailOnBreaking.ShouldBeFalse();

@@ -12,12 +12,15 @@ public class CliArgumentReaderTests
     [Fact]
     public void TryReadValue_WithValueAvailable_ReturnsTrueAndAdvancesIndex()
     {
+        // Arrange
         var args = new[] { "--file", "doc.json" };
         var logger = new FakeCliLogger();
         var index = 0;
 
+        // Act
         var result = CliArgumentReader.TryReadValue(args, ref index, "--file", logger, out var value);
 
+        // Assert
         result.ShouldBeTrue();
         value.ShouldBe("doc.json");
         index.ShouldBe(1);
@@ -27,12 +30,15 @@ public class CliArgumentReaderTests
     [Fact]
     public void TryReadValue_AtEndOfArgs_ReturnsFalseAndLogsError()
     {
+        // Arrange
         var args = new[] { "--file" };
         var logger = new FakeCliLogger();
         var index = 0;
 
+        // Act
         var result = CliArgumentReader.TryReadValue(args, ref index, "--file", logger, out var value);
 
+        // Assert
         result.ShouldBeFalse();
         value.ShouldBe(string.Empty);
         logger.ErrorMessages.ShouldHaveSingleItem();

@@ -12,7 +12,11 @@ public class OverlayVersionTests
     [InlineData("1.1.42", OverlayVersion.V1_1)]
     public void TryParse_AcceptsKnownVersions(string value, OverlayVersion expected)
     {
-        OverlayVersionExtensions.TryParse(value, out var version).ShouldBeTrue();
+        // Act
+        var parsed = OverlayVersionExtensions.TryParse(value, out var version);
+
+        // Assert
+        parsed.ShouldBeTrue();
         version.ShouldBe(expected);
     }
 
@@ -28,7 +32,11 @@ public class OverlayVersionTests
     [InlineData("1.1.-1")]
     public void TryParse_RejectsEverythingElse(string? value)
     {
-        OverlayVersionExtensions.TryParse(value, out _).ShouldBeFalse();
+        // Act
+        var parsed = OverlayVersionExtensions.TryParse(value, out _);
+
+        // Assert
+        parsed.ShouldBeFalse();
     }
 
     [Theory]
@@ -36,8 +44,13 @@ public class OverlayVersionTests
     [InlineData(OverlayVersion.V1_1, "1.1.0")]
     public void ToVersionString_RoundTrips(OverlayVersion version, string expected)
     {
-        version.ToVersionString().ShouldBe(expected);
-        OverlayVersionExtensions.TryParse(expected, out var parsed).ShouldBeTrue();
-        parsed.ShouldBe(version);
+        // Act
+        var text = version.ToVersionString();
+        var parsed = OverlayVersionExtensions.TryParse(text, out var roundTripped);
+
+        // Assert
+        text.ShouldBe(expected);
+        parsed.ShouldBeTrue();
+        roundTripped.ShouldBe(version);
     }
 }
