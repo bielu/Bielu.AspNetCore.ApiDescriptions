@@ -63,6 +63,7 @@ public class MyService
 - ✅ **Roslyn Analyzers** for compile-time safety
 - ✅ **Native AOT support**
 - ✅ **API Versioning** integration for version-per-document support
+- ✅ **OpenAPI Overlays** applied in the generation pipeline, so the served document is already transformed
 
 ## Documentation Sections
 
@@ -76,6 +77,7 @@ public class MyService
 - [Arazzo Overview](https://apidescriptions.bielu.pl/articles/arazzo/overview.html)
 - [Arazzo CLI Tool usage](https://apidescriptions.bielu.pl/articles/arazzo/cli.html)
 - [Overlay Overview](https://apidescriptions.bielu.pl/articles/overlay/overview.html)
+- [Overlays in the generation pipeline](https://apidescriptions.bielu.pl/articles/overlay/pipeline-integration.html)
 - [Overlay CLI Tool usage](https://apidescriptions.bielu.pl/articles/overlay/cli.html)
 
 ## License

@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services;
+using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -30,12 +31,14 @@ public static class AsyncApiEndpointRouteBuilderExtensions
     /// <param name="endpoints">The <see cref="IEndpointRouteBuilder"/>.</param>
     /// <param name="pattern">The route to register the endpoint on. Must include the 'documentName' route parameter.</param>
     /// <returns>An <see cref="IEndpointRouteBuilder"/> that can be used to further customize the endpoint.</returns>
-    public static IEndpointConventionBuilder MapAsyncApi(this IEndpointRouteBuilder endpoints, [StringSyntax("Route")] string pattern = AsyncApiGeneratorConstants.DefaultAsyncApiRoute)
+    public static IEndpointConventionBuilder MapAsyncApi(this IEndpointRouteBuilder endpoints,
+        [StringSyntax("Route")] string pattern = AsyncApiGeneratorConstants.DefaultAsyncApiRoute)
     {
         var options = endpoints.ServiceProvider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>();
         // Store the pattern so the middleware can use it
         options.CurrentValue.DocumentRoutePattern = pattern;
-        return endpoints.MapGet(pattern, async (HttpContext context, string documentName = AsyncApiGeneratorConstants.DefaultDocumentName) =>
+        return endpoints.MapGet(pattern,
+            async (HttpContext context, string documentName = AsyncApiGeneratorConstants.DefaultDocumentName) =>
             {
                 // We need to retrieve the document name in a case-insensitive manner to support case-insensitive document name resolution.
                 // The document service is registered with a key equal to the document name, but in lowercase.
@@ -49,12 +52,14 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                 // asynchronously write to the response stream here but Microsoft.AsyncApi
                 // does not yet support async APIs on their writers.
                 // See https://github.com/microsoft/AsyncApi.NET/issues/421 for more info.
-                var documentService = context.RequestServices.GetKeyedService<AsyncApiDocumentService>(lowercasedDocumentName);
+                var documentService =
+                    context.RequestServices.GetKeyedService<AsyncApiDocumentService>(lowercasedDocumentName);
                 if (documentService is null)
                 {
                     context.Response.StatusCode = StatusCodes.Status404NotFound;
                     context.Response.ContentType = "text/plain;charset=utf-8";
-                    await context.Response.WriteAsync($"No AsyncApi document with the name '{lowercasedDocumentName}' was found.");
+                    await context.Response.WriteAsync(
+                        $"No AsyncApi document with the name '{lowercasedDocumentName}' was found.");
                 }
                 else
                 {
@@ -66,7 +71,8 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     string serialized;
                     try
                     {
-                        var document = await documentService.GetAsyncApiDocumentAsync(context.RequestServices, context.Request, context.RequestAborted);
+                        var document = await documentService.GetAsyncApiDocumentAsync(context.RequestServices,
+                            context.Request, context.RequestAborted);
                         var documentOptions = options.Get(lowercasedDocumentName);
 
                         if (documentOptions.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
@@ -81,6 +87,14 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                                 ? AsyncApiSerializationHelper.SerializeV3ToYaml(document)
                                 : AsyncApiSerializationHelper.SerializeV3ToJson(document);
                         }
+
+                        serialized = await AsyncApiSerializedDocumentPipeline.ApplyAsync(
+                            serialized,
+                            documentOptions,
+                            lowercasedDocumentName,
+                            isYaml ? AsyncApiDocumentFormat.Yaml : AsyncApiDocumentFormat.Json,
+                            context.RequestServices,
+                            context.RequestAborted);
                     }
                     catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
                     {
@@ -89,7 +103,8 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     }
                     catch (Exception ex)
                     {
-                        GetLogger(context).LogError(ex, "Failed to generate AsyncApi document '{DocumentName}'.", SanitizeLog(lowercasedDocumentName));
+                        GetLogger(context).LogError(ex, "Failed to generate AsyncApi document '{DocumentName}'.",
+                            SanitizeLog(lowercasedDocumentName));
                         await WriteProblemAsync(context, StatusCodes.Status500InternalServerError,
                             $"Failed to generate the AsyncApi document '{lowercasedDocumentName}'.");
                         return;
@@ -98,7 +113,9 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     // Guard against an empty/whitespace document being served as a successful 200.
                     if (string.IsNullOrWhiteSpace(serialized))
                     {
-                        GetLogger(context).LogError("AsyncApi document '{DocumentName}' serialized to an empty document.", SanitizeLog(lowercasedDocumentName));
+                        GetLogger(context)
+                            .LogError("AsyncApi document '{DocumentName}' serialized to an empty document.",
+                                SanitizeLog(lowercasedDocumentName));
                         await WriteProblemAsync(context, StatusCodes.Status500InternalServerError,
                             $"The AsyncApi document '{lowercasedDocumentName}' serialized to an empty document.");
                         return;
@@ -117,7 +134,8 @@ public static class AsyncApiEndpointRouteBuilderExtensions
                     }
 
                     var payload = Encoding.UTF8.GetBytes(serialized);
-                    context.Response.ContentType = isYaml ? "text/plain+yaml;charset=utf-8" : "application/json;charset=utf-8";
+                    context.Response.ContentType =
+                        isYaml ? "text/plain+yaml;charset=utf-8" : "application/json;charset=utf-8";
                     // Set Content-Length so a truncated write surfaces as a protocol error rather than a
                     // silently short body.
                     context.Response.ContentLength = payload.Length;

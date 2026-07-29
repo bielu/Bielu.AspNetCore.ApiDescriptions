@@ -19,6 +19,18 @@
     <PackageVersion Include="System.Text.Json" Version="10.0.10" />
     <!-- Arazzo ASP.NET Core integration (OpenAPI self-wiring source) -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <!-- Referenced directly, not just transitively through Microsoft.AspNetCore.OpenApi, to lift the
+         Microsoft.OpenApi it drags in (2.0.0) past GHSA-v5pm-xwqc-g5wc — a high-severity advisory
+         covering >= 2.0.0-preview.11 through 2.7.4, patched in 2.7.5. Transitive pinning is disabled
+         repo-wide, so a PackageVersion alone would not move it.
+
+         2.10.0 is the highest version that actually builds here, not merely a conservative choice.
+         `Microsoft.AspNetCore.OpenApi` 10.0.10's own XML-comment source generator assigns
+         `IOpenApiMediaType.Example`, and that property became read-only in **2.11.0** — so 2.11.0 and
+         every 3.x (latest: 3.9.0) fail compilation outright with CS0200, in generated code we do not
+         control. Verified by bisection: 2.7.5, 2.8.0, 2.9.0 and 2.10.0 build clean; 2.11.0 and 3.9.0 do
+         not. Revisit when the ASP.NET Core package itself moves past 2.10. -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.10.0" />
     <!-- Analyzers -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />

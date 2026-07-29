@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.AsyncApi.Services;
+using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI;
-using ByteBard.AsyncAPI.Writers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -48,22 +48,31 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
         // See AsyncApiServiceCollectionExtensions.cs for more info.
         var lowercasedDocumentName = documentName.ToLowerInvariant();
 
-        var targetDocumentService = serviceProvider.GetRequiredKeyedService<AsyncApiDocumentService>(lowercasedDocumentName);
+        var targetDocumentService =
+            serviceProvider.GetRequiredKeyedService<AsyncApiDocumentService>(lowercasedDocumentName);
         using var scopedService = serviceProvider.CreateScope();
         var document = await targetDocumentService.GetAsyncApiDocumentAsync(scopedService.ServiceProvider);
 
         // For V2, use the helper to ensure required properties are present
         // The AsyncAPI 2.x specification requires 'channels' to be present (can be empty object)
-        if (AsyncApiSpecVersion == AsyncApiVersion.AsyncApi2_0)
-        {
-            var serialized = AsyncApiSerializationHelper.SerializeV2ToJson(document);
-            await writer.WriteAsync(serialized);
-        }
-        else
-        {
-            var jsonWriter = new AsyncApiJsonWriter(writer);
-            document.SerializeV3(jsonWriter);
-        }
+        var serialized = AsyncApiSpecVersion == AsyncApiVersion.AsyncApi2_0
+            ? AsyncApiSerializationHelper.SerializeV2ToJson(document)
+            : AsyncApiSerializationHelper.SerializeV3ToJson(document);
+
+        // Build-time generation must produce the same bytes the endpoint would serve, so the
+        // serialized-document transformers run here too. This is also why the V3 branch buffers via the
+        // helper rather than writing straight through an AsyncApiJsonWriter as it used to.
+        var documentOptions = serviceProvider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>()
+            .Get(lowercasedDocumentName);
+        serialized = await AsyncApiSerializedDocumentPipeline.ApplyAsync(
+            serialized,
+            documentOptions,
+            lowercasedDocumentName,
+            AsyncApiDocumentFormat.Json,
+            scopedService.ServiceProvider,
+            CancellationToken.None);
+
+        await writer.WriteAsync(serialized);
     }
 
     /// <summary>

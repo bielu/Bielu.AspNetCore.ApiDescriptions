@@ -1,2 +1,18 @@
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(string filePath) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(System.Reflection.Assembly assembly) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions
+#nullable enable
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddSerializedDocumentTransformer(Bielu.AspNetCore.AsyncApi.Transformers.IAsyncApiSerializedDocumentTransformer! transformer) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddSerializedDocumentTransformer(System.Func<string!, Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string!>>! transformer) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(string! filePath) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(System.Reflection.Assembly! assembly) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentFormat
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentFormat.Json = 0 -> Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentFormat
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentFormat.Yaml = 1 -> Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentFormat
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext.ApplicationServices.get -> System.IServiceProvider!
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext.ApplicationServices.init -> void
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext.AsyncApiSerializedDocumentContext() -> void
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext.DocumentName.get -> string!
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext.DocumentName.init -> void
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext.Format.get -> Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentFormat
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext.Format.init -> void
+Bielu.AspNetCore.AsyncApi.Transformers.IAsyncApiSerializedDocumentTransformer
+Bielu.AspNetCore.AsyncApi.Transformers.IAsyncApiSerializedDocumentTransformer.TransformAsync(string! document, Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string!>

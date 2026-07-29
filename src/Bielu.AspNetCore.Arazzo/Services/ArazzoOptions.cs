@@ -1,4 +1,5 @@
 using Bielu.Arazzo.Models;
+using Bielu.AspNetCore.Arazzo.Transformers;
 
 namespace Bielu.AspNetCore.Arazzo.Services;
 
@@ -33,7 +34,8 @@ public sealed class ArazzoOptions
         {
             if (value <= TimeSpan.Zero)
             {
-                throw new ArgumentOutOfRangeException(nameof(value), value, "StartupValidationTimeout must be positive.");
+                throw new ArgumentOutOfRangeException(nameof(value), value,
+                    "StartupValidationTimeout must be positive.");
             }
 
             _startupValidationTimeout = value;
@@ -133,6 +135,39 @@ public sealed class ArazzoOptions
     /// <typeparam name="TWorkflow">The marker type naming this workflow.</typeparam>
     public ArazzoOptions AddWorkflow<TWorkflow>(Action<ArazzoWorkflowBuilder> configure)
         => AddWorkflow(ArazzoId.FromType<TWorkflow>(), configure);
+
+    internal List<IArazzoSerializedDocumentTransformer> SerializedDocumentTransformers { get; } = [];
+
+    /// <summary>
+    /// Registers a transformer that rewrites this document after it has been serialized, in registration
+    /// order, each against the output of the last.
+    /// </summary>
+    /// <param name="transformer">The transformer to register.</param>
+    public ArazzoOptions AddSerializedDocumentTransformer(IArazzoSerializedDocumentTransformer transformer)
+    {
+        ArgumentNullException.ThrowIfNull(transformer);
+        SerializedDocumentTransformers.Add(transformer);
+        return this;
+    }
+
+    /// <summary>Registers a delegate as a serialized-document transformer on this document.</summary>
+    /// <param name="transformer">The delegate representing the transformer.</param>
+    public ArazzoOptions AddSerializedDocumentTransformer(
+        Func<string, ArazzoSerializedDocumentContext, CancellationToken, ValueTask<string>> transformer)
+    {
+        ArgumentNullException.ThrowIfNull(transformer);
+        SerializedDocumentTransformers.Add(new DelegateArazzoSerializedDocumentTransformer(transformer));
+        return this;
+    }
+
+    private sealed class DelegateArazzoSerializedDocumentTransformer(
+        Func<string, ArazzoSerializedDocumentContext, CancellationToken, ValueTask<string>> transformer)
+        : IArazzoSerializedDocumentTransformer
+    {
+        public ValueTask<string> TransformAsync(string document, ArazzoSerializedDocumentContext context,
+            CancellationToken cancellationToken)
+            => transformer(document, context, cancellationToken);
+    }
 
     /// <summary>Associates a self-wired source description with the document name it resolves against at runtime.</summary>
     internal readonly record struct SourceWiring(string SourceName, string SourceType, string DocumentName);

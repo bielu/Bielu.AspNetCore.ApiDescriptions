@@ -1,5 +1,7 @@
 - name: Overview
   href: overview.md
+- name: Pipeline Integration
+  href: pipeline-integration.md
 - name: CLI Tool
   href: cli.md
 - name: AsyncAPI docs →

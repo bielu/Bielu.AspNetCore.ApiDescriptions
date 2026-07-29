@@ -264,6 +264,23 @@ it on the model but **never fetches it**. Resolving it over the network from ins
 would let an overlay file drive outbound requests; use it at most to verify that the document you are
 about to transform is the one the overlay expected.
 
+## Applying overlays in an ASP.NET Core app
+
+Everything above transforms a document you already have in hand. If the document is one your own app
+generates, you can skip the file-in/file-out step entirely: `Bielu.AspNetCore.AsyncApi.Overlay` and
+`Bielu.AspNetCore.Arazzo.Overlay` apply overlays *inside the generation pipeline*, so the document served
+by `MapAsyncApi()` / `MapArazzo()` is already transformed.
+
+```csharp
+builder.Services.AddAsyncApi("v1", options =>
+{
+    options.AddOverlay("overlays/public.yaml");
+});
+```
+
+See [Pipeline Integration](pipeline-integration.md) for ordering, strict mode, failure behaviour, and how
+this interacts with build-time document generation.
+
 ## CLI Tool: `dotnet overlay`
 
 `Bielu.Overlay.Cli` provides `apply` and `validate` commands for overlays and the descriptions they

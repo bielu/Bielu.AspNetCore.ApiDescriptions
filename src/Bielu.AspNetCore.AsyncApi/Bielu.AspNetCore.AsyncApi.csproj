@@ -23,6 +23,7 @@
     <ItemGroup>
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Tests" />
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Versioning.Tests" />
+      <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Overlay.Tests" />
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Merger" />
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Versioning" />
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Cli" />
