@@ -105,20 +105,30 @@ public class ValidateCommandWorkerTests : IAsyncLifetime
     }
 
     [Fact]
-    public void Process_WarningOnly_PassesByDefault_AndFailsUnderStrict()
+    public void Process_WarningOnlyLenient_ReturnsZero()
     {
         // Arrange
-        var lenient = Context(_warningOnlyPath);
-        var strict = Context(_warningOnlyPath);
-        strict.Strict = true;
+        var context = Context(_warningOnlyPath);
 
         // Act
-        var lenientResult = Run(lenient);
-        var strictResult = Run(strict);
+        var result = Run(context);
 
         // Assert
-        lenientResult.ShouldBe(0);
-        strictResult.ShouldBe(1);
+        result.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Process_WarningOnlyStrict_ReturnsOne()
+    {
+        // Arrange
+        var context = Context(_warningOnlyPath);
+        context.Strict = true;
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
     }
 
     [Fact]
@@ -163,7 +173,7 @@ public class ValidateCommandWorkerTests : IAsyncLifetime
     }
 
     [Fact]
-    public void Process_GlobMatchingNothing_ReturnsOne()
+    public void Process_Glob_MatchingNothing_ReturnsOne()
     {
         // Arrange
         var context = Context(Path.Combine(_tempDir, "nothing-here-*.yaml"));

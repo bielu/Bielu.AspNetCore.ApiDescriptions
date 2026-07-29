@@ -22,7 +22,12 @@ internal sealed class LintCommandWorker
         Action<string> writeWarning,
         Action<string> writeError)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(writeInfo);
+        ArgumentNullException.ThrowIfNull(writeWarning);
+        ArgumentNullException.ThrowIfNull(writeError);
+
+        _context = context;
         _logger = new DelegatingCliLogger(writeInfo, writeWarning, writeError);
     }
 
@@ -61,7 +66,23 @@ internal sealed class LintCommandWorker
 
     private static FileDiagnosticReport LintFile(string file)
     {
-        var result = ArazzoStringReader.Read(File.ReadAllText(file));
+        string content;
+        try
+        {
+            content = File.ReadAllText(file);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Report against the file and carry on, exactly as a missing file does — one locked or
+            // unreadable document in a glob must not abandon the rest of the run.
+            return new FileDiagnosticReport
+            {
+                FilePath = file,
+                Errors = [new DiagnosticItem($"Could not read file: {ex.Message}", null)],
+            };
+        }
+
+        var result = ArazzoStringReader.Read(content);
 
         if (result.Document is null)
         {

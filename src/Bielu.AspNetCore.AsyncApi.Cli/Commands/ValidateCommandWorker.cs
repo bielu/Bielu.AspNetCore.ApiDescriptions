@@ -21,7 +21,12 @@ internal sealed class ValidateCommandWorker
         Action<string> writeWarning,
         Action<string> writeError)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(writeInfo);
+        ArgumentNullException.ThrowIfNull(writeWarning);
+        ArgumentNullException.ThrowIfNull(writeError);
+
+        _context = context;
         _logger = new DelegatingCliLogger(writeInfo, writeWarning, writeError);
     }
 
@@ -49,7 +54,23 @@ internal sealed class ValidateCommandWorker
                 continue;
             }
 
-            var content = File.ReadAllText(file);
+            string content;
+            try
+            {
+                content = File.ReadAllText(file);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Report against the file and carry on, exactly as a missing file does — one locked or
+                // unreadable document in a glob must not abandon the rest of the run.
+                _logger.Error($"Could not read file: {file}");
+                reports.Add(new FileDiagnosticReport
+                {
+                    FilePath = file, Errors = [new DiagnosticItem($"Could not read file: {ex.Message}", null)],
+                });
+                continue;
+            }
+
             var reader = new AsyncApiStringReader();
             reader.Read(content, out var diagnostic);
 

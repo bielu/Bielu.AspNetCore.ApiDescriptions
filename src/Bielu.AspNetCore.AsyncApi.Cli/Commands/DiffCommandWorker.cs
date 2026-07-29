@@ -21,7 +21,12 @@ internal sealed class DiffCommandWorker
         Action<string> writeWarning,
         Action<string> writeError)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(writeInfo);
+        ArgumentNullException.ThrowIfNull(writeWarning);
+        ArgumentNullException.ThrowIfNull(writeError);
+
+        _context = context;
         _logger = new DelegatingCliLogger(writeInfo, writeWarning, writeError);
     }
 
@@ -39,8 +44,19 @@ internal sealed class DiffCommandWorker
             return CliExitCode.Failure;
         }
 
-        var baseContent = File.ReadAllText(_context.BasePath);
-        var headContent = File.ReadAllText(_context.HeadPath);
+        string baseContent;
+        string headContent;
+        try
+        {
+            // File.Exists above does not rule out a file that is locked or unreadable.
+            baseContent = File.ReadAllText(_context.BasePath);
+            headContent = File.ReadAllText(_context.HeadPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.Error($"Failed to read input: {ex.Message}");
+            return CliExitCode.Failure;
+        }
 
         var reader = new AsyncApiStringReader();
         var baseDoc = reader.Read(baseContent, out _);
