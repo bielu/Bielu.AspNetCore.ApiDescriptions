@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>Bielu.AspNetCore.Arazzo.Overlay</RootNamespace>
+        <IsAotCompatible>true</IsAotCompatible>
+        <Description>Applies OpenAPI Overlays to Arazzo workflow documents inside the generation pipeline, so the document served by MapArazzo() is already transformed — no post-processing step and no second artifact to keep in sync.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Bielu.AspNetCore.Arazzo already depends on the AsyncAPI core package, so taking the AsyncAPI
+             overlay package for its shared OverlayPipeline adds only the overlay engine to the graph. -->
+        <ProjectReference Include="..\Bielu.AspNetCore.Arazzo\Bielu.AspNetCore.Arazzo.csproj" />
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Overlay\Bielu.AspNetCore.AsyncApi.Overlay.csproj" />
+        <ProjectReference Include="..\Bielu.Overlay\Bielu.Overlay.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.Arazzo.Overlay.Tests" />
+    </ItemGroup>
+
+</Project>

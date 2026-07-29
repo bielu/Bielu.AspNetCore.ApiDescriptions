@@ -16,6 +16,8 @@
             "src/Bielu.AspNetCore.Arazzo/**",
             "src/Bielu.Overlay/**",
             "src/Bielu.Overlay.Readers/**",
+            "src/Bielu.AspNetCore.AsyncApi.Overlay/**",
+            "src/Bielu.AspNetCore.Arazzo.Overlay/**",
             "src/Bielu.Spec.Shared/**",
             "src/Bielu.AspNetCore.AsyncApi.Templates/**",
             "src/Bielu.AspNetCore.AsyncApi.Analyzers/**",
@@ -67,6 +69,8 @@
           "files": [
             "src/Bielu.Overlay/**/*.csproj",
             "src/Bielu.Overlay.Readers/**/*.csproj",
+            "src/Bielu.AspNetCore.AsyncApi.Overlay/**/*.csproj",
+            "src/Bielu.AspNetCore.Arazzo.Overlay/**/*.csproj",
             "src/Bielu.Spec.Shared/**/*.csproj"
           ],
           "exclude": [

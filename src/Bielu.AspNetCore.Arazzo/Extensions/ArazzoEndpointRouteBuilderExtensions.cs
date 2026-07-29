@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 
 namespace Bielu.AspNetCore.Arazzo.Extensions;
@@ -60,6 +61,12 @@ public static class ArazzoEndpointRouteBuilderExtensions
         {
             var document = await documentProvider.GetArazzoDocumentAsync(context.RequestAborted);
             serialized = isYaml ? ArazzoYamlWriter.Write(document) : ArazzoJsonWriter.Write(document);
+
+            var options = context.RequestServices.GetRequiredService<IOptionsMonitor<ArazzoOptions>>()
+                .Get(lowercasedDocumentName);
+            serialized = await ArazzoSerializedDocumentPipeline.ApplyAsync(serialized, options, lowercasedDocumentName,
+                isYaml ? Transformers.ArazzoDocumentFormat.Yaml : Transformers.ArazzoDocumentFormat.Json,
+                context.RequestServices, context.RequestAborted);
         }
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {

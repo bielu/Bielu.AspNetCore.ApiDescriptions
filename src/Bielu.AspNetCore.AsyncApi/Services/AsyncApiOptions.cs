@@ -22,6 +22,7 @@ public sealed class AsyncApiOptions
     internal readonly List<IAsyncApiDocumentTransformer> DocumentTransformers = [];
     internal readonly List<IAsyncApiOperationTransformer> OperationTransformers = [];
     internal readonly List<IAsyncApiSchemaTransformer> SchemaTransformers = [];
+    internal readonly List<IAsyncApiSerializedDocumentTransformer> SerializedDocumentTransformers = [];
     internal Dictionary<string, AsyncApiServer> Servers { get; set; } = new();
 
     /// <summary>
@@ -29,7 +30,8 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> associated with the schema we are generating a reference ID for.</param>
     /// <returns>The reference ID to use for the schema or <see langword="null"/> if the schema should always be inlined.</returns>
-    public static string? CreateDefaultSchemaReferenceId(JsonTypeInfo jsonTypeInfo) => jsonTypeInfo.GetSchemaReferenceId();
+    public static string? CreateDefaultSchemaReferenceId(JsonTypeInfo jsonTypeInfo) =>
+        jsonTypeInfo.GetSchemaReferenceId();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AsyncApiOptions"/> class
@@ -37,7 +39,9 @@ public sealed class AsyncApiOptions
     /// </summary>
     public AsyncApiOptions()
     {
-        ShouldInclude = (description) => description.GroupName == null || string.Equals(description.GroupName, DocumentName, StringComparison.OrdinalIgnoreCase);
+        ShouldInclude = (description) => description.GroupName == null ||
+                                         string.Equals(description.GroupName, DocumentName,
+                                             StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -69,7 +73,9 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <typeparam name="TTransformerType">The type of the <see cref="IAsyncApiDocumentTransformer"/> to instantiate.</typeparam>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddDocumentTransformer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TTransformerType>()
+    public AsyncApiOptions AddDocumentTransformer<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        TTransformerType>()
         where TTransformerType : IAsyncApiDocumentTransformer
     {
         DocumentTransformers.Add(new TypeBasedAsyncApiDocumentTransformer(typeof(TTransformerType)));
@@ -94,7 +100,8 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <param name="transformer">The delegate representing the document transformer.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddDocumentTransformer(Func<AsyncApiDocument, AsyncApiDocumentTransformerContext, CancellationToken, Task> transformer)
+    public AsyncApiOptions AddDocumentTransformer(
+        Func<AsyncApiDocument, AsyncApiDocumentTransformerContext, CancellationToken, Task> transformer)
     {
         ArgumentNullException.ThrowIfNull(transformer);
 
@@ -132,7 +139,9 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <typeparam name="TTransformerType">The type of the <see cref="IAsyncApiOperationTransformer"/> to instantiate.</typeparam>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddOperationTransformer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TTransformerType>()
+    public AsyncApiOptions AddOperationTransformer<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        TTransformerType>()
         where TTransformerType : IAsyncApiOperationTransformer
     {
         OperationTransformers.Add(new TypeBasedAsyncApiOperationTransformer(typeof(TTransformerType)));
@@ -157,7 +166,8 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <param name="transformer">The delegate representing the operation transformer.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddOperationTransformer(Func<AsyncApiOperation, AsyncApiOperationTransformerContext, CancellationToken, Task> transformer)
+    public AsyncApiOptions AddOperationTransformer(
+        Func<AsyncApiOperation, AsyncApiOperationTransformerContext, CancellationToken, Task> transformer)
     {
         ArgumentNullException.ThrowIfNull(transformer);
 
@@ -170,7 +180,9 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <typeparam name="TTransformerType">The type of the <see cref="IAsyncApiSchemaTransformer"/> to instantiate.</typeparam>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddSchemaTransformer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TTransformerType>()
+    public AsyncApiOptions AddSchemaTransformer<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        TTransformerType>()
         where TTransformerType : IAsyncApiSchemaTransformer
     {
         SchemaTransformers.Add(new TypeBasedAsyncApiSchemaTransformer(typeof(TTransformerType)));
@@ -195,11 +207,46 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <param name="transformer">The delegate representing the schema transformer.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddSchemaTransformer(Func<AsyncApiJsonSchema, AsyncApiJsonSchemaTransformerContext, CancellationToken, Task> transformer)
+    public AsyncApiOptions AddSchemaTransformer(
+        Func<AsyncApiJsonSchema, AsyncApiJsonSchemaTransformerContext, CancellationToken, Task> transformer)
     {
         ArgumentNullException.ThrowIfNull(transformer);
 
         SchemaTransformers.Add(new DelegateAsyncApiSchemaTransformer(transformer));
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a given instance of <see cref="IAsyncApiSerializedDocumentTransformer"/> on the current
+    /// <see cref="AsyncApiOptions"/> instance.
+    /// </summary>
+    /// <param name="transformer">The <see cref="IAsyncApiSerializedDocumentTransformer"/> instance to use.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    /// <remarks>
+    /// Serialized-document transformers run after the document has been written out, in registration
+    /// order, each against the output of the last. Prefer <see cref="AddDocumentTransformer(IAsyncApiDocumentTransformer)"/>
+    /// unless the transformation is genuinely one over the wire representation.
+    /// </remarks>
+    public AsyncApiOptions AddSerializedDocumentTransformer(IAsyncApiSerializedDocumentTransformer transformer)
+    {
+        ArgumentNullException.ThrowIfNull(transformer);
+
+        SerializedDocumentTransformers.Add(transformer);
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a given delegate as a serialized-document transformer on the current
+    /// <see cref="AsyncApiOptions"/> instance.
+    /// </summary>
+    /// <param name="transformer">The delegate representing the serialized-document transformer.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions AddSerializedDocumentTransformer(
+        Func<string, AsyncApiSerializedDocumentContext, CancellationToken, ValueTask<string>> transformer)
+    {
+        ArgumentNullException.ThrowIfNull(transformer);
+
+        SerializedDocumentTransformers.Add(new DelegateAsyncApiSerializedDocumentTransformer(transformer));
         return this;
     }
 
@@ -223,6 +270,7 @@ public sealed class AsyncApiOptions
         Servers[sanitizedName] = new AsyncApiServer { Host = host, PathName = pathName, Protocol = protocol };
         return this;
     }
+
     public AsyncApiOptions AddServer(string name, string url, string protocol, Action<AsyncApiServer> configure)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -231,18 +279,14 @@ public sealed class AsyncApiOptions
         ArgumentNullException.ThrowIfNull(configure);
 
         var host = url.Contains("://") ? url.Split("://")[1] : url;
-        var server = new AsyncApiServer 
-        { 
-            Host = host, 
-            PathName = null, 
-            Protocol = protocol 
-        };
+        var server = new AsyncApiServer { Host = host, PathName = null, Protocol = protocol };
         var sanitizedName = AsyncApiNamingHelper.SanitizeKey(name);
-        
+
         configure(server);
         Servers[sanitizedName] = server;
         return this;
     }
+
     /// <summary>
     /// The default content type for messages in the AsyncApi document.
     /// </summary>
@@ -305,13 +349,15 @@ public sealed class AsyncApiOptions
     {
         ArgumentNullException.ThrowIfNull(name);
         Info ??= new AsyncApiInfo();
-        Info.License = new AsyncApiLicense { Name = name   };
-        if(url != null)
+        Info.License = new AsyncApiLicense { Name = name };
+        if (url != null)
         {
-            Info.License.Url = new  Uri(url);
+            Info.License.Url = new Uri(url);
         }
+
         return this;
     }
+
     /// <summary>
     /// Operation bindings collection.
     /// </summary>
@@ -376,6 +422,7 @@ public sealed class AsyncApiOptions
         ChannelBindings[name].Add(binding);
         return this;
     }
+
     /// <summary>
     /// Gets the list of XML documentation files to use for populating descriptions.
     /// </summary>
@@ -392,6 +439,7 @@ public sealed class AsyncApiOptions
         {
             XmlDocumentationFiles.Add(filePath);
         }
+
         return this;
     }
 
@@ -402,7 +450,8 @@ public sealed class AsyncApiOptions
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
     public AsyncApiOptions IncludeXmlComments(Assembly assembly)
     {
-        var filePath = Path.Combine(Path.GetDirectoryName(assembly.Location) ?? string.Empty, $"{assembly.GetName().Name}.xml");
+        var filePath = Path.Combine(Path.GetDirectoryName(assembly.Location) ?? string.Empty,
+            $"{assembly.GetName().Name}.xml");
         return IncludeXmlComments(filePath);
     }
 
@@ -438,12 +487,7 @@ public sealed class AsyncApiOptions
             MessageExamples[type] = [];
         }
 
-        MessageExamples[type].Add(new MessageExample
-        {
-            Name = name,
-            Value = payload,
-            Summary = summary
-        });
+        MessageExamples[type].Add(new MessageExample { Name = name, Value = payload, Summary = summary });
         return this;
     }
 }

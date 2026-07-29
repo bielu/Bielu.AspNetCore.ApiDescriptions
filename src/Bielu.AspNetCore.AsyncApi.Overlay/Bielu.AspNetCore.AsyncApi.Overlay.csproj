@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.Overlay</RootNamespace>
+        <IsAotCompatible>true</IsAotCompatible>
+        <Description>Applies OpenAPI Overlays to AsyncAPI documents inside the generation pipeline, so the document served by MapAsyncApi() (and produced by build-time generation) is already transformed — no post-processing step and no second artifact to keep in sync.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
+        <ProjectReference Include="..\Bielu.Overlay\Bielu.Overlay.csproj" />
+        <ProjectReference Include="..\Bielu.Overlay.Readers\Bielu.Overlay.Readers.csproj" />
+        <ProjectReference Include="..\Bielu.Spec.Shared\Bielu.Spec.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Overlay.Tests" />
+    </ItemGroup>
+
+</Project>

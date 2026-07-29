@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Bielu.Overlay.Models;
 using Json.Path;
 
@@ -13,7 +15,7 @@ namespace Bielu.Overlay.Validation;
 /// against a particular document; this reports what is wrong with the overlay on its own terms, which is
 /// what a <c>validate</c> command needs when no target document is in hand.
 /// </remarks>
-public static class OverlayValidator
+public static partial class OverlayValidator
 {
     /// <summary>Validates the structural invariants of an Overlay document.</summary>
     /// <param name="overlay">The overlay to validate.</param>
@@ -26,12 +28,23 @@ public static class OverlayValidator
 
         if (!OverlayVersionExtensions.TryParse(overlay.Overlay, out var version))
         {
+            // Two different failures wear the same clothes here, and the specification treats them
+            // differently. A version that is not even shaped like one ('1.1', 'abc') can never be a legal
+            // Overlay document — the schema pins `overlay` to `^1\.\d+\.\d+$` — so that is an error. A
+            // well-formed version we simply do not implement yet ('1.2.0', '2.0.0') is a document this
+            // library cannot vouch for rather than one that is malformed, so that stays a warning and
+            // application proceeds under the newest semantics we know.
+            var malformed = !VersionShape().IsMatch(overlay.Overlay ?? string.Empty);
             diagnostics.Add(new OverlayDiagnostic("/overlay",
-                $"Unrecognized Overlay version '{overlay.Overlay}'; expected 1.0.x or 1.1.x.", isWarning: true));
+                malformed
+                    ? $"'{overlay.Overlay}' is not a valid Overlay version; expected a 'MAJOR.MINOR.PATCH' string such as 1.0.0 or 1.1.0."
+                    : $"Unrecognized Overlay version '{overlay.Overlay}'; expected 1.0.x or 1.1.x.",
+                isWarning: !malformed));
             version = OverlayVersion.V1_1;
         }
 
         ValidateInfo(overlay.Info, diagnostics);
+        ValidateExtensionNames(overlay.Extensions, "/", diagnostics);
 
         if (overlay.Actions.Count == 0)
         {
@@ -43,7 +56,62 @@ public static class OverlayValidator
             ValidateAction(overlay.Actions[i], $"/actions/{i}", version, diagnostics);
         }
 
+        ValidateActionsAreUnique(overlay.Actions, diagnostics);
+
         return diagnostics;
+    }
+
+    [GeneratedRegex(@"^\d+\.\d+\.\d+$")]
+    private static partial Regex VersionShape();
+
+    /// <summary>
+    /// The specification declares <c>actions</c> as <c>uniqueItems</c>, so two identical actions make the
+    /// document invalid. Reported against the later of the pair, which is the one to delete.
+    /// </summary>
+    private static void ValidateActionsAreUnique(IList<OverlayAction> actions, List<OverlayDiagnostic> diagnostics)
+    {
+        for (var i = 1; i < actions.Count; i++)
+        {
+            for (var j = 0; j < i; j++)
+            {
+                if (AreEquivalent(actions[i], actions[j]))
+                {
+                    diagnostics.Add(new OverlayDiagnostic($"/actions/{i}",
+                        $"Duplicate action: identical to /actions/{j}. The actions array MUST contain unique items."));
+                    break;
+                }
+            }
+        }
+    }
+
+    private static bool AreEquivalent(OverlayAction left, OverlayAction right) =>
+        string.Equals(left.Target, right.Target, StringComparison.Ordinal)
+        && string.Equals(left.Copy, right.Copy, StringComparison.Ordinal)
+        && string.Equals(left.Description, right.Description, StringComparison.Ordinal)
+        && left.Remove == right.Remove
+        && JsonNode.DeepEquals(left.Update, right.Update);
+
+    /// <summary>
+    /// Fixed fields aside, the specification permits only <c>x-</c>-prefixed members (§4.6), and its schema
+    /// closes every object with <c>unevaluatedProperties: false</c>. The reader keeps unknown members
+    /// instead of discarding them — it is deliberately forgiving — so rejecting them is this validator's job.
+    /// </summary>
+    private static void ValidateExtensionNames(IDictionary<string, JsonNode?>? extensions, string path,
+        List<OverlayDiagnostic> diagnostics)
+    {
+        if (extensions is null)
+        {
+            return;
+        }
+
+        foreach (var key in extensions.Keys)
+        {
+            if (!key.StartsWith("x-", StringComparison.Ordinal))
+            {
+                diagnostics.Add(new OverlayDiagnostic($"{path.TrimEnd('/')}/{key}",
+                    $"'{key}' is not a known field. Only fixed fields and 'x-' prefixed extensions are permitted."));
+            }
+        }
     }
 
     private static void ValidateInfo(OverlayInfo info, List<OverlayDiagnostic> diagnostics)
@@ -57,6 +125,8 @@ public static class OverlayValidator
         {
             diagnostics.Add(new OverlayDiagnostic("/info/version", "info.version is required and MUST NOT be empty."));
         }
+
+        ValidateExtensionNames(info.Extensions, "/info", diagnostics);
     }
 
     private static void ValidateAction(OverlayAction action, string path, OverlayVersion version,
@@ -109,5 +179,7 @@ public static class OverlayValidator
             diagnostics.Add(new OverlayDiagnostic(path,
                 "Action has no effect: none of 'update', 'copy', or 'remove' is set.", isWarning: true));
         }
+
+        ValidateExtensionNames(action.Extensions, path, diagnostics);
     }
 }

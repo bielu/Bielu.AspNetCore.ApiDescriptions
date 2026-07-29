@@ -23,6 +23,12 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bielu.Overlay\Bielu.Overlay.csproj" />
     <ProjectReference Include="..\..\src\Bielu.Overlay.Readers\Bielu.Overlay.Readers.csproj" />
+    <ProjectReference Include="..\..\src\Bielu.Spec.Shared\Bielu.Spec.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The OAI's own conformance fixtures, vendored so the suite stays offline. See Conformance/README.md. -->
+    <Content Include="Conformance\**\*.yaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
