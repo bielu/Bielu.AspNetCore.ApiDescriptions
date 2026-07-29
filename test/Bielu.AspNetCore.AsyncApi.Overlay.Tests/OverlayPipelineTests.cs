@@ -1,5 +1,6 @@
 using Bielu.AspNetCore.Overlay;
 using Bielu.Overlay.Readers;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
 
@@ -118,6 +119,43 @@ public class OverlayPipelineTests
         {
             File.Delete(path);
         }
+    }
+
+    [Fact]
+    public void Apply_StripsNewlinesFromLoggedDiagnostics()
+    {
+        // Arrange — an unrecognized version is echoed verbatim into a warning diagnostic, which is the
+        // shortest path from attacker-influenced overlay content to a log entry (CWE-117).
+        var pipeline = new OverlayPipeline();
+        pipeline.Add(OverlaySource.FromDocument(new Bielu.Overlay.Models.OverlayDocument
+        {
+            Overlay = "9.9.9\nWARN: forged log entry",
+            Info = new Bielu.Overlay.Models.OverlayInfo { Title = "t", Version = "1.0.0" },
+            Actions = [new Bielu.Overlay.Models.OverlayAction { Target = "$.channels", Remove = true }],
+        }));
+        var logger = new CapturingLogger();
+
+        // Act
+        pipeline.Apply("""{"channels":{}}""", OverlayDocumentFormat.Json, "v1", logger);
+
+        // Assert
+        logger.Messages.ShouldNotBeEmpty();
+        logger.Messages.ShouldAllBe(m => !m.Contains('\n') && !m.Contains('\r'));
+        logger.Messages.ShouldContain(m => m.Contains("forged log entry"));
+    }
+
+    /// <summary>Captures formatted log messages so the sanitization above can be asserted on.</summary>
+    private sealed class CapturingLogger : ILogger
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+            => Messages.Add(formatter(state, exception));
     }
 
     [Fact]

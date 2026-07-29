@@ -71,8 +71,13 @@ public sealed class OverlayPipeline
 
             foreach (var diagnostic in result.Diagnostics.Where(d => d.IsWarning))
             {
+                // Every one of these reaches us from outside the process — the overlay's own file
+                // contents in the case of the diagnostic, a configured path in the case of the origin —
+                // so newlines are stripped before they reach the log to stop a crafted value forging
+                // extra log entries (CWE-117).
                 logger?.LogWarning("Overlay '{Overlay}' on document '{DocumentName}' reported {Path}: {Message}",
-                    source.Origin, documentName, diagnostic.Path, diagnostic.Message);
+                    SanitizeLog(source.Origin), SanitizeLog(documentName),
+                    SanitizeLog(diagnostic.Path), SanitizeLog(diagnostic.Message));
             }
 
             if (result.HasErrors)
@@ -90,6 +95,13 @@ public sealed class OverlayPipeline
             ? JsonNodeToYamlConverter.Serialize(node)
             : node?.ToJsonString(JsonOutput) ?? string.Empty;
     }
+
+    /// <summary>
+    /// Removes newline characters so a value cannot forge additional log entries (CWE-117). Mirrors the
+    /// helper the AsyncAPI and Arazzo endpoint extensions already apply to their own logged values.
+    /// </summary>
+    private static string SanitizeLog(string? value) =>
+        value is null ? string.Empty : value.Replace("\r", "").Replace("\n", "");
 
     private static JsonNode? Parse(string serialized, OverlayDocumentFormat format, string documentName)
     {
