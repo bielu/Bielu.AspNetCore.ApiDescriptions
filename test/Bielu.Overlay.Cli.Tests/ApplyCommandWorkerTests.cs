@@ -106,10 +106,15 @@ public class ApplyCommandWorkerTests : IAsyncLifetime
     [Fact]
     public void Process_AppliesOverlayAndWritesOutput()
     {
+        // Arrange
         var output = Path.Combine(_tempDir, "out.json");
+        var context = Context(_asyncApiPath, output, _overlayPath);
 
-        Run(Context(_asyncApiPath, output, _overlayPath)).ShouldBe(0);
+        // Act
+        var exitCode = Run(context);
 
+        // Assert
+        exitCode.ShouldBe(0);
         var result = JsonNode.Parse(File.ReadAllText(output))!;
         result["channels"]!.AsObject().ContainsKey("internalDebug").ShouldBeFalse();
         result["channels"]!.AsObject().ContainsKey("lightMeasured").ShouldBeTrue();
@@ -118,10 +123,15 @@ public class ApplyCommandWorkerTests : IAsyncLifetime
     [Fact]
     public void Process_AppliesMultipleOverlaysInOrder()
     {
+        // Arrange
         var output = Path.Combine(_tempDir, "out.json");
+        var context = Context(_asyncApiPath, output, _overlayPath, _secondOverlayPath);
 
-        Run(Context(_asyncApiPath, output, _overlayPath, _secondOverlayPath)).ShouldBe(0);
+        // Act
+        var exitCode = Run(context);
 
+        // Assert
+        exitCode.ShouldBe(0);
         var result = JsonNode.Parse(File.ReadAllText(output))!;
         result["channels"]!.AsObject().ContainsKey("internalDebug").ShouldBeFalse();
         result["info"]!["description"]!.GetValue<string>().ShouldBe("Public distribution");
@@ -130,20 +140,30 @@ public class ApplyCommandWorkerTests : IAsyncLifetime
     [Fact]
     public void Process_LeavesTheSourceDocumentOnDiskUntouched()
     {
+        // Arrange
         var before = File.ReadAllText(_asyncApiPath);
+        var context = Context(_asyncApiPath, Path.Combine(_tempDir, "out.json"), _overlayPath);
 
-        Run(Context(_asyncApiPath, Path.Combine(_tempDir, "out.json"), _overlayPath)).ShouldBe(0);
+        // Act
+        var exitCode = Run(context);
 
+        // Assert
+        exitCode.ShouldBe(0);
         File.ReadAllText(_asyncApiPath).ShouldBe(before);
     }
 
     [Fact]
     public void Process_InfersYamlOutputFromTheOutputExtension()
     {
+        // Arrange
         var output = Path.Combine(_tempDir, "out.yaml");
+        var context = Context(_asyncApiPath, output, _overlayPath);
 
-        Run(Context(_asyncApiPath, output, _overlayPath)).ShouldBe(0);
+        // Act
+        var exitCode = Run(context);
 
+        // Assert
+        exitCode.ShouldBe(0);
         var text = File.ReadAllText(output);
         text.ShouldContain("asyncapi: 3.0.0");
         text.ShouldNotStartWith("{");
@@ -152,22 +172,31 @@ public class ApplyCommandWorkerTests : IAsyncLifetime
     [Fact]
     public void Process_ExplicitFormatBeatsTheOutputExtension()
     {
+        // Arrange
         var output = Path.Combine(_tempDir, "out.yaml");
         var context = Context(_asyncApiPath, output, _overlayPath);
         context.Format = "json";
 
-        Run(context).ShouldBe(0);
+        // Act
+        var exitCode = Run(context);
 
+        // Assert
+        exitCode.ShouldBe(0);
         File.ReadAllText(output).TrimStart().ShouldStartWith("{");
     }
 
     [Fact]
     public void Process_ReadsAYamlSourceDocument()
     {
+        // Arrange
         var output = Path.Combine(_tempDir, "out.json");
+        var context = Context(_yamlDocPath, output, _secondOverlayPath);
 
-        Run(Context(_yamlDocPath, output, _secondOverlayPath)).ShouldBe(0);
+        // Act
+        var exitCode = Run(context);
 
+        // Assert
+        exitCode.ShouldBe(0);
         var result = JsonNode.Parse(File.ReadAllText(output))!;
         result["info"]!["description"]!.GetValue<string>().ShouldBe("Public distribution");
         result["channels"]!["lightMeasured"]!["address"]!.GetValue<string>().ShouldBe("light/measured");
@@ -176,39 +205,59 @@ public class ApplyCommandWorkerTests : IAsyncLifetime
     [Fact]
     public void Process_MissingDocument_ReturnsOne()
     {
+        // Arrange
         var context = Context(Path.Combine(_tempDir, "nope.json"), Path.Combine(_tempDir, "out.json"), _overlayPath);
 
-        Run(context).ShouldBe(1);
+        // Act
+        var exitCode = Run(context);
+
+        // Assert
+        exitCode.ShouldBe(1);
     }
 
     [Fact]
     public void Process_MissingOverlay_ReturnsOne()
     {
+        // Arrange
         var context = Context(_asyncApiPath, Path.Combine(_tempDir, "out.json"), Path.Combine(_tempDir, "nope.yaml"));
 
-        Run(context).ShouldBe(1);
+        // Act
+        var exitCode = Run(context);
+
+        // Assert
+        exitCode.ShouldBe(1);
     }
 
     [Fact]
     public void Process_ZeroMatchTarget_PassesByDefault_AndFailsUnderStrict()
     {
+        // Arrange
         var lenient = Context(_asyncApiPath, Path.Combine(_tempDir, "lenient.json"), _missTargetOverlayPath);
-        Run(lenient).ShouldBe(0);
-
         var strict = Context(_asyncApiPath, Path.Combine(_tempDir, "strict.json"), _missTargetOverlayPath);
         strict.Strict = true;
-        Run(strict).ShouldBe(1);
+
+        // Act
+        var lenientResult = Run(lenient);
+        var strictResult = Run(strict);
+
+        // Assert
+        lenientResult.ShouldBe(0);
+        strictResult.ShouldBe(1);
     }
 
     [Fact]
     public void Process_WhenApplicationFails_NoOutputIsWritten()
     {
+        // Arrange
         var output = Path.Combine(_tempDir, "not-written.json");
         var context = Context(_asyncApiPath, output, _missTargetOverlayPath);
         context.Strict = true;
 
-        Run(context).ShouldBe(1);
+        // Act
+        var exitCode = Run(context);
 
+        // Assert
+        exitCode.ShouldBe(1);
         File.Exists(output).ShouldBeFalse("a failed run must not leave a half-transformed document behind");
     }
 }

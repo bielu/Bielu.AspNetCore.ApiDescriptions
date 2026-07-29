@@ -195,10 +195,9 @@ casing idiomatic while the marker types stay idiomatic C#, and it means the two 
 can adopt the generic form incrementally.
 
 > ⚠️ **Security note:** `Bielu.AspNetCore.Arazzo` only *serves* and *validates* workflow documents — it
-> does not execute them. An execution engine (`arazzo run`/`arazzo test`) is planned separately and will
-> be CLI/test-only by design, never exposed as a default ASP.NET Core endpoint (see
-> [ARAZZO-PROPOSAL.md](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ARAZZO-PROPOSAL.md)
-> risk R4).
+> does not execute them. Any future execution engine is intended to be CLI/test-only by design, and would
+> never be exposed as a default ASP.NET Core endpoint: a hosted endpoint that ran arbitrary workflow steps
+> would let a document drive outbound requests from inside your application.
 
 ## CLI Tool: `dotnet arazzo`
 
@@ -207,5 +206,5 @@ can adopt the generic form incrementally.
 
 ## What's next
 
-See the [Arazzo proposal](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/ARAZZO-PROPOSAL.md)
-for the workflow runtime (`arazzo run`/`arazzo test`).
+A workflow runtime — executing steps, evaluating criteria, and propagating outputs — is the natural next
+piece, exposed through the CLI as a test/automation runner rather than as a hosted endpoint.

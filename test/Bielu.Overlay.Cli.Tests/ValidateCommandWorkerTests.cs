@@ -81,34 +81,97 @@ public class ValidateCommandWorkerTests : IAsyncLifetime
     [Fact]
     public void Process_ValidOverlay_ReturnsZero()
     {
-        Run(Context(_validPath)).ShouldBe(0);
+        // Arrange
+        var context = Context(_validPath);
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(0);
     }
 
     [Fact]
     public void Process_InvalidOverlay_ReturnsOne()
     {
-        Run(Context(_invalidPath)).ShouldBe(1);
+        // Arrange
+        var context = Context(_invalidPath);
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
     }
 
     [Fact]
     public void Process_WarningOnly_PassesByDefault_AndFailsUnderStrict()
     {
-        Run(Context(_warningOnlyPath)).ShouldBe(0);
-
+        // Arrange
+        var lenient = Context(_warningOnlyPath);
         var strict = Context(_warningOnlyPath);
         strict.Strict = true;
-        Run(strict).ShouldBe(1);
+
+        // Act
+        var lenientResult = Run(lenient);
+        var strictResult = Run(strict);
+
+        // Assert
+        lenientResult.ShouldBe(0);
+        strictResult.ShouldBe(1);
     }
 
     [Fact]
     public void Process_MissingFile_ReturnsOne()
     {
-        Run(Context(Path.Combine(_tempDir, "nope.yaml"))).ShouldBe(1);
+        // Arrange
+        var context = Context(Path.Combine(_tempDir, "nope.yaml"));
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
     }
 
     [Fact]
-    public void Process_Glob_FindsEveryOverlay()
+    public void Process_Glob_MatchingOnlyValidOverlays_ReturnsZero()
     {
-        Run(Context(Path.Combine(_tempDir, "*.yaml"))).ShouldBe(1);
+        // Arrange
+        // Asserting 0 is what makes this meaningful: a glob that expanded to nothing also returns 1,
+        // so only a success proves the expansion actually found and validated files.
+        var context = Context(Path.Combine(_tempDir, "valid*.yaml"));
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Process_Glob_IncludingAnInvalidOverlay_ReturnsOne()
+    {
+        // Arrange
+        var context = Context(Path.Combine(_tempDir, "*.yaml"));
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Process_GlobMatchingNothing_ReturnsOne()
+    {
+        // Arrange
+        var context = Context(Path.Combine(_tempDir, "nothing-here-*.yaml"));
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
     }
 }

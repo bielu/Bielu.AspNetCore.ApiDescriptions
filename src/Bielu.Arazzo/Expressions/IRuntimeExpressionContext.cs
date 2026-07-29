@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 
 namespace Bielu.Arazzo.Expressions;
 
@@ -6,7 +6,7 @@ namespace Bielu.Arazzo.Expressions;
 /// Supplies the data a <see cref="RuntimeExpressionEvaluator"/> needs to resolve an expression. HTTP- and
 /// message-specific sourcing ($url/$method/$statusCode/$request/$response/$message) is left to the
 /// caller's implementation — an ASP.NET-hosted HTTP client for OpenAPI steps, a broker/SignalR/gRPC
-/// client for AsyncAPI steps (see ARAZZO-PROPOSAL.md §3.D). Everything else ($inputs/$outputs/$steps/
+/// client for AsyncAPI steps. Everything else ($inputs/$outputs/$steps/
 /// $workflows/$sourceDescriptions/$components/$self) is pure data lookup and does not depend on any
 /// transport.
 /// </summary>

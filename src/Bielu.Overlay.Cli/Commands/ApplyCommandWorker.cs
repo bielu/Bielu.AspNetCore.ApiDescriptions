@@ -31,7 +31,12 @@ internal sealed class ApplyCommandWorker
         Action<string> writeWarning,
         Action<string> writeError)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(writeInfo);
+        ArgumentNullException.ThrowIfNull(writeWarning);
+        ArgumentNullException.ThrowIfNull(writeError);
+
+        _context = context;
         _logger = new DelegatingCliLogger(writeInfo, writeWarning, writeError);
     }
 
@@ -59,7 +64,19 @@ internal sealed class ApplyCommandWorker
                 return CliExitCode.Failure;
             }
 
-            var read = OverlayStringReader.Read(File.ReadAllText(overlayPath));
+            OverlayReadResult read;
+            try
+            {
+                read = OverlayStringReader.Read(File.ReadAllText(overlayPath));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // A file that exists but is locked or unreadable should report like any other input
+                // failure, not surface a stack trace from the middle of a build step.
+                _logger.Error($"Failed to read {overlayPath}: {ex.Message}");
+                return CliExitCode.Failure;
+            }
+
             ReportDiagnostics(overlayPath, read.Diagnostics);
 
             if (read.Document is not { } overlay)
@@ -137,13 +154,22 @@ internal sealed class ApplyCommandWorker
             return CliExitCode.Success;
         }
 
-        var directory = Path.GetDirectoryName(_context.OutputPath);
-        if (!string.IsNullOrEmpty(directory))
+        try
         {
-            Directory.CreateDirectory(directory);
+            var directory = Path.GetDirectoryName(_context.OutputPath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllText(_context.OutputPath, serialized, Utf8NoBom);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.Error($"Failed to write {_context.OutputPath}: {ex.Message}");
+            return CliExitCode.Failure;
         }
 
-        File.WriteAllText(_context.OutputPath, serialized, Utf8NoBom);
         _logger.Info($"Transformed document written to '{_context.OutputPath}'.");
         return CliExitCode.Success;
     }

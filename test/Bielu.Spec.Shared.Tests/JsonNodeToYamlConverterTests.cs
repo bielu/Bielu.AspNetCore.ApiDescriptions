@@ -21,10 +21,15 @@ public class JsonNodeToYamlConverterTests
     [Fact]
     public void RoundTrip_PreservesScalarTypes()
     {
-        var result = RoundTrip("""
+        // Arrange
+        const string json = """
         {"text":"hello","integer":42,"negative":-7,"floating":1.5,"yes":true,"no":false,"nothing":null}
-        """);
+        """;
 
+        // Act
+        var result = RoundTrip(json);
+
+        // Assert
         result["text"]!.GetValue<string>().ShouldBe("hello");
         result["integer"]!.GetValue<int>().ShouldBe(42);
         result["negative"]!.GetValue<int>().ShouldBe(-7);
@@ -37,9 +42,14 @@ public class JsonNodeToYamlConverterTests
     [Fact]
     public void RoundTrip_QuotesStringsThatWouldOtherwiseChangeType()
     {
+        // Arrange
         // Without quoting these come back as a bool, a number and a null respectively.
-        var result = RoundTrip("""{"a":"true","b":"42","c":"null","d":"1.5"}""");
+        const string json = """{"a":"true","b":"42","c":"null","d":"1.5"}""";
 
+        // Act
+        var result = RoundTrip(json);
+
+        // Assert
         result["a"]!.GetValue<string>().ShouldBe("true");
         result["b"]!.GetValue<string>().ShouldBe("42");
         result["c"]!.GetValue<string>().ShouldBe("null");
@@ -49,11 +59,16 @@ public class JsonNodeToYamlConverterTests
     [Fact]
     public void RoundTrip_QuotesValuesThatWouldParseAsYamlStructure()
     {
+        // Arrange
         // Arazzo's channelPath is exactly this shape; unquoted, the leading '{' starts a flow mapping.
-        var result = RoundTrip("""
+        const string json = """
         {"channelPath":"{$sourceDescriptions.events.url}#/channels/lightingAlert","seq":"[a, b]"}
-        """);
+        """;
 
+        // Act
+        var result = RoundTrip(json);
+
+        // Assert
         result["channelPath"]!.GetValue<string>()
             .ShouldBe("{$sourceDescriptions.events.url}#/channels/lightingAlert");
         result["seq"]!.GetValue<string>().ShouldBe("[a, b]");
@@ -62,10 +77,15 @@ public class JsonNodeToYamlConverterTests
     [Fact]
     public void RoundTrip_PreservesNestedObjectsAndArrays()
     {
-        var result = RoundTrip("""
+        // Arrange
+        const string json = """
         {"workflows":[{"workflowId":"w","steps":[{"stepId":"a"},{"stepId":"b"}]}],"empty":{},"none":[]}
-        """);
+        """;
 
+        // Act
+        var result = RoundTrip(json);
+
+        // Assert
         var steps = result["workflows"]![0]!["steps"]!.AsArray();
         steps.Count.ShouldBe(2);
         steps[1]!["stepId"]!.GetValue<string>().ShouldBe("b");
@@ -76,19 +96,29 @@ public class JsonNodeToYamlConverterTests
     [Fact]
     public void RoundTrip_PreservesKeysThatNeedQuoting()
     {
+        // Arrange
         // OpenAPI path keys start with '/', and response codes are numeric-looking keys.
-        var result = RoundTrip("""{"paths":{"/items":{"get":{"200":{"description":"OK"}}}}}""");
+        const string json = """{"paths":{"/items":{"get":{"200":{"description":"OK"}}}}}""";
 
+        // Act
+        var result = RoundTrip(json);
+
+        // Assert
         result["paths"]!["/items"]!["get"]!["200"]!["description"]!.GetValue<string>().ShouldBe("OK");
     }
 
     [Fact]
     public void RoundTrip_DistinguishesNullFromTheEmptyString()
     {
+        // Arrange
         // YAML writes null as an empty *plain* scalar (`description:`) and an empty string as a quoted
         // one (`empty: ""`). Conflating the two turns every absent value into "".
-        var result = RoundTrip("""{"nothing":null,"empty":""}""");
+        const string json = """{"nothing":null,"empty":""}""";
 
+        // Act
+        var result = RoundTrip(json);
+
+        // Assert
         result["nothing"].ShouldBeNull();
         result["empty"]!.GetValue<string>().ShouldBe("");
     }
@@ -96,6 +126,10 @@ public class JsonNodeToYamlConverterTests
     [Fact]
     public void Serialize_Null_ProducesAnEmptyDocument()
     {
-        JsonNodeToYamlConverter.Serialize(null).Trim().ShouldBeOneOf("", "---", "null");
+        // Arrange & Act
+        var yaml = JsonNodeToYamlConverter.Serialize(null);
+
+        // Assert
+        yaml.Trim().ShouldBeOneOf("", "---", "null");
     }
 }

@@ -1,10 +1,11 @@
-using Bielu.Arazzo.Writers;
+﻿using Bielu.Arazzo.Writers;
 
 namespace Bielu.Arazzo.Models;
 
 /// <summary>
 /// Spec §5.8.3 Source Description Object. <see cref="Type"/> allowing <c>"asyncapi"</c> is new in 1.1.0 —
-/// the change that makes Arazzo relevant to this suite (see ARAZZO-PROPOSAL.md §1).
+/// the change that makes Arazzo relevant to this suite, letting one workflow span HTTP operations and
+/// event channels.
 /// </summary>
 public sealed class ArazzoSourceDescription : IArazzoSerializable, IArazzoExtensible
 {

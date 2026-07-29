@@ -1,11 +1,10 @@
-using Bielu.Arazzo.Writers;
+﻿using Bielu.Arazzo.Writers;
 
 namespace Bielu.Arazzo.Models;
 
 /// <summary>
 /// Spec §5.8.11 Criterion Object, used by Step.successCriteria and the criteria arrays on success/failure
-/// actions. Four condition flavors: simple (default), regex, jsonpath, xpath — see
-/// ARAZZO-PROPOSAL.md risk R1 for the XPath 3.1 support boundary.
+/// actions. Four condition flavors: simple (default), regex, jsonpath, xpath.
 /// </summary>
 public sealed class ArazzoCriterion : IArazzoSerializable, IArazzoExtensible
 {

@@ -12,8 +12,10 @@ public class CommandContextTests
     [Fact]
     public void ApplyCommandContext_DefaultValues_AreCorrect()
     {
+        // Arrange & Act
         var context = new ApplyCommandContext();
 
+        // Assert
         context.FilePath.ShouldBe(string.Empty);
         context.Overlays.ShouldBeEmpty();
         // Empty rather than a path: apply writes to standard output unless told otherwise, and infers
@@ -26,8 +28,10 @@ public class CommandContextTests
     [Fact]
     public void ValidateCommandContext_DefaultValues_AreCorrect()
     {
+        // Arrange & Act
         var context = new ValidateCommandContext();
 
+        // Assert
         context.Files.ShouldBeEmpty();
         context.Strict.ShouldBeFalse();
         context.Format.ShouldBe("text");
