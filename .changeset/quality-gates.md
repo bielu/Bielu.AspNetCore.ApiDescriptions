@@ -10,13 +10,15 @@ close the quality gates a stable release should hold.
 
 **AOT verification in CI — and what it found.** Roadmap PR 9 scoped a step that publishes the AOT example and compares its document against the reflection-based build; it was never wired up. `scripts/verify-aot.sh` does exactly that, as a new `aot-verification` PR job.
 
-It found that **AsyncAPI generation does not currently work under Native AOT at all**, through three distinct defects:
+It found that **AsyncAPI generation did not work under Native AOT at all** — the document endpoint threw on every request. Three separate defects, all now fixed:
 
 1. `MapAsyncApi()` mapped its handler as a parameter-bound lambda, so `RequestDelegateFactory` tried to resolve `JsonTypeInfo` for the handler's own return type and threw. Now mapped as a `RequestDelegate` — which also clears the two IL warnings that were sitting on that call site.
-2. `AddAsyncApiGeneratedMetadata(...)` registered the generated provider under the **caller's** casing while `AddAsyncApi` registers keyed services **lowercased**. The `Replace` matched nothing, so the reflection provider stayed live and threw `PlatformNotSupportedException`. The source generator's entire reason for existing silently did not take effect for any document name containing an uppercase character.
-3. What remains is **not ours**: `ByteBard.AsyncAPI` is not trim-annotated (it emits IL2104/IL3053 from its own assembly) and its serializers reach enum and array metadata reflectively, so the endpoint throws `'ByteBard.AsyncAPI.Models.ReferenceType[]' is missing native code or metadata`. `TrimmerRootAssembly` is a necessary but insufficient step.
+2. `AddAsyncApiGeneratedMetadata(...)` registered the generated provider under the **caller's** casing while `AddAsyncApi` registers keyed services **lowercased**. The `Replace` matched nothing, so the reflection provider stayed live and threw `PlatformNotSupportedException`. The source generator's entire reason for existing silently did not take effect for any document name containing an uppercase character — it worked by accident only for an all-lowercase name.
+3. `ByteBard.AsyncAPI` resolves enums from display names through `Enum.GetValues()`, which calls `Array.CreateInstance(typeof(TEnum), n)`. Constructing an array type at runtime needs metadata ILC does not emit unless told the type is used dynamically, so the endpoint threw `'ByteBard.AsyncAPI.Models.ReferenceType[]' is missing native code or metadata`. A scoped `rd.xml` roots the assembly **and each enum's array type** — the array types must be named individually, because an array is a constructed type ILC only emits when it can see it used, and `Array.CreateInstance` is invisible to that analysis. Neither `TrimmerRootAssembly` nor rooting the assembly alone is sufficient; both were tried and the failure survived unchanged.
 
-The job is therefore `continue-on-error` for now — deliberately still running and still failing, because that failure is the accurate signal. **`README.md` currently advertises "✅ Native AOT support", and that claim does not hold**; resolving it is tracked as a launch item.
+**Native AOT now works**, and the `aot-verification` job is **blocking**: it publishes the example both ways and asserts the served documents are identical, which is what guards against the source generator and the reflection scan silently diverging.
+
+`README.md`'s "✅ Native AOT support" is now a claim the build actually enforces.
 
 **Analyzer release tracking.** The Analyzers project had no `AnalyzerReleases.{Shipped,Unshipped}.md`, producing 9 × RS2008 and leaving the `BASYNC001`–`BASYNC009` rules undeclared — which is how consumers find out a rule was added or changed between versions. All nine are now recorded as unshipped; they move to a `Release 1.0.0` section when the stable version tags.
 
