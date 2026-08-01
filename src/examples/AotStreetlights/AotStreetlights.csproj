@@ -8,9 +8,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- ByteBard.AsyncAPI resolves enums from display names via Enum.GetValues, which constructs an
+         array type at runtime and therefore needs reflection metadata ILC does not emit by default.
+         rd.xml keeps it; see the reasoning there. Rooting the assembly with TrimmerRootAssembly does
+         not help, because that controls trimming rather than metadata generation. -->
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Scalar.AspNetCore" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
-    <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- UndefineProperties: PublishAot flows down to referenced projects as a global property, and
+         the generator targets netstandard2.0, which cannot be AOT-compiled (NETSDK1207). It is a
+         build-time analyzer, so it must not inherit the publishing app's AOT settings. -->
+    <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" UndefineProperties="PublishAot;RuntimeIdentifier;SelfContained" />
   </ItemGroup>
 
 </Project>

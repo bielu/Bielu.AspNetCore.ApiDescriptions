@@ -113,6 +113,14 @@ public sealed class AuthenticationDetectionOptions
     /// <c>[Authorize(AuthenticationSchemes = "...")]</c> attaches only the named schemes that were
     /// detected. Defaults to <see langword="false"/>.
     /// </summary>
+    /// <remarks>
+    /// Building that map means <strong>scanning the loaded assemblies</strong> for <c>[AsyncApi]</c>
+    /// types and reading their members' attributes — the authorization data lives on the declaring
+    /// types, not in the generated document. That is reflection over types no static analysis can
+    /// predict, so under trimming or Native AOT those types may be gone and channels can silently
+    /// come back unsecured. Leave this off in a trimmed or AOT application unless the annotated types
+    /// are rooted explicitly.
+    /// </remarks>
     public bool AttachToAuthorizedOperations { get; set; }
 
     /// <summary>

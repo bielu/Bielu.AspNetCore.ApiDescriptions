@@ -37,9 +37,19 @@ public static class AsyncApiEndpointRouteBuilderExtensions
         var options = endpoints.ServiceProvider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>();
         // Store the pattern so the middleware can use it
         options.CurrentValue.DocumentRoutePattern = pattern;
-        return endpoints.MapGet(pattern,
-            async (HttpContext context, string documentName = AsyncApiGeneratorConstants.DefaultDocumentName) =>
+        // Mapped as a RequestDelegate rather than as a parameter-bound lambda. The lambda overload goes
+        // through RequestDelegateFactory, which inspects the handler's signature reflectively to infer
+        // parameter binding and response writing — and under Native AOT that fails outright, asking the
+        // JsonSerializerContext for metadata about the handler's own return type. A RequestDelegate is
+        // taken as-is, so the endpoint works under AOT and stops emitting IL2026/IL3050 here.
+        // The route value is read manually below, which is all the lambda's binding was doing.
+        return endpoints.MapGet(pattern, (RequestDelegate)(async context =>
             {
+                var documentName = context.Request.RouteValues.TryGetValue("documentName", out var routeValue)
+                                   && routeValue is string { Length: > 0 } routeDocumentName
+                    ? routeDocumentName
+                    : AsyncApiGeneratorConstants.DefaultDocumentName;
+
                 // We need to retrieve the document name in a case-insensitive manner to support case-insensitive document name resolution.
                 // The document service is registered with a key equal to the document name, but in lowercase.
                 // The GetRequiredKeyedService() method is case-sensitive, which doesn't work well for AsyncApi document names here,
@@ -148,7 +158,7 @@ public static class AsyncApiEndpointRouteBuilderExtensions
 
                     await context.Response.Body.WriteAsync(payload, context.RequestAborted);
                 }
-            }).ExcludeFromDescription();
+            })).ExcludeFromDescription();
     }
 
     /// <summary>

@@ -74,6 +74,30 @@ jobs:
           fi
           echo "Found changeset(s):"; echo "$ADDED"
 
+  # Pull request: prove the Native AOT path still works. The source generator replaces the reflection
+  # scan under AOT, so the two providers can diverge silently — this publishes the AOT example and
+  # asserts it serves byte-for-byte the same document as the ordinary reflection-based build.
+  # Roadmap PR 9 scoped this check; it is wired up here.
+  aot-verification:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    # Blocking. It is the only thing standing between "README claims Native AOT support" and that
+    # claim being true — three separate defects made the AOT path throw at runtime, and none of them
+    # were visible to the rest of the suite.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+      - name: Install the native AOT toolchain
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+      # Invoked through bash rather than executed directly: this repository is developed on Windows
+      # with core.filemode=false, so the executable bit on a committed script is easy to lose.
+      - name: Verify Native AOT
+        run: bash scripts/verify-aot.sh linux-x64
+
   # Push to main: consume changesets into a "Version Packages" PR. While changesets are pending it
   # (re)opens that PR; once it is merged and the changesets are gone, hasChangesets becomes false and
   # the release jobs below take over.

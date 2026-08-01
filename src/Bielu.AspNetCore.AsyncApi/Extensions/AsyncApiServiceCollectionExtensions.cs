@@ -24,8 +24,8 @@ public static class AsyncApiServiceCollectionExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to register services onto.</param>
     /// <param name="documentName">The name of the AsyncApi document associated with registered services.</param>
     /// <example>
-    /// This method is commonly used to add AsyncApi services to the <see cref="WebApplicationBuilder.Services"/>
-    /// of a <see cref="WebApplicationBuilder"/>, as shown in the following example:
+    /// This method is commonly used to add AsyncApi services to the <see cref="Microsoft.AspNetCore.Builder.WebApplicationBuilder.Services"/>
+    /// of a <see cref="Microsoft.AspNetCore.Builder.WebApplicationBuilder"/>, as shown in the following example:
     /// <code>
     /// var builder = WebApplication.CreateBuilder(args);
     /// builder.Services.AddAsyncApi("MyWebApi");
@@ -45,8 +45,8 @@ public static class AsyncApiServiceCollectionExtensions
     /// <param name="documentName">The name of the AsyncApi document associated with registered services.</param>
     /// <param name="configureOptions">A delegate used to configure the target <see cref="AsyncApiOptions"/>.</param>
     /// <example>
-    /// This method is commonly used to add AsyncApi services to the <see cref="WebApplicationBuilder.Services"/>
-    /// of a <see cref="WebApplicationBuilder"/>, as shown in the following example:
+    /// This method is commonly used to add AsyncApi services to the <see cref="Microsoft.AspNetCore.Builder.WebApplicationBuilder.Services"/>
+    /// of a <see cref="Microsoft.AspNetCore.Builder.WebApplicationBuilder"/>, as shown in the following example:
     /// <code>
     /// var builder = WebApplication.CreateBuilder(args);
     /// builder.Services.AddAsyncApi("MyWebApi", options => {
@@ -80,8 +80,8 @@ public static class AsyncApiServiceCollectionExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to register services onto.</param>
     /// <param name="configureOptions">A delegate used to configure the target <see cref="AsyncApiOptions"/>.</param>
     /// <example>
-    /// This method is commonly used to add AsyncApi services to the <see cref="WebApplicationBuilder.Services"/>
-    /// of a <see cref="WebApplicationBuilder"/>, as shown in the following example:
+    /// This method is commonly used to add AsyncApi services to the <see cref="Microsoft.AspNetCore.Builder.WebApplicationBuilder.Services"/>
+    /// of a <see cref="Microsoft.AspNetCore.Builder.WebApplicationBuilder"/>, as shown in the following example:
     /// <code>
     /// var builder = WebApplication.CreateBuilder(args);
     /// builder.Services.AddAsyncApi(options => {
@@ -98,8 +98,8 @@ public static class AsyncApiServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to register services onto.</param>
     /// <example>
-    /// This method is commonly used to add AsyncApi services to the <see cref="WebApplicationBuilder.Services"/>
-    /// of a <see cref="WebApplicationBuilder"/>, as shown in the following example:
+    /// This method is commonly used to add AsyncApi services to the <see cref="Microsoft.AspNetCore.Builder.WebApplicationBuilder.Services"/>
+    /// of a <see cref="Microsoft.AspNetCore.Builder.WebApplicationBuilder"/>, as shown in the following example:
     /// <code>
     /// var builder = WebApplication.CreateBuilder(args);
     /// builder.Services.AddAsyncApi();

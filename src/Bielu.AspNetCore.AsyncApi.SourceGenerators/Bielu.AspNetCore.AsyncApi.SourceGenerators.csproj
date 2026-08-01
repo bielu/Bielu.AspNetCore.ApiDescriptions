@@ -6,6 +6,10 @@
          same arrangement as Bielu.AspNetCore.AsyncApi.Analyzers inside the Attributes package.
          Without this it also packs as a standalone package with no lib and no content. -->
     <IsPackable>false</IsPackable>
+    <!-- PublishAot flows down as a global property from any app that publishes AOT (see the
+         AotStreetlights example). This is a build-time analyzer on netstandard2.0, which cannot be
+         AOT-compiled at all, so opt out explicitly or that publish fails with NETSDK1207. -->
+    <PublishAot>false</PublishAot>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsRoslynComponent>true</IsRoslynComponent>

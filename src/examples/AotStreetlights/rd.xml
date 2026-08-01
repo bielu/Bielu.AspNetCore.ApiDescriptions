@@ -1,0 +1,50 @@
+<!--
+  Runtime directives for the Native AOT compiler (ILC).
+
+  ByteBard.AsyncAPI resolves enums from their display names reflectively:
+
+      ByteBard.AsyncAPI.Writers.StringExtensions.GetEnumFromDisplayName<T>(string)
+        -> Enum.GetValues()
+        -> Array.CreateInstance(typeof(TEnum), n)
+
+  Without this the app publishes and starts, then throws on the first document request:
+
+      System.NotSupportedException: 'ByteBard.AsyncAPI.Models.ReferenceType[]' is missing native
+      code or metadata.
+
+  Two separate things are needed, which is the part worth remembering:
+
+  1. `<Assembly Dynamic="Required All">` keeps metadata for the assembly's own types.
+  2. Each **array** type has to be named on its own. An array is a constructed type that ILC only
+     emits when it can see it being used, and `Array.CreateInstance(type, n)` is invisible to it.
+     Rooting the assembly alone is NOT enough — that was verified: the failure survived it, and it
+     survived `TrimmerRootAssembly` too, which governs trimming rather than metadata generation.
+
+  Every enum in the assembly is listed rather than just the one that happened to fail first, because
+  `GetEnumFromDisplayName<T>` is generic and any of them can reach it depending on the document being
+  written. The list is small and the assembly is a pinned dependency, so it is cheap to keep exact.
+
+  The `<Type>` entries must be nested inside `<Assembly>`; ILC rejects them as a direct child of
+  `<Application>` with `"Type" is not a supported Runtime Directive`.
+
+  Revisit if ByteBard.AsyncAPI ever becomes trim/AOT-annotated; it currently publishes IL2104/IL3053
+  from its own assembly.
+-->
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <Assembly Name="ByteBard.AsyncAPI" Dynamic="Required All">
+      <Type Name="ByteBard.AsyncAPI.AsyncApiVersion[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Models.AsyncApiAction[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Models.AsyncApiFormat[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Models.Avro.LogicalTypes.LogicalType[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Models.AvroFieldOrder[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Models.AvroPrimitiveType[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Models.ParameterLocation[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Models.ReferenceType[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Models.SchemaType[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Models.SecuritySchemeType[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Writers.ReferenceInlineSetting[]" Dynamic="Required All" />
+      <Type Name="ByteBard.AsyncAPI.Writers.ScopeType[]" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>

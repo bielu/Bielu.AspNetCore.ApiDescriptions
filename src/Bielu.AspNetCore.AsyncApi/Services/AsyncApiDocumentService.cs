@@ -422,7 +422,7 @@ internal sealed class AsyncApiDocumentService(
 /// </remarks>
 /// <param name="document">The AsyncAPI document to modify.</param>
 /// <param name="channel">The channel to which the operations belong.</param>
-/// <param name="member">The reflected member (type or method) that declares OperationAttribute instances.</param>
+/// <param name="memberMetadata">The member metadata (type or method) that declares OperationAttribute instances.</param>
 /// <param name="messageKeys">Existing message keys already associated with the channel; used as the initial set of messages for each operation.</param>
 /// <param name="scopedServiceProvider">Scoped service provider used to resolve services during schema creation.</param>
 /// <param name="schemaTransformers">Schema transformers applied when creating or retrieving payload schemas.</param>

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Bielu.AspNetCore.AsyncApi.Helpers;
@@ -101,6 +102,9 @@ internal sealed class AuthenticationSchemeDocumentTransformer(AuthenticationDete
         }
     }
 
+    [RequiresUnreferencedCode(
+        "Resolves which channels require authorization by scanning loaded assemblies for [AsyncApi] " +
+        "types; see BuildAuthorizedChannels.")]
     private static void AttachToAuthorizedOperations(
         AsyncApiDocument document,
         string documentName,
@@ -183,6 +187,9 @@ internal sealed class AuthenticationSchemeDocumentTransformer(AuthenticationDete
     /// named authentication schemes (from <c>[Authorize(AuthenticationSchemes = "...")]</c>); an empty set
     /// means a bare <c>[Authorize]</c> that applies to every detected scheme.
     /// </summary>
+    [RequiresUnreferencedCode(
+        "Scans loaded assemblies for [AsyncApi] types and their members to map authorization onto " +
+        "channels. Types and methods discovered this way cannot be statically analyzed and may be trimmed.")]
     private static Dictionary<string, HashSet<string>> BuildAuthorizedChannels(string documentName)
     {
         var result = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
