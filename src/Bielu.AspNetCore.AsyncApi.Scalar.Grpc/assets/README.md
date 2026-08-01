@@ -71,13 +71,20 @@ be entered in the console's metadata editor.
 
 ```bash
 npm install
-npm run build   # → dist/plugin.js (IIFE) + dist/standalone.js (Scalar + plugin) + dist/types
+npm run build   # → dist/plugin.js + dist/plugin.mjs + dist/scalar-plugin.mjs + dist/standalone.js + dist/types
 ```
 
 The build inlines the private `@bielu/scalar-core` workspace package (document discovery, auth
 state, schema examples, Scalar bootstrap) — see that package's README for the shared contract.
 
-`dist/plugin.js` hooks an already-loaded Scalar (`MapScalarGrpcAssets()` serves it next to
-Scalar's own bundle). `dist/standalone.js` prepends Scalar's prebuilt browser bundle for pages
-where nothing else loads Scalar — it is what `ScalarAspireOptions.BundleUrl` is pointed at in the
-Aspire setup, since that option *replaces* Scalar's bundle.
+Four build outputs, with four different contracts — they are not interchangeable:
+
+| Output | Contract | Used by |
+| --- | --- | --- |
+| `dist/plugin.js` | IIFE; installs itself by hooking `window.Scalar.createApiReference` | `MapScalarGrpcAssets()`, which serves it next to Scalar's own bundle |
+| `dist/plugin.mjs` | ES module library entry; named exports (`createGrpcPlugin`, …), also self-installing | bundler consumers who `import` from this package |
+| `dist/scalar-plugin.mjs` | ES module; **default export is the plugin**, registers nothing itself | Scalar's `pluginUrls` option — how the Aspire package adds the console to the stock container |
+| `dist/standalone.js` | Scalar's prebuilt browser bundle with the plugin appended | pages where nothing else loads Scalar; *replaces* Scalar's own bundle |
+
+`dist/scalar-plugin.mjs` also reads its own `import.meta.url` to locate the protobuf descriptor
+endpoint, since `document.currentScript` is always `null` inside an ES module.

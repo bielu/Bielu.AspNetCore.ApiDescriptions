@@ -13,7 +13,7 @@
     </ItemGroup>
 
     <!-- Generates the ScalarPluginBundleVersion constant from the npm package's version, so
-         DefaultBundleUrl pins the @bielu/scalar-grpc version released from this commit. -->
+         DefaultPluginUrl pins the @bielu/scalar-grpc version released from this commit. -->
     <PropertyGroup>
         <ScalarPluginPackageJsonPath>$(MSBuildProjectDirectory)/../Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets/package.json</ScalarPluginPackageJsonPath>
     </PropertyGroup>

@@ -25,6 +25,19 @@ export function captureBundleScriptSrc(): void {
 }
 
 /**
+ * Set the bundle's own URL explicitly, for the ESM entry point loaded via Scalar's `pluginUrls`.
+ *
+ * `document.currentScript` is always `null` inside an ES module, so the module passes its
+ * `import.meta.url` here instead — otherwise `descriptorsUrlFor` would lose its same-origin
+ * shortcut and always fall back to the default assets path.
+ */
+export function setBundleScriptSrc(url: string | undefined): void {
+  if (url) {
+    bundleScriptSrc = url
+  }
+}
+
+/**
  * The URL of the protobuf descriptor endpoint for a target base URL.
  *
  * When the bundle was served by `MapScalarGrpcAssets()` from the same origin as the target, the
