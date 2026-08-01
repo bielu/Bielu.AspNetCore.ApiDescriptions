@@ -90,8 +90,10 @@ jobs:
           dotnet-version: '10.x'
       - name: Install the native AOT toolchain
         run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+      # Invoked through bash rather than executed directly: this repository is developed on Windows
+      # with core.filemode=false, so the executable bit on a committed script is easy to lose.
       - name: Verify Native AOT
-        run: scripts/verify-aot.sh linux-x64
+        run: bash scripts/verify-aot.sh linux-x64
 
   # Push to main: consume changesets into a "Version Packages" PR. While changesets are pending it
   # (re)opens that PR; once it is merged and the changesets are gone, hasChangesets becomes false and
