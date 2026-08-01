@@ -8,7 +8,15 @@ close the quality gates a stable release should hold.
 
 **The Native AOT example never actually published.** `PublishAot` flows into referenced projects as a global MSBuild property, so publishing `src/examples/AotStreetlights` failed with NETSDK1207 on the netstandard2.0 analyzer and source generator, which cannot be AOT-compiled. Both now opt out explicitly, and the new `scripts/verify-aot.sh` avoids passing `PublishAot` on the command line (a global property cannot be overridden by the projects it flows into). The example publishes through ILC now.
 
-**AOT verification in CI.** Roadmap PR 9 scoped a step that publishes the AOT example and compares its document against the reflection-based build; it was never wired up. `scripts/verify-aot.sh` does exactly that — publishing both, serving each on the *same* port (the document records its bound address as the server host, so differing ports would make the comparison fail for the wrong reason) and comparing the parsed JSON. Runs as a new `aot-verification` PR job.
+**AOT verification in CI — and what it found.** Roadmap PR 9 scoped a step that publishes the AOT example and compares its document against the reflection-based build; it was never wired up. `scripts/verify-aot.sh` does exactly that, as a new `aot-verification` PR job.
+
+It found that **AsyncAPI generation does not currently work under Native AOT at all**, through three distinct defects:
+
+1. `MapAsyncApi()` mapped its handler as a parameter-bound lambda, so `RequestDelegateFactory` tried to resolve `JsonTypeInfo` for the handler's own return type and threw. Now mapped as a `RequestDelegate` — which also clears the two IL warnings that were sitting on that call site.
+2. `AddAsyncApiGeneratedMetadata(...)` registered the generated provider under the **caller's** casing while `AddAsyncApi` registers keyed services **lowercased**. The `Replace` matched nothing, so the reflection provider stayed live and threw `PlatformNotSupportedException`. The source generator's entire reason for existing silently did not take effect for any document name containing an uppercase character.
+3. What remains is **not ours**: `ByteBard.AsyncAPI` is not trim-annotated (it emits IL2104/IL3053 from its own assembly) and its serializers reach enum and array metadata reflectively, so the endpoint throws `'ByteBard.AsyncAPI.Models.ReferenceType[]' is missing native code or metadata`. `TrimmerRootAssembly` is a necessary but insufficient step.
+
+The job is therefore `continue-on-error` for now — deliberately still running and still failing, because that failure is the accurate signal. **`README.md` currently advertises "✅ Native AOT support", and that claim does not hold**; resolving it is tracked as a launch item.
 
 **Analyzer release tracking.** The Analyzers project had no `AnalyzerReleases.{Shipped,Unshipped}.md`, producing 9 × RS2008 and leaving the `BASYNC001`–`BASYNC009` rules undeclared — which is how consumers find out a rule was added or changed between versions. All nine are now recorded as unshipped; they move to a `Release 1.0.0` section when the stable version tags.
 
