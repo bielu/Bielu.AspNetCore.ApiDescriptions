@@ -9,6 +9,7 @@
         <IsPackable>true</IsPackable>
         <PackageId>Bielu.AspNetCore.AsyncApi.ApiDescription.Server</PackageId>
         <Description>MSBuild targets for generating AsyncAPI documents at build time from ASP.NET Core applications.</Description>
+        <PackageTags>asyncapi;msbuild;build-time;aspnetcore;documentation</PackageTags>
 
         <!-- Don't produce a lib output that consumers reference at runtime -->
         <IncludeBuildOutput>false</IncludeBuildOutput>

@@ -5,6 +5,7 @@
         <RootNamespace>Bielu.AspNetCore.Arazzo</RootNamespace>
         <IsAotCompatible>true</IsAotCompatible>
         <Description>ASP.NET Core integration for Bielu.Arazzo.NET: fluent workflow authoring, MapArazzo() document serving, and self-wiring source-description resolution against an app's own live AsyncAPI/OpenAPI documents.</Description>
+        <PackageTags>arazzo;openapi;workflows;aspnetcore;api-description</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

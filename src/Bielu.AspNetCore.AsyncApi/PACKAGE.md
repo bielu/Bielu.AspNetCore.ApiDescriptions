@@ -9,11 +9,14 @@ This project is based on and inspired by:
 
 ## Key Features
 
-* Supports viewing generated AsyncAPI documents at runtime via a parameterized endpoint (`/asyncapi/{documentName}.json`)
-* Supports generating an AsyncAPI document at build-time
-* Supports customizing the generated document via document transformers
-* Support for protocol bindings (AMQP, HTTP, MQTT, Kafka, etc.)
-* Multiple AsyncAPI document generation from a single application
+* Serves the generated document at runtime from a parameterized endpoint (`/asyncapi/{documentName}.json` or `.yaml`)
+* Emits AsyncAPI **2.6** or **3.1**, selected per document
+* Generates the document at build time, so it can be committed and diffed in CI
+* Customizable via document, operation and schema transformers
+* Protocol bindings (AMQP, HTTP, MQTT, Kafka, …), plus first-party SignalR, gRPC, SSE and WebRTC bindings
+* Multiple AsyncAPI documents from a single application
+* Descriptions from XML doc comments, and message examples
+* Native AOT and trimming support via a source-generated metadata provider
 
 ## How to Use
 
@@ -79,8 +82,14 @@ The main types provided by this library are:
 
 ## Related Packages
 
-* [Bielu.AspNetCore.AsyncApi.Attributes](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Attributes) - Attribute decorators for defining channels and operations
-* [Bielu.AspNetCore.AsyncApi.UI](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.UI) - *(deprecated)* built-in AsyncAPI UI — use Scalar as shown above instead
+* [Bielu.AspNetCore.AsyncApi.Attributes](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Attributes) — attributes for defining channels, operations and messages
+* [Bielu.AspNetCore.AsyncApi.Cli](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Cli) — `dotnet asyncapi` (generate, validate, diff, merge)
+* [Bielu.AspNetCore.AsyncApi.Templates](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Templates) — `dotnet new` project templates
+* [Bielu.AspNetCore.AsyncApi.Versioning](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Versioning) — one document per API version
+* [Bielu.AspNetCore.AsyncApi.Overlay](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Overlay) — apply OpenAPI Overlays in the generation pipeline
+* [Bielu.AspNetCore.AsyncApi.Merger](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Merger) — merge documents from several services
+* Protocol bindings: [SignalR](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR), [gRPC](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc), [SSE](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse), [WebRTC](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc)
+* Interactive consoles: [Scalar.SignalR](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Scalar.SignalR), [Scalar.Grpc](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Scalar.Grpc)
 
 ## Feedback & Contributing
 

@@ -19,6 +19,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.ApiDescription.Server` | MSBuild props/targets for build-time generation |
 | `Bielu.AspNetCore.AsyncApi.SourceGenerators` | Source Generator for Native AOT and compile-time metadata |
 | `Bielu.AspNetCore.AsyncApi.Versioning` | API Versioning integration (`Asp.Versioning`) |
+| `Bielu.AspNetCore.AsyncApi.Templates` | `dotnet new` template pack (`asyncapi-webapi`, `-signalr`, `-grpc`, `-console`, `-sln`) |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` | SignalR protocol bindings |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc` | gRPC protocol bindings |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse` | Server-Sent Events (SSE) protocol bindings |
@@ -42,6 +43,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `src/examples/GrpcGreeter` | gRPC example with the interactive Scalar console (gRPC-Web) |
 | `src/examples/aspire` | Distributed .NET Aspire microservices demo |
 | `src/examples/OverlayDemo` | Applies an OpenAPI Overlay to an AsyncAPI document and to an Arazzo one, showing map-keyed vs array-keyed targeting (console) |
+| `src/examples/AotStreetlights` | `PublishAot` example using the source-generated metadata provider; `scripts/verify-aot.sh` publishes it and compares its document against the reflection-based build |
 
 ## Feature slices & layering
 

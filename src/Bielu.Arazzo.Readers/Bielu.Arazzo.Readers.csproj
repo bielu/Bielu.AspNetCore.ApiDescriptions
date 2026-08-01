@@ -7,6 +7,7 @@
         <AssemblyName>Bielu.Arazzo.Readers</AssemblyName>
         <RootNamespace>Bielu.Arazzo.Readers</RootNamespace>
         <Description>JSON and YAML readers for the Arazzo Specification (OpenAPI workflows), producing Bielu.Arazzo.NET documents with diagnostics.</Description>
+        <PackageTags>arazzo;openapi;workflows;yaml;json;parser;api-description</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

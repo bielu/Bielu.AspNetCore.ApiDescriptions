@@ -3,6 +3,8 @@
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <IsAotCompatible>true</IsAotCompatible>
+        <Description>The attributes used to describe AsyncAPI channels, operations, messages and parameters for Bielu.AspNetCore.AsyncApi. Split into its own dependency-free package so contract assemblies can be annotated without referencing ASP.NET Core. Ships the BASYNC Roslyn analyzers that catch attribute misuse at compile time.</Description>
+        <PackageTags>asyncapi;attributes;annotations;analyzers;codefirst;api-description</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

@@ -5,6 +5,8 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi</RootNamespace>
         <IsAotCompatible>true</IsAotCompatible>
+        <Description>Code-first AsyncAPI document generation for ASP.NET Core. Describe channels, operations and messages with attributes or a fluent API, then serve the generated AsyncAPI 2.6 or 3.1 document from your app with MapAsyncApi() — or write it at build time. Supports XML doc comments, message examples, protocol bindings (SignalR, gRPC, SSE, WebRTC), multiple documents and Native AOT.</Description>
+        <PackageTags>asyncapi;documentation;aspnetcore;codefirst;event-driven;messaging;api-description</PackageTags>
     </PropertyGroup>
 
     <ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" />
