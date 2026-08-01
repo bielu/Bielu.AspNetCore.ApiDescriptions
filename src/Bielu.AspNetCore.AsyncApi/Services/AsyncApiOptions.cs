@@ -45,7 +45,8 @@ public sealed class AsyncApiOptions
     }
 
     /// <summary>
-    /// The version of the AsyncApi specification to use. Defaults to <see cref="AsyncApiSpecVersion.AsyncApi3_1"/>.
+    /// The version of the AsyncAPI specification to use. Defaults to <see cref="AsyncApiVersion.AsyncApi3_0"/>,
+    /// which emits documents declaring <c>3.1.0</c>; <see cref="AsyncApiVersion.AsyncApi2_0"/> emits <c>2.6.0</c>.
     /// </summary>
     public AsyncApiVersion AsyncApiVersion { get; set; } = AsyncApiVersion.AsyncApi3_0;
 
@@ -256,8 +257,9 @@ public sealed class AsyncApiOptions
     /// <param name="name">The server name.</param>
     /// <param name="url">The server URL.</param>
     /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
+    /// <param name="pathName">An optional path appended to the server URL. Omit for a server addressed at its root.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddServer(string name, string url, string protocol, string pathName = null)
+    public AsyncApiOptions AddServer(string name, string url, string protocol, string? pathName = null)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(url);
@@ -448,10 +450,24 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <param name="assembly">The assembly to include XML documentation for.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    [UnconditionalSuppressMessage("SingleFile", "IL3000",
+        Justification = "An empty Assembly.Location is exactly the single-file case this method " +
+                        "handles: it falls back to AppContext.BaseDirectory rather than using the value.")]
     public AsyncApiOptions IncludeXmlComments(Assembly assembly)
     {
-        var filePath = Path.Combine(Path.GetDirectoryName(assembly.Location) ?? string.Empty,
+        ArgumentNullException.ThrowIfNull(assembly);
+
+        // Assembly.Location is an empty string for an assembly embedded in a single-file app, which
+        // would otherwise reduce the path to a bare "{Name}.xml" resolved against the current working
+        // directory. AppContext.BaseDirectory is the app directory in both layouts.
+        var assemblyDirectory = string.IsNullOrEmpty(assembly.Location)
+            ? AppContext.BaseDirectory
+            : Path.GetDirectoryName(assembly.Location);
+
+        var filePath = Path.Combine(
+            assemblyDirectory is { Length: > 0 } directory ? directory : AppContext.BaseDirectory,
             $"{assembly.GetName().Name}.xml");
+
         return IncludeXmlComments(filePath);
     }
 

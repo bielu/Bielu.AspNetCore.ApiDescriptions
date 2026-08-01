@@ -10,7 +10,10 @@
   <ItemGroup>
     <PackageReference Include="Scalar.AspNetCore" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
-    <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- UndefineProperties: PublishAot flows down to referenced projects as a global property, and
+         the generator targets netstandard2.0, which cannot be AOT-compiled (NETSDK1207). It is a
+         build-time analyzer, so it must not inherit the publishing app's AOT settings. -->
+    <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" UndefineProperties="PublishAot;RuntimeIdentifier;SelfContained" />
   </ItemGroup>
 
 </Project>
