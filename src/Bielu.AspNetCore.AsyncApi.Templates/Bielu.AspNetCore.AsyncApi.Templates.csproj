@@ -8,6 +8,8 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <ContentTargetFolders>content</ContentTargetFolders>
     <NoDefaultExcludes>true</NoDefaultExcludes>
+    <Description>dotnet new templates for Bielu.AspNetCore.AsyncApi: asyncapi-webapi, asyncapi-signalr, asyncapi-grpc, asyncapi-console and asyncapi-sln. Install with `dotnet new install Bielu.AspNetCore.AsyncApi.Templates` to scaffold an AsyncAPI-documented project, including the interactive Scalar consoles.</Description>
+    <PackageTags>asyncapi;templates;dotnet-new;scaffolding;aspnetcore;signalr;grpc</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,6 +5,7 @@
         <PackageId>Bielu.Cli.Shared</PackageId>
         <RootNamespace>Bielu.Cli.Shared</RootNamespace>
         <Description>Shared console-CLI infrastructure (logging, argument parsing, file globbing, validate/diff report formatting) for the Bielu dotnet-tool CLIs.</Description>
+        <PackageTags>cli;console;dotnet-tool;argument-parsing;infrastructure</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

@@ -11,6 +11,7 @@
         <ToolCommandName>dotnet-arazzo</ToolCommandName>
         <PackageId>Bielu.Arazzo.Cli</PackageId>
         <Description>CLI tool for validating, linting, and diffing Arazzo workflow documents.</Description>
+        <PackageTags>arazzo;openapi;workflows;cli;dotnet-tool;validate;lint;diff</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

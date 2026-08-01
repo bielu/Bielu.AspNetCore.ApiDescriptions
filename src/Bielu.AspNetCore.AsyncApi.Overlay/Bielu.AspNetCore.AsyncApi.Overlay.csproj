@@ -5,6 +5,7 @@
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Overlay</RootNamespace>
         <IsAotCompatible>true</IsAotCompatible>
         <Description>Applies OpenAPI Overlays to AsyncAPI documents inside the generation pipeline, so the document served by MapAsyncApi() (and produced by build-time generation) is already transformed — no post-processing step and no second artifact to keep in sync.</Description>
+        <PackageTags>asyncapi;overlay;openapi;aspnetcore;transformation</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

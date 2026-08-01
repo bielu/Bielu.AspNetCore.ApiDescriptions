@@ -14,15 +14,46 @@
     <PropertyGroup>
         <Authors>Arkadiusz Biel</Authors>
         <PackageOutputPath>$(MSBuildProjectDirectory)/../../dist</PackageOutputPath>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageIcon>logo.png</PackageIcon>
+        <!-- Inherited by every package. Package metadata is immutable once a version is published,
+             so this has to be right before the first stable tag. -->
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <!-- Static, not $([System.DateTime]::UtcNow.Year): a build must not produce different
+             package metadata depending on when it runs, and this has to match LICENSE. -->
+        <Copyright>Copyright (c) 2025 Arkadiusz Biel</Copyright>
         <RepositoryUrl>https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageProjectUrl>https://apidescriptions.bielu.pl/</PackageProjectUrl>
     </PropertyGroup>
 
+    <!--
+      Each package ships its own PACKAGE.md as its nuget.org landing page. Packing the root README
+      into all of them instead — as this did until the 1.0 prep — put the AsyncAPI pitch and
+      quickstart on the Arazzo, Overlay and CLI packages, which is simply the wrong page for them.
+
+      The fallback to the root README keeps a new project packable before someone writes its
+      PACKAGE.md; without it, `dotnet pack` would fail with NU5039 on a file that does not exist yet.
+    -->
+    <Choose>
+        <When Condition="Exists('$(MSBuildProjectDirectory)/PACKAGE.md')">
+            <PropertyGroup>
+                <PackageReadmeFile>PACKAGE.md</PackageReadmeFile>
+            </PropertyGroup>
+            <ItemGroup>
+                <None Include="$(MSBuildProjectDirectory)/PACKAGE.md" Pack="true" PackagePath="/" />
+            </ItemGroup>
+        </When>
+        <Otherwise>
+            <PropertyGroup>
+                <PackageReadmeFile>README.md</PackageReadmeFile>
+            </PropertyGroup>
+            <ItemGroup>
+                <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath="/" />
+            </ItemGroup>
+        </Otherwise>
+    </Choose>
+
     <ItemGroup>
-        <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath="/" />
         <None Include="$(MSBuildThisFileDirectory)../assets/logo.png" Pack="true" PackagePath="/" />
     </ItemGroup>
 

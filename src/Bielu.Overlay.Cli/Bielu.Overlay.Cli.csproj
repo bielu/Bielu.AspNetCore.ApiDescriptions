@@ -11,6 +11,7 @@
         <ToolCommandName>dotnet-overlay</ToolCommandName>
         <PackageId>Bielu.Overlay.Cli</PackageId>
         <Description>CLI tool for applying OpenAPI Overlays to, and validating overlays against, any JSON or YAML API description.</Description>
+        <PackageTags>overlay;openapi;cli;dotnet-tool;apply;validate</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

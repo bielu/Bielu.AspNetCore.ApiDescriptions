@@ -60,6 +60,7 @@ public class MyService
 - ✅ **Multiple documents** support
 - ✅ **XML Documentation** support
 - ✅ **CLI Tool** for validation and diffing
+- ✅ **`dotnet new` templates** to scaffold a documented project in one command
 - ✅ **Roslyn Analyzers** for compile-time safety
 - ✅ **Native AOT support**
 - ✅ **API Versioning** integration for version-per-document support
@@ -73,6 +74,7 @@ public class MyService
 - [Scalar & Live Consoles](https://apidescriptions.bielu.pl/articles/scalar-consoles.html)
 - [Native AOT Support](https://apidescriptions.bielu.pl/articles/native-aot.html)
 - [CLI Tool usage](https://apidescriptions.bielu.pl/articles/cli.html)
+- [Project templates](https://apidescriptions.bielu.pl/articles/templates.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)
 - [Arazzo Overview](https://apidescriptions.bielu.pl/articles/arazzo/overview.html)
 - [Arazzo CLI Tool usage](https://apidescriptions.bielu.pl/articles/arazzo/cli.html)
