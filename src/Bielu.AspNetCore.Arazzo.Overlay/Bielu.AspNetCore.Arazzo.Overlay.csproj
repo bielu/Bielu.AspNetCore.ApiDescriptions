@@ -5,6 +5,7 @@
         <RootNamespace>Bielu.AspNetCore.Arazzo.Overlay</RootNamespace>
         <IsAotCompatible>true</IsAotCompatible>
         <Description>Applies OpenAPI Overlays to Arazzo workflow documents inside the generation pipeline, so the document served by MapArazzo() is already transformed — no post-processing step and no second artifact to keep in sync.</Description>
+        <PackageTags>arazzo;overlay;openapi;workflows;aspnetcore</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

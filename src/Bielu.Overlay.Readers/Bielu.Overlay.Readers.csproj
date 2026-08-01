@@ -7,6 +7,7 @@
         <AssemblyName>Bielu.Overlay.Readers</AssemblyName>
         <RootNamespace>Bielu.Overlay.Readers</RootNamespace>
         <Description>JSON and YAML readers for the OpenAPI Overlay Specification, producing Bielu.Overlay.NET documents with diagnostics.</Description>
+        <PackageTags>overlay;openapi;yaml;json;parser;api-description</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

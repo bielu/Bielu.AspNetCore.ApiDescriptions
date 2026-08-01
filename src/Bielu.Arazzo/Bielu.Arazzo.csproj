@@ -7,6 +7,7 @@
         <AssemblyName>Bielu.Arazzo</AssemblyName>
         <RootNamespace>Bielu.Arazzo</RootNamespace>
         <Description>Object model, writers and validation for the Arazzo Specification (OpenAPI workflows). Framework-free.</Description>
+        <PackageTags>arazzo;openapi;workflows;api-description;spec</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

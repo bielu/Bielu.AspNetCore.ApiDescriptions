@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Shipped inside Bielu.AspNetCore.AsyncApi's analyzers/dotnet/cs folder, not on its own —
+         same arrangement as Bielu.AspNetCore.AsyncApi.Analyzers inside the Attributes package.
+         Without this it also packs as a standalone package with no lib and no content. -->
+    <IsPackable>false</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsRoslynComponent>true</IsRoslynComponent>

@@ -7,6 +7,7 @@
         <AssemblyName>Bielu.Spec.Shared</AssemblyName>
         <RootNamespace>Bielu.Spec.Shared</RootNamespace>
         <Description>Shared document-parsing primitives for the Bielu API-description spec libraries: YAML-to-JsonNode conversion producing the same System.Text.Json tree a JSON document would. Framework-free.</Description>
+        <PackageTags>yaml;json;jsonnode;parsing;api-description;infrastructure</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

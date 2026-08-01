@@ -4,7 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>API Versioning integration for Bielu.AspNetCore.AsyncApi</Description>
+    <Description>Asp.Versioning integration for Bielu.AspNetCore.AsyncApi. AddAsyncApiForApiVersions(...) enumerates the API versions your app declares and registers one AsyncAPI document per version, each served from its own /asyncapi/{documentName}.json endpoint, with deprecated versions marked as such.</Description>
+    <PackageTags>asyncapi;versioning;api-versioning;asp-versioning;aspnetcore</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

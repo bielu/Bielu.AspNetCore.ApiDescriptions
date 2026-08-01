@@ -7,6 +7,7 @@
         <AssemblyName>Bielu.Overlay</AssemblyName>
         <RootNamespace>Bielu.Overlay</RootNamespace>
         <Description>Object model, validation, and apply engine for the OpenAPI Overlay Specification (1.0.0 and 1.1.0). Operates on System.Text.Json JsonNode trees, so overlays apply to any JSON/YAML API description — OpenAPI, AsyncAPI, or Arazzo. Framework-free.</Description>
+        <PackageTags>overlay;openapi;asyncapi;arazzo;transformation;jsonnode;api-description</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

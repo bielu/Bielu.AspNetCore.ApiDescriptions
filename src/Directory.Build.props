@@ -16,6 +16,12 @@
         <PackageOutputPath>$(MSBuildProjectDirectory)/../../dist</PackageOutputPath>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageIcon>logo.png</PackageIcon>
+        <!-- Inherited by every package. Package metadata is immutable once a version is published,
+             so this has to be right before the first stable tag. -->
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <!-- Static, not $([System.DateTime]::UtcNow.Year): a build must not produce different
+             package metadata depending on when it runs, and this has to match LICENSE. -->
+        <Copyright>Copyright (c) 2025 Arkadiusz Biel</Copyright>
         <RepositoryUrl>https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageProjectUrl>https://apidescriptions.bielu.pl/</PackageProjectUrl>
