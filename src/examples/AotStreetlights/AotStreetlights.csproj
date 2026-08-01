@@ -15,7 +15,7 @@
          Rooting the assembly is the right first step but is NOT sufficient on its own — the failure
          persists, because TrimmerRootAssembly governs the IL trimmer while native AOT decides
          reflection metadata separately. Kept because it is a prerequisite for any complete fix.
-         Tracked as the open Native AOT item in LAUNCH-PREPARATION.md. -->
+         See the aot-verification job, which is non-blocking for exactly this reason. -->
     <TrimmerRootAssembly Include="ByteBard.AsyncAPI" />
   </ItemGroup>
 

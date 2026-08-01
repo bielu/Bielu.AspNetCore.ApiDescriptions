@@ -87,8 +87,8 @@ jobs:
     # defects on our side were found and fixed on the way to that point.
     #
     # Blocking every PR on a known dependency limitation helps nobody, but neither does deleting the
-    # evidence — the failure is the accurate signal until the AOT item in LAUNCH-PREPARATION.md is
-    # resolved. Flip this back to blocking the moment it goes green.
+    # evidence — the failure is the accurate signal until that limitation is resolved (or until the
+    # project stops claiming AOT support). Flip this back to blocking the moment it goes green.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
