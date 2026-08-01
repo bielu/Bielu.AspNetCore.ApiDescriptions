@@ -26,4 +26,4 @@ It found that **AsyncAPI generation did not work under Native AOT at all** — t
 
 **Trim annotations.** Annotated the reflection-based helpers (`HasBindAsyncMethod`, `HasTryParseMethod`, the authorization scanner) so their trim behaviour is declared rather than inferred, and replaced a `MakeGenericType` call — which native AOT cannot do — with an equivalent structural check. That also removed a dead comparison against an open generic type, which a return type can never equal.
 
-Solution warnings drop from 278 to 249; all 656 tests still pass.
+Solution warnings drop from 278 to 247; all 656 tests still pass.

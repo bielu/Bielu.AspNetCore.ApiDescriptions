@@ -124,6 +124,12 @@ public sealed class AsyncApiOptions
     /// <see cref="AuthenticationDetectionOptions.OverwriteExisting"/> is set, so this composes with
     /// explicitly declared schemes. Call this only on documents that should surface authentication —
     /// it is opt-in per document.
+    /// <para>
+    /// Detection itself resolves schemes from the DI container. Opting into
+    /// <see cref="AuthenticationDetectionOptions.AttachToAuthorizedOperations"/> additionally
+    /// <strong>scans the loaded assemblies</strong> for <c>[AsyncApi]</c> types to find their
+    /// <c>[Authorize]</c> annotations, which is not trim- or AOT-safe; see that property's remarks.
+    /// </para>
     /// </remarks>
     /// <param name="configure">An optional delegate to customize the detection behavior.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>

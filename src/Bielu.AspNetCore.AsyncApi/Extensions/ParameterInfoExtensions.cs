@@ -28,20 +28,23 @@ public static class ParameterInfoExtensions
 
         var type = parameter.ParameterType;
         var method = type.GetMethod("BindAsync", BindingFlags.Public | BindingFlags.Static);
+        if (method is null)
+        {
+            return false;
+        }
 
         // Checked structurally rather than against typeof(ValueTask<>).MakeGenericType(type): the
         // latter needs runtime code generation, which native AOT cannot do. The old first comparison
         // against the *open* generic was also dead — a return type is never an open generic.
-        var returnType = method?.ReturnType;
-        if (returnType is null ||
-            !returnType.IsGenericType ||
+        var returnType = method.ReturnType;
+        if (!returnType.IsGenericType ||
             returnType.GetGenericTypeDefinition() != typeof(ValueTask<>) ||
             returnType.GetGenericArguments()[0] != type)
         {
             return false;
         }
 
-        var parameters = method!.GetParameters();
+        var parameters = method.GetParameters();
         return parameters.Length == 2 &&
                parameters[0].ParameterType == typeof(HttpContext) &&
                parameters[1].ParameterType == typeof(ParameterInfo);
