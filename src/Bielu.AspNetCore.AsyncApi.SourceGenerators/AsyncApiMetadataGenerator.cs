@@ -278,7 +278,12 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
         sb.AppendLine("{");
         sb.AppendLine("    public static IServiceCollection AddAsyncApiGeneratedMetadata(this IServiceCollection services, string documentName)");
         sb.AppendLine("    {");
-        sb.AppendLine("        services.Replace(ServiceDescriptor.KeyedSingleton<IAsyncApiMetadataProvider, GeneratedAsyncApiMetadataProvider>(documentName));");
+        sb.AppendLine("        // The service key MUST be lowercased to match AddAsyncApi, which lowercases the document");
+        sb.AppendLine("        // name before registering keyed services (for parity with case-insensitive routing).");
+        sb.AppendLine("        // Replacing under the caller's original casing silently misses the existing descriptor:");
+        sb.AppendLine("        // the generated provider is registered under an unused key and the reflection-based one");
+        sb.AppendLine("        // stays live, which under Native AOT then throws PlatformNotSupportedException.");
+        sb.AppendLine("        services.Replace(ServiceDescriptor.KeyedSingleton<IAsyncApiMetadataProvider, GeneratedAsyncApiMetadataProvider>(documentName.ToLowerInvariant()));");
         sb.AppendLine("        return services;");
         sb.AppendLine("    }");
         sb.AppendLine();
