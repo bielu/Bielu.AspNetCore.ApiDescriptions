@@ -8,15 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- ByteBard.AsyncAPI is not annotated for trimming (it publishes IL2104/IL3053 of its own) and its
-         serializers reach enum and array metadata reflectively, so the AOT build fails at runtime with
-         "'ByteBard.AsyncAPI.Models.ReferenceType[]' is missing native code or metadata".
-
-         Rooting the assembly is the right first step but is NOT sufficient on its own — the failure
-         persists, because TrimmerRootAssembly governs the IL trimmer while native AOT decides
-         reflection metadata separately. Kept because it is a prerequisite for any complete fix.
-         See the aot-verification job, which is non-blocking for exactly this reason. -->
-    <TrimmerRootAssembly Include="ByteBard.AsyncAPI" />
+    <!-- ByteBard.AsyncAPI resolves enums from display names via Enum.GetValues, which constructs an
+         array type at runtime and therefore needs reflection metadata ILC does not emit by default.
+         rd.xml keeps it; see the reasoning there. Rooting the assembly with TrimmerRootAssembly does
+         not help, because that controls trimming rather than metadata generation. -->
+    <RdXmlFile Include="rd.xml" />
   </ItemGroup>
 
   <ItemGroup>

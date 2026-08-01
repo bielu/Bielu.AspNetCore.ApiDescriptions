@@ -1,0 +1,31 @@
+<!--
+  Runtime directives for the Native AOT compiler (ILC).
+
+  ByteBard.AsyncAPI resolves enums from their display names reflectively:
+
+      ByteBard.AsyncAPI.Writers.StringExtensions.GetEnumFromDisplayName<T>(string)
+        -> Enum.GetValues()
+        -> Array.CreateInstance(typeof(ReferenceType), n)
+
+  Constructing an array of a type at runtime needs metadata for the *array* type, which ILC does not
+  emit unless something tells it the type is used dynamically. Without this the app publishes and
+  starts, then throws on the first document request:
+
+      System.NotSupportedException: 'ByteBard.AsyncAPI.Models.ReferenceType[]' is missing native
+      code or metadata.
+
+  `Dynamic="Required All"` keeps complete metadata for the assembly's types, including the array
+  forms the reflective enum lookup constructs. It is scoped to ByteBard.AsyncAPI deliberately —
+  IlcGenerateCompleteTypeMetadata would do the same thing for the entire app.
+
+  TrimmerRootAssembly is not an alternative here: it governs which assemblies survive trimming, not
+  which types get reflection metadata, which is why rooting the assembly alone did not fix this.
+
+  Revisit if ByteBard.AsyncAPI ever becomes trim/AOT-annotated; it currently publishes IL2104/IL3053
+  from its own assembly.
+-->
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <Assembly Name="ByteBard.AsyncAPI" Dynamic="Required All" />
+  </Application>
+</Directives>

@@ -81,15 +81,9 @@ jobs:
   aot-verification:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    # Non-blocking *for now*, and deliberately not disabled. This job currently FAILS, because it
-    # found that AsyncAPI generation does not actually work under Native AOT: the document endpoint
-    # throws from inside ByteBard.AsyncAPI, which is not trim-annotated and is not ours to fix. Two
-    # defects on our side were found and fixed on the way to that point.
-    #
-    # Blocking every PR on a known dependency limitation helps nobody, but neither does deleting the
-    # evidence — the failure is the accurate signal until that limitation is resolved (or until the
-    # project stops claiming AOT support). Flip this back to blocking the moment it goes green.
-    continue-on-error: true
+    # Blocking. It is the only thing standing between "README claims Native AOT support" and that
+    # claim being true — three separate defects made the AOT path throw at runtime, and none of them
+    # were visible to the rest of the suite.
     steps:
       - uses: actions/checkout@v4
         with:
