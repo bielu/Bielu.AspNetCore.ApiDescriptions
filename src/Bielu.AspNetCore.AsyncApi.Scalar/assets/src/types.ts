@@ -38,11 +38,20 @@ export type DiscoveryOptions = {
   globalName: string
 }
 
-/** A console bundle: plugin identity plus the page-level wiring it needs to self-install. */
-export type ConsoleBundleSpec = ConsolePluginSpec & {
-  discovery: DiscoveryOptions
+/**
+ * A console rendered as a Web Component: plugin identity plus its style-injection id.
+ *
+ * This is everything the `pluginUrls` entry point needs — there Scalar registers the plugin itself,
+ * so none of `ConsoleBundleSpec`'s page-level self-installation wiring applies.
+ */
+export type ConsoleModuleSpec = ConsolePluginSpec & {
   /** The id of the `<style>` element the console's scoped styles are injected under. */
   stylesId: string
+}
+
+/** A console bundle: everything a module needs, plus the page-level wiring it needs to self-install. */
+export type ConsoleBundleSpec = ConsoleModuleSpec & {
+  discovery: DiscoveryOptions
   /** The marker property set on `window.Scalar` once wrapped (e.g. `'__bieluSignalRWrapped'`). */
   wrappedFlag: string
 }

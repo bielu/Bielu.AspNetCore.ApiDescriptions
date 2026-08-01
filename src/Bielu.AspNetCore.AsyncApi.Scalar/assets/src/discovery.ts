@@ -67,18 +67,50 @@ export function documentsFromScalarConfig(config: Record<string, any> | undefine
   return refs
 }
 
-/** Type guard: a non-empty array of well-formed `DocumentRef`s (each with a `name` and a `url` or `doc`). */
-function isDocumentRefArray(value: unknown): value is DocumentRef[] {
+/**
+ * Type guard: a non-empty array of well-formed `DocumentRef`s (each with a `name` and a `url` or `doc`).
+ *
+ * `doc` is checked to be a non-array object, not merely non-null: `DocumentRef.doc` is typed
+ * `Record<string, any>`, so admitting `doc: 1` would hand downstream code a value the type says it
+ * cannot receive. That matters because this guard is the only validation applied to untrusted input —
+ * the base64 payload the .NET Aspire packages put on the plugin module's URL.
+ */
+export function isDocumentRefArray(value: unknown): value is DocumentRef[] {
+  // `null` is treated as absent rather than as a malformed value, so a JSON payload that spells an
+  // omitted field as `null` is still accepted.
+  const isPresent = (field: unknown): boolean => field !== undefined && field !== null
+  const isDocumentObject = (doc: unknown): doc is Record<string, any> =>
+    typeof doc === 'object' && doc !== null && !Array.isArray(doc)
+
   return (
     Array.isArray(value) &&
     value.length > 0 &&
-    value.every(
-      (entry): entry is DocumentRef =>
-        entry != null &&
-        typeof entry === 'object' &&
-        typeof (entry as DocumentRef).name === 'string' &&
-        (typeof (entry as DocumentRef).url === 'string' || (entry as DocumentRef).doc != null),
-    )
+    value.every((entry): entry is DocumentRef => {
+      if (entry === null || typeof entry !== 'object') {
+        return false
+      }
+
+      const { name, url, doc } = entry as DocumentRef
+      if (typeof name !== 'string') {
+        return false
+      }
+
+      // Every source that is present is validated on its own. Checking them with `||` would let a
+      // valid `url` short-circuit the `doc` check, admitting `{ url: 'ok', doc: 1 }` — and `doc` is
+      // the field consumers reach for first.
+      const hasUrl = isPresent(url)
+      const hasDoc = isPresent(doc)
+      if (hasUrl && typeof url !== 'string') {
+        return false
+      }
+      if (hasDoc && !isDocumentObject(doc)) {
+        return false
+      }
+
+      // At least one usable source. Carrying both is legal, not an error: `loadAsyncApiDocuments`
+      // prefers `doc` and only fetches `url` when `doc` is absent.
+      return hasUrl || hasDoc
+    })
   )
 }
 

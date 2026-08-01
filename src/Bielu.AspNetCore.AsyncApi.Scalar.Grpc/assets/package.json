@@ -11,6 +11,7 @@
   "files": [
     "dist/plugin.js",
     "dist/plugin.mjs",
+    "dist/scalar-plugin.mjs",
     "dist/standalone.js",
     "dist/types",
     "src",
@@ -21,7 +22,8 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/plugin.mjs",
       "default": "./dist/plugin.js"
-    }
+    },
+    "./scalar-plugin.mjs": "./dist/scalar-plugin.mjs"
   },
   "keywords": [
     "scalar",
@@ -38,7 +40,8 @@
   "scripts": {
     "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm run build",
     "prebuild": "npm run build:core",
-    "build": "vite build && npm run build:standalone && vue-tsc -p tsconfig.json",
+    "build": "vite build && npm run build:module && npm run build:standalone && vue-tsc -p tsconfig.json",
+    "build:module": "vite build --config vite.config.module.ts",
     "build:standalone": "node ../../Bielu.AspNetCore.AsyncApi.Scalar/assets/scripts/build-standalone.mjs",
     "pretypecheck": "npm run build:core",
     "typecheck": "vue-tsc --noEmit",

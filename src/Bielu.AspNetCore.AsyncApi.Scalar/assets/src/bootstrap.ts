@@ -1,7 +1,7 @@
 import { defineCustomElement } from 'vue'
 import { resolveDocuments } from './discovery'
 import { createConsolePlugin } from './plugin'
-import type { ConsoleBundleSpec } from './types'
+import type { ConsoleBundleSpec, ConsoleModuleSpec } from './types'
 
 /**
  * Inject the component's compiled (scoped) styles into the document head.
@@ -10,7 +10,7 @@ import type { ConsoleBundleSpec } from './types'
  * collected styles there — so we do it ourselves. The styles are scoped (`[data-v-*]`), so they only
  * match the console's own markup and never leak into Scalar's page.
  */
-function injectStyles(spec: ConsoleBundleSpec, component: unknown): void {
+function injectStyles(spec: ConsoleModuleSpec, component: unknown): void {
   if (typeof document === 'undefined' || document.getElementById(spec.stylesId)) {
     return
   }
@@ -30,7 +30,7 @@ function injectStyles(spec: ConsoleBundleSpec, component: unknown): void {
  * `shadowRoot: false` (Vue 3.5+) renders into the light DOM so Scalar's own stylesheet and design
  * tokens apply, letting the console match the look of Scalar's OpenAPI operations.
  */
-export function registerConsoleElement(spec: ConsoleBundleSpec, component: any): void {
+export function registerConsoleElement(spec: ConsoleModuleSpec, component: any): void {
   if (typeof customElements === 'undefined' || customElements.get(spec.elementTag)) {
     return
   }

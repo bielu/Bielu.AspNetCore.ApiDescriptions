@@ -80,3 +80,38 @@ builder.AddScalar("scalar")
     .WithSignalRClient()
     .WithGrpcClient();
 ```
+
+Each console registers itself through Scalar's `PluginUrls` option, which loads the plugin as an ES
+module before the API Reference mounts. The Scalar container keeps its own bundle — only the plugin is
+added — so both consoles can be enabled on the same resource, and they stay compatible with whatever
+Scalar version the container ships.
+
+By default each console loads the plugin module published alongside this package, pinned to an exact
+version on jsDelivr:
+
+```text
+https://cdn.jsdelivr.net/npm/@bielu/scalar-signalr@<version>/dist/scalar-plugin.mjs
+```
+
+Pass your own URL to load the plugin from somewhere else — a private registry, or a copy you host
+yourself:
+
+```csharp
+builder.AddScalar("scalar")
+    .WithSignalRClient(pluginUrl: "https://cdn.example.com/scalar-signalr/scalar-plugin.mjs");
+```
+
+The URL must point at `dist/scalar-plugin.mjs`, the ES module whose default export is the plugin.
+The package's other build outputs are not interchangeable: `dist/plugin.js` is a `<script>` bundle that
+installs itself by hooking `window.Scalar`, and `dist/standalone.js` bundles Scalar itself.
+
+By default the consoles discover AsyncAPI documents from the Scalar configuration they are rendered
+with. To name them explicitly:
+
+```csharp
+builder.AddScalar("scalar")
+    .WithGrpcClient(options => options.AddDocument("grpc", "https://api.example.com/asyncapi/grpc.json"));
+```
+
+Those URLs are resolved by the browser, so they must be reachable from the Scalar page's origin — not
+just from inside the Aspire network.

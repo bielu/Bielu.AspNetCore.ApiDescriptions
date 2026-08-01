@@ -77,8 +77,10 @@
     <!-- DI Decorator support -->
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <!-- Scalar API reference UI (AsyncAPI rendering) -->
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.15" />
-    <PackageVersion Include="Scalar.Aspire" Version="0.11.10" />
+    <!-- 2.16.17 / 0.11.12 are the first releases carrying `PluginUrls`, which the Aspire console
+         packages use to register their plugin against the stock Scalar bundle. -->
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.17" />
+    <PackageVersion Include="Scalar.Aspire" Version="0.11.12" />
     <!-- API Versioning -->
     <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="10.0.0" />
     <PackageVersion Include="Asp.Versioning.Http" Version="10.0.0" />

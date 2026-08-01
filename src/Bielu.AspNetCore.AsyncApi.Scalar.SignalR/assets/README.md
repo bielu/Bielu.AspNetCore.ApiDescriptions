@@ -71,14 +71,17 @@ falls back to the sole document in Scalar's exported auth state.
 
 ```bash
 npm install
-npm run build      # -> dist/plugin.js (IIFE) + dist/standalone.js (Scalar + plugin) + dist/types
+npm run build      # -> dist/plugin.js (IIFE) + dist/scalar-plugin.mjs (ESM) + dist/standalone.js + dist/types
 npm run typecheck
 ```
 
-`dist/plugin.js` hooks an already-loaded Scalar (`MapScalarSignalRAssets()` serves it next to
-Scalar's own bundle). `dist/standalone.js` prepends Scalar's prebuilt browser bundle for pages
-where nothing else loads Scalar — it is what `ScalarAspireOptions.BundleUrl` is pointed at in the
-Aspire setup, since that option *replaces* Scalar's bundle.
+Three build outputs, with three different contracts — they are not interchangeable:
+
+| Output | Contract | Used by |
+| --- | --- | --- |
+| `dist/plugin.js` | IIFE; installs itself by hooking `window.Scalar.createApiReference` | `MapScalarSignalRAssets()`, which serves it next to Scalar's own bundle |
+| `dist/scalar-plugin.mjs` | ES module; **default export is the plugin**, registers nothing itself | Scalar's `pluginUrls` option — how the Aspire package adds the console to the stock container |
+| `dist/standalone.js` | Scalar's prebuilt browser bundle with the plugin appended | pages where nothing else loads Scalar; *replaces* Scalar's own bundle |
 
 ## License
 
