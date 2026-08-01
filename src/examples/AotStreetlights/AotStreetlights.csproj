@@ -8,6 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- ByteBard.AsyncAPI is not annotated for trimming (it publishes IL2104/IL3053 of its own), and
+         its serializers reach enum and array metadata reflectively — without rooting it, the AOT build
+         fails at runtime with "'ByteBard.AsyncAPI.Models.ReferenceType[]' is missing native code or
+         metadata". Rooting the assembly keeps its metadata rather than guessing which types survive.
+         Revisit if ByteBard ever ships trim annotations. -->
+    <TrimmerRootAssembly Include="ByteBard.AsyncAPI" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Scalar.AspNetCore" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
     <!-- UndefineProperties: PublishAot flows down to referenced projects as a global property, and
