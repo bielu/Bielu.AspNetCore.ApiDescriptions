@@ -78,6 +78,17 @@ public class AsyncApiOptionsTests
     }
 
     [Fact]
+    public void AddServer_WithPathNameAndNullConfigure_Throws()
+    {
+        // Arrange
+        var options = new AsyncApiOptions();
+
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(
+            () => options.AddServer("mqtt-broker", "mqtt.example.com", "mqtt", "/events", configure: null!));
+    }
+
+    [Fact]
     public void AddServer_ThrowsForNullName()
     {
         // Arrange

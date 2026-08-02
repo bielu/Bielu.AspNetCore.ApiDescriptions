@@ -14,8 +14,10 @@ N package sources defined... please map your package sources"), one per project,
 more than one feed. That is a reproducibility problem before it is a warning: every extra feed is
 another source that can answer for any package ID in `Directory.Packages.props`. The config clears
 inherited sources, declares nuget.org, and maps it explicitly, so adding a second feed later cannot
-silently start serving an existing package ID. A forced full restore confirms everything this
-repository consumes comes from nuget.org.
+silently start serving an existing package ID. `packageSourceMapping` clears inherited mappings too,
+because that section merges across config files on its own — clearing the sources does not stop a
+machine-level config from narrowing what nuget.org is allowed to answer for. A forced full restore
+confirms everything this repository consumes comes from nuget.org.
 
 Two of the fixes are behavioural rather than cosmetic:
 
@@ -26,6 +28,11 @@ Two of the fixes are behavioural rather than cosmetic:
   exception variable) reported *any* failure as an unavailable source, including the
   `OperationCanceledException` from cancelling the merge itself. Cancellation now propagates; a
   per-source HTTP timeout still reports the source as unavailable, which is what the catch-all is for.
+- **The merger crashed when every source was unavailable.** Skipping unreadable sources left nothing
+  to merge, and the merge itself then failed on `documents[0]` with an index exception that named
+  neither the sources nor the cause — the CLI printed that as its error message. `MergeAsync` now
+  throws `InvalidOperationException` listing the URIs that could not be loaded. Merging remains
+  best-effort whenever at least one source succeeds.
 
 The rest are local: nullable annotations in tests and examples, three internal `async` methods gaining
 the `Async` suffix (`VSTHRD200`), an unread primary-constructor parameter, and an `IRouteConstraint`

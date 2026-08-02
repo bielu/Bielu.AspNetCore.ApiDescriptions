@@ -395,6 +395,64 @@ public class AsyncApiDocumentMergerTests
         await Should.ThrowAsync<ArgumentException>(() => merger.MergeAsync(options));
     }
 
+    [Fact]
+    public async Task MergeAsync_WithEverySourceUnavailable_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        // Unreadable sources are skipped so that one bad service does not fail the merge, but when
+        // that leaves nothing to merge the caller has to be told, not handed an index exception.
+        var options = new AsyncApiMergeOptions();
+        options.AddSource(Path.Combine(Path.GetTempPath(), $"missing_asyncapi_{Guid.NewGuid():N}.json"));
+        options.AddSource(Path.Combine(Path.GetTempPath(), $"missing_asyncapi_{Guid.NewGuid():N}.json"));
+        using var httpClient = new HttpClient();
+        var merger = new AsyncApiDocumentMerger(httpClient);
+
+        // Act & Assert
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() => merger.MergeAsync(options));
+        exception.Message.ShouldContain("None of the 2 configured AsyncAPI document source(s) could be loaded");
+    }
+
+    [Fact]
+    public async Task MergeAsync_WithOneSourceUnavailable_MergesTheRest()
+    {
+        // Arrange
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            var json = """
+            {
+                "asyncapi": "3.0.0",
+                "info": {
+                    "title": "Reachable API",
+                    "version": "1.0.0"
+                },
+                "channels": {
+                    "reachableChannel": {
+                        "address": "reachable/topic"
+                    }
+                }
+            }
+            """;
+            await File.WriteAllTextAsync(tempFile, json);
+
+            var options = new AsyncApiMergeOptions();
+            options.AddSource(Path.Combine(Path.GetTempPath(), $"missing_asyncapi_{Guid.NewGuid():N}.json"));
+            options.AddSource(tempFile);
+            using var httpClient = new HttpClient();
+            var merger = new AsyncApiDocumentMerger(httpClient);
+
+            // Act
+            var merged = await merger.MergeAsync(options);
+
+            // Assert
+            merged.Channels.ShouldContainKey("reachableChannel");
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
     // [Fact]
     // public async Task MergeAsync_WithNonExistentFile_ThrowsFileNotFoundException()
     // {
