@@ -1,6 +1,6 @@
 {
   "name": "@bielu/scalar-grpc",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Interactive gRPC console plugin for the Scalar API Reference. Reads gRPC AsyncAPI bindings and lets you invoke unary and server-streaming methods over gRPC-Web.",
   "license": "MIT",
   "author": "Arkadiusz Biel",
