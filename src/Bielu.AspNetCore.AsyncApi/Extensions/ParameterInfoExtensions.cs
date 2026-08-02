@@ -8,7 +8,11 @@ using Microsoft.AspNetCore.Http;
 
 namespace Bielu.AspNetCore.AsyncApi.Extensions;
 
-public static class ParameterInfoExtensions
+// Internal rather than public: this is a reflection helper for the generation path with a single
+// call site, and as a public extension on ParameterInfo it would appear in IntelliSense on every
+// ParameterInfo in any file importing this namespace. Narrowed before the 1.0.0 public API baseline
+// froze it, since widening later is additive but narrowing would be a break.
+internal static class ParameterInfoExtensions
 {
     /// <summary>
     /// Determines whether the parameter's type declares the

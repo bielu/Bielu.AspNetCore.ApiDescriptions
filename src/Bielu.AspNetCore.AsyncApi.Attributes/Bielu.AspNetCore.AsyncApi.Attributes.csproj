@@ -9,6 +9,12 @@
 
     <ItemGroup>
       <PackageReference Include="ByteBard.AsyncAPI.NET" />
+      <!-- Tracked alongside the core package: this is the assembly consumers' own contract types
+           compile against, so a break here breaks their build rather than their document. -->
+      <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
     </ItemGroup>
 
     <ItemGroup>

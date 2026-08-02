@@ -1,0 +1,81 @@
+#nullable enable
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute.AsyncApiAttribute(string? documentName = null) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute.DocumentName.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.BindingsRef.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.BindingsRef.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.ChannelAttribute(string! name) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.Description.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.Description.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.Name.get -> string!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.Servers.get -> string![]!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.Servers.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute.ChannelParameterAttribute(string! name, System.Type! type) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute.Description.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute.Description.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute.Location.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute.Location.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute.Name.get -> string!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute.Type.get -> System.Type!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.IAsyncApiMessageExampleProvider
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.IAsyncApiMessageExampleProvider.GetExample() -> object!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.BindingsRef.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.BindingsRef.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Description.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Description.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.HeadersType.get -> System.Type?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.HeadersType.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageAttribute(System.Type! payloadType) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageAttribute(System.Type! payloadType, params string![]! tags) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageId.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageId.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Name.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Name.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.PayloadType.get -> System.Type!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Summary.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Summary.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Tags.get -> string![]!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Title.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Title.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute.Json.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute.Json.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute.MessageExampleAttribute() -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute.Name.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute.Name.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute.ProviderType.get -> System.Type?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute.ProviderType.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute.Summary.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute.Summary.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.BindingsRef.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.BindingsRef.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Description.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Description.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.MessagePayloadType.get -> System.Type?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.MessagePayloadType.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.OperationAttribute() -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.OperationId.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.OperationId.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.OperationType.get -> Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationType
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.OperationType.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Summary.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Summary.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Tags.get -> string![]!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Tags.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Title.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Title.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationType
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationType.Publish = 0 -> Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationType
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationType.Subscribe = 1 -> Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationType
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.PublishOperationAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.PublishOperationAttribute.PublishOperationAttribute() -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.PublishOperationAttribute.PublishOperationAttribute(System.Type! messagePayloadType) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.PublishOperationAttribute.PublishOperationAttribute(System.Type! messagePayloadType, params string![]! tags) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute.SubscribeOperationAttribute() -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute.SubscribeOperationAttribute(System.Type! messagePayloadType) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute.SubscribeOperationAttribute(System.Type! messagePayloadType, params string![]! tags) -> void

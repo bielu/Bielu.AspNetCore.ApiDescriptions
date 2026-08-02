@@ -263,9 +263,25 @@ public sealed class AsyncApiOptions
     /// <param name="name">The server name.</param>
     /// <param name="url">The server URL.</param>
     /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
-    /// <param name="pathName">An optional path appended to the server URL. Omit for a server addressed at its root.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddServer(string name, string url, string protocol, string? pathName = null)
+    public AsyncApiOptions AddServer(string name, string url, string protocol)
+        => AddServer(name, url, protocol, pathName: null);
+
+    /// <summary>
+    /// Adds a server to the AsyncApi document, addressed at a path below its root.
+    /// </summary>
+    /// <param name="name">The server name.</param>
+    /// <param name="url">The server URL.</param>
+    /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
+    /// <param name="pathName">The path appended to the server URL, or <see langword="null"/> for a server addressed at its root.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    // Spelled as two overloads rather than one with `string? pathName = null`, because the
+    // Action<AsyncApiServer> overload below takes the same number of parameters: an optional
+    // parameter alongside an equal-arity overload makes `AddServer(name, url, protocol, null)`
+    // ambiguous at the call site (CS0121), and it is what RS0027 flags as a backcompat hazard —
+    // any parameter added to either overload later would collide. Both existing call shapes still
+    // compile unchanged.
+    public AsyncApiOptions AddServer(string name, string url, string protocol, string? pathName)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(url);
@@ -279,6 +295,14 @@ public sealed class AsyncApiOptions
         return this;
     }
 
+    /// <summary>
+    /// Adds a server to the AsyncApi document, configured by a delegate.
+    /// </summary>
+    /// <param name="name">The server name.</param>
+    /// <param name="url">The server URL.</param>
+    /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
+    /// <param name="configure">A delegate applied to the server before it is added, for properties this overload does not take directly.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
     public AsyncApiOptions AddServer(string name, string url, string protocol, Action<AsyncApiServer> configure)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -366,15 +390,19 @@ public sealed class AsyncApiOptions
         return this;
     }
 
+    // Get-only, like IncludeOnlyChannels: nothing in the repo assigns either dictionary, callers add
+    // through AddOperationBinding/AddChannelBinding, and a settable collection property cannot have
+    // its setter removed after the 1.0.0 baseline without breaking consumers. The dictionaries
+    // themselves stay mutable, so anything the setter allowed is still reachable.
     /// <summary>
-    /// Operation bindings collection.
+    /// Operation bindings collection, keyed by operation name.
     /// </summary>
-    public Dictionary<string, IList<IOperationBinding>> OperationBindings { get; set; } = new();
+    public Dictionary<string, IList<IOperationBinding>> OperationBindings { get; } = new();
 
     /// <summary>
-    /// Channel bindings collection.
+    /// Channel bindings collection, keyed by channel name.
     /// </summary>
-    public Dictionary<string, IList<IChannelBinding>> ChannelBindings { get; set; } = new();
+    public Dictionary<string, IList<IChannelBinding>> ChannelBindings { get; } = new();
 
     public string DocumentRoutePattern { get; set; }
 
