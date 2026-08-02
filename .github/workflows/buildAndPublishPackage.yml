@@ -126,9 +126,10 @@ jobs:
       working-directory: .
 
   # Version PR merged (no changesets left): publish the NuGet + npm packages at the versions the
-  # Version PR committed. While changesets pre mode is active (.changeset/pre.json — no stable
-  # release until the upstream Scalar plugins PR merges), those versions are `-preview.N`
-  # prereleases; after `changeset pre exit` they become stable. Both publish steps are idempotent
+  # Version PR committed. While changesets pre mode is active (.changeset/pre.json, currently tag
+  # `beta` so 1.1.0 ships as `1.1.0-beta.N` first), those versions carry a prerelease suffix and
+  # tagRelease marks the GitHub release accordingly; `changeset pre exit` makes them stable again,
+  # as it did for 1.0.0. Both publish steps are idempotent
   # (NuGet --skip-duplicate; npm skips already-published versions), so re-running on later
   # non-changeset pushes is a safe no-op.
   releaseStable:
