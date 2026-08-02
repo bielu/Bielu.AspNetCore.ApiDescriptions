@@ -31,6 +31,19 @@ never replays a backlog into the browser. And the tail stream is read with `fetc
 header the proxy sits behind — which also lets Scalar's auth panel drive the proxy, including API
 keys in a query parameter, which the gRPC console has to downgrade to a header.
 
-This package ships no `dist/scalar-plugin.mjs` and no standalone bundle. Those exist to serve the
-Aspire consoles from a CDN, and a CDN-hosted broker plugin would have no server-side bridge to talk
-to.
+`Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka` is the first driver, and the reference for the next
+ones. Tailing a topic uses a throwaway consumer group (`bielu-scalar-broker-{guid}`) starting at
+`AutoOffsetReset.Latest` with auto-commit off, so opening a console cannot move a real consumer
+group's committed offsets or replay a backlog into someone's browser. `Confluent.Kafka` is pinned to
+`2.14.0`, the version `Aspire.Confluent.Kafka` 13.4.6 already depends on, so the Aspire mini-shop
+resolves one copy rather than two. The connection descriptor sent to the browser carries a redacted
+endpoint only — any `user:password@` in `bootstrapServers` is stripped, and a plain `host:port` is
+left alone.
+
+Wired into the Aspire mini-shop's Order Service, which already publishes order events to Kafka and
+already declares `kafka` channel bindings.
+
+This package ships no `dist/scalar-plugin.mjs` and no standalone bundle, and there is no `.Aspire`
+companion. All three exist to load a console into the Scalar *container* from a CDN, and a
+CDN-hosted broker plugin would have no server-side bridge to talk to — the broker console has to be
+mapped in the app that owns the broker connection.
