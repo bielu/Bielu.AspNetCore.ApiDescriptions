@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Extensions;
+﻿using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
@@ -30,7 +30,7 @@ builder.Services.AddAsyncApi("signalr", options =>
     options.WithInfo("SignalR Chat", "1.0.0")
         .WithDescription("Example AsyncAPI document for an ASP.NET Core SignalR chat hub.");
 
-    options.AddServer("signalr", "localhost:5000", SignalRProtocol.ProtocolName, server =>
+    options.AddServer("signalr", "localhost:5000", SignalRProtocol.ProtocolName, pathName: null, server =>
     {
         server.Description = "Local SignalR endpoint";
         server.Bindings = new ByteBard.AsyncAPI.Models.AsyncApiBindings<ByteBard.AsyncAPI.Models.Interfaces.IServerBinding>
@@ -78,7 +78,7 @@ builder.Services.AddAsyncApi("signalr-secure", options =>
             $"Example AsyncAPI document for a SignalR chat hub protected by API key authentication. " +
             $"Enter '{ApiKeyAuthenticationHandler.DemoApiKey}' as the API key in Scalar's Authentication panel.");
 
-    options.AddServer("signalr", "localhost:5000", SignalRProtocol.ProtocolName, server =>
+    options.AddServer("signalr", "localhost:5000", SignalRProtocol.ProtocolName, pathName: null, server =>
     {
         server.Description = "Local SignalR endpoint";
         server.Bindings = new ByteBard.AsyncAPI.Models.AsyncApiBindings<ByteBard.AsyncAPI.Models.Interfaces.IServerBinding>

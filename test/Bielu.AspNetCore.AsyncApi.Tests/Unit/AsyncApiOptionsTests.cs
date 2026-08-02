@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Services;
+﻿using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI.Models;
 using NSubstitute;
 using Shouldly;
@@ -31,13 +31,50 @@ public class AsyncApiOptionsTests
         var options = new AsyncApiOptions();
 
         // Act
-        var result = options.AddServer("amqp-broker", "rabbitmq.example.com", "amqp", server =>
+        var result = options.AddServer("amqp-broker", "rabbitmq.example.com", "amqp", pathName: null, server =>
         {
             server.Description = "RabbitMQ Production Server";
         });
 
         // Assert
         result.ShouldBe(options);
+    }
+
+    [Fact]
+    public void AddServer_WithBareNullFourthArgument_ResolvesToThePathNameOverload()
+    {
+        // Arrange
+        var options = new AsyncApiOptions();
+
+        // Act
+        // The assertion here is that this file compiles. An untyped null as the fourth argument used
+        // to be CS0121-ambiguous, because the pathName and configure overloads both took four
+        // parameters and null converts to both string? and Action<AsyncApiServer>.
+        var result = options.AddServer("mqtt-broker", "mqtt.example.com", "mqtt", null);
+
+        // Assert
+        result.ShouldBe(options);
+        options.Servers["mqtt-broker"].PathName.ShouldBeNull();
+    }
+
+    [Fact]
+    public void AddServer_WithPathNameAndConfigure_AppliesBoth()
+    {
+        // Arrange
+        var options = new AsyncApiOptions();
+
+        // Act
+        // Also new: a path and a configuration callback together. The old four-parameter configure
+        // overload hardcoded PathName to null, so this combination could not be expressed.
+        options.AddServer("mqtt-broker", "mqtt.example.com", "mqtt", "/events", server =>
+        {
+            server.Description = "RabbitMQ Production Server";
+        });
+
+        // Assert
+        var server = options.Servers["mqtt-broker"];
+        server.PathName.ShouldBe("/events");
+        server.Description.ShouldBe("RabbitMQ Production Server");
     }
 
     [Fact]

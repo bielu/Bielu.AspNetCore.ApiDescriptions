@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Extensions;
+﻿using Bielu.AspNetCore.AsyncApi.Extensions;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,7 +10,7 @@ builder.Services.AddAsyncApi(options =>
            .WithDescription("A sample Web API with AsyncAPI documentation")
            .IncludeXmlComments(typeof(Program).Assembly);
     
-    options.AddServer("mosquitto", "test.mosquitto.org", "mqtt", server =>
+    options.AddServer("mosquitto", "test.mosquitto.org", "mqtt", pathName: null, server =>
     {
         server.Description = "Test Mosquitto MQTT Broker";
     });

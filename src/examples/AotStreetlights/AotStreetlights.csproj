@@ -9,22 +9,41 @@
 
   <ItemGroup>
     <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <!--
+    Two ways to consume the library, because the two answer different questions.
+
+    Default (project references): the example builds and runs as part of the solution, with no packing
+    step, so `dotnet build` and the IDE work normally.
+
+    UseAsyncApiPackage=true: the example consumes Bielu.AspNetCore.AsyncApi as a *package*, exactly as
+    a consumer does — which is the only way to verify that the runtime directives are packed to the
+    right path and imported by NuGet. A ProjectReference does not flow buildTransitive assets, so under
+    the default the directives have to be imported by hand, and a wrong PackagePath would go unnoticed.
+    scripts/verify-aot.sh AOT-publishes this project both ways for exactly that reason.
+  -->
+  <!-- No Version attribute: this repository uses central package version management, and
+       scripts/verify-aot.sh supplies the packed version by appending a PackageVersion entry to the
+       Directory.Packages.props it copies next to the consumer. Setting Version here would be NU1008. -->
+  <ItemGroup Condition="'$(UseAsyncApiPackage)' == 'true'">
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseAsyncApiPackage)' != 'true'">
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
     <!-- UndefineProperties: PublishAot flows down to referenced projects as a global property, and
          the generator targets netstandard2.0, which cannot be AOT-compiled (NETSDK1207). It is a
-         build-time analyzer, so it must not inherit the publishing app's AOT settings. -->
+         build-time analyzer, so it must not inherit the publishing app's AOT settings. Under
+         UseAsyncApiPackage the generator arrives inside the package's analyzers/ folder instead, which
+         is how a consumer gets it. -->
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" UndefineProperties="PublishAot;RuntimeIdentifier;SelfContained" />
   </ItemGroup>
 
-  <!-- This example is the CI verification for the Native AOT path, so it uses the same targets and
-       rd.xml file that get packed rather than a local copy of them: a regression in their *content*
-       fails `scripts/verify-aot.sh`.
-
-       What this does NOT cover is the packaging itself — a ProjectReference does not flow
-       buildTransitive assets, so the file is imported by hand, and a wrong PackagePath would still
-       pass here. (Pack does catch the narrower case of a misnamed targets file, via NU5129.) Closing
-       that gap means packing the core project and consuming it through a PackageReference against a
-       local feed, which is a change to this fixture and to verify-aot.sh, not just to this line. -->
-  <Import Project="..\..\Bielu.AspNetCore.AsyncApi\build\Bielu.AspNetCore.AsyncApi.targets" />
+  <!-- Hand-import of the same file the package ships in buildTransitive/. Only needed for the
+       project-reference path; under UseAsyncApiPackage, NuGet imports it from the package and importing
+       it here as well would define RdXmlFile twice. -->
+  <Import Project="..\..\Bielu.AspNetCore.AsyncApi\build\Bielu.AspNetCore.AsyncApi.targets"
+          Condition="'$(UseAsyncApiPackage)' != 'true'" />
 
 </Project>

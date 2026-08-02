@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiEndpointConventionBuilderExtensions
 Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiEndpointRouteBuilderExtensions
 Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiServiceCollectionExtensions
@@ -47,7 +47,7 @@ Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddSerializedDocumentTransfor
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddSerializedDocumentTransformer(System.Func<string!, Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string!>>! transformer) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServer(string! name, string! url, string! protocol) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServer(string! name, string! url, string! protocol, string? pathName) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServer(string! name, string! url, string! protocol, System.Action<ByteBard.AsyncAPI.Models.AsyncApiServer!>! configure) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServer(string! name, string! url, string! protocol, string? pathName, System.Action<ByteBard.AsyncAPI.Models.AsyncApiServer!>! configure) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiOptions() -> void
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiVersion.get -> ByteBard.AsyncAPI.AsyncApiVersion
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiVersion.set -> void

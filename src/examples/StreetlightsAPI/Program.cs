@@ -45,11 +45,11 @@ namespace StreetlightsAPI
         {
             services.AddAsyncApi(e =>
             {
-                e.AddServer("mosquitto", "test.mosquitto.org", "mqtt", server =>
+                e.AddServer("mosquitto", "test.mosquitto.org", "mqtt", pathName: null, server =>
                 {
                     server.Description = "Test Mosquitto MQTT Broker";
                 });
-                e.AddServer("webapi", "localhost:5000", "http", server =>
+                e.AddServer("webapi", "localhost:5000", "http", pathName: null, server =>
                 {
                     server.Description = "Local HTTP API Server";
                 });

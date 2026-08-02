@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Data;
@@ -34,12 +34,12 @@ builder.Services.AddScoped<IOrderService, Bielu.AspNetCore.AsyncApi.Aspire.Order
 
 builder.Services.AddAsyncApi(options =>
 {
-    options.AddServer("kafka", "kafka:9092", "kafka", server =>
+    options.AddServer("kafka", "kafka:9092", "kafka", pathName: null, server =>
     {
         server.Description = "Apache Kafka broker for order events";
     });
 
-    options.AddServer("websocket", "localhost:5180", "ws", server =>
+    options.AddServer("websocket", "localhost:5180", "ws", pathName: null, server =>
     {
         server.Description = "WebSocket server for real-time order tracking via SignalR";
     });

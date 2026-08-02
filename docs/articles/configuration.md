@@ -1,4 +1,4 @@
-# Configuration
+﻿# Configuration
 
 You can configure AsyncAPI generation using the fluent API in `AddAsyncApi`.
 
@@ -25,7 +25,7 @@ builder.Services.AddAsyncApi(options =>
 Define the servers where your API is available.
 
 ```csharp
-options.AddServer("production", "api.example.com", "amqp", server =>
+options.AddServer("production", "api.example.com", "amqp", pathName: null, server =>
 {
     server.Description = "Production AMQP broker";
     server.ProtocolVersion = "0.9.1";

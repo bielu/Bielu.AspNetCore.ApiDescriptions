@@ -275,22 +275,11 @@ public sealed class AsyncApiOptions
     /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
     /// <param name="pathName">The path appended to the server URL, or <see langword="null"/> for a server addressed at its root.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    /// <remarks>
-    /// Pass a null path as <c>pathName: null</c>, or use the three-parameter overload. A bare
-    /// <c>AddServer(name, url, protocol, null)</c> is ambiguous (CS0121), because <see langword="null"/>
-    /// converts equally well to this overload's <see cref="string"/> and to the
-    /// <see cref="Action{T}"/> taken by the overload below.
-    /// </remarks>
-    // Spelled as two overloads rather than one with `string? pathName = null`, because the
-    // Action<AsyncApiServer> overload below takes the same number of parameters. RS0027 flags that
-    // shape as a backcompat hazard: an optional parameter must have the most parameters among its
-    // overloads, or a parameter added to either one later collides. Both existing call shapes still
-    // compile unchanged.
-    //
-    // Note this does not remove the CS0121 ambiguity on an untyped `null` argument, and cannot:
-    // null converts to any reference type, so no annotation makes one overload better. Only moving
-    // `configure` to a fifth parameter would, at the cost of rewriting every AddServer(..., server =>
-    // ...) call in the templates, docs and examples.
+    // This is the only four-parameter overload, deliberately. It used to share that arity with a
+    // `configure` overload, which made `AddServer(name, url, protocol, null)` ambiguous (CS0121) —
+    // null converts to both string? and Action<AsyncApiServer>, and no annotation makes either one
+    // better. `configure` moved to a fifth parameter instead, which also lets a path and a
+    // configuration callback be used together; the old four-argument shape could not do both.
     public AsyncApiOptions AddServer(string name, string url, string protocol, string? pathName)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -311,9 +300,15 @@ public sealed class AsyncApiOptions
     /// <param name="name">The server name.</param>
     /// <param name="url">The server URL.</param>
     /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
-    /// <param name="configure">A delegate applied to the server before it is added, for properties this overload does not take directly.</param>
+    /// <param name="pathName">The path appended to the server URL, or <see langword="null"/> for a server addressed at its root.</param>
+    /// <param name="configure">A delegate applied to the server before it is added, for properties this method does not take directly.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddServer(string name, string url, string protocol, Action<AsyncApiServer> configure)
+    /// <remarks>
+    /// <paramref name="pathName"/> comes before <paramref name="configure"/> so that this method has an
+    /// arity of its own. Sharing four parameters with the overload above made an untyped
+    /// <c>AddServer(name, url, protocol, null)</c> fail to compile.
+    /// </remarks>
+    public AsyncApiOptions AddServer(string name, string url, string protocol, string? pathName, Action<AsyncApiServer> configure)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(url);
@@ -321,7 +316,7 @@ public sealed class AsyncApiOptions
         ArgumentNullException.ThrowIfNull(configure);
 
         var host = url.Contains("://") ? url.Split("://")[1] : url;
-        var server = new AsyncApiServer { Host = host, PathName = null, Protocol = protocol };
+        var server = new AsyncApiServer { Host = host, PathName = pathName, Protocol = protocol };
         var sanitizedName = AsyncApiNamingHelper.SanitizeKey(name);
 
         configure(server);

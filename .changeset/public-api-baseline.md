@@ -16,18 +16,22 @@ contract types compile against, so a break there breaks their build rather than 
 Reviewing the surface rather than just recording it found three things worth changing while changing
 them is still free:
 
-- **`AddServer`'s optional parameter is gone.** `AddServer(name, url, protocol, string? pathName = null)`
-  had the same arity as `AddServer(name, url, protocol, Action<AsyncApiServer> configure)`, which
-  RS0027 flags as a backcompat hazard: an optional parameter must have the most parameters among its
-  overloads, or a parameter added to either one later collides. Replaced by explicit three- and
-  four-parameter overloads; every existing call site compiles unchanged.
+- **`AddServer`'s overloads no longer collide.** `AddServer(name, url, protocol, string? pathName = null)`
+  had the same arity as `AddServer(name, url, protocol, Action<AsyncApiServer> configure)`. RS0027
+  flags that as a backcompat hazard — an optional parameter must have the most parameters among its
+  overloads — and it had a sharper consequence in practice: `AddServer(name, url, protocol, null)` did
+  not compile at all, because `null` converts equally well to `string?` and to
+  `Action<AsyncApiServer>` (CS0121).
 
-  This does **not** make an untyped `AddServer(name, url, protocol, null)` compile — `null` still
-  converts to both `string?` and `Action<AsyncApiServer>`, so that call is CS0121-ambiguous, as it was
-  before. Spell it `AddServer(name, url, protocol, pathName: null)` or use the three-parameter
-  overload. Removing the ambiguity outright would mean moving `configure` to a fifth parameter and
-  rewriting every `AddServer(..., server => ...)` call in the templates, docs and examples; that is a
-  larger API decision than a baselining pass should make on its own.
+  The optional parameter is gone and `configure` moved to a **fifth** parameter, so each overload now
+  has an arity of its own and a bare `null` unambiguously means "no path". A regression test asserts
+  it, by compiling that exact call.
+
+  **This is a source break for the four-argument delegate form**: `AddServer(name, url, protocol, server => …)`
+  becomes `AddServer(name, url, protocol, pathName: null, server => …)`. Every call site in the
+  repository — templates, docs, examples and tests — is updated. It also fixes a real gap: the old
+  `configure` overload hardcoded `PathName` to null, so a path and a configuration callback could not
+  be used together. They can now.
 - **`AsyncApiOptions.ChannelBindings` / `OperationBindings` are now get-only.** Nothing in the repo
   assigned either dictionary; callers go through `AddChannelBinding`/`AddOperationBinding`. This is a
   deliberate pre-1.0 break with a real consequence: the dictionaries' *contents* are still fully
