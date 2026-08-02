@@ -27,6 +27,8 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.Scalar` | Shared Scalar console-plugin infrastructure (+ private `@bielu/scalar-core` npm package) |
 | `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` (+ `.Aspire`) | Interactive SignalR console for Scalar (`@bielu/scalar-signalr` bundle) |
 | `Bielu.AspNetCore.AsyncApi.Scalar.Grpc` (+ `.Aspire`) | Interactive gRPC-Web console for Scalar (`@bielu/scalar-grpc` bundle + protobuf descriptor endpoint) |
+| `Bielu.AspNetCore.AsyncApi.Scalar.Broker` | Interactive Kafka/MQTT/AMQP console for Scalar (`@bielu/scalar-broker` bundle + an opt-in server-side publish/tail bridge, since no browser speaks these protocols). No `.Aspire` companion: a CDN-loaded plugin would have no bridge to talk to |
+| `Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka` | Kafka driver (`IBrokerBridge` over `Confluent.Kafka`) for the broker console |
 | `Bielu.Arazzo` (package id `Bielu.Arazzo.NET`) | Arazzo Specification object model, JSON/YAML writers, validation — framework-free, no dependency on the AsyncAPI packages |
 | `Bielu.Arazzo.Readers` (package id `Bielu.Arazzo.NET.Readers`) | JSON/YAML readers for Arazzo documents, producing `Bielu.Arazzo` documents with diagnostics |
 | `Bielu.AspNetCore.Arazzo` | ASP.NET Core integration for Arazzo: `AddArazzo`/`MapArazzo`, fluent workflow builder, self-wiring `sourceDescriptions` against this app's own live AsyncAPI/OpenAPI documents, startup cross-spec reference validation |

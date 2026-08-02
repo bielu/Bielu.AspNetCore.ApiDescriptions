@@ -14,10 +14,12 @@ on:
 permissions:
   contents: read
 
-# The npm packages live at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets (@bielu/scalar-signalr)
-# and src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets (@bielu/scalar-grpc); the changeset workspace
+# The npm packages live at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets (@bielu/scalar-signalr),
+# src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets (@bielu/scalar-grpc) and
+# src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets (@bielu/scalar-broker); the changeset workspace
 # root is the repository root (package.json + .changeset). The reusable templates take a single npm
-# working-directory, so the gRPC package gets its own npm-only job next to each combined job.
+# working-directory, so each package after the first gets its own npm-only job next to each combined
+# job, chained so the publishes stay serialised.
 #
 # NOTE: reusable-workflow refs use @main here. Pin them to the merged
 # bielu/bielu.GithubActions.Templates commit SHA before relying on this in anger, the same way the
@@ -48,6 +50,19 @@ jobs:
       build-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
       artifact-name: npm-scalar-grpc
+
+  # Pull request: build the third npm package (@bielu/scalar-broker); NuGet is already covered by `ci`.
+  ciBrokerNpm:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
+    with:
+      suffix: "pr"
+      build-nuget: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
+      artifact-name: npm-scalar-broker
 
   # Pull request: require a changeset so the version bump + changelog are recorded.
   changeset-check:
@@ -146,6 +161,20 @@ jobs:
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
       artifact-name: npm-scalar-grpc
 
+  # Version PR merged: publish the third npm package (@bielu/scalar-broker). Chained after the gRPC
+  # job rather than run beside it so the npm publishes stay serialised, as they already were.
+  releaseStableBrokerNpm:
+    needs: [version, releaseStableGrpcNpm]
+    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
+      artifact-name: npm-scalar-broker
+
   # Record-keeping: tag + GitHub Release for the shared NuGet version, when not already present.
   # Release notes are the version's section of CHANGELOG.md (written by the changeset adapter in
   # the Version Packages PR); versions with a prerelease suffix are marked as GitHub prereleases.
@@ -216,6 +245,23 @@ jobs:
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
       artifact-name: npm-scalar-grpc
 
+  # In-flight prereleases for the third npm package (@bielu/scalar-broker).
+  releaseBetaBrokerNpm:
+    needs: [version, releaseBetaGrpcNpm]
+    if: >-
+      always() && !cancelled()
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      suffix: "beta"
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
+      artifact-name: npm-scalar-broker
+
   # Record-keeping for interim betas: surface each published beta build as a GitHub prerelease,
   # using the exact `-beta.<ticks>` version the build template stamped (release.yml's nuget-version
   # output) and the pending — not yet versioned — changesets as the release notes.
@@ -271,3 +317,14 @@ jobs:
     with:
       publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+
+  # Manual GitHub Release: the third npm package (@bielu/scalar-broker).
+  releaseBrokerNpm:
+    if: github.event_name == 'release'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
