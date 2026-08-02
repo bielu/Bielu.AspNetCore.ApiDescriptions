@@ -7,7 +7,8 @@
     "build/changeset/nuget-suite",
     "src/Bielu.AspNetCore.AsyncApi.Scalar/assets",
     "src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets",
-    "src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets"
+    "src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets",
+    "src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets"
   ],
   "scripts": {
     "changeset": "changeset",
