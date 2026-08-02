@@ -8,14 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- ByteBard.AsyncAPI resolves enums from display names via Enum.GetValues, which constructs an
-         array type at runtime and therefore needs reflection metadata ILC does not emit by default.
-         rd.xml keeps it; see the reasoning there. Rooting the assembly with TrimmerRootAssembly does
-         not help, because that controls trimming rather than metadata generation. -->
-    <RdXmlFile Include="rd.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Scalar.AspNetCore" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
     <!-- UndefineProperties: PublishAot flows down to referenced projects as a global property, and
@@ -23,5 +15,11 @@
          build-time analyzer, so it must not inherit the publishing app's AOT settings. -->
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" UndefineProperties="PublishAot;RuntimeIdentifier;SelfContained" />
   </ItemGroup>
+
+  <!-- This example is the CI verification for the Native AOT path, so it must exercise the same
+       runtime directives a real consumer gets rather than a local copy of them. A ProjectReference
+       does not flow the package's buildTransitive assets, so the file is imported by hand — which
+       means `scripts/verify-aot.sh` fails if the shipped targets or rd.xml ever regress. -->
+  <Import Project="..\..\Bielu.AspNetCore.AsyncApi\build\Bielu.AspNetCore.AsyncApi.targets" />
 
 </Project>
