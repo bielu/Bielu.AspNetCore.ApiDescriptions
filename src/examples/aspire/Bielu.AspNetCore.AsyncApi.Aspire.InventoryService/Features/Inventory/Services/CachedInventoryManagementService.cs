@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Events;
@@ -14,8 +14,7 @@ namespace Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.S
 /// </summary>
 public class CachedInventoryManagementService(
     IInventoryManagementService inner,
-    ICacheService cache,
-    ILogger<CachedInventoryManagementService> logger) : IInventoryManagementService
+    ICacheService cache) : IInventoryManagementService
 {
     private const string AllItemsCacheKey = "inventory:all";
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);

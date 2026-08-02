@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Extensions;
+﻿using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc;
 using Bielu.AspNetCore.AsyncApi.Scalar.Grpc;
 using Grpc.AspNetCore.Web;
@@ -20,7 +20,7 @@ builder.Services.AddAsyncApi("grpc", options =>
         .WithDescription("Example AsyncAPI document for an ASP.NET Core gRPC greeter service.");
 
     // A gRPC server advertising the services it hosts and the capabilities it negotiates.
-    options.AddServer("grpc", "localhost:5001", GrpcProtocol.ProtocolName, server =>
+    options.AddServer("grpc", "localhost:5001", GrpcProtocol.ProtocolName, pathName: null, server =>
     {
         server.Description = "Local gRPC endpoint";
         server.Bindings = new ByteBard.AsyncAPI.Models.AsyncApiBindings<ByteBard.AsyncAPI.Models.Interfaces.IServerBinding>

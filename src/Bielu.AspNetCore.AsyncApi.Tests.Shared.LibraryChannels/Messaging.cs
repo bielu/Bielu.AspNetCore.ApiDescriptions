@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 
 namespace Bielu.AspNetCore.AsyncApi.Tests.LibraryChannels
@@ -35,6 +35,6 @@ void PublishLightMeasurement(ExternalEvent lightMeasuredEvent);
     public class ExternalEvent
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 }

@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Shouldly;
 using Xunit;
@@ -37,7 +37,7 @@ public class XmlDocumentationIdBuilderTests
     public void CreateIdForMember_Method_ReturnsCorrectId()
     {
         // Arrange
-        var method = typeof(SampleType).GetMethod(nameof(SampleType.SampleMethod));
+        var method = typeof(SampleType).GetMethod(nameof(SampleType.SampleMethod))!;
 
         // Act
         var id = XmlDocumentationIdBuilder.CreateIdForMember(method);
@@ -50,7 +50,7 @@ public class XmlDocumentationIdBuilderTests
     public void CreateIdForMember_MethodWithParameters_ReturnsCorrectId()
     {
         // Arrange
-        var method = typeof(SampleType).GetMethod(nameof(SampleType.MethodWithParameters));
+        var method = typeof(SampleType).GetMethod(nameof(SampleType.MethodWithParameters))!;
 
         // Act
         var id = XmlDocumentationIdBuilder.CreateIdForMember(method);
@@ -63,7 +63,7 @@ public class XmlDocumentationIdBuilderTests
     public void CreateIdForMember_Property_ReturnsCorrectId()
     {
         // Arrange
-        var property = typeof(SampleType).GetProperty(nameof(SampleType.SampleProperty));
+        var property = typeof(SampleType).GetProperty(nameof(SampleType.SampleProperty))!;
 
         // Act
         var id = XmlDocumentationIdBuilder.CreateIdForMember(property);
@@ -89,7 +89,7 @@ public class XmlDocumentationIdBuilderTests
     public void CreateIdForMember_GenericMethod_ReturnsCorrectId()
     {
         // Arrange
-        var method = typeof(SampleType).GetMethod(nameof(SampleType.GenericMethod));
+        var method = typeof(SampleType).GetMethod(nameof(SampleType.GenericMethod))!;
 
         // Act
         var id = XmlDocumentationIdBuilder.CreateIdForMember(method);
@@ -101,7 +101,7 @@ public class XmlDocumentationIdBuilderTests
 
 public class SampleType
 {
-    public string SampleProperty { get; set; }
+    public string SampleProperty { get; set; } = string.Empty;
     public void SampleMethod() { }
     public void MethodWithParameters(string s, int i) { }
     public void GenericMethod<T>(T value) { }

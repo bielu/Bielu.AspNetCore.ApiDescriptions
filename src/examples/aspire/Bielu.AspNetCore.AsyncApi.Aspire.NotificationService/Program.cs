@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications;
@@ -26,7 +26,7 @@ builder.Services.AddHostedService<KafkaNotificationWorker>();
 
 builder.Services.AddAsyncApi(options =>
 {
-    options.AddServer("websocket", "localhost:5183", "ws", server =>
+    options.AddServer("websocket", "localhost:5183", "ws", pathName: null, server =>
     {
         server.Description = "WebSocket server for real-time notifications via SignalR";
     });

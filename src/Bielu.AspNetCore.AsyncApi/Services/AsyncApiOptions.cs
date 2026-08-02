@@ -263,9 +263,24 @@ public sealed class AsyncApiOptions
     /// <param name="name">The server name.</param>
     /// <param name="url">The server URL.</param>
     /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
-    /// <param name="pathName">An optional path appended to the server URL. Omit for a server addressed at its root.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    public AsyncApiOptions AddServer(string name, string url, string protocol, string? pathName = null)
+    public AsyncApiOptions AddServer(string name, string url, string protocol)
+        => AddServer(name, url, protocol, pathName: null);
+
+    /// <summary>
+    /// Adds a server to the AsyncApi document, addressed at a path below its root.
+    /// </summary>
+    /// <param name="name">The server name.</param>
+    /// <param name="url">The server URL.</param>
+    /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
+    /// <param name="pathName">The path appended to the server URL, or <see langword="null"/> for a server addressed at its root.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    // This is the only four-parameter overload, deliberately. It used to share that arity with a
+    // `configure` overload, which made `AddServer(name, url, protocol, null)` ambiguous (CS0121) —
+    // null converts to both string? and Action<AsyncApiServer>, and no annotation makes either one
+    // better. `configure` moved to a fifth parameter instead, which also lets a path and a
+    // configuration callback be used together; the old four-argument shape could not do both.
+    public AsyncApiOptions AddServer(string name, string url, string protocol, string? pathName)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(url);
@@ -279,7 +294,21 @@ public sealed class AsyncApiOptions
         return this;
     }
 
-    public AsyncApiOptions AddServer(string name, string url, string protocol, Action<AsyncApiServer> configure)
+    /// <summary>
+    /// Adds a server to the AsyncApi document, configured by a delegate.
+    /// </summary>
+    /// <param name="name">The server name.</param>
+    /// <param name="url">The server URL.</param>
+    /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
+    /// <param name="pathName">The path appended to the server URL, or <see langword="null"/> for a server addressed at its root.</param>
+    /// <param name="configure">A delegate applied to the server before it is added, for properties this method does not take directly.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    /// <remarks>
+    /// <paramref name="pathName"/> comes before <paramref name="configure"/> so that this method has an
+    /// arity of its own. Sharing four parameters with the overload above made an untyped
+    /// <c>AddServer(name, url, protocol, null)</c> fail to compile.
+    /// </remarks>
+    public AsyncApiOptions AddServer(string name, string url, string protocol, string? pathName, Action<AsyncApiServer> configure)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(url);
@@ -287,7 +316,7 @@ public sealed class AsyncApiOptions
         ArgumentNullException.ThrowIfNull(configure);
 
         var host = url.Contains("://") ? url.Split("://")[1] : url;
-        var server = new AsyncApiServer { Host = host, PathName = null, Protocol = protocol };
+        var server = new AsyncApiServer { Host = host, PathName = pathName, Protocol = protocol };
         var sanitizedName = AsyncApiNamingHelper.SanitizeKey(name);
 
         configure(server);
@@ -366,17 +395,38 @@ public sealed class AsyncApiOptions
         return this;
     }
 
+    // Get-only, like IncludeOnlyChannels: nothing in the repo assigned either dictionary and callers
+    // add through AddOperationBinding/AddChannelBinding. Removing the setters is a deliberate break
+    // taken before the 1.0.0 public API baseline froze, because a settable property cannot lose its
+    // setter afterwards without breaking consumers.
     /// <summary>
-    /// Operation bindings collection.
+    /// Operation bindings collection, keyed by operation name.
     /// </summary>
-    public Dictionary<string, IList<IOperationBinding>> OperationBindings { get; set; } = new();
+    /// <remarks>
+    /// The dictionary's contents can be added to, replaced and cleared; the dictionary
+    /// <em>instance</em> cannot be replaced. Assigning a whole new dictionary was possible before
+    /// 1.0.0 and is not any more — build the contents up instead, or call
+    /// <see cref="AddOperationBinding"/>.
+    /// </remarks>
+    public Dictionary<string, IList<IOperationBinding>> OperationBindings { get; } = new();
 
     /// <summary>
-    /// Channel bindings collection.
+    /// Channel bindings collection, keyed by channel name.
     /// </summary>
-    public Dictionary<string, IList<IChannelBinding>> ChannelBindings { get; set; } = new();
+    /// <remarks>
+    /// The dictionary's contents can be added to, replaced and cleared; the dictionary
+    /// <em>instance</em> cannot be replaced. Assigning a whole new dictionary was possible before
+    /// 1.0.0 and is not any more — build the contents up instead, or call
+    /// <see cref="AddChannelBinding"/>.
+    /// </remarks>
+    public Dictionary<string, IList<IChannelBinding>> ChannelBindings { get; } = new();
 
-    public string DocumentRoutePattern { get; set; }
+    /// <summary>
+    /// The route pattern the document is served from. Set by <c>MapAsyncApi(pattern)</c>; defaults to
+    /// <see cref="AsyncApiGeneratorConstants.DefaultAsyncApiRoute"/> so it is never null for anything
+    /// reading it before the endpoint is mapped (build-time generation, for one).
+    /// </summary>
+    public string DocumentRoutePattern { get; set; } = AsyncApiGeneratorConstants.DefaultAsyncApiRoute;
 
     /// <summary>
     /// When non-empty, only channels whose sanitized key appears in this set are included in the
@@ -516,7 +566,7 @@ public sealed class AsyncApiOptions
 
 internal class MessageExample
 {
-    public string Name { get; set; }
-    public object Value { get; set; }
+    public required string Name { get; set; }
+    public required object Value { get; set; }
     public string? Summary { get; set; }
 }

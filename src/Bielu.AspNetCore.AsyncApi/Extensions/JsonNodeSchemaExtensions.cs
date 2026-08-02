@@ -226,11 +226,15 @@ internal static class JsonNodeSchemaExtensions
         }
     }
 
+    // IRouteConstraint is referred to below as plain <c> text rather than a cref: two assemblies in the
+    // shared framework declare Microsoft.AspNetCore.Routing.IRouteConstraint, so even the fully
+    // qualified name is ambiguous to the doc-comment binder (CS0419) and there is no syntax to pick
+    // one. This member is internal, so nothing is lost from the published API reference.
     /// <summary>
     /// Applies route constraints to the target schema.
     /// </summary>
     /// <param name="schema">The <see cref="JsonNode"/> produced by the underlying schema generator.</param>
-    /// <param name="constraints">The list of <see cref="IRouteConstraint"/>s associated with the route parameter.</param>
+    /// <param name="constraints">The list of <c>IRouteConstraint</c>s associated with the route parameter.</param>
     internal static void ApplyRouteConstraints(this JsonNode schema, IEnumerable<IRouteConstraint> constraints)
     {
         // Apply constraints in reverse order because when it comes to the routing

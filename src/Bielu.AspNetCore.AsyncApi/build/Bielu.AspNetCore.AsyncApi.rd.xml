@@ -1,6 +1,10 @@
 <!--
   Runtime directives for the Native AOT compiler (ILC).
 
+  Shipped inside the package (buildTransitive) and applied automatically by
+  Bielu.AspNetCore.AsyncApi.targets, because without it *every* consumer publishing Native AOT hits
+  the failure below — it is a property of our ByteBard.AsyncAPI dependency, not of their code.
+
   ByteBard.AsyncAPI resolves enums from their display names reflectively:
 
       ByteBard.AsyncAPI.Writers.StringExtensions.GetEnumFromDisplayName<T>(string)

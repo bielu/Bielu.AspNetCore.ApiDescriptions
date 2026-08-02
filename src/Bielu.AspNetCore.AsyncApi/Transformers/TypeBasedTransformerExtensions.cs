@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace Bielu.AspNetCore.AsyncApi.Transformers;
@@ -13,7 +13,7 @@ internal static class TypeBasedTransformerExtensions
     /// This method is intended to be invoked on <see cref="TypeBasedAsyncApiOperationTransformer" /> and <see cref="TypeBasedAsyncApiSchemaTransformer" />.
     /// instances which can be invoked multiple times within the same document generation request.
     /// </remarks>
-    public static async Task FinalizeTransformer<ITransformer>(this ITransformer transformer)
+    public static async Task FinalizeTransformerAsync<ITransformer>(this ITransformer transformer)
     {
         if (transformer is IAsyncDisposable asyncDisposable)
         {

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Data;
@@ -34,7 +34,7 @@ builder.Services.Decorate<IInventoryManagementService, CachedInventoryManagement
 
 builder.Services.AddAsyncApi(options =>
 {
-    options.AddServer("kafka", "kafka:9092", "kafka", server =>
+    options.AddServer("kafka", "kafka:9092", "kafka", pathName: null, server =>
     {
         server.Description = "Apache Kafka broker for inventory events";
     });

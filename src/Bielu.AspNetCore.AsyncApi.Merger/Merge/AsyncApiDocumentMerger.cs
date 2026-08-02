@@ -33,7 +33,8 @@ public sealed class AsyncApiDocumentMerger
     /// <returns>The merged AsyncAPI document.</returns>
     /// <exception cref="ArgumentException">Thrown when no sources are configured.</exception>
     /// <exception cref="InvalidOperationException">Thrown when a document cannot be loaded or parsed.</exception>
-    public async Task<AsyncApiDocument> MergeAsync(AsyncApiMergeOptions options, CancellationToken cancellationToken = default)
+    public async Task<AsyncApiDocument> MergeAsync(AsyncApiMergeOptions options,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -46,12 +47,25 @@ public sealed class AsyncApiDocumentMerger
 
         foreach (var source in options.Sources)
         {
-            var document = await LoadDocumentAsync(source, options.HttpTimeout, cancellationToken).ConfigureAwait(false);
-            if(document is null)
+            var document = await LoadDocumentAsync(source, options.HttpTimeout, cancellationToken)
+                .ConfigureAwait(false);
+            if (document is null)
             {
                 continue;
             }
+
             documents.Add((document, source));
+        }
+
+        // Merging is best-effort per source — an unavailable source is skipped rather than failing
+        // the whole merge. But if *every* source was unavailable there is nothing to merge, and the
+        // private overload below would fail on documents[0] with an index exception that says
+        // nothing about the actual cause.
+        if (documents.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"None of the {options.Sources.Count} configured AsyncAPI document source(s) could be loaded: " +
+                string.Join(", ", options.Sources.Select(s => $"'{s.Uri}'")) + ".");
         }
 
         return MergeDocuments(documents, options);
@@ -64,30 +78,31 @@ public sealed class AsyncApiDocumentMerger
     /// <param name="info">Optional info section for the merged document.</param>
     /// <param name="defaultContentType">Optional default content type.</param>
     /// <returns>The merged AsyncAPI document.</returns>
-    public static AsyncApiDocument MergeDocuments(IReadOnlyList<(AsyncApiDocument Document, string? KeyPrefix)> documents, AsyncApiInfo? info = null, string? defaultContentType = null)
+    public static AsyncApiDocument MergeDocuments(
+        IReadOnlyList<(AsyncApiDocument Document, string? KeyPrefix)> documents, AsyncApiInfo? info = null,
+        string? defaultContentType = null)
     {
         if (documents.Count == 0)
         {
             throw new ArgumentException("At least one document must be provided.", nameof(documents));
         }
 
-        var sources = documents.Select(d => (d.Document, new AsyncApiDocumentSource { Uri = string.Empty, KeyPrefix = d.KeyPrefix })).ToList();
-        var options = new AsyncApiMergeOptions
-        {
-            Info = info,
-            DefaultContentType = defaultContentType
-        };
+        var sources = documents.Select(d =>
+            (d.Document, new AsyncApiDocumentSource { Uri = string.Empty, KeyPrefix = d.KeyPrefix })).ToList();
+        var options = new AsyncApiMergeOptions { Info = info, DefaultContentType = defaultContentType };
 
         return MergeDocuments(sources, options);
     }
 
-    internal async Task<AsyncApiDocument?> LoadDocumentAsync(AsyncApiDocumentSource source, TimeSpan httpTimeout, CancellationToken cancellationToken)
+    internal async Task<AsyncApiDocument?> LoadDocumentAsync(AsyncApiDocumentSource source, TimeSpan httpTimeout,
+        CancellationToken cancellationToken)
     {
         var content = await LoadContentAsync(source.Uri, httpTimeout, cancellationToken).ConfigureAwait(false);
         if (content is null)
         {
             return null;
         }
+
         return ParseDocument(content, source.Uri);
     }
 
@@ -117,11 +132,18 @@ public sealed class AsyncApiDocumentMerger
 
             return await File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception e)
+        // A source that cannot be read is reported as unavailable (null) rather than failing the whole
+        // merge, which is the point of the catch-all — including the FileNotFoundException thrown just
+        // above, and the OperationCanceledException a per-source httpTimeout produces.
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Cancellation of the merge itself is not a bad source, and must not be reported as one.
+            throw;
+        }
+        catch (Exception)
         {
             return null;
         }
-        
     }
 
     internal static AsyncApiDocument ParseDocument(string content, string sourceUri)
@@ -137,21 +159,25 @@ public sealed class AsyncApiDocumentMerger
             // break the gateway when one downstream service emits a non-conformant doc.
             foreach (var error in errs)
             {
-                Debug.WriteLine($"[AsyncApiDocumentMerger] Parse error for '{sourceUri}': {error.Message} (pointer: {error.Pointer})");
+                Debug.WriteLine(
+                    $"[AsyncApiDocumentMerger] Parse error for '{sourceUri}': {error.Message} (pointer: {error.Pointer})");
             }
         }
 
         return document;
     }
 
-    private static AsyncApiDocument MergeDocuments(IReadOnlyList<(AsyncApiDocument Document, AsyncApiDocumentSource Source)> documents, AsyncApiMergeOptions options)
+    private static AsyncApiDocument MergeDocuments(
+        IReadOnlyList<(AsyncApiDocument Document, AsyncApiDocumentSource Source)> documents,
+        AsyncApiMergeOptions options)
     {
         var firstDoc = documents[0].Document;
 
         var merged = new AsyncApiDocument
         {
             Asyncapi = ResolveAsyncApiSpecVersion(documents, options),
-            Info = options.Info ?? firstDoc.Info ?? new AsyncApiInfo { Title = "Merged AsyncAPI", Version = "1.0.0" },
+            Info =
+                options.Info ?? firstDoc.Info ?? new AsyncApiInfo { Title = "Merged AsyncAPI", Version = "1.0.0" },
             DefaultContentType = options.DefaultContentType ?? firstDoc.DefaultContentType,
             Servers = new Dictionary<string, AsyncApiServer>(),
             Channels = new Dictionary<string, AsyncApiChannel>(),
@@ -227,20 +253,26 @@ public sealed class AsyncApiDocumentMerger
         }
     }
 
-    private static bool AreServersEquivalent(AsyncApiServer a, AsyncApiServer b)
+    // Both parameters are nullable because the values come out of a parsed document, where a null
+    // entry in the servers dictionary is possible whatever the model's annotations claim; the guard
+    // below is what handles it.
+    private static bool AreServersEquivalent(AsyncApiServer? a, AsyncApiServer? b)
     {
         if (ReferenceEquals(a, b))
         {
             return true;
         }
+
         if (a is null || b is null)
         {
             return false;
         }
+
         return string.Equals(a.Host, b.Host, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(a.Protocol, b.Protocol, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(a.PathName ?? string.Empty, b.PathName ?? string.Empty, StringComparison.Ordinal)
-            && string.Equals(a.ProtocolVersion ?? string.Empty, b.ProtocolVersion ?? string.Empty, StringComparison.Ordinal);
+               && string.Equals(a.Protocol, b.Protocol, StringComparison.OrdinalIgnoreCase)
+               && string.Equals(a.PathName ?? string.Empty, b.PathName ?? string.Empty, StringComparison.Ordinal)
+               && string.Equals(a.ProtocolVersion ?? string.Empty, b.ProtocolVersion ?? string.Empty,
+                   StringComparison.Ordinal);
     }
 
     private static Dictionary<string, string> GetOrCreateSectionMap(
@@ -251,6 +283,7 @@ public sealed class AsyncApiDocumentMerger
             map = new Dictionary<string, string>(StringComparer.Ordinal);
             keyMap[section] = map;
         }
+
         return map;
     }
 
@@ -264,6 +297,7 @@ public sealed class AsyncApiDocumentMerger
         {
             return;
         }
+
         var map = GetOrCreateSectionMap(keyMap, section);
         foreach (var key in source.Keys)
         {
@@ -280,6 +314,7 @@ public sealed class AsyncApiDocumentMerger
         {
             return;
         }
+
         BuildKeyMap(keyMap, "components/schemas", components.Schemas, prefix);
         BuildKeyMap(keyMap, "components/servers", components.Servers, prefix);
         BuildKeyMap(keyMap, "components/channels", components.Channels, prefix);
@@ -304,17 +339,20 @@ public sealed class AsyncApiDocumentMerger
     /// was merged with prefix <c>orderservice_</c> would still point at <c>#/servers/kafka</c>
     /// in the merged document — which no longer exists, producing an invalid AsyncAPI doc.
     /// </summary>
-    private static void RewriteReferences(AsyncApiDocument document, Dictionary<string, Dictionary<string, string>> keyMap)
+    private static void RewriteReferences(AsyncApiDocument document,
+        Dictionary<string, Dictionary<string, string>> keyMap)
     {
         if (keyMap.Count == 0)
         {
             return;
         }
+
         var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
         Visit(document, keyMap, visited);
     }
 
-    private static void Visit(object? node, Dictionary<string, Dictionary<string, string>> keyMap, HashSet<object> visited)
+    private static void Visit(object? node, Dictionary<string, Dictionary<string, string>> keyMap,
+        HashSet<object> visited)
     {
         if (node is null || node is string || node.GetType().IsPrimitive || !visited.Add(node))
         {
@@ -331,6 +369,7 @@ public sealed class AsyncApiDocumentMerger
                 // to replace the whole reference object rather than mutate it in place.
                 refable.Reference = new AsyncApiReference(rewritten, refable.Reference.Type);
             }
+
             // Reference objects are leaf nodes (the resolved target lives elsewhere); do
             // not descend further as that produces noise and potential cycles.
             return;
@@ -343,12 +382,14 @@ public sealed class AsyncApiDocumentMerger
                 {
                     Visit(v, keyMap, visited);
                 }
+
                 return;
             case System.Collections.IEnumerable enumerable:
                 foreach (var v in enumerable)
                 {
                     Visit(v, keyMap, visited);
                 }
+
                 return;
         }
 
@@ -360,20 +401,24 @@ public sealed class AsyncApiDocumentMerger
             return;
         }
 
-        foreach (var prop in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+        foreach (var prop in type.GetProperties(System.Reflection.BindingFlags.Public |
+                                                System.Reflection.BindingFlags.Instance))
         {
             if (prop.GetIndexParameters().Length > 0 || !prop.CanRead)
             {
                 continue;
             }
+
             var pt = prop.PropertyType;
             if (pt.IsPrimitive || pt.IsEnum || pt == typeof(string) || pt == typeof(Uri))
             {
                 continue;
             }
+
             object? value;
             try { value = prop.GetValue(node); }
             catch { continue; }
+
             Visit(value, keyMap, visited);
         }
     }
@@ -402,6 +447,7 @@ public sealed class AsyncApiDocumentMerger
             {
                 return refStr;
             }
+
             section = $"components/{parts[1]}";
             keyIndex = 2;
         }
@@ -419,11 +465,14 @@ public sealed class AsyncApiDocumentMerger
         {
             return refStr;
         }
+
         var originalKey = parts[keyIndex];
-        if (!map.TryGetValue(originalKey, out var newKey) || string.Equals(originalKey, newKey, StringComparison.Ordinal))
+        if (!map.TryGetValue(originalKey, out var newKey) ||
+            string.Equals(originalKey, newKey, StringComparison.Ordinal))
         {
             return refStr;
         }
+
         parts[keyIndex] = newKey;
         return "#/" + string.Join("/", parts);
     }
@@ -463,24 +512,43 @@ public sealed class AsyncApiDocumentMerger
             return;
         }
 
-        MergeDictionary(merged.Components.Schemas ??= new Dictionary<string, AsyncApiMultiFormatSchema>(), source.Components.Schemas, prefix);
-        MergeDictionary(merged.Components.Servers ??= new Dictionary<string, AsyncApiServer>(), source.Components.Servers, prefix);
-        MergeDictionary(merged.Components.Channels ??= new Dictionary<string, AsyncApiChannel>(), source.Components.Channels, prefix);
-        MergeDictionary(merged.Components.Operations ??= new Dictionary<string, AsyncApiOperation>(), source.Components.Operations, prefix);
-        MergeDictionary(merged.Components.Messages ??= new Dictionary<string, AsyncApiMessage>(), source.Components.Messages, prefix);
-        MergeDictionary(merged.Components.SecuritySchemes ??= new Dictionary<string, AsyncApiSecurityScheme>(), source.Components.SecuritySchemes, prefix);
-        MergeDictionary(merged.Components.Parameters ??= new Dictionary<string, AsyncApiParameter>(), source.Components.Parameters, prefix);
-        MergeDictionary(merged.Components.CorrelationIds ??= new Dictionary<string, AsyncApiCorrelationId>(), source.Components.CorrelationIds, prefix);
-        MergeDictionary(merged.Components.Tags ??= new Dictionary<string, AsyncApiTag>(), source.Components.Tags, prefix);
-        MergeDictionary(merged.Components.OperationTraits ??= new Dictionary<string, AsyncApiOperationTrait>(), source.Components.OperationTraits, prefix);
-        MergeDictionary(merged.Components.MessageTraits ??= new Dictionary<string, AsyncApiMessageTrait>(), source.Components.MessageTraits, prefix);
-        MergeDictionary(merged.Components.ServerBindings ??= new Dictionary<string, AsyncApiBindings<IServerBinding>>(), source.Components.ServerBindings, prefix);
-        MergeDictionary(merged.Components.ChannelBindings ??= new Dictionary<string, AsyncApiBindings<IChannelBinding>>(), source.Components.ChannelBindings, prefix);
-        MergeDictionary(merged.Components.OperationBindings ??= new Dictionary<string, AsyncApiBindings<IOperationBinding>>(), source.Components.OperationBindings, prefix);
-        MergeDictionary(merged.Components.MessageBindings ??= new Dictionary<string, AsyncApiBindings<IMessageBinding>>(), source.Components.MessageBindings, prefix);
+        MergeDictionary(merged.Components.Schemas ??= new Dictionary<string, AsyncApiMultiFormatSchema>(),
+            source.Components.Schemas, prefix);
+        MergeDictionary(merged.Components.Servers ??= new Dictionary<string, AsyncApiServer>(),
+            source.Components.Servers, prefix);
+        MergeDictionary(merged.Components.Channels ??= new Dictionary<string, AsyncApiChannel>(),
+            source.Components.Channels, prefix);
+        MergeDictionary(merged.Components.Operations ??= new Dictionary<string, AsyncApiOperation>(),
+            source.Components.Operations, prefix);
+        MergeDictionary(merged.Components.Messages ??= new Dictionary<string, AsyncApiMessage>(),
+            source.Components.Messages, prefix);
+        MergeDictionary(merged.Components.SecuritySchemes ??= new Dictionary<string, AsyncApiSecurityScheme>(),
+            source.Components.SecuritySchemes, prefix);
+        MergeDictionary(merged.Components.Parameters ??= new Dictionary<string, AsyncApiParameter>(),
+            source.Components.Parameters, prefix);
+        MergeDictionary(merged.Components.CorrelationIds ??= new Dictionary<string, AsyncApiCorrelationId>(),
+            source.Components.CorrelationIds, prefix);
+        MergeDictionary(merged.Components.Tags ??= new Dictionary<string, AsyncApiTag>(), source.Components.Tags,
+            prefix);
+        MergeDictionary(merged.Components.OperationTraits ??= new Dictionary<string, AsyncApiOperationTrait>(),
+            source.Components.OperationTraits, prefix);
+        MergeDictionary(merged.Components.MessageTraits ??= new Dictionary<string, AsyncApiMessageTrait>(),
+            source.Components.MessageTraits, prefix);
+        MergeDictionary(merged.Components.ServerBindings ??= new Dictionary<string, AsyncApiBindings<IServerBinding>>(),
+            source.Components.ServerBindings, prefix);
+        MergeDictionary(
+            merged.Components.ChannelBindings ??= new Dictionary<string, AsyncApiBindings<IChannelBinding>>(),
+            source.Components.ChannelBindings, prefix);
+        MergeDictionary(
+            merged.Components.OperationBindings ??= new Dictionary<string, AsyncApiBindings<IOperationBinding>>(),
+            source.Components.OperationBindings, prefix);
+        MergeDictionary(
+            merged.Components.MessageBindings ??= new Dictionary<string, AsyncApiBindings<IMessageBinding>>(),
+            source.Components.MessageBindings, prefix);
     }
 
-    private static void MergeDictionary<TValue>(IDictionary<string, TValue> target, IDictionary<string, TValue>? source, string prefix)
+    private static void MergeDictionary<TValue>(IDictionary<string, TValue> target, IDictionary<string, TValue>? source,
+        string prefix)
     {
         if (source is null)
         {
@@ -505,7 +573,9 @@ public sealed class AsyncApiDocumentMerger
     /// Otherwise, the highest version found across all source documents is used.
     /// Falls back to "3.0.0" if no version could be determined.
     /// </summary>
-    internal static string ResolveAsyncApiSpecVersion(IReadOnlyList<(AsyncApiDocument Document, AsyncApiDocumentSource Source)> documents, AsyncApiMergeOptions options)
+    internal static string ResolveAsyncApiSpecVersion(
+        IReadOnlyList<(AsyncApiDocument Document, AsyncApiDocumentSource Source)> documents,
+        AsyncApiMergeOptions options)
     {
         if (!string.IsNullOrEmpty(options.AsyncApiSpecVersion))
         {

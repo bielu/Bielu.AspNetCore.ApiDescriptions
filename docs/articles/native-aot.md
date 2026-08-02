@@ -52,6 +52,36 @@ internal partial class MyProjectJsonContext : JsonSerializerContext { }
 > [!IMPORTANT]
 > If you forget to include a message type in your `JsonSerializerContext`, you will receive an `InvalidOperationException` at runtime when the library attempts to generate the AsyncAPI schema for that type.
 
+### 3. Runtime directives (supplied for you)
+
+Nothing to do here — this section documents what the package does on your behalf, and how to change
+it if you need to.
+
+`Bielu.AspNetCore.AsyncApi` ships an `rd.xml` runtime directives file and applies it automatically
+when `PublishAot` is `true`, including when you reference the package indirectly through
+`Bielu.AspNetCore.AsyncApi.Merger`, `.Versioning`, a protocol extension or a Scalar console.
+
+It exists because the underlying `ByteBard.AsyncAPI` serializer resolves enums from their display
+names through `Enum.GetValues()`, which calls `Array.CreateInstance` — constructing an array type at
+runtime. ILC does not emit metadata for a type it cannot see being used, and that call is invisible
+to its analysis, so without the directives the application publishes and starts normally and then
+throws on the first document request:
+
+```text
+System.NotSupportedException: 'ByteBard.AsyncAPI.Models.ReferenceType[]' is missing native code or metadata.
+```
+
+`TrimmerRootAssembly` does not solve this — it governs which assemblies survive trimming, not which
+types get reflection metadata.
+
+To supply your own set instead:
+
+```xml
+<PropertyGroup>
+  <BieluAsyncApiIncludeRuntimeDirectives>false</BieluAsyncApiIncludeRuntimeDirectives>
+</PropertyGroup>
+```
+
 ## Using Scalar with Native AOT
 
 Scalar UI is also compatible with Native AOT. When mapping the Scalar UI, ensure you reference the correct document path:
@@ -67,3 +97,4 @@ app.MapScalarApiReference(options =>
 
 - **Custom Providers**: If you implement custom `IAsyncApiMetadataProvider` or `IAsyncApiSchemaTransformer`, ensure they are also AOT-compatible and do not rely on reflection to discover types.
 - **Dynamic Types**: Using `dynamic` or non-annotated `object` types for messages is not supported in Native AOT.
+- **Publish warnings from `ByteBard.AsyncAPI`**: the dependency is not trim/AOT-annotated, so an AOT publish reports `IL2104`/`IL3053` from that assembly. They come from outside this project and do not affect the generated document — the `aot-verification` CI job asserts the AOT build and the reflection-based build serve documents that are equal once parsed as JSON. The comparison is deliberately structural rather than byte-for-byte, since property ordering is not part of the contract.

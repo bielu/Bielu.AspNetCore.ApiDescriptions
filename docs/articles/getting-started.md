@@ -1,4 +1,4 @@
-# Getting Started
+﻿# Getting Started
 
 Bielu.AspNetCore.AsyncApi makes it easy to document your event-driven APIs in ASP.NET Core using a familiar API similar to OpenAPI.
 
@@ -30,7 +30,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add AsyncAPI services
 builder.Services.AddAsyncApi(options =>
 {
-    options.AddServer("mosquitto", "test.mosquitto.org", "mqtt", server =>
+    options.AddServer("mosquitto", "test.mosquitto.org", "mqtt", pathName: null, server =>
     {
         server.Description = "Test Mosquitto MQTT Broker";
     });

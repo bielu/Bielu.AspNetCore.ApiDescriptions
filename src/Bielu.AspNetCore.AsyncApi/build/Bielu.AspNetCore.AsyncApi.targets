@@ -1,0 +1,30 @@
+<Project>
+
+  <!--
+    Packed into buildTransitive/, so it is imported by projects that reference this package directly
+    *and* by projects that pick it up through Bielu.AspNetCore.AsyncApi.Merger, .Versioning, the
+    protocol extensions or the Scalar consoles.
+
+    Its whole job is to hand ILC the runtime directives next to this file. Native AOT generation is
+    broken without them for reasons that live entirely in our dependency graph (see the rd.xml), so
+    requiring every consumer to discover and hand-write that file would make "Native AOT support" a
+    claim they have to finish themselves.
+
+    Set <BieluAsyncApiIncludeRuntimeDirectives>false</BieluAsyncApiIncludeRuntimeDirectives> to opt
+    out — worth having if a consumer ever needs to supply a narrower or wider set of directives, or
+    if ByteBard.AsyncAPI becomes AOT-annotated and these stop being necessary.
+  -->
+
+  <PropertyGroup>
+    <BieluAsyncApiIncludeRuntimeDirectives Condition="'$(BieluAsyncApiIncludeRuntimeDirectives)' == ''">true</BieluAsyncApiIncludeRuntimeDirectives>
+  </PropertyGroup>
+
+  <!-- Conditioned on PublishAot because ILC is the only consumer of RdXmlFile; adding the item to
+       ordinary builds would be inert but misleading. Both spellings work: a value set in the
+       consuming .csproj is visible here (NuGet imports package targets after the project body), and
+       `dotnet publish -p:PublishAot=true` sets it as a global property. -->
+  <ItemGroup Condition="'$(BieluAsyncApiIncludeRuntimeDirectives)' == 'true' and '$(PublishAot)' == 'true'">
+    <RdXmlFile Include="$(MSBuildThisFileDirectory)Bielu.AspNetCore.AsyncApi.rd.xml" />
+  </ItemGroup>
+
+</Project>

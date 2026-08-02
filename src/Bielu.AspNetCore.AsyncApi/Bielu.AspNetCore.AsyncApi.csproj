@@ -39,6 +39,17 @@
       <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" AdditionalProperties="Configuration=Release" />
     </ItemGroup>
     <ItemGroup>
+      <!-- buildTransitive rather than build: the core package is very often a transitive reference
+           (through .Merger, .Versioning, the protocol extensions, the Scalar consoles), and an app
+           publishing Native AOT needs the directives regardless of how it acquired us. buildTransitive
+           is imported by direct consumers too, so one location covers both.
+           Update, not Include: the SDK's default globs already pick these up as None items. Each
+           file names its own PackagePath — a directory PackagePath appends the item's own relative
+           path, which lands them in buildTransitive/build/ where NuGet does not look for them. -->
+      <None Update="build\Bielu.AspNetCore.AsyncApi.targets" Pack="true" PackagePath="buildTransitive\Bielu.AspNetCore.AsyncApi.targets" />
+      <None Update="build\Bielu.AspNetCore.AsyncApi.rd.xml" Pack="true" PackagePath="buildTransitive\Bielu.AspNetCore.AsyncApi.rd.xml" />
+    </ItemGroup>
+    <ItemGroup>
       <!-- Packaged analyzer is always built Release regardless of $(Configuration) here, so the
            path below can't drift out of sync with whichever config this project happens to build
            under (see CI failures where the two configs desynced and left bin/Release missing). -->

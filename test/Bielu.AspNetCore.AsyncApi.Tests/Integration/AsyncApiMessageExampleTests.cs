@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Shouldly;
 using Xunit;
 
@@ -25,7 +26,7 @@ public class AsyncApiMessageExampleTests
 
     public class TestMessage
     {
-        public string Text { get; set; }
+        public string Text { get; set; } = string.Empty;
     }
 
     [AsyncApi]
@@ -42,18 +43,22 @@ public class AsyncApiMessageExampleTests
     public async Task MessageExamples_FromAttributes_ArePopulated()
     {
         // Arrange
-        var builder = new WebHostBuilder()
-            .ConfigureServices(services =>
+        using var host = await Host.CreateDefaultBuilder()
+            .ConfigureWebHostDefaults(webBuilder =>
             {
-                services.AddControllers().AddApplicationPart(typeof(TestBus).Assembly);
-                services.AddAsyncApi(TestDocumentName, options =>
+                webBuilder.UseTestServer();
+                webBuilder.ConfigureServices(services =>
                 {
+                    services.AddControllers().AddApplicationPart(typeof(TestBus).Assembly);
+                    services.AddAsyncApi(TestDocumentName, options =>
+                    {
+                    });
                 });
+                webBuilder.Configure(app => { });
             })
-            .Configure(app => { });
+            .StartAsync();
 
-        using var server = new TestServer(builder);
-        var documentProvider = server.Services.GetRequiredKeyedService<IAsyncApiDocumentProvider>(TestDocumentName);
+        var documentProvider = host.Services.GetRequiredKeyedService<IAsyncApiDocumentProvider>(TestDocumentName);
 
         // Act
         var document = await documentProvider.GetAsyncApiDocumentAsync();
@@ -75,19 +80,23 @@ public class AsyncApiMessageExampleTests
     public async Task MessageExamples_FromFluentApi_ArePopulated()
     {
         // Arrange
-        var builder = new WebHostBuilder()
-            .ConfigureServices(services =>
+        using var host = await Host.CreateDefaultBuilder()
+            .ConfigureWebHostDefaults(webBuilder =>
             {
-                services.AddControllers().AddApplicationPart(typeof(TestBus).Assembly);
-                services.AddAsyncApi(TestDocumentName, options =>
+                webBuilder.UseTestServer();
+                webBuilder.ConfigureServices(services =>
                 {
-                    options.AddMessageExample("fluent-example", new TestMessage { Text = "fluent" }, "Fluent summary");
+                    services.AddControllers().AddApplicationPart(typeof(TestBus).Assembly);
+                    services.AddAsyncApi(TestDocumentName, options =>
+                    {
+                        options.AddMessageExample("fluent-example", new TestMessage { Text = "fluent" }, "Fluent summary");
+                    });
                 });
+                webBuilder.Configure(app => { });
             })
-            .Configure(app => { });
+            .StartAsync();
 
-        using var server = new TestServer(builder);
-        var documentProvider = server.Services.GetRequiredKeyedService<IAsyncApiDocumentProvider>(TestDocumentName);
+        var documentProvider = host.Services.GetRequiredKeyedService<IAsyncApiDocumentProvider>(TestDocumentName);
 
         // Act
         var document = await documentProvider.GetAsyncApiDocumentAsync();
@@ -104,20 +113,24 @@ public class AsyncApiMessageExampleTests
     public async Task SetSchemaExampleFromMessageExample_WhenTrue_PopulatesSchema()
     {
         // Arrange
-        var builder = new WebHostBuilder()
-            .ConfigureServices(services =>
+        using var host = await Host.CreateDefaultBuilder()
+            .ConfigureWebHostDefaults(webBuilder =>
             {
-                services.AddControllers().AddApplicationPart(typeof(TestBus).Assembly);
-                services.AddAsyncApi(TestDocumentName, options =>
+                webBuilder.UseTestServer();
+                webBuilder.ConfigureServices(services =>
                 {
-                    options.SetSchemaExampleFromMessageExample = true;
-                    options.AddMessageExample("fluent-example", new TestMessage { Text = "fluent" });
+                    services.AddControllers().AddApplicationPart(typeof(TestBus).Assembly);
+                    services.AddAsyncApi(TestDocumentName, options =>
+                    {
+                        options.SetSchemaExampleFromMessageExample = true;
+                        options.AddMessageExample("fluent-example", new TestMessage { Text = "fluent" });
+                    });
                 });
+                webBuilder.Configure(app => { });
             })
-            .Configure(app => { });
+            .StartAsync();
 
-        using var server = new TestServer(builder);
-        var documentProvider = server.Services.GetRequiredKeyedService<IAsyncApiDocumentProvider>(TestDocumentName);
+        var documentProvider = host.Services.GetRequiredKeyedService<IAsyncApiDocumentProvider>(TestDocumentName);
 
         // Act
         var document = await documentProvider.GetAsyncApiDocumentAsync();
