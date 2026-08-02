@@ -1,13 +1,13 @@
-<Project>
+﻿<Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
     <!-- ByteBard AsyncAPI -->
-    <PackageVersion Include="ByteBard.AsyncAPI.NET" Version="3.0.1-beta.17" />
-    <PackageVersion Include="ByteBard.AsyncAPI.NET.Bindings" Version="3.0.1-beta.17" />
-    <PackageVersion Include="ByteBard.AsyncAPI.NET.Readers" Version="3.0.1-beta.17" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET" Version="3.0.1" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET.Bindings" Version="3.0.1" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET.Readers" Version="3.0.1" />
     <!-- Arazzo spec library -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="JsonPath.Net" Version="3.0.2" />
