@@ -19,12 +19,12 @@ namespace StreetlightsAPI
         /// <summary>
         /// Lat-Long coordinates of the streetlight.
         /// </summary>
-        public double[] Position { get; set; }
+        public double[] Position { get; set; } = [];
 
         /// <summary>
         /// History of light intensity measurements
         /// </summary>
-        public List<KeyValuePair<DateTime, int>> LightIntensity { get; set; }
+        public List<KeyValuePair<DateTime, int>> LightIntensity { get; set; } = [];
     }
 
     public class LightMeasuredEvent

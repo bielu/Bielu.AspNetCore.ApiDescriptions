@@ -25,10 +25,15 @@ was acquired. Opt out with
 `<BieluAsyncApiIncludeRuntimeDirectives>false</BieluAsyncApiIncludeRuntimeDirectives>` to supply your
 own set.
 
-`src/examples/AotStreetlights` now imports that same file instead of keeping its own copy, so
-`scripts/verify-aot.sh` — and with it the blocking `aot-verification` CI job — exercises the artifact
-consumers actually get. A regression in the packaged directives now fails the build rather than
-passing locally and breaking in the wild.
+`src/examples/AotStreetlights` now imports that same targets file instead of keeping its own copy of
+the directives, so `scripts/verify-aot.sh` — and with it the blocking `aot-verification` CI job —
+fails if their *content* regresses, rather than passing against a copy that has drifted from what
+ships.
+
+The packaging itself is verified separately, by packing and reading the `.nupkg`: a `ProjectReference`
+does not flow `buildTransitive` assets, so the example imports the file directly and a wrong
+`PackagePath` would not fail that job. Consuming the packed package from a local feed in the fixture
+would close that last gap, and is worth doing if the packaging layout ever changes again.
 
 The [Native AOT](https://apidescriptions.bielu.pl/articles/native-aot.html) article documents what is
 supplied, why it is necessary, and how to override it.

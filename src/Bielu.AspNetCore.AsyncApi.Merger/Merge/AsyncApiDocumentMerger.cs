@@ -117,11 +117,18 @@ public sealed class AsyncApiDocumentMerger
 
             return await File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception e)
+        // A source that cannot be read is reported as unavailable (null) rather than failing the whole
+        // merge, which is the point of the catch-all — including the FileNotFoundException thrown just
+        // above, and the OperationCanceledException a per-source httpTimeout produces.
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Cancellation of the merge itself is not a bad source, and must not be reported as one.
+            throw;
+        }
+        catch (Exception)
         {
             return null;
         }
-        
     }
 
     internal static AsyncApiDocument ParseDocument(string content, string sourceUri)

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
@@ -76,7 +76,7 @@ public class AsyncApiEndpointTests
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        response.Content.Headers.ContentType?.MediaType.ShouldContain("yaml");
+        response.Content.Headers.ContentType?.MediaType!.ShouldContain("yaml");
     }
 
     [Fact]

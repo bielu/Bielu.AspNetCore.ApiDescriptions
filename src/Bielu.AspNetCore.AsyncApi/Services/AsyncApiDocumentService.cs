@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
@@ -100,7 +100,7 @@ internal sealed class AsyncApiDocumentService(
         }
         finally
         {
-            await FinalizeTransformers(schemaTransformers, operationTransformers);
+            await FinalizeTransformersAsync(schemaTransformers, operationTransformers);
         }
 
         if (document.Components?.Schemas is not null)
@@ -165,7 +165,7 @@ internal sealed class AsyncApiDocumentService(
                 var messageRefs = await ApplyChannelMessagesFromMetadataAsync(
                     document, channel, memberMetadata, scopedServiceProvider, schemaTransformers, cancellationToken);
 
-                await ApplyOperationsFromMetadata(document, channel, memberMetadata, messageRefs, scopedServiceProvider, schemaTransformers, cancellationToken);
+                await ApplyOperationsFromMetadataAsync(document, channel, memberMetadata, messageRefs, scopedServiceProvider, schemaTransformers, cancellationToken);
             }
         }
     }
@@ -427,7 +427,7 @@ internal sealed class AsyncApiDocumentService(
 /// <param name="scopedServiceProvider">Scoped service provider used to resolve services during schema creation.</param>
 /// <param name="schemaTransformers">Schema transformers applied when creating or retrieving payload schemas.</param>
 /// <param name="cancellationToken">Cancellation token to observe while performing async operations.</param>
-private async Task ApplyOperationsFromMetadata(
+private async Task ApplyOperationsFromMetadataAsync(
     AsyncApiDocument document,
     AsyncApiChannel channel,
     AsyncApiMemberMetadata memberMetadata,
@@ -571,15 +571,15 @@ private async Task ApplyOperationsFromMetadata(
         }
     }
 
-    internal static async Task FinalizeTransformers(
+    internal static async Task FinalizeTransformersAsync(
         IAsyncApiSchemaTransformer[] schemaTransformers,
         IAsyncApiOperationTransformer[] operationTransformers)
     {
         for (var i = 0; i < schemaTransformers.Length; i++)
-            await schemaTransformers[i].FinalizeTransformer();
+            await schemaTransformers[i].FinalizeTransformerAsync();
 
         for (var i = 0; i < operationTransformers.Length; i++)
-            await operationTransformers[i].FinalizeTransformer();
+            await operationTransformers[i].FinalizeTransformerAsync();
     }
 
     internal AsyncApiInfo GetAsyncApiInfo()

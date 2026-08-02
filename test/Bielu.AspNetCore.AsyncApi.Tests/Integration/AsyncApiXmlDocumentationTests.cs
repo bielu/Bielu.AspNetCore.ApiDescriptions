@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
@@ -119,5 +119,5 @@ public class XmlDocTestBus
 
 public class XmlDocTestMessage
 {
-    public string Text { get; set; }
+    public string Text { get; set; } = string.Empty;
 }

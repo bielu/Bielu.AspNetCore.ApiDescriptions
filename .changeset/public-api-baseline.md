@@ -16,16 +16,24 @@ contract types compile against, so a break there breaks their build rather than 
 Reviewing the surface rather than just recording it found three things worth changing while changing
 them is still free:
 
-- **`AddServer` was ambiguous at the call site.** `AddServer(name, url, protocol, string? pathName = null)`
-  and `AddServer(name, url, protocol, Action<AsyncApiServer> configure)` take the same number of
-  parameters, so `AddServer(name, url, protocol, null)` did not compile (CS0121) — and RS0027 flags
-  the same shape as a backcompat hazard, since a parameter added to either overload later would
-  collide. Split into explicit three- and four-parameter overloads; every existing call site compiles
-  unchanged.
-- **`AsyncApiOptions.ChannelBindings` / `OperationBindings` are now get-only.** Nothing assigned
-  either dictionary; callers go through `AddChannelBinding`/`AddOperationBinding`. The dictionaries
-  stay mutable, so nothing the setter allowed is out of reach — but a setter cannot be removed after
-  the baseline freezes.
+- **`AddServer`'s optional parameter is gone.** `AddServer(name, url, protocol, string? pathName = null)`
+  had the same arity as `AddServer(name, url, protocol, Action<AsyncApiServer> configure)`, which
+  RS0027 flags as a backcompat hazard: an optional parameter must have the most parameters among its
+  overloads, or a parameter added to either one later collides. Replaced by explicit three- and
+  four-parameter overloads; every existing call site compiles unchanged.
+
+  This does **not** make an untyped `AddServer(name, url, protocol, null)` compile — `null` still
+  converts to both `string?` and `Action<AsyncApiServer>`, so that call is CS0121-ambiguous, as it was
+  before. Spell it `AddServer(name, url, protocol, pathName: null)` or use the three-parameter
+  overload. Removing the ambiguity outright would mean moving `configure` to a fifth parameter and
+  rewriting every `AddServer(..., server => ...)` call in the templates, docs and examples; that is a
+  larger API decision than a baselining pass should make on its own.
+- **`AsyncApiOptions.ChannelBindings` / `OperationBindings` are now get-only.** Nothing in the repo
+  assigned either dictionary; callers go through `AddChannelBinding`/`AddOperationBinding`. This is a
+  deliberate pre-1.0 break with a real consequence: the dictionaries' *contents* are still fully
+  mutable, but a caller can no longer **replace the dictionary instance** the way
+  `options.ChannelBindings = new(...)` allowed. Build the contents up instead. Taken now because a
+  setter cannot be removed once the baseline freezes.
 - **`ParameterInfoExtensions` is now internal.** A reflection helper with one call site, published as
   an extension method on `System.Reflection.ParameterInfo`, where it surfaced in IntelliSense on every
   `ParameterInfo` in any file importing the namespace.

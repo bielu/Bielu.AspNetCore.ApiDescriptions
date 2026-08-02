@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net;
@@ -253,7 +253,7 @@ public class AsyncApiMergeEndpointTests : IAsyncLifetime
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        response.Content.Headers.ContentType?.MediaType.ShouldContain("yaml");
+        response.Content.Headers.ContentType?.MediaType!.ShouldContain("yaml");
     }
 
     private static async Task<IHost> CreateMergeTestHostAsync(string doc1Path, string doc2Path, string pattern = "/asyncapi/merged.json")

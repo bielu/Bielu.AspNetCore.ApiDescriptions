@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
+﻿using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Shouldly;
@@ -31,7 +31,7 @@ public class XmlDocumentationProviderTests
             Arg.Any<EventId>(),
             Arg.Any<object>(),
             Arg.Any<Exception>(),
-            Arg.Any<Func<object, Exception, string>>());
+            Arg.Any<Func<object, Exception?, string>>());
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class XmlDocumentationProviderTests
         {
             // Act
             _provider.Load(filePath);
-            var method = typeof(SampleType).GetMethod(nameof(SampleType.MethodWithParameters));
+            var method = typeof(SampleType).GetMethod(nameof(SampleType.MethodWithParameters))!;
             var doc = _provider.GetDocumentation(method);
 
             // Assert

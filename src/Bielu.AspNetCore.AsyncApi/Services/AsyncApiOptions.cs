@@ -275,12 +275,22 @@ public sealed class AsyncApiOptions
     /// <param name="protocol">The server protocol (mqtt, http, ws, etc.).</param>
     /// <param name="pathName">The path appended to the server URL, or <see langword="null"/> for a server addressed at its root.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    /// <remarks>
+    /// Pass a null path as <c>pathName: null</c>, or use the three-parameter overload. A bare
+    /// <c>AddServer(name, url, protocol, null)</c> is ambiguous (CS0121), because <see langword="null"/>
+    /// converts equally well to this overload's <see cref="string"/> and to the
+    /// <see cref="Action{T}"/> taken by the overload below.
+    /// </remarks>
     // Spelled as two overloads rather than one with `string? pathName = null`, because the
-    // Action<AsyncApiServer> overload below takes the same number of parameters: an optional
-    // parameter alongside an equal-arity overload makes `AddServer(name, url, protocol, null)`
-    // ambiguous at the call site (CS0121), and it is what RS0027 flags as a backcompat hazard —
-    // any parameter added to either overload later would collide. Both existing call shapes still
+    // Action<AsyncApiServer> overload below takes the same number of parameters. RS0027 flags that
+    // shape as a backcompat hazard: an optional parameter must have the most parameters among its
+    // overloads, or a parameter added to either one later collides. Both existing call shapes still
     // compile unchanged.
+    //
+    // Note this does not remove the CS0121 ambiguity on an untyped `null` argument, and cannot:
+    // null converts to any reference type, so no annotation makes one overload better. Only moving
+    // `configure` to a fifth parameter would, at the cost of rewriting every AddServer(..., server =>
+    // ...) call in the templates, docs and examples.
     public AsyncApiOptions AddServer(string name, string url, string protocol, string? pathName)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -390,21 +400,38 @@ public sealed class AsyncApiOptions
         return this;
     }
 
-    // Get-only, like IncludeOnlyChannels: nothing in the repo assigns either dictionary, callers add
-    // through AddOperationBinding/AddChannelBinding, and a settable collection property cannot have
-    // its setter removed after the 1.0.0 baseline without breaking consumers. The dictionaries
-    // themselves stay mutable, so anything the setter allowed is still reachable.
+    // Get-only, like IncludeOnlyChannels: nothing in the repo assigned either dictionary and callers
+    // add through AddOperationBinding/AddChannelBinding. Removing the setters is a deliberate break
+    // taken before the 1.0.0 public API baseline froze, because a settable property cannot lose its
+    // setter afterwards without breaking consumers.
     /// <summary>
     /// Operation bindings collection, keyed by operation name.
     /// </summary>
+    /// <remarks>
+    /// The dictionary's contents can be added to, replaced and cleared; the dictionary
+    /// <em>instance</em> cannot be replaced. Assigning a whole new dictionary was possible before
+    /// 1.0.0 and is not any more — build the contents up instead, or call
+    /// <see cref="AddOperationBinding"/>.
+    /// </remarks>
     public Dictionary<string, IList<IOperationBinding>> OperationBindings { get; } = new();
 
     /// <summary>
     /// Channel bindings collection, keyed by channel name.
     /// </summary>
+    /// <remarks>
+    /// The dictionary's contents can be added to, replaced and cleared; the dictionary
+    /// <em>instance</em> cannot be replaced. Assigning a whole new dictionary was possible before
+    /// 1.0.0 and is not any more — build the contents up instead, or call
+    /// <see cref="AddChannelBinding"/>.
+    /// </remarks>
     public Dictionary<string, IList<IChannelBinding>> ChannelBindings { get; } = new();
 
-    public string DocumentRoutePattern { get; set; }
+    /// <summary>
+    /// The route pattern the document is served from. Set by <c>MapAsyncApi(pattern)</c>; defaults to
+    /// <see cref="AsyncApiGeneratorConstants.DefaultAsyncApiRoute"/> so it is never null for anything
+    /// reading it before the endpoint is mapped (build-time generation, for one).
+    /// </summary>
+    public string DocumentRoutePattern { get; set; } = AsyncApiGeneratorConstants.DefaultAsyncApiRoute;
 
     /// <summary>
     /// When non-empty, only channels whose sanitized key appears in this set are included in the
@@ -544,7 +571,7 @@ public sealed class AsyncApiOptions
 
 internal class MessageExample
 {
-    public string Name { get; set; }
-    public object Value { get; set; }
+    public required string Name { get; set; }
+    public required object Value { get; set; }
     public string? Summary { get; set; }
 }

@@ -101,8 +101,8 @@ namespace StreetlightsAPI
             });
 
             // Print the AsyncAPI doc location
-            var logger = app.ApplicationServices.GetService<ILoggerFactory>().CreateLogger<Program>();
-            var addresses = app.ServerFeatures.Get<IServerAddressesFeature>().Addresses;
+            var logger = app.ApplicationServices.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
+            ICollection<string> addresses = app.ServerFeatures.Get<IServerAddressesFeature>()?.Addresses ?? [];
 
             logger.LogInformation("AsyncAPI doc available at: {URL}",
                 $"{addresses.FirstOrDefault()}/asyncapi/v1.json");

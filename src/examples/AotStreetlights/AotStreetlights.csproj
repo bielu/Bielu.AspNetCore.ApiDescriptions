@@ -16,10 +16,15 @@
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" UndefineProperties="PublishAot;RuntimeIdentifier;SelfContained" />
   </ItemGroup>
 
-  <!-- This example is the CI verification for the Native AOT path, so it must exercise the same
-       runtime directives a real consumer gets rather than a local copy of them. A ProjectReference
-       does not flow the package's buildTransitive assets, so the file is imported by hand — which
-       means `scripts/verify-aot.sh` fails if the shipped targets or rd.xml ever regress. -->
+  <!-- This example is the CI verification for the Native AOT path, so it uses the same targets and
+       rd.xml file that get packed rather than a local copy of them: a regression in their *content*
+       fails `scripts/verify-aot.sh`.
+
+       What this does NOT cover is the packaging itself — a ProjectReference does not flow
+       buildTransitive assets, so the file is imported by hand, and a wrong PackagePath would still
+       pass here. (Pack does catch the narrower case of a misnamed targets file, via NU5129.) Closing
+       that gap means packing the core project and consuming it through a PackageReference against a
+       local feed, which is a change to this fixture and to verify-aot.sh, not just to this line. -->
   <Import Project="..\..\Bielu.AspNetCore.AsyncApi\build\Bielu.AspNetCore.AsyncApi.targets" />
 
 </Project>
