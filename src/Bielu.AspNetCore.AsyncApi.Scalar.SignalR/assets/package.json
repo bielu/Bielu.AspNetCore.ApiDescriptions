@@ -1,6 +1,6 @@
 {
   "name": "@bielu/scalar-signalr",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Interactive SignalR console plugin for the Scalar API Reference. Reads SignalR AsyncAPI bindings and lets you connect to hubs, invoke methods and subscribe to server events.",
   "license": "MIT",
   "author": "Arkadiusz Biel",
