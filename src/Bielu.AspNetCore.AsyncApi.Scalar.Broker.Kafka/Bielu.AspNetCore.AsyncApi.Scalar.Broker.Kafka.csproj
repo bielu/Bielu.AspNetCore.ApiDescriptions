@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka</RootNamespace>
+        <Description>Kafka driver for the interactive Scalar broker console. Lets the console publish to and tail Kafka topics described by your kafka AsyncAPI bindings, through the opt-in server-side bridge in Bielu.AspNetCore.AsyncApi.Scalar.Broker.</Description>
+        <PackageTags>scalar;kafka;broker;asyncapi;aspnetcore;api-reference</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Confluent.Kafka" />
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Scalar.Broker\Bielu.AspNetCore.AsyncApi.Scalar.Broker.csproj" />
+    </ItemGroup>
+
+</Project>

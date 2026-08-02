@@ -1,0 +1,12 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "bielu-aspnetcore-asyncapi": "1.0.0",
+    "@bielu/scalar-broker": "1.0.0",
+    "@bielu/scalar-grpc": "1.0.0",
+    "@bielu/scalar-signalr": "1.0.0",
+    "@bielu/scalar-core": "0.1.0"
+  },
+  "changesets": []
+}
