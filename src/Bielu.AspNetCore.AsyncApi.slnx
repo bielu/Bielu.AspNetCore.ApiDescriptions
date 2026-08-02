@@ -81,6 +81,7 @@
   <Project Path="./Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire/Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Scalar.Grpc/Bielu.AspNetCore.AsyncApi.Scalar.Grpc.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire/Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.csproj" />
+  <Project Path="./Bielu.AspNetCore.AsyncApi.Scalar.Broker/Bielu.AspNetCore.AsyncApi.Scalar.Broker.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi.Versioning/Bielu.AspNetCore.AsyncApi.Versioning.csproj" />
   <Project Path="./Bielu.AspNetCore.AsyncApi/Bielu.AspNetCore.AsyncApi.csproj" />
 </Solution>
