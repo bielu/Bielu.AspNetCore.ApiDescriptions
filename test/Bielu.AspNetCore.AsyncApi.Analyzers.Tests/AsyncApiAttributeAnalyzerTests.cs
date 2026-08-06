@@ -222,7 +222,26 @@ public class TestHub
 }
 ";
         var diagnostics = await GetDiagnosticsAsync(testCode);
-        // Reports for AsyncApi (TestHub) and PublishOperation (SendMessage)
-        diagnostics.Count(d => d.Id == "BASYNC009").ShouldBe(2);
+        // AsyncApiAttribute has no Summary/Description; only Operation/Message attributes are checked
+        diagnostics.Count(d => d.Id == "BASYNC009").ShouldBe(1);
+        diagnostics.ShouldContain(d => d.Id == "BASYNC009" && d.GetMessage().Contains("SendMessage"));
+    }
+
+    [Fact]
+    public async Task BASYNC009_AsyncApiAttribute_NoWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+
+[AsyncApi]
+public class TestHub
+{
+    [Channel(""test"")]
+    [PublishOperation(Summary = ""does a thing"")]
+    public void SendMessage() {}
+}
+";
+        var diagnostics = await GetDiagnosticsAsync(testCode);
+        diagnostics.Where(d => d.Id == "BASYNC009").ShouldBeEmpty();
     }
 }
