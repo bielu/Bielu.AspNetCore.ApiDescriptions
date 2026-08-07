@@ -28,18 +28,6 @@ internal static class RuleBASYNC009MissingDocumentation
         }
     }
 
-    public static void AnalyzeNamedType(SymbolAnalysisContext context)
-    {
-        var typeSymbol = (INamedTypeSymbol)context.Symbol;
-        foreach (var ad in typeSymbol.GetAttributes())
-        {
-            if (RuleUtils.IsAttribute(ad, RuleConstants.AsyncApiAttributeName))
-            {
-                CheckDocumentation(context, ad, typeSymbol.Name);
-            }
-        }
-    }
-
     private static void CheckDocumentation(SymbolAnalysisContext context, AttributeData ad, string componentName)
     {
         var summaryArg = ad.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Summary");

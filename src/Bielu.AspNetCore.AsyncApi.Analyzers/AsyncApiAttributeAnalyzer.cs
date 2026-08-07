@@ -35,7 +35,6 @@ public class AsyncApiAttributeAnalyzer : DiagnosticAnalyzer
             RuleBASYNC005InvalidPayloadType.AnalyzeNamedType(sc);
             RuleBASYNC007MissingParameterlessConstructor.AnalyzeNamedType(sc);
             RuleBASYNC008DiscouragedCharacters.AnalyzeNamedType(sc);
-            RuleBASYNC009MissingDocumentation.AnalyzeNamedType(sc);
         }, SymbolKind.NamedType);
 
         context.RegisterSymbolAction(sc =>
