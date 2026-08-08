@@ -178,21 +178,41 @@ jobs:
           gh release create "v$VERSION" --title "v$VERSION" \
             --notes-file release-notes.md $PRERELEASE_FLAG
 
+  # Decide what the in-flight betas should be numbered. The build templates would otherwise stamp
+  # `-beta.<ticks>` onto the version the repository currently carries — which, right after a stable
+  # release, is the version that just shipped, so the beta would sort BELOW it and read as a
+  # downgrade. This job derives each package's version from the pending changesets instead, so the
+  # first beta after 1.0.0 ships as 1.1.0-beta.<stamp> (or 1.0.1-beta.<stamp> for a patch bump).
+  betaVersions:
+    needs: version
+    if: >-
+      always() && !cancelled()
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/nextVersion.yml@main
+    with:
+      # The synthetic changeset package that carries the shared NuGet version; the npm packages are
+      # read out of the `versions` map by name below.
+      nuget-package: bielu-aspnetcore-asyncapi
+
   # In-flight prereleases: publish a beta of main while a release is still pending (changesets not yet
   # merged), and on manual dispatch. Skipped on the Version-PR-merge commit so it does not shadow the
   # stable release.
   releaseBeta:
-    needs: version
+    needs: [version, betaVersions]
     if: >-
-      always() && !cancelled()
+      always() && !cancelled() && needs.betaVersions.result == 'success'
       && (github.event_name == 'workflow_dispatch'
           || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
     permissions:
       contents: read
       id-token: write
+    # No `suffix:` here on purpose — the overrides below already carry the `-beta.<stamp>` part, and
+    # a suffix would take precedence over them in the build templates.
     with:
-      suffix: "beta"
+      nuget-version-override: ${{ needs.betaVersions.outputs.nuget }}
+      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-signalr'] }}
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
       artifact-name: npm-scalar-signalr
@@ -201,9 +221,13 @@ jobs:
 
   # In-flight prereleases for the second npm package (@bielu/scalar-grpc).
   releaseBetaGrpcNpm:
-    needs: [version, releaseBeta]
+    needs: [version, betaVersions, releaseBeta]
+    # `always()` is needed because `version` is skipped on workflow_dispatch, but it also switches
+    # off the implicit "all needs succeeded" gate — so the dependencies that matter are re-asserted
+    # by hand, or this would publish a beta of @bielu/scalar-grpc after releaseBeta had failed.
     if: >-
       always() && !cancelled()
+      && needs.betaVersions.result == 'success' && needs.releaseBeta.result == 'success'
       && (github.event_name == 'workflow_dispatch'
           || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
@@ -211,14 +235,15 @@ jobs:
       contents: read
       id-token: write
     with:
-      suffix: "beta"
+      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-grpc'] }}
       publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
       artifact-name: npm-scalar-grpc
 
   # Record-keeping for interim betas: surface each published beta build as a GitHub prerelease,
-  # using the exact `-beta.<ticks>` version the build template stamped (release.yml's nuget-version
-  # output) and the pending — not yet versioned — changesets as the release notes.
+  # using the exact `-beta.<stamp>` version that was packed (release.yml's nuget-version output,
+  # which echoes the betaVersions override) and the pending — not yet versioned — changesets as the
+  # release notes.
   tagBeta:
     needs: releaseBeta
     if: always() && !cancelled() && needs.releaseBeta.result == 'success'

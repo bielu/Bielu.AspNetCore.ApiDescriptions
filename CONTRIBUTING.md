@@ -248,7 +248,8 @@ It performs:
 The build and publish workflow ([.github/workflows/buildAndPublishPackage.yml](./.github/workflows/buildAndPublishPackage.yml)):
 
 - **Pull Requests**: Packages are built with a `-pr` suffix (not published)
-- **Pushes to main**: Packages are built with a `-beta` suffix and published to NuGet
+- **Pushes to main** (while changesets are pending): Packages are built as
+  `-beta.<stamp>` prereleases and published to NuGet and npm
 - **Releases**: Packages are built without suffix and published to NuGet
 
 ### Creating a Release
@@ -258,11 +259,30 @@ keeps open on `main` while unreleased changesets exist:
 
 1. PRs merge to `main`, each carrying a changeset. The bot PR accumulates them into a version bump
    and changelog entries. In the meantime every push to `main` also publishes an interim
-   `-beta.<build>` prerelease and surfaces it as a GitHub prerelease listing the pending changesets.
+   `-beta.<stamp>` prerelease and surfaces it as a GitHub prerelease listing the pending changesets.
 2. A maintainer merges the Version Packages PR.
 3. The workflow then publishes the committed version to NuGet.org and npm, and creates a `vX.Y.Z`
    GitHub Release whose notes are that version's [`CHANGELOG.md`](./CHANGELOG.md) section (marked
    as a prerelease while pre mode is active).
+
+#### How interim betas are numbered
+
+Betas are numbered from the version the pending changesets are *heading for*, not from the version
+that is already published. Straight after 1.0.0 ships, a pending `minor` changeset makes the next
+push to `main` publish `1.1.0-beta.<stamp>`; a `patch` one publishes `1.0.1-beta.<stamp>`. The
+alternative — stamping the prerelease onto the current `version.props` — would produce
+`1.0.0-beta.<stamp>`, which sorts *below* the 1.0.0 already on nuget.org and so reads as a
+downgrade to anyone tracking prereleases.
+
+The numbers come from the `betaVersions` job, which calls the shared
+[`nextVersion.yml`](https://github.com/bielu/bielu.GithubActions.Templates/blob/main/.github/workflows/nextVersion.yml)
+template: it asks changesets for its release plan and appends a UTC `beta.YYYYMMDDHHmmss` stamp.
+Packages with no pending changeset get a patch bump instead, so their beta still sits above their
+last stable release. To see which bump is pending locally:
+
+```bash
+npm run changeset:status
+```
 
 ### Version Guidelines
 
