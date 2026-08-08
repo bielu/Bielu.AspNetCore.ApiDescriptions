@@ -258,8 +258,9 @@ Releases are cut by merging the automated **"Version Packages"** PR that the cha
 keeps open on `main` while unreleased changesets exist:
 
 1. PRs merge to `main`, each carrying a changeset. The bot PR accumulates them into a version bump
-   and changelog entries. In the meantime every push to `main` also publishes an interim
-   `-beta.<stamp>` prerelease and surfaces it as a GitHub prerelease listing the pending changesets.
+   and changelog entries. While changesets are still pending, each push to `main` also publishes an
+   interim `-beta.<stamp>` prerelease and surfaces it as a GitHub prerelease listing them. (Pushes
+   with nothing pending publish no beta — that is the release path, step 3.)
 2. A maintainer merges the Version Packages PR.
 3. The workflow then publishes the committed version to NuGet.org and npm, and creates a `vX.Y.Z`
    GitHub Release whose notes are that version's [`CHANGELOG.md`](./CHANGELOG.md) section (marked

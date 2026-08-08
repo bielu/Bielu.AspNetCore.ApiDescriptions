@@ -47,11 +47,22 @@ if (!existsSync(nugetChangelogPath)) {
   process.exit(0);
 }
 
+const escapedVersion = newVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Re-running must not stack duplicate sections. The generated nuget-suite changelog still holds the
+// section after a first run, so without this guard a second `npm run version` folds it in again —
+// which is exactly what the "idempotent" promise at the top of this file claims it does not do.
+const rootChangelog = readFileSync(rootChangelogPath, "utf8");
+if (new RegExp(`^##\\s+\\[${escapedVersion}\\]`, "m").test(rootChangelog)) {
+  console.log(`CHANGELOG.md already has a section for ${newVersion}; skipping changelog fold.`);
+  process.exit(0);
+}
+
 const nugetChangelog = readFileSync(nugetChangelogPath, "utf8");
 // The generated file looks like:  # bielu-aspnetcore-asyncapi\n\n## X.Y.Z\n\n### Minor Changes\n...
 // Grab the body of the top-most "## X.Y.Z" section for the version we just wrote.
 const sectionRe = new RegExp(
-  `##\\s+${newVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\n([\\s\\S]*?)(?=\\n##\\s+\\d|$)`,
+  `##\\s+${escapedVersion}\\s*\\n([\\s\\S]*?)(?=\\n##\\s+\\d|$)`,
 );
 const match = nugetChangelog.match(sectionRe);
 const body = (match ? match[1] : "").trim();
@@ -63,7 +74,6 @@ if (!body) {
 const today = new Date().toISOString().slice(0, 10);
 const entry = `## [${newVersion}] - ${today}\n\n${body}\n`;
 
-const rootChangelog = readFileSync(rootChangelogPath, "utf8");
 const anchor = "## [Unreleased]";
 const idx = rootChangelog.indexOf(anchor);
 if (idx === -1) {

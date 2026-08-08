@@ -151,8 +151,12 @@ jobs:
   # the Version Packages PR); versions with a prerelease suffix are marked as GitHub prereleases.
   # (Created with GITHUB_TOKEN, so it does not itself trigger the `release` job — publishing is done
   # by the release job above.)
+  # `releaseStable` is a dependency, not just an ordering hint: without it a failed NuGet publish
+  # still produced a GitHub Release for a version that never reached nuget.org. There is no
+  # `always()` here, so the implicit "needs succeeded" gate does the work — and because the stable
+  # version is deterministic (no timestamp), a later re-run still tags it once publishing works.
   tagRelease:
-    needs: version
+    needs: [version, releaseStable]
     if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
     runs-on: ubuntu-latest
     permissions:
