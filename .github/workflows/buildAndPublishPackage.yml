@@ -222,8 +222,12 @@ jobs:
   # In-flight prereleases for the second npm package (@bielu/scalar-grpc).
   releaseBetaGrpcNpm:
     needs: [version, betaVersions, releaseBeta]
+    # `always()` is needed because `version` is skipped on workflow_dispatch, but it also switches
+    # off the implicit "all needs succeeded" gate — so the dependencies that matter are re-asserted
+    # by hand, or this would publish a beta of @bielu/scalar-grpc after releaseBeta had failed.
     if: >-
-      always() && !cancelled() && needs.betaVersions.result == 'success'
+      always() && !cancelled()
+      && needs.betaVersions.result == 'success' && needs.releaseBeta.result == 'success'
       && (github.event_name == 'workflow_dispatch'
           || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
