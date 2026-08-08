@@ -61,7 +61,6 @@ if (!body) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const entry = `## [${newVersion}] - ${today}\n\n${body}\n`;
 
 const rootChangelog = readFileSync(rootChangelogPath, "utf8");
 const anchor = "## [Unreleased]";
@@ -69,12 +68,44 @@ const idx = rootChangelog.indexOf(anchor);
 if (idx === -1) {
   throw new Error(`Could not find "${anchor}" anchor in CHANGELOG.md.`);
 }
-// Insert the new version section immediately after the end of the Unreleased block
-// (i.e. before the next "## " heading that follows it).
+if (rootChangelog.includes(`## [${newVersion}]`)) {
+  console.log(`CHANGELOG.md already has a section for ${newVersion}; skipping changelog fold.`);
+  process.exit(0);
+}
+
+// The new version section goes immediately after the Unreleased block, i.e. before the next "## "
+// heading that follows it.
 const afterAnchor = idx + anchor.length;
 const nextHeading = rootChangelog.indexOf("\n## ", afterAnchor);
-const insertAt = nextHeading === -1 ? rootChangelog.length : nextHeading + 1;
+const unreleasedEnd = nextHeading === -1 ? rootChangelog.length : nextHeading + 1;
+
+// Drain the curated [Unreleased] block into this release rather than leaving it above the new
+// section. Everything a contributor hand-wrote there has just shipped, so leaving it in place would
+// keep advertising released work as unreleased — and any item that never got a changeset (the
+// generated `body` above only covers those that did) would otherwise sit under [Unreleased] forever.
+const EMPTY_UNRELEASED = "_Nothing yet._";
+const curated = rootChangelog.slice(afterAnchor, unreleasedEnd).trim();
+// Demote the curated block's own "### Added"/"### Fixed" headings so they nest under the
+// "### Additional Changes" wrapper below instead of becoming siblings of it.
+const carried =
+  curated === EMPTY_UNRELEASED ? "" : curated.replace(/^### /gm, "#### ");
+
+const entry =
+  `## [${newVersion}] - ${today}\n\n${body}\n` +
+  (carried
+    ? "\n### Additional Changes\n\n" +
+      "These shipped in this release but have no changeset, so they have no generated entry above.\n\n" +
+      `${carried}\n`
+    : "");
+
 const updatedChangelog =
-  rootChangelog.slice(0, insertAt) + entry + "\n" + rootChangelog.slice(insertAt);
+  rootChangelog.slice(0, afterAnchor) +
+  `\n\n${EMPTY_UNRELEASED}\n\n` +
+  entry +
+  "\n" +
+  rootChangelog.slice(unreleasedEnd);
 writeFileSync(rootChangelogPath, updatedChangelog);
-console.log(`CHANGELOG.md <- section for ${newVersion}`);
+console.log(
+  `CHANGELOG.md <- section for ${newVersion}` +
+    (carried ? " (carried the [Unreleased] block into it)" : ""),
+);

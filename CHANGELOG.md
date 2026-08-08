@@ -8,72 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunter), the original AsyncAPI documentation generator for .NET. Below you'll find both the version history for Bielu.AspNetCore.AsyncApi and a comparison of changes from the original Saunter library.
 
-> **Versioning note.** No stable release has shipped yet. Every NuGet package in this repository
-> shares a single version (`1.0.0`, in `version.props`) and has so far only been published to the
-> **`beta` pre-release channel** on NuGet.org (`1.0.0-beta.*`). The
-> [Pre-release channel history](#pre-release-channel-history) below reconstructs, from the published
-> packages, when each package and capability first became available on that channel. Everything under
-> `[Unreleased]` is targeting the first stable `1.0.0`.
+> **Versioning note.** Every NuGet package in this repository shares a single version (in
+> `version.props`), so they are always released together. The first stable release, `1.0.0`, shipped
+> on 2026-08-02; before it, the suite was published only to the **`beta` pre-release channel** on
+> NuGet.org (`1.0.0-beta.*`). The [Pre-release channel history](#pre-release-channel-history) below
+> reconstructs, from the published packages, when each package and capability first became available
+> on that channel.
 
 ## [Unreleased]
 
-### Added
-
-- **Documentation site** - New documentation site built with docfx, hosted on GitHub Pages. Provides comprehensive guides for attributes, configuration, protocols, and CLI usage.
-- **Roslyn analyzers** - New `Bielu.AspNetCore.AsyncApi.Analyzers` package (bundled with the Attributes package) that provides compile-time diagnostics for common AsyncAPI attribute misuses. Includes checks for missing `[AsyncApi]` attributes, operations without channels, duplicate names, and invalid payload types.
-- **CLI `validate` command** - New `dotnet asyncapi validate` command to validate AsyncAPI documents against the spec. Supports globbing, strict mode (warnings as errors), and JSON output for CI pipelines.
-- **CLI `diff` command** - New `dotnet asyncapi diff` command to compare two AsyncAPI documents. Detects breaking changes (removals, narrowing) and non-breaking changes (additions). Supports text, JSON, and Markdown reports.
-- **XML documentation support** - Automatic population of channel, operation, message and schema descriptions from C# XML documentation comments (`/// <summary>`, `/// <remarks>`). Use `options.IncludeXmlComments()` to register documentation sources.
-- **Message examples** - Support for embedding examples in AsyncAPI messages via `[MessageExample]` attribute or fluent `options.AddMessageExample()`. Scalar and protocol consoles can use these to prefill request editors.
-- **Interactive SignalR console for Scalar** - New `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` package
-  (ASP.NET Core) and `Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire` package (Aspire hosting) that
-  add a live SignalR client panel to the Scalar API Reference. The panel reads the SignalR bindings
-  from your AsyncAPI document(s) and lets you connect to a hub, invoke client-to-server methods and
-  watch server-to-client events. Both are powered by the standalone, npm-publishable
-  `@bielu/scalar-signalr` bundle, integrated two ways: the ASP.NET Core package serves a companion
-  `plugin.js` that registers the console as a plugin alongside Scalar's own bundle — call
-  `MapScalarSignalRAssets()` to serve it and `options.WithSignalRClient(...)` to inject the script —
-  while the Aspire extension swaps the Scalar container's bundle URL for the `@bielu/scalar-signalr`
-  drop-in. Wired into the `SignalRChat` example. The protocol-agnostic half (document discovery,
-  auth-state capture, schema examples, the embedded-bundle endpoint and Scalar HeadContent injection,
-  plus the shared npm build/embed MSBuild targets) lives in a common `Bielu.AspNetCore.AsyncApi.Scalar`
-  package and its private `@bielu/scalar-core` npm package, so further protocol consoles (gRPC, ...)
-  reuse it rather than copying it. *(Not yet published to any channel.)*
-- **Interactive gRPC console for Scalar** - New `Bielu.AspNetCore.AsyncApi.Scalar.Grpc` package
-  (ASP.NET Core) and `Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire` package (Aspire hosting) that add
-  a live gRPC client panel to the Scalar API Reference, mirroring the SignalR console on the shared
-  `Bielu.AspNetCore.AsyncApi.Scalar` / `@bielu/scalar-core` foundation. The panel reads the `grpc`
-  bindings from your AsyncAPI document(s), groups RPC methods by service, prefills a JSON request
-  editor from the payload schema and invokes **unary and server-streaming** methods over **gRPC-Web**
-  (`@bufbuild/protobuf` + `@connectrpc/connect-web`; client-/bidi-streaming methods render as
-  documentation with a "not invokable from the browser" badge). Because AsyncAPI payload schemas carry
-  no protobuf field numbers, `MapScalarGrpcAssets()` also serves the real protobuf descriptors of every
-  mapped gRPC service at `{assetsPath}/descriptors` (a serialized `FileDescriptorSet`), which the
-  console uses to encode wire messages dynamically. Call `MapScalarGrpcAssets()` to serve the
-  `@bielu/scalar-grpc` bundle + descriptors and `options.WithGrpcClient(...)` to inject the script;
-  the target app must enable gRPC-Web (`Grpc.AspNetCore.Web`, `UseGrpcWeb`). Scalar auth passes
-  through as gRPC-Web metadata (plain HTTP headers). Wired into the `GrpcGreeter` example.
-  *(Not yet published to any channel.)*
-- **`dotnet new` template pack** - New `Bielu.AspNetCore.AsyncApi.Templates` package providing 5 templates (`asyncapi-webapi`, `asyncapi-signalr`, `asyncapi-grpc`, `asyncapi-console`, `asyncapi-sln`) to quickly bootstrap AsyncAPI-enabled projects. Includes interactive consoles and multi-project solution support.
-- **Server-Sent Events (SSE) protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse`
-  package providing a custom `sse` protocol with channel, operation, message and server bindings
-  modelling the `text/event-stream` (`event`/`id`/`retry`/`data`) wire shape. *(Not yet published to any channel.)*
-- **WebRTC protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc` package
-  providing a custom `webrtc` protocol with channel, operation, message and server bindings covering
-  `RTCDataChannel` streams and SDP/ICE signaling. *(Not yet published to any channel.)*
-- **Changeset-driven release workflow** - Contributor changes are now recorded as
-  [changesets](https://github.com/changesets/changesets); the shared NuGet version and this changelog
-  are updated from them via `scripts/apply-nuget-version.mjs`.
-
-### Removed
-
-- **`Bielu.AspNetCore.AsyncApi.UI`** - The obsolete built-in UI package has been removed. Use `Scalar.AspNetCore` instead.
-
-### Fixed
-
-- `BindingsRef` on `[Channel]` and operation attributes now actually attaches the referenced binding
-  (registered via `AddChannelBinding`/`AddOperationBinding`) to the channel/operation in the generated
-  document. Previously the binding was only stored under `components` and never linked.
+_Nothing yet._
 
 ## [1.0.0] - 2026-08-02
 
@@ -377,6 +321,23 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
   Users should use `Scalar.AspNetCore` or another interactive documentation tool instead.
   The `MapAsyncApiUi()` extension method and all UI-related assets have been removed from the solution.
 
+### Additional Changes
+
+These shipped in `1.0.0` but predate the changeset workflow, so they have no generated entry above.
+
+- **Server-Sent Events (SSE) protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse`
+  package providing a custom `sse` protocol with channel, operation, message and server bindings
+  modelling the `text/event-stream` (`event`/`id`/`retry`/`data`) wire shape.
+- **WebRTC protocol bindings** - New `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc` package
+  providing a custom `webrtc` protocol with channel, operation, message and server bindings covering
+  `RTCDataChannel` streams and SDP/ICE signaling.
+- **Changeset-driven release workflow** - Contributor changes are now recorded as
+  [changesets](https://github.com/changesets/changesets); the shared NuGet version and this changelog
+  are updated from them via `scripts/apply-nuget-version.mjs`.
+- **Fixed:** `BindingsRef` on `[Channel]` and operation attributes now actually attaches the referenced
+  binding (registered via `AddChannelBinding`/`AddOperationBinding`) to the channel/operation in the
+  generated document. Previously the binding was only stored under `components` and never linked.
+
 ## Pre-release channel history
 
 Reconstructed from the packages published to the `beta` channel on NuGet.org. Dates are the first
@@ -520,16 +481,16 @@ app.MapAsyncApiUi();
 
 ## Version History
 
-### v1.0.0 (Upcoming)
+### v1.0.0 — 2026-08-02
 
-Initial release of Bielu.AspNetCore.AsyncApi with the following features:
+Initial stable release of Bielu.AspNetCore.AsyncApi with the following features:
 
 - Complete rewrite of configuration API with fluent builder pattern
-- Separated packages for core, attributes, and UI
+- Separated packages for core, attributes, protocol bindings and the Scalar consoles
 - Document and schema transformers
 - Updated to ByteBard.AsyncAPI.NET for schema handling
 - .NET 10 support
-- Improved endpoint routing with `MapAsyncApi()` and `MapAsyncApiUi()`
+- Improved endpoint routing with `MapAsyncApi()`
 
 ---
 
