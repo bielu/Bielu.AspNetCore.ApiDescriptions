@@ -75,6 +75,12 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
   (registered via `AddChannelBinding`/`AddOperationBinding`) to the channel/operation in the generated
   document. Previously the binding was only stored under `components` and never linked.
 
+## [1.0.1] - 2026-08-08
+
+### Patch Changes
+
+- [#65](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/65) [`e41bdcb`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/e41bdcb39591813f63497f6157c1d1bedb28651e) Thanks [@AmmonRoberts](https://github.com/AmmonRoberts)! - Removed BASYNC009 analysis rule from AsyncApiAttribute.
+
 ## [1.0.0] - 2026-08-02
 
 ### Major Changes

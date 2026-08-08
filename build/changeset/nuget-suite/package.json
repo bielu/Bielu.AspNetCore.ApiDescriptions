@@ -1,6 +1,6 @@
 {
   "name": "bielu-aspnetcore-asyncapi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Placeholder package representing the shared version of every Bielu.AspNetCore.AsyncApi NuGet package. Bump this in a changeset for any NuGet change; scripts/apply-nuget-version.mjs projects its version onto version.props. Not published anywhere. Held at 0.0.0 until the first stable release: nothing stable has shipped, and the pending changesets are minors, so leaving it at 1.0.0 would have made the first stable version 1.1.0 — skipping the 1.0.0 the templates, docs and 1.0.0-beta.* channel all name. The `first-stable-release` major changeset takes it 0.0.0 -> 1.0.0; after that it tracks version.props normally."
 }
