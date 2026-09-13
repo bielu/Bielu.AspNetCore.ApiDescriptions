@@ -92,7 +92,7 @@ internal sealed class AsyncApiDocumentService(
         document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.1.0";
         ApplyBindingsFromOptions(document);
 
-        await PopulateFromAttributeProjectAsync(document, scopedServiceProvider, schemaTransformers, cancellationToken);
+        await PopulateFromAttributeProjectAsync(document, scopedServiceProvider, schemaTransformers, operationTransformers, cancellationToken);
 
         try
         {
@@ -134,12 +134,14 @@ internal sealed class AsyncApiDocumentService(
     /// </summary>
     /// <param name="document">The AsyncApiDocument to populate; its Components, Schemas, and Messages collections will be created or updated.</param>
     /// <param name="schemaTransformers"></param>
+    /// <param name="operationTransformers">Activated operation transformers to run against every generated operation.</param>
     /// <param name="cancellationToken">Token to observe for cancellation of async operations.</param>
     /// <param name="scopedServiceProvider"></param>
     private async Task PopulateFromAttributeProjectAsync(
         AsyncApiDocument document,
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
+        IAsyncApiOperationTransformer[] operationTransformers,
         CancellationToken cancellationToken)
     {
         document.Components ??= new AsyncApiComponents();
@@ -165,7 +167,7 @@ internal sealed class AsyncApiDocumentService(
                 var messageRefs = await ApplyChannelMessagesFromMetadataAsync(
                     document, channel, memberMetadata, scopedServiceProvider, schemaTransformers, cancellationToken);
 
-                await ApplyOperationsFromMetadataAsync(document, channel, memberMetadata, messageRefs, scopedServiceProvider, schemaTransformers, cancellationToken);
+                await ApplyOperationsFromMetadataAsync(document, channel, memberMetadata, messageRefs, scopedServiceProvider, schemaTransformers, operationTransformers, cancellationToken);
             }
         }
     }
@@ -426,6 +428,7 @@ internal sealed class AsyncApiDocumentService(
 /// <param name="messageKeys">Existing message keys already associated with the channel; used as the initial set of messages for each operation.</param>
 /// <param name="scopedServiceProvider">Scoped service provider used to resolve services during schema creation.</param>
 /// <param name="schemaTransformers">Schema transformers applied when creating or retrieving payload schemas.</param>
+/// <param name="operationTransformers">Activated operation transformers run against each operation before it is added to the document.</param>
 /// <param name="cancellationToken">Cancellation token to observe while performing async operations.</param>
 private async Task ApplyOperationsFromMetadataAsync(
     AsyncApiDocument document,
@@ -434,6 +437,7 @@ private async Task ApplyOperationsFromMetadataAsync(
     List<string> messageKeys,
     IServiceProvider scopedServiceProvider,
     IAsyncApiSchemaTransformer[] schemaTransformers,
+    IAsyncApiOperationTransformer[] operationTransformers,
     CancellationToken cancellationToken)
 {
     var opAttrs = memberMetadata.Operations;
@@ -535,6 +539,25 @@ private async Task ApplyOperationsFromMetadataAsync(
                 // Reference from operation to channel's message to satisfy subset rule
                 var messageRef = new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{msgKey}");
                 op.Messages.Add(messageRef);
+            }
+        }
+
+        if (operationTransformers.Length > 0)
+        {
+            var operationTransformerContext = new AsyncApiOperationTransformerContext
+            {
+                DocumentName = documentName,
+                Description = null,
+                ApplicationServices = scopedServiceProvider,
+                Document = document,
+                SchemaTransformers = schemaTransformers
+            };
+            _operationTransformerContextCache[opId] = operationTransformerContext;
+
+            foreach (var operationTransformer in operationTransformers)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await operationTransformer.TransformAsync(op, operationTransformerContext, cancellationToken);
             }
         }
 
