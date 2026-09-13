@@ -73,52 +73,78 @@ internal sealed class AsyncApiDocumentService(
             ? new IAsyncApiOperationTransformer[_options.OperationTransformers.Count]
             : [];
 
-        InitializeTransformers(scopedServiceProvider, schemaTransformers, operationTransformers);
+        // Transformer instances activated for this generation request only (from type-based
+        // registrations). This list owns those instances and is responsible for disposing them,
+        // no matter which stage of generation fails or where cancellation happens. Caller-supplied
+        // instance/delegate transformers are reused across every request and are deliberately never
+        // added here - the caller owns their lifetime.
+        var ownedTransformers = new List<object>();
 
-        foreach (var file in _options.XmlDocumentationFiles)
-        {
-            _xmlDocumentationProvider.Load(file);
-        }
-
-        var document = new AsyncApiDocument
-        {
-            Id = $"urn:{AsyncApiNamingHelper.SanitizeKey(documentName)}",
-            Info = GetAsyncApiInfo(),
-            Servers = GetAsyncApiServers(httpRequest),
-            Components = new AsyncApiComponents { Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>() },
-            Channels = new Dictionary<string, AsyncApiChannel>(StringComparer.Ordinal),
-            Operations = new Dictionary<string, AsyncApiOperation>(StringComparer.Ordinal)
-        };
-        document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.1.0";
-        ApplyBindingsFromOptions(document);
-
+        AsyncApiDocument document;
         try
         {
+            InitializeTransformers(scopedServiceProvider, schemaTransformers, operationTransformers, ownedTransformers);
+
+            foreach (var file in _options.XmlDocumentationFiles)
+            {
+                _xmlDocumentationProvider.Load(file);
+            }
+
+            document = new AsyncApiDocument
+            {
+                Id = $"urn:{AsyncApiNamingHelper.SanitizeKey(documentName)}",
+                Info = GetAsyncApiInfo(),
+                Servers = GetAsyncApiServers(httpRequest),
+                Components = new AsyncApiComponents { Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>() },
+                Channels = new Dictionary<string, AsyncApiChannel>(StringComparer.Ordinal),
+                Operations = new Dictionary<string, AsyncApiOperation>(StringComparer.Ordinal)
+            };
+            document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.1.0";
+            ApplyBindingsFromOptions(document);
+
             await PopulateFromAttributeProjectAsync(document, scopedServiceProvider, schemaTransformers,
                 operationTransformers, cancellationToken);
+
             await ApplyTransformersAsync(document, scopedServiceProvider, schemaTransformers, cancellationToken);
-        }
-        finally
-        {
-            await FinalizeTransformersAsync(schemaTransformers, operationTransformers);
-        }
 
-        if (document.Components?.Schemas is not null)
-        {
-            document.Components.Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>(
-                document.Components.Schemas.OrderBy(kvp => kvp.Key),
-                StringComparer.Ordinal);
-        }
-
-        // AsyncAPI 2.x requires at least one channel; per requirement, throw if none are defined
-        if (_options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
-        {
-            var hasChannels = document.Channels is not null && document.Channels.Count > 0;
-            if (!hasChannels)
+            if (document.Components?.Schemas is not null)
             {
-                throw new InvalidOperationException(
-                    "AsyncAPI 2.x requires at least one channel. No channels were discovered for this document.");
+                document.Components.Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>(
+                    document.Components.Schemas.OrderBy(kvp => kvp.Key),
+                    StringComparer.Ordinal);
             }
+
+            // AsyncAPI 2.x requires at least one channel; per requirement, throw if none are defined
+            if (_options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
+            {
+                var hasChannels = document.Channels is not null && document.Channels.Count > 0;
+                if (!hasChannels)
+                {
+                    throw new InvalidOperationException("AsyncAPI 2.x requires at least one channel. No channels were discovered for this document.");
+                }
+            }
+        }
+        catch (Exception generationException)
+        {
+            // Cleanup must be attempted for every successfully activated instance regardless of
+            // which stage failed (activation, population, transformation, or cancellation), but the
+            // original failure must remain the primary/observable exception. Any disposal failures
+            // are surfaced alongside it rather than silently swallowed or allowed to mask it.
+            var disposalException = await FinalizeTransformersAsync(ownedTransformers);
+            if (disposalException is not null)
+            {
+                throw new AggregateException(generationException, disposalException);
+            }
+
+            throw;
+        }
+
+        // Successful generation still owns the activated instances and must release them; a
+        // disposal failure here has no original exception to be masked, so it is surfaced directly.
+        var successDisposalException = await FinalizeTransformersAsync(ownedTransformers);
+        if (successDisposalException is not null)
+        {
+            throw successDisposalException;
         }
 
         return document;
@@ -592,38 +618,85 @@ internal sealed class AsyncApiDocumentService(
         return char.ToLowerInvariant(value[0]) + value.Substring(1);
     }
 
+    /// <summary>
+    /// Populates <paramref name="schemaTransformers"/> and <paramref name="operationTransformers"/> with the
+    /// transformer instances to use for this generation request. Type-based registrations are activated into a
+    /// fresh, per-request instance; every other registration (a caller-supplied instance or delegate) is reused
+    /// as-is, since the caller owns its lifetime.
+    /// </summary>
+    /// <param name="scopedServiceProvider">The scoped service provider used to activate type-based transformers.</param>
+    /// <param name="schemaTransformers">Receives the schema transformer instance to use for this request, at the corresponding registration index.</param>
+    /// <param name="operationTransformers">Receives the operation transformer instance to use for this request, at the corresponding registration index.</param>
+    /// <param name="ownedTransformers">
+    /// Receives each freshly activated, per-request instance immediately after it is created - even if a later
+    /// activation in this same call throws - so the caller can dispose exactly the instances this method owns,
+    /// regardless of where activation stops.
+    /// </param>
     internal void InitializeTransformers(
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
-        IAsyncApiOperationTransformer[] operationTransformers)
+        IAsyncApiOperationTransformer[] operationTransformers,
+        List<object> ownedTransformers)
     {
         for (var i = 0; i < _options.SchemaTransformers.Count; i++)
         {
             var schemaTransformer = _options.SchemaTransformers[i];
-            schemaTransformers[i] = schemaTransformer is TypeBasedAsyncApiSchemaTransformer typeBasedTransformer
-                ? typeBasedTransformer.InitializeTransformer(scopedServiceProvider)
-                : schemaTransformer;
+            if (schemaTransformer is TypeBasedAsyncApiSchemaTransformer typeBasedTransformer)
+            {
+                var activated = typeBasedTransformer.InitializeTransformer(scopedServiceProvider);
+                schemaTransformers[i] = activated;
+                ownedTransformers.Add(activated);
+            }
+            else
+            {
+                schemaTransformers[i] = schemaTransformer;
+            }
         }
 
         for (var i = 0; i < _options.OperationTransformers.Count; i++)
         {
             var operationTransformer = _options.OperationTransformers[i];
-            operationTransformers[i] =
-                operationTransformer is TypeBasedAsyncApiOperationTransformer typeBasedTransformer
-                    ? typeBasedTransformer.InitializeTransformer(scopedServiceProvider)
-                    : operationTransformer;
+            if (operationTransformer is TypeBasedAsyncApiOperationTransformer typeBasedTransformer)
+            {
+                var activated = typeBasedTransformer.InitializeTransformer(scopedServiceProvider);
+                operationTransformers[i] = activated;
+                ownedTransformers.Add(activated);
+            }
+            else
+            {
+                operationTransformers[i] = operationTransformer;
+            }
         }
     }
 
-    internal static async Task FinalizeTransformersAsync(
-        IAsyncApiSchemaTransformer[] schemaTransformers,
-        IAsyncApiOperationTransformer[] operationTransformers)
+    /// <summary>
+    /// Disposes every transformer instance this generation request owns, attempting each one even if an earlier
+    /// disposal throws. Returns the resulting failure (a single <see cref="Exception"/>, or an
+    /// <see cref="AggregateException"/> when more than one instance failed to dispose) instead of throwing it, so
+    /// the caller can decide how to combine it with a generation failure that may already be in flight.
+    /// </summary>
+    private static async Task<Exception?> FinalizeTransformersAsync(List<object> ownedTransformers)
     {
-        for (var i = 0; i < schemaTransformers.Length; i++)
-            await schemaTransformers[i].FinalizeTransformerAsync();
+        List<Exception>? disposalExceptions = null;
 
-        for (var i = 0; i < operationTransformers.Length; i++)
-            await operationTransformers[i].FinalizeTransformerAsync();
+        foreach (var transformer in ownedTransformers)
+        {
+            try
+            {
+                await transformer.FinalizeTransformerAsync();
+            }
+            catch (Exception disposalException)
+            {
+                (disposalExceptions ??= []).Add(disposalException);
+            }
+        }
+
+        return disposalExceptions switch
+        {
+            null => null,
+            { Count: 1 } => disposalExceptions[0],
+            _ => new AggregateException(disposalExceptions)
+        };
     }
 
     internal AsyncApiInfo GetAsyncApiInfo()
