@@ -29,6 +29,7 @@ public class OperationTransformerExecutionTests
         {
             options.AddOperationTransformer((operation, context, cancellationToken) =>
             {
+                context.Description.ShouldBeNull();
                 callCount++;
                 operation.Summary = "transformed:" + operation.Summary;
                 return Task.CompletedTask;
@@ -104,8 +105,8 @@ public class OperationTransformerExecutionTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        await Should.ThrowAsync<OperationCanceledException>(
-            () => documentService.GetAsyncApiDocumentAsync(scope.ServiceProvider, httpRequest: null, cts.Token));
+        await Should.ThrowAsync<OperationCanceledException>(() =>
+            documentService.GetAsyncApiDocumentAsync(scope.ServiceProvider, httpRequest: null, cts.Token));
     }
 
     private sealed class RecordingOperationTransformer : IAsyncApiOperationTransformer
@@ -113,7 +114,8 @@ public class OperationTransformerExecutionTests
         public const string Marker = "instance-transformer-ran";
         public int CallCount { get; private set; }
 
-        public Task TransformAsync(AsyncApiOperation operation, AsyncApiOperationTransformerContext context, CancellationToken cancellationToken)
+        public Task TransformAsync(AsyncApiOperation operation, AsyncApiOperationTransformerContext context,
+            CancellationToken cancellationToken)
         {
             CallCount++;
             operation.Description = Marker;
@@ -135,7 +137,8 @@ public class OperationTransformerExecutionTests
             _service = service;
         }
 
-        public Task TransformAsync(AsyncApiOperation operation, AsyncApiOperationTransformerContext context, CancellationToken cancellationToken)
+        public Task TransformAsync(AsyncApiOperation operation, AsyncApiOperationTransformerContext context,
+            CancellationToken cancellationToken)
         {
             _ = _service;
             operation.Description = ScopedMarkerService.Marker;
