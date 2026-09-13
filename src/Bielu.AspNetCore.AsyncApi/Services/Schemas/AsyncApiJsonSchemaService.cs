@@ -369,15 +369,31 @@ private static void RemoveNullIds(JsonNode? node)
     {
         var schema = await GetOrCreateUnresolvedSchemaAsync(document, type, scopedServiceProvider, schemaTransformers, parameterDescription, cancellationToken);
 
+        var baseSchemaId = GetSchemaReferenceId(type);
+
+        return ResolveReferenceForSchema(document, schema, baseSchemaId);
+    }
+
+    /// <summary>
+    /// Resolves the schema reference id that <see cref="AsyncApiOptions.CreateSchemaReferenceId"/> assigns to
+    /// <paramref name="type"/>, caching the result since the same type is commonly looked up many times while
+    /// generating a single document. This is the single authoritative source for a payload type's reference id:
+    /// any caller that needs to key a component store by type (for example <see cref="AsyncApiDocumentService"/>
+    /// registering schema/message components) should call this instead of re-deriving an id independently, so
+    /// that a custom <see cref="AsyncApiOptions.CreateSchemaReferenceId"/> and the documented "null means inline"
+    /// contract are honored consistently everywhere.
+    /// </summary>
+    /// <param name="type">The payload type to resolve a schema reference id for.</param>
+    /// <returns>The reference id to use, or <see langword="null"/> if the schema should always be inlined.</returns>
+    internal string? GetSchemaReferenceId(Type type)
+    {
         // Cache the root schema IDs since we expect to be called
         // on the same type multiple times within an API
-        var baseSchemaId = _schemaIdCache.GetOrAdd(type, t =>
+        return _schemaIdCache.GetOrAdd(type, t =>
         {
             var jsonTypeInfo = _jsonSerializerOptions.GetTypeInfo(t);
             return _optionsMonitor.Get(_documentName).CreateSchemaReferenceId(jsonTypeInfo);
         });
-
-        return ResolveReferenceForSchema(document, schema, baseSchemaId);
     }
 
     internal static AsyncApiJsonSchema ResolveReferenceForSchema(AsyncApiDocument document, IAsyncApiSchema inputSchema, string? rootSchemaId, string? baseSchemaId = null)
