@@ -113,6 +113,8 @@ internal sealed class KafkaBrokerBridge(string bootstrapServers, KafkaConnection
             var value = header.GetValueBytes();
             // Kafka headers are arbitrary bytes; the console displays text, so anything that is not
             // UTF-8 is surfaced as a length rather than as mojibake.
+            // Kafka allows repeated header names; the console shows one value per name, so a repeat
+            // intentionally overwrites rather than being dropped or concatenated.
             result[header.Key] = value is null
                 ? string.Empty
                 : TryDecodeUtf8(value, out var text) ? text : $"<{value.Length} bytes>";
@@ -121,11 +123,13 @@ internal sealed class KafkaBrokerBridge(string bootstrapServers, KafkaConnection
         return result;
     }
 
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     private static bool TryDecodeUtf8(byte[] value, out string text)
     {
         try
         {
-            text = new UTF8Encoding(false, throwOnInvalidBytes: true).GetString(value);
+            text = StrictUtf8.GetString(value);
             return true;
         }
         catch (DecoderFallbackException)

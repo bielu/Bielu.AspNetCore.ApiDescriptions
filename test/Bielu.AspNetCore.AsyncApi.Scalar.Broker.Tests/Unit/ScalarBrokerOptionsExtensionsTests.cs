@@ -2,7 +2,7 @@ using Scalar.AspNetCore;
 using Shouldly;
 using Xunit;
 
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests;
+namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Unit;
 
 /// <summary>
 /// <c>WithBrokerClient</c>'s effect on the Scalar page: the script tag, and the optional explicit
@@ -80,5 +80,27 @@ public class ScalarBrokerOptionsExtensionsTests
         // Assert
         options.HeadContent.ShouldNotBeNull().ShouldStartWith("<meta name=\"x\">");
         options.HeadContent.ShouldNotBeNull().ShouldContain("plugin.js");
+    }
+
+    [Fact]
+    public void WithBrokerClient_NullOptions_Throws()
+    {
+        // Arrange
+        ScalarOptions options = null!;
+
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() => options.WithBrokerClient());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void WithBrokerClient_NullOrEmptyAssetsPath_Throws(string? assetsPath)
+    {
+        // Arrange
+        var options = new ScalarOptions();
+
+        // Act & Assert
+        Should.Throw<ArgumentException>(() => options.WithBrokerClient(assetsPath: assetsPath!));
     }
 }

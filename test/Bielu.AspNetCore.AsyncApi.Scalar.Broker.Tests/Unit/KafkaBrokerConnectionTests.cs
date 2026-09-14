@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests;
+namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Unit;
 
 /// <summary>
 /// Registration behaviour of the Kafka driver. Nothing here contacts a cluster — the bridge is
@@ -35,6 +35,7 @@ public class KafkaBrokerConnectionTests
     [Theory]
     [InlineData("user:secret@broker:9092", "***@broker:9092")]
     [InlineData("broker-a:9092,user:secret@broker-b:9092", "broker-a:9092,***@broker-b:9092")]
+    [InlineData("PLAINTEXT://user:secret@broker:9092", "PLAINTEXT://***@broker:9092")]
     public void AddKafkaConnection_RedactsCredentialsFromTheDisplayEndpoint(string bootstrap, string expected)
     {
         // Arrange — the descriptor is sent to the browser, so it must never carry a password.
@@ -73,5 +74,7 @@ public class KafkaBrokerConnectionTests
         // Arrange & Act & Assert
         Should.Throw<ArgumentException>(() => Configure(o => o.AddKafkaConnection("", "localhost:9092")));
         Should.Throw<ArgumentException>(() => Configure(o => o.AddKafkaConnection("orders", "")));
+        Should.Throw<ArgumentNullException>(() => Configure(o => o.AddKafkaConnection(null!, "localhost:9092")));
+        Should.Throw<ArgumentNullException>(() => Configure(o => o.AddKafkaConnection("orders", null!)));
     }
 }

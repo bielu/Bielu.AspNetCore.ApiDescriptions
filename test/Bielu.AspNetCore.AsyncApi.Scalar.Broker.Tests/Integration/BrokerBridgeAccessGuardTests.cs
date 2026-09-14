@@ -1,10 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
+using Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
 using Microsoft.AspNetCore.TestHost;
 using Shouldly;
 using Xunit;
 
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests;
+namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Integration;
 
 /// <summary>
 /// The proxy can publish to a broker, so who may reach it is the security-critical behaviour of
@@ -13,7 +14,7 @@ namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests;
 public class BrokerBridgeAccessGuardTests
 {
     [Fact]
-    public async Task Development_WithoutAuthorization_IsAllowed()
+    public async Task IsAllowed_DevelopmentWithoutAuthorization_ReturnsOk()
     {
         // Arrange — the local-development case: convenient, and warned about in the log.
         using var host = await BrokerConsoleHost.StartAsync(new FakeBrokerBridge(), "Development");
@@ -28,7 +29,7 @@ public class BrokerBridgeAccessGuardTests
     [Theory]
     [InlineData("Production")]
     [InlineData("Staging")]
-    public async Task NonDevelopment_WithoutAuthorization_IsRefused(string environment)
+    public async Task IsAllowed_NonDevelopmentWithoutAuthorization_ReturnsForbidden(string environment)
     {
         // Arrange
         var bridge = new FakeBrokerBridge();
@@ -42,7 +43,7 @@ public class BrokerBridgeAccessGuardTests
     }
 
     [Fact]
-    public async Task NonDevelopment_WithoutAuthorization_RefusesPublishBeforeReachingTheBridge()
+    public async Task IsAllowed_NonDevelopmentWithoutAuthorization_RefusesPublishBeforeReachingTheBridge()
     {
         // Arrange — a refusal that still published would be worse than no guard at all.
         var bridge = new FakeBrokerBridge();
@@ -59,7 +60,7 @@ public class BrokerBridgeAccessGuardTests
     }
 
     [Fact]
-    public async Task NonDevelopment_WithRequireAuthorization_IsAllowed()
+    public async Task IsAllowed_NonDevelopmentWithRequireAuthorization_ReturnsOk()
     {
         // Arrange — the intended production shape.
         using var host = await BrokerConsoleHost.StartAsync(
@@ -75,7 +76,7 @@ public class BrokerBridgeAccessGuardTests
     }
 
     [Fact]
-    public async Task NonDevelopment_WithAllowAnonymous_IsAllowed()
+    public async Task IsAllowed_NonDevelopmentWithAllowAnonymousOption_ReturnsOk()
     {
         // Arrange — the explicit opt-out, for endpoints fronted by something outside ASP.NET Core.
         using var host = await BrokerConsoleHost.StartAsync(
@@ -91,7 +92,26 @@ public class BrokerBridgeAccessGuardTests
     }
 
     [Fact]
-    public async Task BundleIsServedWithoutAuthorization()
+    public async Task IsAllowed_NonDevelopmentWithRequireAuthorizationAndAllowAnonymous_ReturnsForbidden()
+    {
+        // Arrange — RequireAuthorization() and AllowAnonymous() on the same endpoint is a
+        // misconfiguration: the authorization middleware skips enforcement because AllowAnonymous
+        // wins, so the guard must not treat IAuthorizeData alone as proof the endpoint is protected.
+        using var host = await BrokerConsoleHost.StartAsync(
+            new FakeBrokerBridge(),
+            "Production",
+            requireAuthorization: true,
+            combineWithAllowAnonymous: true);
+
+        // Act
+        var response = await host.GetTestClient().GetAsync($"{BrokerConsoleHost.BasePath}/connections");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task PluginBundle_NonDevelopmentWithRequireAuthorization_IsServedWithoutAuthorization()
     {
         // Arrange — the bundle is static JavaScript with no secrets, and is deliberately outside the
         // convention builder that RequireAuthorization is applied to.
@@ -103,7 +123,8 @@ public class BrokerBridgeAccessGuardTests
         // Act
         var response = await host.GetTestClient().GetAsync($"{BrokerConsoleHost.BasePath}/plugin.js");
 
-        // Assert — 200 with the embedded bundle, or 404 when built without Node; never a 401/403.
-        response.StatusCode.ShouldBeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+        // Assert — the bundle build is what could 404 (Node-less build); the guard must never be why.
+        response.StatusCode.ShouldNotBe(HttpStatusCode.Unauthorized);
+        response.StatusCode.ShouldNotBe(HttpStatusCode.Forbidden);
     }
 }

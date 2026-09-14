@@ -10,15 +10,22 @@ export const DEFAULT_ASSETS_PATH = '/bielu/scalar/broker'
 let bundleScriptSrc: string | undefined
 
 /**
- * Capture the bundle's own script URL. Must be called at module-evaluation time, while
- * `document.currentScript` still points at the executing `<script>` tag.
+ * Capture the bundle's own script URL. Must be called at module-evaluation time.
+ *
+ * A classic `<script>` exposes itself through `document.currentScript`; a `<script type="module">`
+ * does not (it is `null` there by spec), so `moduleUrl` — the caller's `import.meta.url` — is the
+ * fallback for that case.
  */
-export function captureBundleScriptSrc(): void {
+export function captureBundleScriptSrc(moduleUrl?: string): void {
   if (typeof document !== 'undefined') {
     const src = (document.currentScript as HTMLScriptElement | null)?.src
     if (src) {
       bundleScriptSrc = src
+      return
     }
+  }
+  if (moduleUrl) {
+    bundleScriptSrc = moduleUrl
   }
 }
 
@@ -131,14 +138,20 @@ export async function* tail(
       const frames = buffer.split('\n\n')
       buffer = frames.pop() ?? ''
       for (const frame of frames) {
-        const data = frame
-          .split('\n')
+        const lines = frame.split('\n')
+        const event = lines.find((line) => line.startsWith('event:'))?.slice(6).trim()
+        const data = lines
           .filter((line) => line.startsWith('data:'))
           .map((line) => line.slice(5).trimStart())
           .join('\n')
-        if (data) {
-          yield JSON.parse(data) as BrokerTailMessage
+        if (!data) {
+          continue
         }
+        if (event === 'error') {
+          const { error } = JSON.parse(data) as { error: string }
+          throw new Error(`Tail failed: ${error}`)
+        }
+        yield JSON.parse(data) as BrokerTailMessage
       }
     }
   } finally {

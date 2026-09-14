@@ -22,6 +22,7 @@ const selectedConnection = ref<string | null>(null)
 const selectedChannelId = ref<string | null>(null)
 const publishing = ref(false)
 const tailing = ref(false)
+const refreshingConnections = ref(false)
 const log = reactive<LogEntry[]>([])
 
 // Per-channel editor state, so switching channels and back does not lose what was typed.
@@ -71,6 +72,7 @@ function append(dir: LogEntry['dir'], text: string): void {
 }
 
 async function refreshConnections(): Promise<void> {
+  refreshingConnections.value = true
   try {
     connections.value = await loadConnections(baseUrlOverride.value, currentAuth())
     if (!selectedConnection.value && connections.value.length > 0) {
@@ -78,6 +80,8 @@ async function refreshConnections(): Promise<void> {
     }
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : String(cause)
+  } finally {
+    refreshingConnections.value = false
   }
 }
 
@@ -145,6 +149,14 @@ function appendMessage(message: BrokerTailMessage): void {
   append('in', `${label}${message.payload}`)
 }
 
+// The usable set narrows when the selected channel's protocol changes, and shrinks on every
+// refresh; a name that has fallen out of it would otherwise still reach onPublish/startTail.
+watch(usableConnections, (list) => {
+  if (selectedConnection.value && !list.some((connection) => connection.name === selectedConnection.value)) {
+    selectedConnection.value = list[0]?.name ?? null
+  }
+})
+
 watch(selectedChannel, (channel) => {
   if (!channel) {
     return
@@ -211,7 +223,7 @@ onBeforeUnmount(stopTail)
           </select>
         </label>
 
-        <button type="button" @click="refreshConnections">Refresh</button>
+        <button type="button" :disabled="refreshingConnections" @click="refreshConnections">Refresh</button>
       </header>
 
       <p v-if="connections.length === 0" class="bielu-broker__status bielu-broker__status--error">
