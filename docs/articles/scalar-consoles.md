@@ -62,6 +62,98 @@ app.MapScalarApiReference(options =>
 });
 ```
 
+## Broker Console (Kafka, MQTT, AMQP)
+
+The `Bielu.AspNetCore.AsyncApi.Scalar.Broker` package adds a console that publishes to and tails the
+message-broker channels your `kafka`, `mqtt` and `amqp` bindings describe.
+
+The SignalR and gRPC consoles talk to your app straight from the browser. This one cannot: no browser
+speaks Kafka, MQTT or AMQP. Instead the console drives an **opt-in server-side bridge** that this
+package mounts in your app, and a driver package supplies the client for the broker you use.
+
+### Installation
+
+```bash
+dotnet add package Bielu.AspNetCore.AsyncApi.Scalar.Broker
+dotnet add package Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka
+```
+
+### Usage
+
+```csharp
+builder.Services.AddScalarBrokerBridge(broker =>
+{
+    broker.AddKafkaConnection("orders", "localhost:9092");
+});
+
+app.MapScalarBrokerAssets()          // Serves the console bundle and the proxy endpoints
+   .RequireAuthorization("Admin");   // See "Securing the bridge" below
+
+app.MapScalarApiReference(options =>
+{
+    options.AddAsyncApiDocument("v1", "Orders", "/asyncapi/v1.json");
+    options.WithBrokerClient();      // Injects the console into Scalar
+});
+```
+
+`MapScalarBrokerAssets()` mounts the bundle at `{path}/plugin.js` plus three proxy endpoints:
+`GET {path}/connections`, `POST {path}/publish`, and `GET {path}/tail` (Server-Sent Events).
+
+### Securing the bridge
+
+> [!WARNING]
+> The proxy can publish to your broker. Anyone who can reach it can write to your topics.
+
+`MapScalarBrokerAssets()` returns a convention builder covering all three proxy endpoints, so a single
+`RequireAuthorization(...)` protects them together. The bundle itself is deliberately excluded — it is
+static JavaScript with no configuration or secrets in it, and it does nothing without the proxy.
+
+If the endpoints carry no authorization metadata, the bridge:
+
+- **allows** the request in the Development environment, logging a warning once;
+- **refuses** it with `403` in every other environment, logging how to fix it.
+
+Set `AllowAnonymous` when the endpoints are protected by something ASP.NET Core authorization cannot
+see, such as a network boundary:
+
+```csharp
+builder.Services.AddScalarBrokerBridge(broker =>
+{
+    broker.AllowAnonymous = true;
+    broker.AddKafkaConnection("orders", "localhost:9092");
+});
+```
+
+Credentials entered in Scalar's auth panel travel with every proxy call — bearer tokens, HTTP Basic,
+and API keys in a header or a query parameter.
+
+### Tailing does not disturb your cluster
+
+Each tail uses a throwaway consumer group starting at the newest offset, and never commits. Opening a
+console cannot move a real consumer group's committed position, and cannot replay a backlog into
+someone's browser.
+
+The stream is read with `fetch` + `ReadableStream` rather than `EventSource`, because `EventSource`
+cannot send the `Authorization` header the proxy sits behind.
+
+### Connections are lazy
+
+A connection's client is built on first use, so a broker that is unreachable at startup does not stop
+your application from starting — the console surfaces the error instead. Credentials never reach the
+browser: the console is told only a connection's name, protocol and a redacted display endpoint.
+
+### Writing a driver
+
+`Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka` is the reference implementation. A driver implements
+`IBrokerBridge` (`PublishAsync` + `TailAsync`) and registers connections with an extension method on
+`ScalarBrokerBridgeOptions` that calls `AddConnection`.
+
+> [!NOTE]
+> There is no `.Aspire` companion for the broker console. The other consoles' Aspire packages load
+> their plugin from a CDN into the Scalar *container*, which has no server-side bridge to talk to.
+> Map the broker console in the app that owns the broker connection instead — as the Aspire mini-shop
+> example does in its Order Service.
+
 ## .NET Aspire Support
 
 For .NET Aspire applications, use the `.Aspire` companion packages to enable these consoles in the Scalar resource.
