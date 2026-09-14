@@ -30,8 +30,7 @@ using AttrOperationType = Bielu.AspNetCore.AsyncApi.Attributes.Attributes.Operat
 namespace Bielu.AspNetCore.AsyncApi.Services;
 
 internal sealed class AsyncApiDocumentService(
-    [ServiceKey]
-    string documentName,
+    [ServiceKey] string documentName,
     IApiDescriptionGroupCollectionProvider apiDescriptionGroupCollectionProvider,
     IHostEnvironment hostEnvironment,
     IOptionsMonitor<AsyncApiOptions> optionsMonitor,
@@ -57,7 +56,8 @@ internal sealed class AsyncApiDocumentService(
     private static readonly ApiResponseType _defaultApiResponseType = new() { StatusCode = StatusCodes.Status200OK };
 
     private static readonly FrozenSet<string> _disallowedHeaderParameters =
-        new[] { HeaderNames.Accept, HeaderNames.Authorization, HeaderNames.ContentType }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+        new[] { HeaderNames.Accept, HeaderNames.Authorization, HeaderNames.ContentType }.ToFrozenSet(StringComparer
+            .OrdinalIgnoreCase);
 
     internal bool TryGetCachedOperationTransformerContext(string descriptionId,
         [NotNullWhen(true)] out AsyncApiOperationTransformerContext? context)
@@ -92,10 +92,10 @@ internal sealed class AsyncApiDocumentService(
         document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.1.0";
         ApplyBindingsFromOptions(document);
 
-        await PopulateFromAttributeProjectAsync(document, scopedServiceProvider, schemaTransformers, cancellationToken);
-
         try
         {
+            await PopulateFromAttributeProjectAsync(document, scopedServiceProvider, schemaTransformers,
+                operationTransformers, cancellationToken);
             await ApplyTransformersAsync(document, scopedServiceProvider, schemaTransformers, cancellationToken);
         }
         finally
@@ -116,7 +116,8 @@ internal sealed class AsyncApiDocumentService(
             var hasChannels = document.Channels is not null && document.Channels.Count > 0;
             if (!hasChannels)
             {
-                throw new InvalidOperationException("AsyncAPI 2.x requires at least one channel. No channels were discovered for this document.");
+                throw new InvalidOperationException(
+                    "AsyncAPI 2.x requires at least one channel. No channels were discovered for this document.");
             }
         }
 
@@ -134,12 +135,14 @@ internal sealed class AsyncApiDocumentService(
     /// </summary>
     /// <param name="document">The AsyncApiDocument to populate; its Components, Schemas, and Messages collections will be created or updated.</param>
     /// <param name="schemaTransformers"></param>
+    /// <param name="operationTransformers">Activated operation transformers to run against every generated operation.</param>
     /// <param name="cancellationToken">Token to observe for cancellation of async operations.</param>
     /// <param name="scopedServiceProvider"></param>
     private async Task PopulateFromAttributeProjectAsync(
         AsyncApiDocument document,
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
+        IAsyncApiOperationTransformer[] operationTransformers,
         CancellationToken cancellationToken)
     {
         document.Components ??= new AsyncApiComponents();
@@ -165,16 +168,19 @@ internal sealed class AsyncApiDocumentService(
                 var messageRefs = await ApplyChannelMessagesFromMetadataAsync(
                     document, channel, memberMetadata, scopedServiceProvider, schemaTransformers, cancellationToken);
 
-                await ApplyOperationsFromMetadataAsync(document, channel, memberMetadata, messageRefs, scopedServiceProvider, schemaTransformers, cancellationToken);
+                await ApplyOperationsFromMetadataAsync(document, channel, memberMetadata, messageRefs,
+                    scopedServiceProvider, schemaTransformers, operationTransformers, cancellationToken);
             }
         }
     }
 
-    private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr, string sanitizedKey, MemberInfo member)
+    private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr,
+        string sanitizedKey, MemberInfo member)
     {
         if (document.Channels.TryGetValue(sanitizedKey, out var existing))
         {
-            existing.Description ??= channelAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(member)?.Summary;
+            existing.Description ??=
+                channelAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(member)?.Summary;
             existing.Address ??= channelAttr.Name;
             AttachChannelBindings(document, existing, channelAttr.BindingsRef);
             return existing;
@@ -183,7 +189,8 @@ internal sealed class AsyncApiDocumentService(
         var created = new AsyncApiChannel
         {
             Address = channelAttr.Name,
-            Description = channelAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(member)?.Summary ?? string.Empty,
+            Description = channelAttr.Description ??
+                          _xmlDocumentationProvider.GetDocumentation(member)?.Summary ?? string.Empty,
         };
 
         AttachChannelBindings(document, created, channelAttr.BindingsRef);
@@ -213,7 +220,8 @@ internal sealed class AsyncApiDocumentService(
     /// Attaches an operation bindings item registered in <c>components/operationBindings</c> (via
     /// <see cref="AsyncApiOptions.AddOperationBinding"/>) to the operation referenced by <paramref name="bindingsRef"/>.
     /// </summary>
-    private static void AttachOperationBindings(AsyncApiDocument document, AsyncApiOperation operation, string? bindingsRef)
+    private static void AttachOperationBindings(AsyncApiDocument document, AsyncApiOperation operation,
+        string? bindingsRef)
     {
         if (string.IsNullOrWhiteSpace(bindingsRef))
         {
@@ -242,13 +250,18 @@ internal sealed class AsyncApiDocumentService(
             {
                 channel.Parameters[p.Name] = new AsyncApiParameter
                 {
-                    Description = p.Description ?? (xmlDoc?.Parameters?.TryGetValue(p.Name, out var paramDesc) == true ? paramDesc : null),
+                    Description =
+                        p.Description ?? (xmlDoc?.Parameters?.TryGetValue(p.Name, out var paramDesc) == true
+                            ? paramDesc
+                            : null),
                     Location = p.Location
                 };
             }
         }
     }
-    private static void ApplyChannelServersFromAttributes(AsyncApiDocument document, AsyncApiChannel channel, ChannelAttribute channelAttr)
+
+    private static void ApplyChannelServersFromAttributes(AsyncApiDocument document, AsyncApiChannel channel,
+        ChannelAttribute channelAttr)
     {
         if (channelAttr.Servers.Length == 0)
             return;
@@ -271,6 +284,7 @@ internal sealed class AsyncApiDocumentService(
                     var reference = serverRef.Reference.Reference;
                     return reference.EndsWith(sanitizedServerKey, StringComparison.OrdinalIgnoreCase);
                 }
+
                 return false;
             });
 
@@ -306,8 +320,8 @@ internal sealed class AsyncApiDocumentService(
         {
             var payloadType = msgAttr.PayloadType;
             var messageKey = AsyncApiNamingHelper.SanitizeKey(msgAttr.MessageId
-                             ?? msgAttr.Name
-                             ?? ToCamelCase(payloadType.Name));
+                                                              ?? msgAttr.Name
+                                                              ?? ToCamelCase(payloadType.Name));
 
             messageKeys.Add(messageKey);
 
@@ -336,11 +350,13 @@ internal sealed class AsyncApiDocumentService(
                 Name = msgAttr.Name ?? messageKey,
                 Title = msgAttr.Title ?? messageKey,
                 Summary = msgAttr.Summary ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Summary,
-                Description = msgAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Remarks,
+                Description =
+                    msgAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Remarks,
                 Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
             };
 
-            ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType, memberMetadata.MessageExamples, scopedServiceProvider);
+            ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType,
+                memberMetadata.MessageExamples, scopedServiceProvider);
 
             if (!document.Components.Messages.ContainsKey(messageKey))
             {
@@ -353,18 +369,15 @@ internal sealed class AsyncApiDocumentService(
         return messageKeys;
     }
 
-    private void ApplyMessageExamples(AsyncApiMessage message, AsyncApiJsonSchema? payloadSchema, Type payloadType, List<MessageExampleAttribute> exampleAttrs, IServiceProvider scopedServiceProvider)
+    private void ApplyMessageExamples(AsyncApiMessage message, AsyncApiJsonSchema? payloadSchema, Type payloadType,
+        List<MessageExampleAttribute> exampleAttrs, IServiceProvider scopedServiceProvider)
     {
         var examples = new List<AsyncApiMessageExample>();
 
         // 1. From attributes on the member
         foreach (var attr in exampleAttrs)
         {
-            var example = new AsyncApiMessageExample
-            {
-                Name = attr.Name,
-                Summary = attr.Summary
-            };
+            var example = new AsyncApiMessageExample { Name = attr.Name, Summary = attr.Summary };
 
             if (!string.IsNullOrEmpty(attr.Json))
             {
@@ -372,7 +385,9 @@ internal sealed class AsyncApiDocumentService(
             }
             else if (attr.ProviderType != null)
             {
-                var provider = ActivatorUtilities.CreateInstance(scopedServiceProvider, attr.ProviderType) as IAsyncApiMessageExampleProvider;
+                var provider =
+                    ActivatorUtilities.CreateInstance(scopedServiceProvider, attr.ProviderType) as
+                        IAsyncApiMessageExampleProvider;
                 var value = provider?.GetExample();
                 if (value != null)
                 {
@@ -392,7 +407,8 @@ internal sealed class AsyncApiDocumentService(
                 {
                     Name = fluentExample.Name,
                     Summary = fluentExample.Summary,
-                    Payload = new AsyncApiAny(JsonSerializer.SerializeToNode(fluentExample.Value, _jsonSerializerOptions))
+                    Payload = new AsyncApiAny(JsonSerializer.SerializeToNode(fluentExample.Value,
+                        _jsonSerializerOptions))
                 };
 
                 examples.Add(example);
@@ -415,132 +431,159 @@ internal sealed class AsyncApiDocumentService(
     }
 
     /// <summary>
-/// Adds AsyncAPI operations to the document for each OperationAttribute found on the given member.
-/// </summary>
-/// <remarks>
-/// Creates operation IDs when missing, ensures payload schemas and message entries exist when a MessagePayloadType is provided (avoiding duplicates), applies tags, sets the operation action and channel reference, and attaches message references to the operation.
-/// </remarks>
-/// <param name="document">The AsyncAPI document to modify.</param>
-/// <param name="channel">The channel to which the operations belong.</param>
-/// <param name="memberMetadata">The member metadata (type or method) that declares OperationAttribute instances.</param>
-/// <param name="messageKeys">Existing message keys already associated with the channel; used as the initial set of messages for each operation.</param>
-/// <param name="scopedServiceProvider">Scoped service provider used to resolve services during schema creation.</param>
-/// <param name="schemaTransformers">Schema transformers applied when creating or retrieving payload schemas.</param>
-/// <param name="cancellationToken">Cancellation token to observe while performing async operations.</param>
-private async Task ApplyOperationsFromMetadataAsync(
-    AsyncApiDocument document,
-    AsyncApiChannel channel,
-    AsyncApiMemberMetadata memberMetadata,
-    List<string> messageKeys,
-    IServiceProvider scopedServiceProvider,
-    IAsyncApiSchemaTransformer[] schemaTransformers,
-    CancellationToken cancellationToken)
-{
-    var opAttrs = memberMetadata.Operations;
-    foreach (var opAttr in opAttrs)
+    /// Adds AsyncAPI operations to the document for each OperationAttribute found on the given member.
+    /// </summary>
+    /// <remarks>
+    /// Creates operation IDs when missing, ensures payload schemas and message entries exist when a MessagePayloadType is provided (avoiding duplicates), applies tags, sets the operation action and channel reference, and attaches message references to the operation.
+    /// </remarks>
+    /// <param name="document">The AsyncAPI document to modify.</param>
+    /// <param name="channel">The channel to which the operations belong.</param>
+    /// <param name="memberMetadata">The member metadata (type or method) that declares OperationAttribute instances.</param>
+    /// <param name="messageKeys">Existing message keys already associated with the channel; used as the initial set of messages for each operation.</param>
+    /// <param name="scopedServiceProvider">Scoped service provider used to resolve services during schema creation.</param>
+    /// <param name="schemaTransformers">Schema transformers applied when creating or retrieving payload schemas.</param>
+    /// <param name="operationTransformers">Activated operation transformers run against each operation before it is added to the document.</param>
+    /// <param name="cancellationToken">Cancellation token to observe while performing async operations.</param>
+    private async Task ApplyOperationsFromMetadataAsync(
+        AsyncApiDocument document,
+        AsyncApiChannel channel,
+        AsyncApiMemberMetadata memberMetadata,
+        List<string> messageKeys,
+        IServiceProvider scopedServiceProvider,
+        IAsyncApiSchemaTransformer[] schemaTransformers,
+        IAsyncApiOperationTransformer[] operationTransformers,
+        CancellationToken cancellationToken)
     {
-        var opId = opAttr.OperationId;
-        if (string.IsNullOrWhiteSpace(opId))
+        var opAttrs = memberMetadata.Operations;
+        foreach (var opAttr in opAttrs)
         {
-            opId = AsyncApiNamingHelper.SanitizeKey($"{memberMetadata.Member.DeclaringType?.Name ?? "Type"}_{memberMetadata.Member.Name}_{opAttr.OperationType}");
-        }
-        else
-        {
-            opId = AsyncApiNamingHelper.SanitizeKey(opId);
-        }
-
-        if (document.Operations.ContainsKey(opId))
-            continue;
-
-        // Process MessagePayloadType if present
-        var operationMessageKeys = new List<string>(messageKeys);
-        if (operationMessageKeys.Count == 0 && opAttr.MessagePayloadType is not null)
-        {
-            var payloadSchema = await _componentService.GetOrCreateSchemaAsync(
-                document,
-                opAttr.MessagePayloadType,
-                scopedServiceProvider,
-                schemaTransformers,
-                parameterDescription: null,
-                cancellationToken: cancellationToken);
-
-            var schemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
-            if (!document.Components.Schemas.ContainsKey(schemaKey))
+            var opId = opAttr.OperationId;
+            if (string.IsNullOrWhiteSpace(opId))
             {
-                document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
-                {
-                    Schema = payloadSchema as AsyncApiJsonSchema
-                };
+                opId = AsyncApiNamingHelper.SanitizeKey(
+                    $"{memberMetadata.Member.DeclaringType?.Name ?? "Type"}_{memberMetadata.Member.Name}_{opAttr.OperationType}");
+            }
+            else
+            {
+                opId = AsyncApiNamingHelper.SanitizeKey(opId);
             }
 
-            var messageKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
-            if (!document.Components.Messages.ContainsKey(messageKey))
+            if (document.Operations.ContainsKey(opId))
+                continue;
+
+            // Process MessagePayloadType if present
+            var operationMessageKeys = new List<string>(messageKeys);
+            if (operationMessageKeys.Count == 0 && opAttr.MessagePayloadType is not null)
             {
-                var message = new AsyncApiMessage
+                var payloadSchema = await _componentService.GetOrCreateSchemaAsync(
+                    document,
+                    opAttr.MessagePayloadType,
+                    scopedServiceProvider,
+                    schemaTransformers,
+                    parameterDescription: null,
+                    cancellationToken: cancellationToken);
+
+                var schemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
+                if (!document.Components.Schemas.ContainsKey(schemaKey))
                 {
-                    Name = messageKey,
-                    Title = messageKey,
-                    Summary = _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Summary,
-                    Description = _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Remarks,
-                    Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
-                };
-                ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, opAttr.MessagePayloadType, memberMetadata.MessageExamples, scopedServiceProvider);
-                document.Components.Messages[messageKey] = message;
+                    document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
+                    {
+                        Schema = payloadSchema as AsyncApiJsonSchema
+                    };
+                }
+
+                var messageKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
+                if (!document.Components.Messages.ContainsKey(messageKey))
+                {
+                    var message = new AsyncApiMessage
+                    {
+                        Name = messageKey,
+                        Title = messageKey,
+                        Summary = _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Summary,
+                        Description =
+                            _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Remarks,
+                        Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
+                    };
+                    ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, opAttr.MessagePayloadType,
+                        memberMetadata.MessageExamples, scopedServiceProvider);
+                    document.Components.Messages[messageKey] = message;
+                }
+
+                if (!channel.Messages.ContainsKey(messageKey))
+                {
+                    channel.Messages[messageKey] = new AsyncApiMessageReference($"#/components/messages/{messageKey}");
+                }
+
+                operationMessageKeys.Add(messageKey);
             }
 
-            if (!channel.Messages.ContainsKey(messageKey))
+            var op = new AsyncApiOperation
             {
-                channel.Messages[messageKey] = new AsyncApiMessageReference($"#/components/messages/{messageKey}");
-            }
+                Title = opAttr.Title ?? opId,
+                Summary =
+                    opAttr.Summary ?? _xmlDocumentationProvider.GetDocumentation(memberMetadata.Member)?.Summary,
+                Description = opAttr.Description ??
+                              _xmlDocumentationProvider.GetDocumentation(memberMetadata.Member)?.Remarks,
+            };
 
-            operationMessageKeys.Add(messageKey);
-        }
+            op.Action = opAttr.OperationType == AttrOperationType.Subscribe
+                ? AsyncApiAction.Send
+                : AsyncApiAction.Receive;
 
-        var op = new AsyncApiOperation
-        {
-            Title = opAttr.Title ?? opId,
-            Summary = opAttr.Summary ?? _xmlDocumentationProvider.GetDocumentation(memberMetadata.Member)?.Summary,
-            Description = opAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(memberMetadata.Member)?.Remarks,
-        };
+            op.Channel =
+                new AsyncApiChannelReference($"#/channels/{AsyncApiNamingHelper.SanitizeKey(channel.Address!)}");
 
-        op.Action = opAttr.OperationType == AttrOperationType.Subscribe
-            ? AsyncApiAction.Send
-            : AsyncApiAction.Receive;
+            AttachOperationBindings(document, op, opAttr.BindingsRef);
 
-        op.Channel = new AsyncApiChannelReference($"#/channels/{AsyncApiNamingHelper.SanitizeKey(channel.Address!)}");
-
-        AttachOperationBindings(document, op, opAttr.BindingsRef);
-
-        if (opAttr.Tags is { Length: > 0 })
-        {
-            op.Tags ??= new List<AsyncApiTag>();
-            foreach (var tagName in opAttr.Tags)
+            if (opAttr.Tags is { Length: > 0 })
             {
-                op.Tags.Add(new AsyncApiTag { Name = tagName });
-
-                document.Components.Tags ??= new Dictionary<string, AsyncApiTag>();
-                if (!document.Components.Tags.ContainsKey(tagName))
+                op.Tags ??= new List<AsyncApiTag>();
+                foreach (var tagName in opAttr.Tags)
                 {
-                    document.Components.Tags[tagName] = new AsyncApiTag { Name = tagName };
+                    op.Tags.Add(new AsyncApiTag { Name = tagName });
+
+                    document.Components.Tags ??= new Dictionary<string, AsyncApiTag>();
+                    if (!document.Components.Tags.ContainsKey(tagName))
+                    {
+                        document.Components.Tags[tagName] = new AsyncApiTag { Name = tagName };
+                    }
                 }
             }
-        }
 
-        if (operationMessageKeys.Count > 0)
-        {
-            op.Messages ??= new List<AsyncApiMessageReference>();
-            var channelKey = AsyncApiNamingHelper.SanitizeKey(channel.Address!);
-            foreach (var msgKey in operationMessageKeys)
+            if (operationMessageKeys.Count > 0)
             {
-                // Reference from operation to channel's message to satisfy subset rule
-                var messageRef = new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{msgKey}");
-                op.Messages.Add(messageRef);
+                op.Messages ??= new List<AsyncApiMessageReference>();
+                var channelKey = AsyncApiNamingHelper.SanitizeKey(channel.Address!);
+                foreach (var msgKey in operationMessageKeys)
+                {
+                    // Reference from operation to channel's message to satisfy subset rule
+                    var messageRef = new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{msgKey}");
+                    op.Messages.Add(messageRef);
+                }
             }
-        }
 
-        document.Operations[opId] = op;
+            if (operationTransformers.Length > 0)
+            {
+                var operationTransformerContext = new AsyncApiOperationTransformerContext
+                {
+                    DocumentName = documentName,
+                    Description = null,
+                    ApplicationServices = scopedServiceProvider,
+                    Document = document,
+                    SchemaTransformers = schemaTransformers
+                };
+                _operationTransformerContextCache[opId] = operationTransformerContext;
+
+                foreach (var operationTransformer in operationTransformers)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await operationTransformer.TransformAsync(op, operationTransformerContext, cancellationToken);
+                }
+            }
+
+            document.Operations[opId] = op;
+        }
     }
-}
 
     private static string ToCamelCase(string value)
     {
@@ -565,9 +608,10 @@ private async Task ApplyOperationsFromMetadataAsync(
         for (var i = 0; i < _options.OperationTransformers.Count; i++)
         {
             var operationTransformer = _options.OperationTransformers[i];
-            operationTransformers[i] = operationTransformer is TypeBasedAsyncApiOperationTransformer typeBasedTransformer
-                ? typeBasedTransformer.InitializeTransformer(scopedServiceProvider)
-                : operationTransformer;
+            operationTransformers[i] =
+                operationTransformer is TypeBasedAsyncApiOperationTransformer typeBasedTransformer
+                    ? typeBasedTransformer.InitializeTransformer(scopedServiceProvider)
+                    : operationTransformer;
         }
     }
 
@@ -602,6 +646,7 @@ private async Task ApplyOperationsFromMetadataAsync(
 
         return info;
     }
+
     private void ApplyBindingsFromOptions(AsyncApiDocument document)
     {
         document.Components ??= new AsyncApiComponents();
@@ -619,6 +664,7 @@ private async Task ApplyOperationsFromMetadataAsync(
                     {
                         bindings.Add(binding);
                     }
+
                     document.Components.OperationBindings[kvp.Key] = bindings;
                 }
             }
@@ -639,7 +685,7 @@ private async Task ApplyOperationsFromMetadataAsync(
 
                     var key = AsyncApiNamingHelper.SanitizeKey(kvp.Key);
                     document.Components.ChannelBindings[key] = bindings;
-                          
+
                     // Apply bindings to the actual channel if it exists
                     if (document.Channels.TryGetValue(key, out var channel))
                     {
@@ -649,6 +695,7 @@ private async Task ApplyOperationsFromMetadataAsync(
             }
         }
     }
+
     internal Dictionary<string, AsyncApiServer> GetAsyncApiServers(HttpRequest? httpRequest = null)
     {
         var servers = new Dictionary<string, AsyncApiServer>();
@@ -660,6 +707,7 @@ private async Task ApplyOperationsFromMetadataAsync(
             {
                 servers[AsyncApiNamingHelper.SanitizeKey(kvp.Key)] = kvp.Value;
             }
+
             return servers;
         }
 
@@ -671,11 +719,7 @@ private async Task ApplyOperationsFromMetadataAsync(
             if (serverUrl.EndsWith('/') && !httpRequest.PathBase.HasValue)
                 serverUrl = serverUrl.TrimEnd('/');
 
-            servers["default"] = new AsyncApiServer
-            {
-                Host = serverUrl,
-                Protocol = MapProtocolFromScheme(scheme)
-            };
+            servers["default"] = new AsyncApiServer { Host = serverUrl, Protocol = MapProtocolFromScheme(scheme) };
             return servers;
         }
 
@@ -709,10 +753,13 @@ private async Task ApplyOperationsFromMetadataAsync(
                 {
                     sanitizedAddress = address.Split("://")[1];
                 }
+
                 result[$"server{index++}"] = new AsyncApiServer { Host = sanitizedAddress };
             }
+
             return result;
         }
+
         return new Dictionary<string, AsyncApiServer>();
     }
 

@@ -130,7 +130,6 @@ Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.ApplicationServices.get -> System.IServiceProvider!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.ApplicationServices.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.AsyncApiOperationTransformerContext() -> void
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Description.get -> Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Description.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Document.get -> ByteBard.AsyncAPI.Models.AsyncApiDocument?
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Document.init -> void
