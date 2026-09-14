@@ -18,6 +18,19 @@ export function getAuthState(): unknown {
   return coreGetAuthState()
 }
 
+/**
+ * Base64-encodes text containing arbitrary Unicode. `btoa` alone throws for any character above
+ * `U+00FF`, which basic-auth credentials are not restricted to.
+ */
+function utf8ToBase64(text: string): string {
+  const bytes = new TextEncoder().encode(text)
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+  return btoa(binary)
+}
+
 export type ResolvedAuth = {
   /** Headers to send with each proxy call. */
   headers: Record<string, string>
@@ -79,7 +92,7 @@ export function resolveBrokerAuth(
           const username = secrets['x-scalar-secret-username'] ?? ''
           const password = secrets['x-scalar-secret-password'] ?? ''
           if (username || password) {
-            result.headers['Authorization'] = `Basic ${btoa(`${username}:${password}`)}`
+            result.headers['Authorization'] = `Basic ${utf8ToBase64(`${username}:${password}`)}`
           }
         }
         break

@@ -10,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests;
+namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
 
 /// <summary>
 /// Builds a <see cref="TestServer" /> hosting the broker console endpoints over a fake bridge.
@@ -29,12 +29,17 @@ internal static class BrokerConsoleHost
     /// <param name="environment">The hosting environment name; drives the access guard.</param>
     /// <param name="allowAnonymous">Sets <see cref="ScalarBrokerBridgeOptions.AllowAnonymous" />.</param>
     /// <param name="requireAuthorization">Applies <c>RequireAuthorization()</c> to the proxy endpoints.</param>
+    /// <param name="combineWithAllowAnonymous">
+    /// Also applies <c>AllowAnonymous()</c> alongside <paramref name="requireAuthorization" />, the
+    /// misconfiguration where the authorization middleware ends up enforcing nothing.
+    /// </param>
     public static Task<IHost> StartAsync(
         FakeBrokerBridge? bridge = null,
         // Literal rather than Environments.Development: that is a static readonly field, not a const.
         string environment = "Development",
         bool allowAnonymous = false,
-        bool requireAuthorization = false)
+        bool requireAuthorization = false,
+        bool combineWithAllowAnonymous = false)
     {
         return new HostBuilder()
             .UseEnvironment(environment)
@@ -70,6 +75,11 @@ internal static class BrokerConsoleHost
                         if (requireAuthorization)
                         {
                             console.RequireAuthorization();
+                        }
+
+                        if (combineWithAllowAnonymous)
+                        {
+                            console.AllowAnonymous();
                         }
                     });
                 }))

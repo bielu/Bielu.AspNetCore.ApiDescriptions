@@ -19,8 +19,10 @@ export type {
 } from './types'
 
 // Remember where this bundle was loaded from — the proxy endpoints are served as siblings of
-// plugin.js. Must run now, while `document.currentScript` is still this script tag.
-captureBundleScriptSrc()
+// plugin.js. Must run now, while `document.currentScript` is still this script tag. The `es` build
+// is a module script, where `document.currentScript` is always null by spec, so `import.meta.url`
+// (the module's own URL) is passed as the fallback.
+captureBundleScriptSrc(import.meta.url)
 
 // Register the console Web Component and hook `window.Scalar.createApiReference` so every Scalar
 // API Reference on the page picks up the broker plugin (see @bielu/scalar-core's bootstrap).

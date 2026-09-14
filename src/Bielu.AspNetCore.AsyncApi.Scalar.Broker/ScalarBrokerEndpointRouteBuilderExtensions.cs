@@ -95,11 +95,20 @@ public static class ScalarBrokerEndpointRouteBuilderExtensions
                 return problem;
             }
 
-            var receipt = await bridge.PublishAsync(
-                new BrokerPublishRequest(body.Channel, body.Payload, body.Key, body.Headers),
-                context.RequestAborted);
+            try
+            {
+                var receipt = await bridge.PublishAsync(
+                    new BrokerPublishRequest(body.Channel, body.Payload, body.Key, body.Headers),
+                    context.RequestAborted);
 
-            return Results.Json(receipt, JsonOptions);
+                return Results.Json(receipt, JsonOptions);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                return Results.Problem(
+                    $"The broker rejected the publish: {exception.Message}",
+                    statusCode: StatusCodes.Status502BadGateway);
+            }
         }).ExcludeFromDescription();
 
         var tail = endpoints.MapGet($"{basePath}/tail", async (HttpContext context, string? connection, string? channel) =>
@@ -126,10 +135,11 @@ public static class ScalarBrokerEndpointRouteBuilderExtensions
             context.Response.Headers.CacheControl = "no-cache";
             // Proxies that buffer would defeat a tail stream entirely.
             context.Response.Headers["X-Accel-Buffering"] = "no";
-            await context.Response.Body.FlushAsync(context.RequestAborted);
 
             try
             {
+                await context.Response.Body.FlushAsync(context.RequestAborted);
+
                 await foreach (var message in bridge.TailAsync(new BrokerTailRequest(channel), context.RequestAborted))
                 {
                     await context.Response.WriteAsync($"data: {JsonSerializer.Serialize(message, JsonOptions)}\n\n", context.RequestAborted);
@@ -139,6 +149,14 @@ public static class ScalarBrokerEndpointRouteBuilderExtensions
             catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
             {
                 // The console closed the stream; that is how a tail ends, not a fault.
+            }
+            catch (Exception exception)
+            {
+                // The response has already started, so a status code can no longer be sent - the only
+                // way to tell the console what went wrong is a terminal frame inside the stream itself.
+                var error = JsonSerializer.Serialize(new { error = exception.Message }, JsonOptions);
+                await context.Response.WriteAsync($"event: error\ndata: {error}\n\n", CancellationToken.None);
+                await context.Response.Body.FlushAsync(CancellationToken.None);
             }
 
             return Results.Empty;

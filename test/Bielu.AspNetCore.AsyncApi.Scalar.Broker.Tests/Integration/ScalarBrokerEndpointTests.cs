@@ -1,11 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
 using Microsoft.AspNetCore.TestHost;
 using Shouldly;
 using Xunit;
 
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests;
+namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Integration;
 
 /// <summary>
 /// The proxy endpoints <c>MapScalarBrokerAssets()</c> mounts: listing connections, publishing, and
@@ -57,6 +58,25 @@ public class ScalarBrokerEndpointTests
         bridge.Published[0].Channel.ShouldBe("orders.created");
         bridge.Published[0].Payload.ShouldBe("{\"id\":1}");
         bridge.Published[0].Key.ShouldBe("k1");
+    }
+
+    [Fact]
+    public async Task Publish_BridgeThrows_Returns502WithoutRecordingAPublication()
+    {
+        // Arrange
+        var bridge = new FakeBrokerBridge { PublishFailure = new InvalidOperationException("broker unreachable") };
+        using var host = await BrokerConsoleHost.StartAsync(bridge);
+
+        // Act
+        var response = await host.GetTestClient().PostAsJsonAsync(
+            $"{BrokerConsoleHost.BasePath}/publish",
+            new { connection = "orders", channel = "orders.created", payload = "{}" });
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.BadGateway);
+        var problem = await response.Content.ReadAsStringAsync();
+        problem.ShouldContain("broker unreachable");
+        bridge.Published.ShouldBeEmpty();
     }
 
     [Theory]
@@ -135,6 +155,27 @@ public class ScalarBrokerEndpointTests
         payload.GetProperty("payload").GetString().ShouldBe("{\"id\":1}");
         payload.GetProperty("offset").GetInt64().ShouldBe(42);
         payload.GetProperty("headers").GetProperty("trace").GetString().ShouldBe("abc");
+    }
+
+    [Fact]
+    public async Task Tail_BridgeFaults_EmitsATerminalErrorFrame()
+    {
+        // Arrange — the response has already started by the time a broker-side fault surfaces, so a
+        // status code can no longer be sent; a terminal SSE frame is the only way to report it.
+        var bridge = new FakeBrokerBridge();
+        using var host = await BrokerConsoleHost.StartAsync(bridge);
+        bridge.FailTail(new InvalidOperationException("topic does not exist"));
+
+        // Act
+        var response = await host.GetTestClient().GetAsync(
+            $"{BrokerConsoleHost.BasePath}/tail?connection=orders&channel=orders.created",
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        body.ShouldContain("event: error");
+        body.ShouldContain("topic does not exist");
     }
 
     [Theory]

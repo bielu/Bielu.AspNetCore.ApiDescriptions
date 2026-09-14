@@ -36,7 +36,11 @@ internal sealed class BrokerBridgeAccessGuard(
 
         // RequireAuthorization puts IAuthorizeData on the endpoint, and the authorization middleware
         // has already enforced it by the time the handler runs - reaching here means it passed.
-        if (context.GetEndpoint()?.Metadata.GetMetadata<IAuthorizeData>() is not null)
+        // AllowAnonymous overrides that even when IAuthorizeData is also present (the middleware skips
+        // enforcement whenever it sees IAllowAnonymous), so it must be checked first or a caller who
+        // applies both conventions to the same endpoint would look protected without being enforced.
+        var metadata = context.GetEndpoint()?.Metadata;
+        if (metadata?.GetMetadata<IAllowAnonymous>() is null && metadata?.GetMetadata<IAuthorizeData>() is not null)
         {
             return true;
         }

@@ -1,6 +1,6 @@
 using System.Threading.Channels;
 
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests;
+namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
 
 /// <summary>
 /// An <see cref="IBrokerBridge" /> test double: records what was published, and replays a scripted
@@ -23,6 +23,9 @@ internal sealed class FakeBrokerBridge : IBrokerBridge
 
     /// <summary>Ends the tail stream, as a driver would when the subscription closes.</summary>
     public void CompleteTail() => _tail.Writer.TryComplete();
+
+    /// <summary>Ends the tail stream with a fault, as a driver would on a broker-side failure.</summary>
+    public void FailTail(Exception exception) => _tail.Writer.TryComplete(exception);
 
     public Task<BrokerPublishReceipt> PublishAsync(BrokerPublishRequest request, CancellationToken cancellationToken)
     {

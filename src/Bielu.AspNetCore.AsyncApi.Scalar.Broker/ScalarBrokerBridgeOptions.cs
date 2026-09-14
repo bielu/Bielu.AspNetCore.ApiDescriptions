@@ -43,10 +43,20 @@ public sealed class ScalarBrokerBridgeOptions
     /// </summary>
     /// <param name="registration">The connection descriptor and the factory producing its bridge.</param>
     /// <returns>The same options instance for chaining.</returns>
+    /// <exception cref="ArgumentException"><paramref name="registration" />'s connection name is null, empty, or whitespace-only.</exception>
     /// <exception cref="InvalidOperationException">A connection with the same name is already registered.</exception>
     public ScalarBrokerBridgeOptions AddConnection(BrokerConnectionRegistration registration)
     {
         ArgumentNullException.ThrowIfNull(registration);
+
+        // A whitespace-only name would register and list, but TryGetBridge rejects only empty
+        // strings, so it could never actually be resolved back to a bridge.
+        if (string.IsNullOrWhiteSpace(registration.Descriptor.Name))
+        {
+            throw new ArgumentException(
+                "A broker connection name must not be null, empty, or whitespace-only.",
+                nameof(registration));
+        }
 
         if (_connections.Any(existing => string.Equals(existing.Descriptor.Name, registration.Descriptor.Name, StringComparison.Ordinal)))
         {
