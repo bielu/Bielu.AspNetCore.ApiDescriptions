@@ -1,8 +1,9 @@
+using Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests;
+namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Unit;
 
 /// <summary>
 /// Registration and lifetime of the bridges behind each connection.
@@ -39,6 +40,23 @@ public class BrokerBridgeRegistryTests
         // Assert
         var exception = Should.Throw<InvalidOperationException>(act);
         exception.Message.ShouldContain("orders");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AddConnection_WhitespaceOnlyName_Throws(string name)
+    {
+        // Arrange — TryGetBridge rejects only empty strings, so a whitespace-only name would
+        // register and list but could never be resolved back to a bridge.
+        var services = new ServiceCollection();
+
+        // Act
+        var act = () => services.AddScalarBrokerBridge(options =>
+            options.AddConnection(Registration(name, _ => new FakeBrokerBridge())));
+
+        // Assert
+        Should.Throw<ArgumentException>(act);
     }
 
     [Fact]
@@ -98,6 +116,22 @@ public class BrokerBridgeRegistryTests
         // Assert
         found.ShouldBeFalse();
         bridge.ShouldBeNull();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void TryGetBridge_NullOrEmptyName_Throws(string? connectionName)
+    {
+        // Arrange
+        var registry = Registry(options =>
+            options.AddConnection(Registration("orders", _ => new FakeBrokerBridge())));
+
+        // Act
+        var act = void () => registry.TryGetBridge(connectionName!, out _);
+
+        // Assert
+        Should.Throw<ArgumentException>(act);
     }
 
     [Fact]

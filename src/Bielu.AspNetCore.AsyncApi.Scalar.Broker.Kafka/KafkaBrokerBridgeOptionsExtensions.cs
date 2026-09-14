@@ -47,8 +47,8 @@ public static partial class KafkaBrokerBridgeOptionsExtensions
     /// URL-shaped value carrying credentials must not leak through it.
     /// </remarks>
     private static string Redact(string bootstrapServers) =>
-        CredentialsPattern().Replace(bootstrapServers, "$1***@");
+        CredentialsPattern().Replace(bootstrapServers, "$1$2***@");
 
-    [GeneratedRegex(@"(^|,)\s*[^,:/@\s]+:[^,@\s]*@", RegexOptions.None, matchTimeoutMilliseconds: 200)]
+    [GeneratedRegex(@"(^|,)\s*((?:[A-Za-z][A-Za-z0-9+.-]*://)?)[^,:/@\s]+:[^,@\s]*@", RegexOptions.None, matchTimeoutMilliseconds: 200)]
     private static partial Regex CredentialsPattern();
 }
