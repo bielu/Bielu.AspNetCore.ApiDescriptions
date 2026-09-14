@@ -19,6 +19,12 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [1.0.3] - 2026-09-14
+
+### Patch Changes
+
+- [#70](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/70) [`9057d87`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/9057d87eee68740d8db35354ee8d552ad383d5ed) Thanks [@bielu](https://github.com/bielu)! - Registered operation transformers (`AddOperationTransformer`, delegate/instance/type-based) are now actually invoked while generating operations from `[AsyncApi]` attribute metadata. Previously they were activated and disposed but never executed. `AsyncApiOperationTransformerContext.Description` is now nullable, since operations discovered from attribute metadata have no corresponding `ApiDescription`.
+
 ## [1.0.2] - 2026-08-23
 
 ### Patch Changes
