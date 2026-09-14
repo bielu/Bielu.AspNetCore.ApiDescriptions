@@ -4,6 +4,9 @@ Bielu.AspNetCore.AsyncApi makes it easy to document your event-driven APIs in AS
 
 ## Installation
 
+The current runtime libraries target .NET 10. See [Supported .NET versions](supported-dotnet-versions.md) for the
+support matrix, planned .NET 11 and .NET 12 support, and the policy for removing targets at Microsoft EOL.
+
 Install the core package and optionally the attributes package:
 
 ```bash
