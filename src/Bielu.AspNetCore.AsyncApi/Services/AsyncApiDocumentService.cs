@@ -336,10 +336,10 @@ internal sealed class AsyncApiDocumentService(
                 parameterDescription: null,
                 cancellationToken: cancellationToken);
 
-            var schemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(payloadType.Name));
-            if (!document.Components.Schemas.ContainsKey(schemaKey))
+            var payloadSchemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(payloadType.Name));
+            if (!document.Components.Schemas.ContainsKey(payloadSchemaKey))
             {
-                document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
+                document.Components.Schemas[payloadSchemaKey] = new AsyncApiMultiFormatSchema
                 {
                     Schema = payloadSchema as AsyncApiJsonSchema
                 };
@@ -352,11 +352,13 @@ internal sealed class AsyncApiDocumentService(
                 Summary = msgAttr.Summary ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Summary,
                 Description =
                     msgAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Remarks,
-                Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
+                Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{payloadSchemaKey}")
             };
 
             ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType,
                 memberMetadata.MessageExamples, scopedServiceProvider);
+
+            await ApplyMessageAttributeAsync(document, message, msgAttr, scopedServiceProvider, schemaTransformers, cancellationToken);
 
             if (!document.Components.Messages.ContainsKey(messageKey))
             {
@@ -367,6 +369,37 @@ internal sealed class AsyncApiDocumentService(
         }
 
         return messageKeys;
+    }
+
+    private async Task ApplyMessageAttributeAsync(AsyncApiDocument document, AsyncApiMessage message, MessageAttribute messageAttr, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, CancellationToken cancellationToken)
+    {
+        if (messageAttr.ContentType is not null)
+        {
+            message.ContentType = messageAttr.ContentType ?? document.DefaultContentType;
+        }
+
+        if (messageAttr.HeadersType is not null)
+        {
+            var headerType = messageAttr.HeadersType!;
+            var headerSchema = await _componentService.GetOrCreateSchemaAsync(
+                document,
+                headerType,
+                scopedServiceProvider,
+                schemaTransformers,
+                parameterDescription: null,
+                cancellationToken: cancellationToken);
+
+            var headersSchemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(headerType.Name));
+            if (!document.Components.Schemas.ContainsKey(headersSchemaKey))
+            {
+                document.Components.Schemas[headersSchemaKey] = new AsyncApiMultiFormatSchema
+                {
+                    Schema = headerSchema as AsyncApiJsonSchema
+                };
+            }
+
+            message.Headers = new AsyncApiJsonSchemaReference($"#/components/schemas/{headersSchemaKey}");
+        }
     }
 
     private void ApplyMessageExamples(AsyncApiMessage message, AsyncApiJsonSchema? payloadSchema, Type payloadType,
@@ -483,10 +516,10 @@ internal sealed class AsyncApiDocumentService(
                     parameterDescription: null,
                     cancellationToken: cancellationToken);
 
-                var schemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
-                if (!document.Components.Schemas.ContainsKey(schemaKey))
+                var payloadSchemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
+                if (!document.Components.Schemas.ContainsKey(payloadSchemaKey))
                 {
-                    document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
+                    document.Components.Schemas[payloadSchemaKey] = new AsyncApiMultiFormatSchema
                     {
                         Schema = payloadSchema as AsyncApiJsonSchema
                     };
@@ -502,10 +535,17 @@ internal sealed class AsyncApiDocumentService(
                         Summary = _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Summary,
                         Description =
                             _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Remarks,
-                        Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
+                        Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{payloadSchemaKey}"),
                     };
+
                     ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, opAttr.MessagePayloadType,
                         memberMetadata.MessageExamples, scopedServiceProvider);
+
+                    if (memberMetadata.Messages.FirstOrDefault() is MessageAttribute messageAttribute)
+                    {
+                        await ApplyMessageAttributeAsync(document, message, messageAttribute, scopedServiceProvider, schemaTransformers, cancellationToken);
+                    }
+
                     document.Components.Messages[messageKey] = message;
                 }
 

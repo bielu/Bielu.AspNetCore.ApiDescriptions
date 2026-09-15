@@ -28,6 +28,8 @@ Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Description.get
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Description.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.HeadersType.get -> System.Type?
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.HeadersType.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ContentType.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ContentType.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageAttribute(System.Type! payloadType) -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageAttribute(System.Type! payloadType, params string![]! tags) -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageId.get -> string?
