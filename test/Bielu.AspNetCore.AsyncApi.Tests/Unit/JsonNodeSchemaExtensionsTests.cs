@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 using System.Text.Json.Serialization;
@@ -78,11 +78,14 @@ public class JsonNodeSchemaExtensionsTests
 
     /// <summary>
     /// Reads the "type" keyword as the set of schema type names it represents, regardless
-    /// of whether it was stored as a single value or a flags combination.
+    /// of whether it was stored as a single value, a flags combination, or a type array.
     /// </summary>
     private static HashSet<SchemaType> GetSchemaTypes(JsonNode schema)
     {
-        var rawType = schema[AsyncApiJsonSchemaKeywords.TypeKeyword]?.GetValue<string>();
+        var typeNode = schema[AsyncApiJsonSchemaKeywords.TypeKeyword];
+        var rawType = typeNode is JsonArray typeArray
+            ? string.Join(", ", typeArray.Select(t => t!.GetValue<string>()))
+            : typeNode?.GetValue<string>();
         rawType.ShouldNotBeNullOrEmpty();
         Enum.TryParse<SchemaType>(rawType, ignoreCase: true, out var parsed).ShouldBeTrue($"Could not parse schema type '{rawType}'");
 
