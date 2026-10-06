@@ -586,13 +586,27 @@ internal sealed class AsyncApiDocumentService(
             }
             else if (attr.ProviderType != null)
             {
-                var provider =
-                    ActivatorUtilities.CreateInstance(scopedServiceProvider, attr.ProviderType) as
-                        IAsyncApiMessageExampleProvider;
-                var value = provider?.GetExample();
-                if (value != null)
+                var provider = ActivatorUtilities.CreateInstance(scopedServiceProvider, attr.ProviderType);
+
+                if (provider is IAsyncApiMessageExampleProvider payloadProvider)
                 {
-                    example.Payload = new AsyncApiAny(JsonSerializer.SerializeToNode(value, _jsonSerializerOptions));
+                    var payloadValue = payloadProvider.GetExample();
+                    if (payloadValue != null)
+                    {
+                        example.Payload = new AsyncApiAny(JsonSerializer.SerializeToNode(payloadValue, _jsonSerializerOptions));
+                    }
+                }
+
+                if (provider is IAsyncApiMessageHeaderExampleProvider headerProvider)
+                {
+                    var headerValue = headerProvider.GetHeaderExample();
+                    // Headers is a map of header name to example value, not a single AsyncApiAny like
+                    // Payload, so the provider's return value must serialize to a JSON object.
+                    if (headerValue != null &&
+                        JsonSerializer.SerializeToNode(headerValue, _jsonSerializerOptions) is JsonObject headerNode)
+                    {
+                        example.Headers = headerNode.ToDictionary(kvp => kvp.Key, kvp => new AsyncApiAny(kvp.Value));
+                    }
                 }
             }
 
