@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 using System.Text.Json.Serialization;
@@ -139,6 +139,7 @@ public class JsonNodeSchemaExtensionsTests
 
         GetSchemaTypes(schema).ShouldBe([SchemaType.Number], ignoreOrder: true);
         schema[AsyncApiJsonSchemaKeywords.FormatKeyword]?.GetValue<string>().ShouldBe("float");
+        schema[AsyncApiJsonSchemaKeywords.PatternKeyword].ShouldBeNull();
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
@@ -224,6 +224,12 @@ internal static class JsonNodeSchemaExtensions
             else
             {
                 schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = asyncApiJsonSchema.Type.ToString();
+                // STJ's number-as-string handling also emits a numeric "pattern" for the string
+                // branch; it is meaningless once the type is numeric again.
+                if (asyncApiJsonSchema.Type != SchemaType.String)
+                {
+                    schema.AsObject().Remove(AsyncApiJsonSchemaKeywords.PatternKeyword);
+                }
             }
             schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = asyncApiJsonSchema.Format;
             schema[AsyncApiConstants.Id] = createSchemaReferenceId(context.TypeInfo);
