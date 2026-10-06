@@ -388,6 +388,8 @@ internal sealed class AsyncApiDocumentService(
             ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType,
                 memberMetadata.MessageExamples, scopedServiceProvider);
 
+            await ApplyMessageAttributeAsync(document, message, msgAttr, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
+
             if (!document.Components.Messages.ContainsKey(messageKey))
             {
                 document.Components.Messages[messageKey] = message;
@@ -397,6 +399,31 @@ internal sealed class AsyncApiDocumentService(
         }
 
         return messageKeys;
+    }
+
+    private async Task ApplyMessageAttributeAsync(
+        AsyncApiDocument document,
+        AsyncApiMessage message,
+        MessageAttribute messageAttr,
+        IServiceProvider scopedServiceProvider,
+        IAsyncApiSchemaTransformer[] schemaTransformers,
+        Dictionary<string, Type> schemaKeyOwners,
+        CancellationToken cancellationToken)
+    {
+        if (messageAttr.ContentType is not null)
+        {
+            message.ContentType = messageAttr.ContentType;
+        }
+
+        if (messageAttr.HeadersType is { } headersType)
+        {
+            var (headersSchemaKey, headersSchema) = await EnsureSchemaAsync(
+                document, headersType, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
+
+            message.Headers = headersSchemaKey is not null
+                ? new AsyncApiJsonSchemaReference($"#/components/schemas/{headersSchemaKey}")
+                : new AsyncApiMultiFormatSchema { Schema = headersSchema as AsyncApiJsonSchema };
+        }
     }
 
     /// <summary>
@@ -679,6 +706,12 @@ internal sealed class AsyncApiDocumentService(
                     };
                     ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType,
                         memberMetadata.MessageExamples, scopedServiceProvider);
+
+                    if (memberMetadata.Messages.FirstOrDefault() is MessageAttribute messageAttribute)
+                    {
+                        await ApplyMessageAttributeAsync(document, message, messageAttribute, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
+                    }
+
                     document.Components.Messages[messageKey] = message;
                 }
 
