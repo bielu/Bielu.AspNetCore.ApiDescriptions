@@ -83,26 +83,31 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
         WolverineAsyncApiOptions options,
         IServiceProvider services)
     {
+        private readonly Dictionary<Uri, string> _channelKeys = [];
+        private readonly Dictionary<string, Type> _schemaKeyOwners = new(StringComparer.Ordinal);
+        private readonly HashSet<(AsyncApiAction Action, Uri EndpointUri, Type MessageType)> _operations = [];
         private string? _hubPath;
 
         public async Task AddOperationAsync(AsyncApiAction action, Uri endpointUri, Type messageType, CancellationToken cancellationToken)
         {
-            var address = ResolveAddress(endpointUri);
-            var channelKey = AsyncApiNamingHelper.SanitizeKey(address);
-            var channel = GetOrCreateChannel(channelKey, address, endpointUri);
+            if (!_operations.Add((action, endpointUri, messageType)))
+            {
+                return;
+            }
+
+            var channelKey = GetOrCreateChannel(endpointUri);
+            var channel = document.Channels[channelKey];
 
             var messageKey = await GetOrCreateMessageAsync(messageType, cancellationToken);
             channel.Messages.TryAdd(messageKey, new AsyncApiMessageReference($"#/components/messages/{messageKey}"));
 
+            // The first route of a message gets the short id; any further route is qualified by its channel,
+            // and numbered if that still clashes (two operation ids can sanitize to the same key).
             var verb = action == AsyncApiAction.Send ? "send" : "receive";
             var operationId = AsyncApiNamingHelper.SanitizeKey($"{verb}.{messageKey}");
             if (document.Operations.ContainsKey(operationId))
             {
-                operationId = AsyncApiNamingHelper.SanitizeKey($"{verb}.{messageKey}.{channelKey}");
-                if (document.Operations.ContainsKey(operationId))
-                {
-                    return;
-                }
+                operationId = UniqueKey(AsyncApiNamingHelper.SanitizeKey($"{verb}.{messageKey}.{channelKey}"), document.Operations.ContainsKey);
             }
 
             var docs = xmlDocs.GetDocumentation(messageType);
@@ -117,12 +122,21 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             };
         }
 
-        private AsyncApiChannel GetOrCreateChannel(string channelKey, string address, Uri endpointUri)
+        /// <summary>
+        /// Returns the key of the channel for <paramref name="endpointUri"/>, adding the channel on first use.
+        /// Each endpoint gets its own channel, numbered when its address sanitizes to a key already in use
+        /// (say a Kafka topic and a RabbitMQ queue both named "orders"), so neither loses its bindings.
+        /// </summary>
+        private string GetOrCreateChannel(Uri endpointUri)
         {
-            if (document.Channels.TryGetValue(channelKey, out var existing))
+            if (_channelKeys.TryGetValue(endpointUri, out var existingKey))
             {
-                return existing;
+                return existingKey;
             }
+
+            var address = ResolveAddress(endpointUri);
+            var channelKey = UniqueKey(AsyncApiNamingHelper.SanitizeKey(address), document.Channels.ContainsKey);
+            _channelKeys[endpointUri] = channelKey;
 
             var channel = new AsyncApiChannel
             {
@@ -142,7 +156,18 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             }
 
             document.Channels[channelKey] = channel;
-            return channel;
+            return channelKey;
+        }
+
+        private static string UniqueKey(string key, Func<string, bool> isTaken)
+        {
+            var candidate = key;
+            for (var suffix = 2; isTaken(candidate); suffix++)
+            {
+                candidate = $"{key}.{suffix}";
+            }
+
+            return candidate;
         }
 
         private async Task<string> GetOrCreateMessageAsync(Type messageType, CancellationToken cancellationToken)
@@ -157,18 +182,10 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 return key;
             }
 
-            // Registered the way the attribute pipeline registers payloads: the root schema under the
-            // type's name in components/schemas, nested types componentized by the schema service.
-            var schemaKey = AsyncApiNamingHelper.SanitizeKey(messageType.Name);
-            if (!document.Components.Schemas.ContainsKey(schemaKey))
-            {
-                var schema = await schemas.GetOrCreateSchemaAsync(document, messageType, services, context.SchemaTransformers,
-                    parameterDescription: null, cancellationToken);
-                if (schema is not AsyncApiJsonSchemaReference)
-                {
-                    document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema { Schema = (AsyncApiJsonSchema)schema };
-                }
-            }
+            // Registered the way the attribute pipeline registers payloads: keyed by the schema reference id
+            // (honoring AsyncApiOptions.CreateSchemaReferenceId), inlined when that opts the type out.
+            var (schemaKey, schema) = await schemas.GetOrCreateComponentSchemaAsync(
+                document, messageType, services, context.SchemaTransformers, _schemaKeyOwners, cancellationToken);
 
             var docs = xmlDocs.GetDocumentation(messageType);
             document.Components.Messages[key] = new AsyncApiMessage
@@ -177,7 +194,9 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 Title = messageType.Name,
                 Summary = docs?.Summary,
                 Description = docs?.Remarks,
-                Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}"),
+                Payload = schemaKey is not null
+                    ? new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
+                    : new AsyncApiMultiFormatSchema { Schema = schema as AsyncApiJsonSchema },
             };
 
             return key;

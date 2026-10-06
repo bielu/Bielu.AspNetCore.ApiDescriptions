@@ -13,6 +13,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Extensions;
+using Bielu.AspNetCore.AsyncApi.Helpers;
 using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Bielu.AspNetCore.AsyncApi.Schemas;
 using Bielu.AspNetCore.AsyncApi.Transformers;
@@ -411,6 +412,68 @@ private static void RemoveNullIds(JsonNode? node)
             var jsonTypeInfo = _jsonSerializerOptions.GetTypeInfo(t);
             return _optionsMonitor.Get(_documentName).CreateSchemaReferenceId(jsonTypeInfo);
         });
+    }
+
+    /// <summary>
+    /// The <c>components/schemas</c> key for <paramref name="type"/>: its <see cref="GetSchemaReferenceId"/>,
+    /// camel-cased and sanitized. Does not record or validate ownership of the key.
+    /// </summary>
+    /// <returns>The component key, or <see langword="null"/> if the schema should always be inlined.</returns>
+    internal string? GetSchemaComponentKey(Type type) =>
+        GetSchemaReferenceId(type) switch
+        {
+            null => null,
+            "" => "",
+            var referenceId => AsyncApiNamingHelper.SanitizeKey(char.ToLowerInvariant(referenceId[0]) + referenceId[1..]),
+        };
+
+    /// <summary>
+    /// Resolves (and if necessary creates and registers) the schema component for <paramref name="type"/>,
+    /// keyed by <see cref="GetSchemaComponentKey"/> so a custom <see cref="AsyncApiOptions.CreateSchemaReferenceId"/>
+    /// is honored. Throws when a <em>different</em> type in <paramref name="schemaKeyOwners"/> already claimed
+    /// the same key: silently keeping the first registration would make one payload describe the wrong type.
+    /// </summary>
+    /// <param name="document">The document whose <c>components/schemas</c> receives the schema.</param>
+    /// <param name="type">The payload type.</param>
+    /// <param name="scopedServiceProvider">The request-scoped service provider.</param>
+    /// <param name="schemaTransformers">The schema transformers to apply.</param>
+    /// <param name="schemaKeyOwners">The type that claimed each key during this generation pass.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>
+    /// The schema's component key, or <see langword="null"/> when <see cref="AsyncApiOptions.CreateSchemaReferenceId"/>
+    /// opted the type out of componentization (the schema is inlined instead), along with the resolved schema.
+    /// </returns>
+    internal async Task<(string? SchemaKey, IAsyncApiSchema Schema)> GetOrCreateComponentSchemaAsync(
+        AsyncApiDocument document,
+        Type type,
+        IServiceProvider scopedServiceProvider,
+        IAsyncApiSchemaTransformer[] schemaTransformers,
+        Dictionary<string, Type> schemaKeyOwners,
+        CancellationToken cancellationToken)
+    {
+        var schema = await GetOrCreateSchemaAsync(
+            document, type, scopedServiceProvider, schemaTransformers, parameterDescription: null, cancellationToken);
+
+        var key = GetSchemaComponentKey(type);
+        if (key is null)
+        {
+            return (null, schema);
+        }
+
+        if (!schemaKeyOwners.TryAdd(key, type) && schemaKeyOwners[key] != type)
+        {
+            throw new InvalidOperationException(
+                $"AsyncAPI schema id '{key}' is already used by type '{schemaKeyOwners[key].FullName}' and cannot also " +
+                $"represent type '{type.FullName}': both types produced the same schema reference id " +
+                "after sanitization. Configure AsyncApiOptions.CreateSchemaReferenceId to assign these types " +
+                "distinct, stable ids.");
+        }
+
+        document.Components ??= new AsyncApiComponents();
+        document.Components.Schemas ??= new Dictionary<string, AsyncApiMultiFormatSchema>();
+        document.Components.Schemas.TryAdd(key, new AsyncApiMultiFormatSchema { Schema = schema as AsyncApiJsonSchema });
+
+        return (key, schema);
     }
 
     internal static AsyncApiJsonSchema ResolveReferenceForSchema(AsyncApiDocument document, IAsyncApiSchema inputSchema, string? rootSchemaId, string? baseSchemaId = null)

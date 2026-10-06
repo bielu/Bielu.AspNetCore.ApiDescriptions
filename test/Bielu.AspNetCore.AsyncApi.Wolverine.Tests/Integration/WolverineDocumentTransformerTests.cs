@@ -1,6 +1,8 @@
 ﻿using System.Text.Json.Nodes;
+using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Wolverine.Tests.Fixtures;
 using Shouldly;
+using Wolverine.Kafka;
 using Xunit;
 
 namespace Bielu.AspNetCore.AsyncApi.Wolverine.Tests.Integration;
@@ -53,7 +55,7 @@ public class WolverineDocumentTransformerTests
         var shipped = messages["orders.order-shipped"]!;
         shipped["name"]!.GetValue<string>().ShouldBe("orders.order-shipped");
         shipped["title"]!.GetValue<string>().ShouldBe(nameof(OrderShipped));
-        shipped["payload"]!["$ref"]!.GetValue<string>().ShouldBe("#/components/schemas/OrderShipped");
+        shipped["payload"]!["$ref"]!.GetValue<string>().ShouldBe("#/components/schemas/orderShipped");
     }
 
     [Fact]
@@ -81,7 +83,7 @@ public class WolverineDocumentTransformerTests
         var document = await GetSignalRDocumentAsync();
 
         // Assert: under ASP.NET's web JSON defaults (numbers readable from strings)
-        var properties = document["components"]!["schemas"]!["ShapeProbe"]!["properties"]!;
+        var properties = document["components"]!["schemas"]!["shapeProbe"]!["properties"]!;
         properties["count"]!["type"]!.GetValue<string>().ShouldBe("integer");
         properties["maybeCount"]!["type"]!.AsArray().Select(t => t!.GetValue<string>()).ShouldBe(["null", "integer"], ignoreOrder: true);
         properties["note"]!["type"]!.AsArray().Select(t => t!.GetValue<string>()).ShouldBe(["null", "string"], ignoreOrder: true);
@@ -161,4 +163,107 @@ public class WolverineDocumentTransformerTests
             options.AddWolverine(wolverine => wolverine.IncludeSchemes("signalr")),
             mapHub: false));
     }
+
+    [Fact]
+    public async Task TransformAsync_MessageRoutedToThreeEndpointsWithSameAddress_DocumentsEveryRoute()
+    {
+        // Act: three distinct topics whose channels all resolve to the address "orders"
+        var document = await WolverineTestApp.GetDocumentAsync("messaging", options =>
+                options.AddWolverine(wolverine => wolverine
+                    .IncludeSchemes("kafka")
+                    .MapChannel(new Uri("kafka://topic/orders-audit"), "orders")
+                    .MapChannel(new Uri("kafka://topic/orders-archive"), "orders")),
+            configureWolverine: opts =>
+            {
+                opts.PublishMessage<OrderPlaced>().ToKafkaTopic("orders-audit");
+                opts.PublishMessage<OrderPlaced>().ToKafkaTopic("orders-archive");
+            });
+
+        // Assert
+        var sends = document["operations"]!.AsObject()
+            .Where(o => o.Value!["messages"]!.AsArray().Single()!["$ref"]!.GetValue<string>().EndsWith("/orders.order-placed", StringComparison.Ordinal))
+            .Select(o => o.Value!["channel"]!["$ref"]!.GetValue<string>())
+            .ToList();
+        sends.Count.ShouldBe(3);
+        sends.Distinct().Count().ShouldBe(3);
+
+        var channels = document["channels"]!.AsObject();
+        channels.Count(c => c.Value!["address"]!.GetValue<string>() == "orders").ShouldBe(3);
+    }
+
+    [Fact]
+    public async Task TransformAsync_CustomSchemaReferenceId_PayloadReferencesRegisteredSchema()
+    {
+        // Act
+        var document = await WolverineTestApp.GetDocumentAsync("messaging", options =>
+        {
+            options.CreateSchemaReferenceId = typeInfo => typeInfo.Type == typeof(OrderPlaced)
+                ? "PlacedOrderV1"
+                : AsyncApiOptions.CreateDefaultSchemaReferenceId(typeInfo);
+            options.AddWolverine(wolverine => wolverine.IncludeSchemes("kafka"));
+        });
+
+        // Assert
+        document["components"]!["messages"]!["orders.order-placed"]!["payload"]!["$ref"]!.GetValue<string>()
+            .ShouldBe("#/components/schemas/placedOrderV1");
+        document["components"]!["schemas"]!["placedOrderV1"]!["properties"]!.AsObject().ContainsKey("orderId").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task TransformAsync_SchemaReferenceIdNull_InlinesPayload()
+    {
+        // Act
+        var document = await WolverineTestApp.GetDocumentAsync("messaging", options =>
+        {
+            options.CreateSchemaReferenceId = _ => null;
+            options.AddWolverine(wolverine => wolverine.IncludeSchemes("kafka"));
+        });
+
+        // Assert
+        var payload = document["components"]!["messages"]!["orders.order-placed"]!["payload"]!.AsObject();
+        payload.ContainsKey("$ref").ShouldBeFalse();
+        payload["properties"]!.AsObject().ContainsKey("orderId").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task TransformAsync_SameNamedMessageTypes_ThrowsInsteadOfSharingSchema()
+    {
+        // Act & Assert
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() => GetSameNamedDocumentAsync(_ => { }));
+        exception.Message.ShouldContain(nameof(AsyncApiOptions.CreateSchemaReferenceId));
+    }
+
+    [Fact]
+    public async Task TransformAsync_SameNamedMessageTypesWithDistinctSchemaIds_EachPayloadDescribesItsOwnType()
+    {
+        // Act
+        var document = await GetSameNamedDocumentAsync(options =>
+            options.CreateSchemaReferenceId = typeInfo => typeInfo.Type.FullName);
+
+        // Assert
+        var messages = document["components"]!["messages"]!;
+        var schemas = document["components"]!["schemas"]!;
+        PayloadProperties(typeof(Fixtures.Orders.Created)).ShouldContain("orderId");
+        PayloadProperties(typeof(Fixtures.Orders.Created)).ShouldNotContain("invoiceId");
+        PayloadProperties(typeof(Fixtures.Billing.Created)).ShouldContain("invoiceId");
+        PayloadProperties(typeof(Fixtures.Billing.Created)).ShouldNotContain("orderId");
+
+        IEnumerable<string> PayloadProperties(Type messageType)
+        {
+            var schemaRef = messages[messageType.FullName!]!["payload"]!["$ref"]!.GetValue<string>();
+            return schemas[schemaRef["#/components/schemas/".Length..]]!["properties"]!.AsObject().Select(p => p.Key);
+        }
+    }
+
+    private static Task<JsonNode> GetSameNamedDocumentAsync(Action<AsyncApiOptions> configure) =>
+        WolverineTestApp.GetDocumentAsync("messaging", options =>
+            {
+                configure(options);
+                options.AddWolverine(wolverine => wolverine.IncludeSchemes("kafka"));
+            },
+            configureWolverine: opts =>
+            {
+                opts.PublishMessage<Fixtures.Orders.Created>().ToKafkaTopic("orders-created");
+                opts.PublishMessage<Fixtures.Billing.Created>().ToKafkaTopic("invoices-created");
+            });
 }

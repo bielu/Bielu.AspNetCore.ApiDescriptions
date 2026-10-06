@@ -22,7 +22,8 @@ internal static class WolverineTestApp
     public static async Task<JsonNode> GetDocumentAsync(
         string documentName,
         Action<AsyncApiOptions> configureDocument,
-        bool mapHub = true)
+        bool mapHub = true,
+        Action<WolverineOptions>? configureWolverine = null)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -37,6 +38,7 @@ internal static class WolverineTestApp
             opts.PublishMessage<OrderPlaced>().ToKafkaTopic("orders");
             opts.ListenToKafkaTopic("stock").DefaultIncomingMessage<StockChanged>();
 
+            configureWolverine?.Invoke(opts);
             opts.StubAllExternalTransports();
         });
 

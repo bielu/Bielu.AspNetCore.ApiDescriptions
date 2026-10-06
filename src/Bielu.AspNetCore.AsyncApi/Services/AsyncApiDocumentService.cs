@@ -426,94 +426,25 @@ internal sealed class AsyncApiDocumentService(
         }
     }
 
-    /// <summary>
-    /// Resolves (and if necessary creates and registers) the schema component for <paramref name="payloadType"/>,
-    /// using <see cref="AsyncApiJsonSchemaService.GetSchemaReferenceId"/> — which honors
-    /// <see cref="AsyncApiOptions.CreateSchemaReferenceId"/> — as the single authoritative source for the
-    /// component key, instead of deriving one independently from the CLR type name.
-    /// </summary>
-    /// <returns>
-    /// The schema's component key, or <see langword="null"/> when <see cref="AsyncApiOptions.CreateSchemaReferenceId"/>
-    /// opted the type out of componentization (per its documented contract, the schema is inlined instead), along
-    /// with the resolved schema itself.
-    /// </returns>
-    private async Task<(string? SchemaKey, IAsyncApiSchema Schema)> EnsureSchemaAsync(
+    private Task<(string? SchemaKey, IAsyncApiSchema Schema)> EnsureSchemaAsync(
         AsyncApiDocument document,
         Type payloadType,
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
         Dictionary<string, Type> schemaKeyOwners,
-        CancellationToken cancellationToken)
-    {
-        var payloadSchema = await _componentService.GetOrCreateSchemaAsync(
-            document,
-            payloadType,
-            scopedServiceProvider,
-            schemaTransformers,
-            parameterDescription: null,
-            cancellationToken: cancellationToken);
-
-        var schemaKey = ResolveSchemaReferenceKey(payloadType, schemaKeyOwners);
-        if (schemaKey is not null && !document.Components.Schemas.ContainsKey(schemaKey))
-        {
-            document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
-            {
-                Schema = payloadSchema as AsyncApiJsonSchema
-            };
-        }
-
-        return (schemaKey, payloadSchema);
-    }
-
-    /// <summary>
-    /// Computes the sanitized component key for <paramref name="payloadType"/> per
-    /// <see cref="AsyncApiOptions.CreateSchemaReferenceId"/> and records it as claimed by that type, unless it
-    /// was already claimed by that same type. Throws when a <em>different</em> type already claimed the same
-    /// key: silently keeping the first registration would discard the second type's schema/message data, which
-    /// is exactly the defect this check exists to prevent.
-    /// </summary>
-    private string? ResolveSchemaReferenceKey(Type payloadType, Dictionary<string, Type> schemaKeyOwners)
-    {
-        var referenceId = _componentService.GetSchemaReferenceId(payloadType);
-        if (referenceId is null)
-        {
-            // AsyncApiOptions.CreateSchemaReferenceId opted this type out of componentization; per its
-            // documented contract the schema must be inlined wherever it is used, not added to components/schemas.
-            return null;
-        }
-
-        var key = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(referenceId));
-
-        if (schemaKeyOwners.TryGetValue(key, out var owningType))
-        {
-            if (owningType != payloadType)
-            {
-                throw new InvalidOperationException(
-                    $"AsyncAPI schema id '{key}' is already used by type '{owningType.FullName}' and cannot also " +
-                    $"represent type '{payloadType.FullName}': both types produced the same schema reference id " +
-                    "after sanitization. Configure AsyncApiOptions.CreateSchemaReferenceId to assign these types " +
-                    "distinct, stable ids.");
-            }
-        }
-        else
-        {
-            schemaKeyOwners[key] = payloadType;
-        }
-
-        return key;
-    }
+        CancellationToken cancellationToken) =>
+        _componentService.GetOrCreateComponentSchemaAsync(
+            document, payloadType, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
 
     /// <summary>
     /// Computes the key that would be used to name a schema/message for <paramref name="payloadType"/> when no
     /// explicit id was supplied, without recording or validating ownership of that key. Used only to derive
     /// default message ids; the schema component key itself is always resolved (and collision-checked) through
-    /// <see cref="ResolveSchemaReferenceKey"/>.
+    /// <see cref="AsyncApiJsonSchemaService.GetOrCreateComponentSchemaAsync"/>.
     /// </summary>
-    private string ComputeSchemaKeyValue(Type payloadType)
-    {
-        var referenceId = _componentService.GetSchemaReferenceId(payloadType) ?? payloadType.Name;
-        return AsyncApiNamingHelper.SanitizeKey(ToCamelCase(referenceId));
-    }
+    private string ComputeSchemaKeyValue(Type payloadType) =>
+        _componentService.GetSchemaComponentKey(payloadType)
+        ?? AsyncApiNamingHelper.SanitizeKey(ToCamelCase(payloadType.Name));
 
     /// <summary>
     /// Records <paramref name="payloadType"/> as the owner of <paramref name="messageKey"/>, unless it was
