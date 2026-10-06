@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Reflection;
 using Bielu.AspNetCore.AsyncApi.Scalar;
 using Microsoft.AspNetCore.Builder;

@@ -1,4 +1,4 @@
-namespace Bielu.Overlay.Readers;
+﻿namespace Bielu.Overlay.Readers;
 
 /// <summary>Reads an Overlay document from a <see cref="Stream"/>, auto-detecting JSON or YAML.</summary>
 public static class OverlayStreamReader

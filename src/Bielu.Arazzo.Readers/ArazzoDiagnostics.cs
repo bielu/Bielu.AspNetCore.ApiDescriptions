@@ -1,4 +1,4 @@
-using Bielu.Arazzo;
+﻿using Bielu.Arazzo;
 
 namespace Bielu.Arazzo.Readers;
 

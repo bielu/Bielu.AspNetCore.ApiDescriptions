@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -8,8 +8,8 @@ using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Event
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Models;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Diagnostics;
 using Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.Messaging;
-using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Services;
 

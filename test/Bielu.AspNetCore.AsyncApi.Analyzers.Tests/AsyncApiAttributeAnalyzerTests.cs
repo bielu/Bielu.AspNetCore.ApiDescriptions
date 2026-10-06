@@ -1,11 +1,11 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Xunit;
 using Shouldly;
+using Xunit;
 
 namespace Bielu.AspNetCore.AsyncApi.Analyzers.Tests;
 

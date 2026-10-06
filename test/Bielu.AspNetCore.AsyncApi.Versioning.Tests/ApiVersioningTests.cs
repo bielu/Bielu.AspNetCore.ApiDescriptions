@@ -1,9 +1,9 @@
-namespace Bielu.AspNetCore.AsyncApi.Versioning.Tests;
+﻿namespace Bielu.AspNetCore.AsyncApi.Versioning.Tests;
 
 using System.Net;
 using Asp.Versioning;
-using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -35,11 +35,11 @@ public class ApiVersioningTests
         });
 
         builder.Services.AddAsyncApiForApiVersions();
-        
+
         var app = builder.Build();
         app.MapControllers();
         app.MapAsyncApi();
-        
+
         await app.StartAsync();
         var client = app.GetTestServer().CreateClient();
 
@@ -56,12 +56,12 @@ public class ApiVersioningTests
 
         v1Content.ShouldContain("\"version\": \"1.0\"");
         v2Content.ShouldContain("\"version\": \"2.0\"");
-        
+
         // V1 should contain TestV1 (as it matches all documents if not specified)
         v1Content.ShouldContain("api/v1/test");
         // V2 should contain TestV2
         v2Content.ShouldContain("api/v2/test");
-        
+
         await app.StopAsync();
     }
 
@@ -81,7 +81,7 @@ public class ApiVersioningTests
         });
 
         builder.Services.AddAsyncApiForApiVersions();
-        
+
         var app = builder.Build();
         var documentProvider = app.Services.GetRequiredService<Microsoft.Extensions.ApiDescriptions.IDocumentProvider>();
 

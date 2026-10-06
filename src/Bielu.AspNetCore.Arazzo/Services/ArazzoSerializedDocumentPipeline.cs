@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.Arazzo.Transformers;
@@ -26,7 +26,9 @@ internal static class ArazzoSerializedDocumentPipeline
 
         var context = new ArazzoSerializedDocumentContext
         {
-            DocumentName = documentName, Format = format, ApplicationServices = applicationServices
+            DocumentName = documentName,
+            Format = format,
+            ApplicationServices = applicationServices
         };
 
         foreach (var transformer in options.SerializedDocumentTransformers)

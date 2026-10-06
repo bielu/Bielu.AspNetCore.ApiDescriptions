@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 
 namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures;
 

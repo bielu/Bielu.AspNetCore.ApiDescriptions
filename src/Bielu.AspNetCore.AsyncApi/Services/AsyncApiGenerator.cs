@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -74,7 +74,7 @@ internal sealed class AsyncApiGenerator
         var disableInferredBody = ShouldDisableInferredBody(httpMethod);
         return new AsyncApiOperation
         {
-            
+
             Summary = metadata.GetMetadata<IEndpointSummaryMetadata>()?.Summary,
             Description = metadata.GetMetadata<IEndpointDescriptionMetadata>()?.Description,
             Messages = GetAsyncApiMessages(methodInfo, metadata, pattern, disableInferredBody),
@@ -261,8 +261,8 @@ internal sealed class AsyncApiGenerator
     private IList<AsyncApiMessageReference> GetAsyncApiMessages(MethodInfo methodInfo, EndpointMetadataCollection metadata,
         RoutePattern pattern, bool disableInferredBody)
     {
-     //todo: implement
-     return [];
+        //todo: implement
+        return [];
     }
 
     private HashSet<AsyncApiTagReference> GetOperationTags(MethodInfo methodInfo, EndpointMetadataCollection metadata)
@@ -278,7 +278,7 @@ internal sealed class AsyncApiGenerator
             {
                 foreach (var tag in metadataItem.Tags)
                 {
-                    document.Components.Tags.Add(tag,new AsyncApiTag { Name = tag });
+                    document.Components.Tags.Add(tag, new AsyncApiTag { Name = tag });
                     tags.Add(new AsyncApiTagReference(tag));
                 }
             }
@@ -287,7 +287,7 @@ internal sealed class AsyncApiGenerator
         }
 
         string controllerName;
-//todo  && !TypeHelper.IsCompilerGeneratedType(methodInfo.DeclaringType)
+        //todo  && !TypeHelper.IsCompilerGeneratedType(methodInfo.DeclaringType)
         if (methodInfo.DeclaringType is not null)
         {
             controllerName = methodInfo.DeclaringType.Name;
@@ -298,7 +298,7 @@ internal sealed class AsyncApiGenerator
             // group the methods under the application name.
             controllerName = _environment?.ApplicationName ?? string.Empty;
         }
-        document.Components.Tags.Add(controllerName,new AsyncApiTag { Name = controllerName });
+        document.Components.Tags.Add(controllerName, new AsyncApiTag { Name = controllerName });
         return [new AsyncApiTagReference(controllerName)];
 
     }
@@ -335,7 +335,8 @@ internal sealed class AsyncApiGenerator
                 : parameter.Name);
             var AsyncApiParameter = new AsyncApiParameter()
             {
-                Description = name, Location = parameterLocation.Value.ToString()
+                Description = name,
+                Location = parameterLocation.Value.ToString()
             };
             AsyncApiParameters.Add(AsyncApiParameter);
         }

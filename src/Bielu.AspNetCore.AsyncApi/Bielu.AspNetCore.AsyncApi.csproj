@@ -28,6 +28,7 @@
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Overlay.Tests" />
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Merger" />
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Versioning" />
+      <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Wolverine" />
       <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Cli" />
       <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
     </ItemGroup>

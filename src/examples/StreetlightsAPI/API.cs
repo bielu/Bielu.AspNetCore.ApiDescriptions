@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace StreetlightsAPI
 {

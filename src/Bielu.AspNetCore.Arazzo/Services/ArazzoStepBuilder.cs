@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Bielu.Arazzo.Models;
 
 namespace Bielu.AspNetCore.Arazzo.Services;
@@ -184,7 +184,9 @@ public sealed class ArazzoStepBuilder
         ArgumentException.ThrowIfNullOrEmpty(valueExpression);
         _parameters.Add(ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter
         {
-            Name = name, In = location, Value = ArazzoValue.FromExpression(valueExpression)
+            Name = name,
+            In = location,
+            Value = ArazzoValue.FromExpression(valueExpression)
         }));
         return this;
     }

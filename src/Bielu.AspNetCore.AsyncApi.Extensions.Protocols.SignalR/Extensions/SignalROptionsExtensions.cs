@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Services;
+﻿using Bielu.AspNetCore.AsyncApi.Services;
 
 namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 

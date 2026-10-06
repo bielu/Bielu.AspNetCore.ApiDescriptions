@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc;
 using ByteBard.AsyncAPI.Bindings;
 using ByteBard.AsyncAPI.Writers;

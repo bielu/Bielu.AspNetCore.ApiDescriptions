@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Grpc;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar.Grpc;
 
 /// <summary>
 /// Configuration for the interactive Scalar gRPC console. Describes which AsyncAPI documents

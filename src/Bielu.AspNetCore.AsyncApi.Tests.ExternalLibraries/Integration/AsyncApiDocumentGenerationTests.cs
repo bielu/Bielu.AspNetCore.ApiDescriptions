@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
@@ -22,8 +22,8 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Integration;
 public class AsyncApiDocumentGenerationTests
 {
     private const string TestDocumentName = "asyncapi";
-    
-    private static string GetDocumentRoute(string documentName) => 
+
+    private static string GetDocumentRoute(string documentName) =>
         AsyncApiGeneratorConstants.DefaultAsyncApiRoute.Replace("{documentName}", documentName);
 
     /// <summary>
@@ -33,13 +33,13 @@ public class AsyncApiDocumentGenerationTests
     {
         var jsonDocument = JsonDocument.Parse(jsonContent);
         var root = jsonDocument.RootElement;
-        
+
         root.TryGetProperty("asyncapi", out var versionElement).ShouldBeTrue(
             "AsyncAPI document should contain 'asyncapi' version field");
-        
+
         var versionString = versionElement.GetString();
         versionString.ShouldNotBeNullOrEmpty("AsyncAPI version should not be empty");
-        
+
         switch (expectedVersion)
         {
             case AsyncApiVersion.AsyncApi2_0:
@@ -68,13 +68,13 @@ public class AsyncApiDocumentGenerationTests
         // Assert - Validate version is V3
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         ValidateAsyncApiVersion(content, expectedVersion);
-        
+
         // Parse with ByteBard reader to verify structure
         var reader = new AsyncApiStringReader();
         var document = reader.Read(content, out var diagnostic);
         var forceReference = new ExternaltMessageBus();
         document.ShouldNotBeNull();
-        
+
         // Check for any parsing errors
         if (diagnostic?.Errors != null && diagnostic.Errors.Any())
         {

@@ -1,4 +1,4 @@
-using Scalar.AspNetCore;
+﻿using Scalar.AspNetCore;
 
 namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
 

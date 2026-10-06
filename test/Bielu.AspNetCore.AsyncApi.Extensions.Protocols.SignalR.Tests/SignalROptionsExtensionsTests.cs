@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
+﻿using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Shouldly;
 using Xunit;

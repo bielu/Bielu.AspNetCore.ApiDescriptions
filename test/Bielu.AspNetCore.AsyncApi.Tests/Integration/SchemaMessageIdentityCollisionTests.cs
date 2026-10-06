@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI.Models;

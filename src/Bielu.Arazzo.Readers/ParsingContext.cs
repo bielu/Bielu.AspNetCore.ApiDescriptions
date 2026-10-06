@@ -1,4 +1,4 @@
-namespace Bielu.Arazzo.Readers;
+﻿namespace Bielu.Arazzo.Readers;
 
 internal sealed class ParsingContext
 {

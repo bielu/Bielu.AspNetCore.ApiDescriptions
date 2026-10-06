@@ -34,6 +34,7 @@
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Tests/Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Tests/Bielu.AspNetCore.AsyncApi.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Versioning.Tests/Bielu.AspNetCore.AsyncApi.Versioning.Tests.csproj" />
+    <Project Path="../test/Bielu.AspNetCore.AsyncApi.Wolverine.Tests/Bielu.AspNetCore.AsyncApi.Wolverine.Tests.csproj" />
     <Project Path="../test/Bielu.Cli.Shared.Tests/Bielu.Cli.Shared.Tests.csproj" />
     <Project Path="../test/Bielu.Overlay.Cli.Tests/Bielu.Overlay.Cli.Tests.csproj" />
     <Project Path="../test/Bielu.Overlay.Tests/Bielu.Overlay.Tests.csproj" />
@@ -79,6 +80,7 @@
   <Project Path="Bielu.AspNetCore.AsyncApi.Scalar/Bielu.AspNetCore.AsyncApi.Scalar.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.SourceGenerators/Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Versioning/Bielu.AspNetCore.AsyncApi.Versioning.csproj" />
+  <Project Path="Bielu.AspNetCore.AsyncApi.Wolverine/Bielu.AspNetCore.AsyncApi.Wolverine.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi/Bielu.AspNetCore.AsyncApi.csproj" />
   <Project Path="Bielu.Cli.Shared/Bielu.Cli.Shared.csproj" />
   <Project Path="Bielu.Overlay.Readers/Bielu.Overlay.Readers.csproj" />

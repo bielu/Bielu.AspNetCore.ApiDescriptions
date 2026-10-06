@@ -1,4 +1,4 @@
-namespace Bielu.Arazzo.Expressions;
+﻿namespace Bielu.Arazzo.Expressions;
 
 /// <summary>
 /// Parsed form of a spec §5.9 Runtime Expression. One subtype per ABNF alternative — see

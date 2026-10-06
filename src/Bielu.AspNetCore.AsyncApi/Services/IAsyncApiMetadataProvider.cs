@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Models.Metadata;
+﻿using Bielu.AspNetCore.AsyncApi.Models.Metadata;
 
 namespace Bielu.AspNetCore.AsyncApi.Services;
 

@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Grpc;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar.Grpc;
 
 /// <summary>
 /// Shared defaults for the Scalar gRPC console integration.

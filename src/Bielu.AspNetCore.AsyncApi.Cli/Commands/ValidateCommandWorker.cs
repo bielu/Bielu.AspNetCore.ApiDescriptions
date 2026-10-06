@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.Cli.Shared;
@@ -49,7 +49,8 @@ internal sealed class ValidateCommandWorker
                 _logger.Error($"File not found: {file}");
                 reports.Add(new FileDiagnosticReport
                 {
-                    FilePath = file, Errors = [new DiagnosticItem("File not found.", null)],
+                    FilePath = file,
+                    Errors = [new DiagnosticItem("File not found.", null)],
                 });
                 continue;
             }
@@ -66,7 +67,8 @@ internal sealed class ValidateCommandWorker
                 _logger.Error($"Could not read file: {file}");
                 reports.Add(new FileDiagnosticReport
                 {
-                    FilePath = file, Errors = [new DiagnosticItem($"Could not read file: {ex.Message}", null)],
+                    FilePath = file,
+                    Errors = [new DiagnosticItem($"Could not read file: {ex.Message}", null)],
                 });
                 continue;
             }

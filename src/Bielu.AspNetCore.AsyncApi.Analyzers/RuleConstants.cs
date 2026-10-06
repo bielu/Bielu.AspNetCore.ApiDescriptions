@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Analyzers;
+﻿namespace Bielu.AspNetCore.AsyncApi.Analyzers;
 
 internal static class RuleConstants
 {

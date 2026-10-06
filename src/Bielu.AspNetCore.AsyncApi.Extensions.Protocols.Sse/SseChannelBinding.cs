@@ -1,4 +1,4 @@
-using ByteBard.AsyncAPI.Bindings;
+﻿using ByteBard.AsyncAPI.Bindings;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Readers;
 using ByteBard.AsyncAPI.Readers.ParseNodes;

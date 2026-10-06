@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.Overlay;
+﻿using Bielu.AspNetCore.Overlay;
 using Bielu.Overlay.Readers;
 using Microsoft.Extensions.Logging;
 using Shouldly;

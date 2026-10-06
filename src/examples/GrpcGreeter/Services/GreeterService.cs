@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Grpc.Core;
 
 namespace GrpcGreeter.Services;

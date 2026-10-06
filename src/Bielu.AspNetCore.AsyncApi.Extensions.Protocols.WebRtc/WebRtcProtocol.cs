@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc;
+﻿namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc;
 
 /// <summary>
 /// Well-known constants for the custom <c>webrtc</c> AsyncAPI protocol.

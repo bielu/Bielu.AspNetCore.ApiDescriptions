@@ -1,4 +1,4 @@
-namespace Bielu.Overlay;
+﻿namespace Bielu.Overlay;
 
 /// <summary>
 /// A finding produced while validating or applying an overlay, located by a JSON-Pointer-style path into

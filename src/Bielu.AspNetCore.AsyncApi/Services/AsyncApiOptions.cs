@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -6,8 +6,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Extensions;
-using Bielu.AspNetCore.AsyncApi.Transformers;
 using Bielu.AspNetCore.AsyncApi.Helpers;
+using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
@@ -89,7 +89,7 @@ public sealed class AsyncApiOptions
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
     public AsyncApiOptions AddDocumentTransformer<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        TTransformerType>()
+    TTransformerType>()
         where TTransformerType : IAsyncApiDocumentTransformer
     {
         DocumentTransformers.Add(new TypeBasedAsyncApiDocumentTransformer(typeof(TTransformerType)));
@@ -161,7 +161,7 @@ public sealed class AsyncApiOptions
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
     public AsyncApiOptions AddOperationTransformer<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        TTransformerType>()
+    TTransformerType>()
         where TTransformerType : IAsyncApiOperationTransformer
     {
         OperationTransformers.Add(new TypeBasedAsyncApiOperationTransformer(typeof(TTransformerType)));
@@ -202,7 +202,7 @@ public sealed class AsyncApiOptions
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
     public AsyncApiOptions AddSchemaTransformer<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        TTransformerType>()
+    TTransformerType>()
         where TTransformerType : IAsyncApiSchemaTransformer
     {
         SchemaTransformers.Add(new TypeBasedAsyncApiSchemaTransformer(typeof(TTransformerType)));
@@ -519,13 +519,19 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <param name="assembly">The assembly to include XML documentation for.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    [UnconditionalSuppressMessage("SingleFile", "IL3000",
-        Justification = "An empty Assembly.Location is exactly the single-file case this method " +
-                        "handles: it falls back to AppContext.BaseDirectory rather than using the value.")]
     public AsyncApiOptions IncludeXmlComments(Assembly assembly)
     {
         ArgumentNullException.ThrowIfNull(assembly);
 
+        return IncludeXmlComments(GetXmlDocumentationPath(assembly));
+    }
+
+    /// <summary>The path of the XML documentation file the compiler writes next to <paramref name="assembly"/>.</summary>
+    [UnconditionalSuppressMessage("SingleFile", "IL3000",
+        Justification = "An empty Assembly.Location is exactly the single-file case this method " +
+                        "handles: it falls back to AppContext.BaseDirectory rather than using the value.")]
+    internal static string GetXmlDocumentationPath(Assembly assembly)
+    {
         // Assembly.Location is an empty string for an assembly embedded in a single-file app, which
         // would otherwise reduce the path to a bare "{Name}.xml" resolved against the current working
         // directory. AppContext.BaseDirectory is the app directory in both layouts.
@@ -533,11 +539,9 @@ public sealed class AsyncApiOptions
             ? AppContext.BaseDirectory
             : Path.GetDirectoryName(assembly.Location);
 
-        var filePath = Path.Combine(
+        return Path.Combine(
             assemblyDirectory is { Length: > 0 } directory ? directory : AppContext.BaseDirectory,
             $"{assembly.GetName().Name}.xml");
-
-        return IncludeXmlComments(filePath);
     }
 
     /// <summary>

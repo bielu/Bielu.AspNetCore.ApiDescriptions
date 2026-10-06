@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Cli.Commands;
+﻿using Bielu.AspNetCore.AsyncApi.Cli.Commands;
 using Microsoft.AspNetCore.Http.Features;
 using Shouldly;
 using Xunit;

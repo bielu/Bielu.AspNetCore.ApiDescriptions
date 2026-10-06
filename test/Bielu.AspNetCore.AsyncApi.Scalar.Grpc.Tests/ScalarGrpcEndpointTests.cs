@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Google.Protobuf.Reflection;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Shouldly;

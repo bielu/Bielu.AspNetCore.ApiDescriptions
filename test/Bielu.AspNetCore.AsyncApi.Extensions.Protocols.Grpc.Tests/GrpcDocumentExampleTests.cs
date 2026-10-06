@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;

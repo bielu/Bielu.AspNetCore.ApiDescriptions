@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar;
 
 /// <summary>
 /// Base configuration for a Scalar console plugin: the AsyncAPI documents the client-side bundle

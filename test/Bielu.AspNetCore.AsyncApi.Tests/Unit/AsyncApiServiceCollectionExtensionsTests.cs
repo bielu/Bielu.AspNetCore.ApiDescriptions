@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Extensions;
+﻿using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -63,7 +63,7 @@ public class AsyncApiServiceCollectionExtensionsTests
         // Assert
         var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>();
         var asyncApiOptions = optionsMonitor.Get("v1"); // Default document name is "v1"
-        
+
         asyncApiOptions.DefaultContentType.ShouldBe("application/json");
     }
 
@@ -87,11 +87,11 @@ public class AsyncApiServiceCollectionExtensionsTests
 
         // Assert
         var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>();
-        
+
         var v1Options = optionsMonitor.Get("api-v1");
         v1Options.Info!.Title.ShouldBe("API V1");
         v1Options.Info.Version.ShouldBe("1.0.0");
-        
+
         var v2Options = optionsMonitor.Get("api-v2");
         v2Options.Info!.Title.ShouldBe("API V2");
         v2Options.Info.Version.ShouldBe("2.0.0");
@@ -152,7 +152,7 @@ public class AsyncApiServiceCollectionExtensionsTests
 
         // Assert
         var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>();
-        
+
         optionsMonitor.Get("doc1").Info!.Title.ShouldBe("Doc 1");
         optionsMonitor.Get("doc2").Info!.Title.ShouldBe("Doc 2");
         optionsMonitor.Get("doc3").Info!.Title.ShouldBe("Doc 3");

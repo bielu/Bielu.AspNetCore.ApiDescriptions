@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.Arazzo.SourceResolvers;
+﻿using Bielu.AspNetCore.Arazzo.SourceResolvers;
 using ByteBard.AsyncAPI.Models;
 using Shouldly;
 using Xunit;

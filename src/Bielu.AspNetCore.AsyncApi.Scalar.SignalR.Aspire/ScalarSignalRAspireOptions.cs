@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire;
 
 /// <summary>
 /// Configuration for the interactive Scalar SignalR console in an Aspire AppHost.

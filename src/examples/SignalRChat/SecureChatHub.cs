@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;

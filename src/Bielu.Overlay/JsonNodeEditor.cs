@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 
 namespace Bielu.Overlay;
 
@@ -16,29 +16,29 @@ internal static class JsonNodeEditor
         switch (node.Parent)
         {
             case JsonArray array:
-            {
-                // Index is resolved against the live array rather than cached, so removing several
-                // matches from the same array stays correct regardless of the order they come back in.
-                var index = array.IndexOf(node);
-                if (index < 0)
                 {
-                    return false;
-                }
+                    // Index is resolved against the live array rather than cached, so removing several
+                    // matches from the same array stays correct regardless of the order they come back in.
+                    var index = array.IndexOf(node);
+                    if (index < 0)
+                    {
+                        return false;
+                    }
 
-                array.RemoveAt(index);
-                return true;
-            }
+                    array.RemoveAt(index);
+                    return true;
+                }
 
             case JsonObject obj:
-            {
-                if (TryFindKey(obj, node) is not { } key)
                 {
-                    return false;
-                }
+                    if (TryFindKey(obj, node) is not { } key)
+                    {
+                        return false;
+                    }
 
-                obj.Remove(key);
-                return true;
-            }
+                    obj.Remove(key);
+                    return true;
+                }
 
             default:
                 return false;
@@ -52,27 +52,27 @@ internal static class JsonNodeEditor
         switch (node.Parent)
         {
             case JsonArray array:
-            {
-                var index = array.IndexOf(node);
-                if (index < 0)
                 {
-                    return false;
-                }
+                    var index = array.IndexOf(node);
+                    if (index < 0)
+                    {
+                        return false;
+                    }
 
-                array[index] = replacement;
-                return true;
-            }
+                    array[index] = replacement;
+                    return true;
+                }
 
             case JsonObject obj:
-            {
-                if (TryFindKey(obj, node) is not { } key)
                 {
-                    return false;
-                }
+                    if (TryFindKey(obj, node) is not { } key)
+                    {
+                        return false;
+                    }
 
-                obj[key] = replacement;
-                return true;
-            }
+                    obj[key] = replacement;
+                    return true;
+                }
 
             default:
                 return false;

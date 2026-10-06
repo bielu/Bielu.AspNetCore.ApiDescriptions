@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse;
+﻿namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse;
 
 /// <summary>
 /// Well-known constants for the custom <c>sse</c> AsyncAPI protocol.

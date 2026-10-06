@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.Arazzo;
+﻿using Bielu.AspNetCore.Arazzo;
 using Shouldly;
 using Xunit;
 

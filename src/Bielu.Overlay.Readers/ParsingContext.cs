@@ -1,4 +1,4 @@
-namespace Bielu.Overlay.Readers;
+﻿namespace Bielu.Overlay.Readers;
 
 internal sealed class ParsingContext
 {
