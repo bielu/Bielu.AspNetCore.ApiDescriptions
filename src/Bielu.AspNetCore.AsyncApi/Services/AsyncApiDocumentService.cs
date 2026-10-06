@@ -375,7 +375,7 @@ internal sealed class AsyncApiDocumentService(
     {
         if (messageAttr.ContentType is not null)
         {
-            message.ContentType = messageAttr.ContentType ?? document.DefaultContentType;
+            message.ContentType = messageAttr.ContentType;
         }
 
         if (messageAttr.HeadersType is not null)
