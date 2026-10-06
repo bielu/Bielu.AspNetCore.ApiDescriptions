@@ -174,7 +174,12 @@ internal sealed class AsyncApiJsonSchemaService
                         }
                     }
                 }
-                schema.PruneNullTypeForComponentizedTypes();
+                // Disabled: this stripped "null" from nullable componentized-object schemas on
+                // the assumption that the oneOf-wrapping restoration above (also disabled) would
+                // re-add nullability at the property reference site. Since that restoration never
+                // worked (it references a nonexistent Metadata property and the wrong constants
+                // class), pruning here silently and permanently dropped nullability instead.
+                // schema.PruneNullTypeForComponentizedTypes();
                 return schema;
             }
         };
@@ -306,22 +311,10 @@ private static void ConvertTypeStringsToEnumValues(JsonNode? node)
         {
             if (typeValue.GetValueKind() == JsonValueKind.String)
             {
-                var typeString = typeValue.GetValue<string>()?.ToLowerInvariant();
-                var enumValue = typeString switch
+                var typeString = typeValue.GetValue<string>();
+                if (MapTypeStringToSchemaTypeFlag(typeString) is { } enumValue)
                 {
-                    "string" => (int)SchemaType.String,    // 32
-                    "number" => (int)SchemaType.Number,    // 16
-                    "integer" => (int)SchemaType.Integer,  // 64
-                    "boolean" => (int)SchemaType.Boolean,  // 2
-                    "object" => (int)SchemaType.Object,    // 8
-                    "array" => (int)SchemaType.Array,      // 4
-                    "null" => (int)SchemaType.Null,        // 1
-                    _ => -1
-                };
-                
-                if (enumValue >= 0)
-                {
-                    jsonObject["type"] = enumValue;
+                    jsonObject["type"] = (int)enumValue;
                 }
             }
         }
@@ -340,6 +333,15 @@ private static void ConvertTypeStringsToEnumValues(JsonNode? node)
         }
     }
 }
+
+// SchemaType is a [Flags] enum, so a comma-separated combination like "Null, String" (the
+// default ToString() output for a combined flags value) needs to parse back into the
+// combined value too, not just the single lowercase type names ("string", "null", ...)
+// that come straight from a JSON Schema "type" array/string.
+private static SchemaType? MapTypeStringToSchemaTypeFlag(string? typeString) =>
+    !string.IsNullOrEmpty(typeString) && Enum.TryParse<SchemaType>(typeString, ignoreCase: true, out var result)
+        ? result
+        : null;
 
 private static void RemoveNullIds(JsonNode? node)
 {
@@ -601,26 +603,23 @@ private static void RemoveNullIds(JsonNode? node)
     {
         if (node is JsonObject jsonObject)
         {
-            // Handle type arrays by selecting the primary type
+            // SchemaType is a [Flags] enum, so a type array like ["string", "null"] is combined
+            // into a single bitwise-OR'd value (e.g. String | Null) instead of picking one entry
+            // and discarding the rest, which would silently drop nullability from the schema.
             if (jsonObject.ContainsKey("type") && jsonObject["type"] is JsonArray typeArray)
             {
-                var types = typeArray
-                    .Select(t => t?.GetValue<string>())
-                    .Where(t => t != null)
-                    .ToList();
-
-                // Prefer non-null type for nullable fields
-                string? primaryType = types.FirstOrDefault(t => t != "null");
-                if (primaryType == null)
+                SchemaType? combinedType = null;
+                foreach (var typeNode in typeArray)
                 {
-                    primaryType = types.FirstOrDefault();
+                    if (MapTypeStringToSchemaTypeFlag(typeNode?.GetValue<string>()) is { } flag)
+                    {
+                        combinedType = combinedType is { } existing ? existing | flag : flag;
+                    }
                 }
 
-                if (primaryType != null)
+                if (combinedType is { } resolvedType)
                 {
-                    jsonObject["type"] = primaryType;
-                    // Remove pattern if we're keeping the main type
-                    jsonObject.Remove("pattern");
+                    jsonObject["type"] = (int)resolvedType;
                 }
             }
 
