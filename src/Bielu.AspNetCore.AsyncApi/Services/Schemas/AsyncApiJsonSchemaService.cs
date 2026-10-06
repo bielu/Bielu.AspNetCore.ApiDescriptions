@@ -54,6 +54,17 @@ internal sealed class AsyncApiJsonSchemaService
         _documentName = documentName;
         _optionsMonitor = optionsMonitor;
         _xmlDocumentationProvider = serviceProvider.GetRequiredKeyedService<XmlDocumentationProvider>(documentName);
+        // A document-scoped AsyncApiJsonSchemaJsonOptions overrides the app-wide JsonOptions for schema
+        // generation only (e.g. to use a different PropertyNamingPolicy for message payload properties),
+        // without touching how the app actually serializes payloads at runtime.
+        var baseSerializerOptions = optionsMonitor.Get(documentName).AsyncApiJsonSchemaJsonOptions
+            ?? jsonOptions.Value.SerializerOptions;
+        // _jsonSchemaContext deserializes the raw JsonSchemaExporter output — which always uses fixed,
+        // lowercase JSON Schema keywords ("type", "properties", "required", ...) per the spec — into the
+        // internal AsyncApiJsonSchema model's PascalCase properties. That mapping relies on the app-wide
+        // JsonOptions' camelCase policy and must stay independent of AsyncApiJsonSchemaJsonOptions: honoring
+        // the override here (e.g. a user setting PropertyNamingPolicy = null for PascalCase payloads) would
+        // break the "type"->Type, "properties"->Properties lookup and silently deserialize every schema as empty.
         var schemaContextOptions = new JsonSerializerOptions(jsonOptions.Value.SerializerOptions);
         // Without this, any exported schema containing AsyncApiAny (an enum's "enum" keyword, a
         // "default", a "const", ...) throws JsonException the moment that property is populated —
@@ -61,11 +72,15 @@ internal sealed class AsyncApiJsonSchemaService
         // AsyncApiAnyJsonConverter's own remarks.
         schemaContextOptions.Converters.Add(new AsyncApiAnyJsonConverter());
         _jsonSchemaContext = new AsyncApiJsonSchemaContext(schemaContextOptions);
-        _jsonSerializerOptions = new JsonSerializerOptions(jsonOptions.Value.SerializerOptions)
+        // Fall back to the default reflection-based resolver when the base options don't carry one
+        // (e.g. a bare `new JsonSerializerOptions { PropertyNamingPolicy = ... }` passed via
+        // AsyncApiJsonSchemaJsonOptions), so the RequiredAttribute modifier below still has a resolver to attach to.
+        var baseTypeInfoResolver = baseSerializerOptions.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver();
+        _jsonSerializerOptions = new JsonSerializerOptions(baseSerializerOptions)
         {
             // In order to properly handle the `RequiredAttribute` on type properties, add a modifier to support
             // setting `JsonPropertyInfo.IsRequired` based on the presence of the `RequiredAttribute`.
-            TypeInfoResolver = jsonOptions.Value.SerializerOptions.TypeInfoResolver?.WithAddedModifier(jsonTypeInfo =>
+            TypeInfoResolver = baseTypeInfoResolver.WithAddedModifier(jsonTypeInfo =>
             {
                 if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
                 {
@@ -174,7 +189,12 @@ internal sealed class AsyncApiJsonSchemaService
                         }
                     }
                 }
-                schema.PruneNullTypeForComponentizedTypes();
+                // Disabled: this stripped "null" from nullable componentized-object schemas on
+                // the assumption that the oneOf-wrapping restoration above (also disabled) would
+                // re-add nullability at the property reference site. Since that restoration never
+                // worked (it references a nonexistent Metadata property and the wrong constants
+                // class), pruning here silently and permanently dropped nullability instead.
+                // schema.PruneNullTypeForComponentizedTypes();
                 return schema;
             }
         };
@@ -306,22 +326,10 @@ private static void ConvertTypeStringsToEnumValues(JsonNode? node)
         {
             if (typeValue.GetValueKind() == JsonValueKind.String)
             {
-                var typeString = typeValue.GetValue<string>()?.ToLowerInvariant();
-                var enumValue = typeString switch
+                var typeString = typeValue.GetValue<string>();
+                if (MapTypeStringToSchemaTypeFlag(typeString) is { } enumValue)
                 {
-                    "string" => (int)SchemaType.String,    // 32
-                    "number" => (int)SchemaType.Number,    // 16
-                    "integer" => (int)SchemaType.Integer,  // 64
-                    "boolean" => (int)SchemaType.Boolean,  // 2
-                    "object" => (int)SchemaType.Object,    // 8
-                    "array" => (int)SchemaType.Array,      // 4
-                    "null" => (int)SchemaType.Null,        // 1
-                    _ => -1
-                };
-                
-                if (enumValue >= 0)
-                {
-                    jsonObject["type"] = enumValue;
+                    jsonObject["type"] = (int)enumValue;
                 }
             }
         }
@@ -340,6 +348,15 @@ private static void ConvertTypeStringsToEnumValues(JsonNode? node)
         }
     }
 }
+
+// SchemaType is a [Flags] enum, so a comma-separated combination like "Null, String" (the
+// default ToString() output for a combined flags value) needs to parse back into the
+// combined value too, not just the single lowercase type names ("string", "null", ...)
+// that come straight from a JSON Schema "type" array/string.
+private static SchemaType? MapTypeStringToSchemaTypeFlag(string? typeString) =>
+    !string.IsNullOrEmpty(typeString) && Enum.TryParse<SchemaType>(typeString, ignoreCase: true, out var result)
+        ? result
+        : null;
 
 private static void RemoveNullIds(JsonNode? node)
 {
@@ -369,15 +386,31 @@ private static void RemoveNullIds(JsonNode? node)
     {
         var schema = await GetOrCreateUnresolvedSchemaAsync(document, type, scopedServiceProvider, schemaTransformers, parameterDescription, cancellationToken);
 
+        var baseSchemaId = GetSchemaReferenceId(type);
+
+        return ResolveReferenceForSchema(document, schema, baseSchemaId);
+    }
+
+    /// <summary>
+    /// Resolves the schema reference id that <see cref="AsyncApiOptions.CreateSchemaReferenceId"/> assigns to
+    /// <paramref name="type"/>, caching the result since the same type is commonly looked up many times while
+    /// generating a single document. This is the single authoritative source for a payload type's reference id:
+    /// any caller that needs to key a component store by type (for example <see cref="AsyncApiDocumentService"/>
+    /// registering schema/message components) should call this instead of re-deriving an id independently, so
+    /// that a custom <see cref="AsyncApiOptions.CreateSchemaReferenceId"/> and the documented "null means inline"
+    /// contract are honored consistently everywhere.
+    /// </summary>
+    /// <param name="type">The payload type to resolve a schema reference id for.</param>
+    /// <returns>The reference id to use, or <see langword="null"/> if the schema should always be inlined.</returns>
+    internal string? GetSchemaReferenceId(Type type)
+    {
         // Cache the root schema IDs since we expect to be called
         // on the same type multiple times within an API
-        var baseSchemaId = _schemaIdCache.GetOrAdd(type, t =>
+        return _schemaIdCache.GetOrAdd(type, t =>
         {
             var jsonTypeInfo = _jsonSerializerOptions.GetTypeInfo(t);
             return _optionsMonitor.Get(_documentName).CreateSchemaReferenceId(jsonTypeInfo);
         });
-
-        return ResolveReferenceForSchema(document, schema, baseSchemaId);
     }
 
     internal static AsyncApiJsonSchema ResolveReferenceForSchema(AsyncApiDocument document, IAsyncApiSchema inputSchema, string? rootSchemaId, string? baseSchemaId = null)
@@ -585,26 +618,23 @@ private static void RemoveNullIds(JsonNode? node)
     {
         if (node is JsonObject jsonObject)
         {
-            // Handle type arrays by selecting the primary type
+            // SchemaType is a [Flags] enum, so a type array like ["string", "null"] is combined
+            // into a single bitwise-OR'd value (e.g. String | Null) instead of picking one entry
+            // and discarding the rest, which would silently drop nullability from the schema.
             if (jsonObject.ContainsKey("type") && jsonObject["type"] is JsonArray typeArray)
             {
-                var types = typeArray
-                    .Select(t => t?.GetValue<string>())
-                    .Where(t => t != null)
-                    .ToList();
-
-                // Prefer non-null type for nullable fields
-                string? primaryType = types.FirstOrDefault(t => t != "null");
-                if (primaryType == null)
+                SchemaType? combinedType = null;
+                foreach (var typeNode in typeArray)
                 {
-                    primaryType = types.FirstOrDefault();
+                    if (MapTypeStringToSchemaTypeFlag(typeNode?.GetValue<string>()) is { } flag)
+                    {
+                        combinedType = combinedType is { } existing ? existing | flag : flag;
+                    }
                 }
 
-                if (primaryType != null)
+                if (combinedType is { } resolvedType)
                 {
-                    jsonObject["type"] = primaryType;
-                    // Remove pattern if we're keeping the main type
-                    jsonObject.Remove("pattern");
+                    jsonObject["type"] = (int)resolvedType;
                 }
             }
 

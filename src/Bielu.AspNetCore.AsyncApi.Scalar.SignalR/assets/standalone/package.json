@@ -1,6 +1,6 @@
 {
   "name": "@bielu/scalar-signalr-standalone",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Standalone browser bundle for @bielu/scalar-signalr. Includes Scalar and the plugin in one script.",
   "license": "MIT",
   "author": "Arkadiusz Biel",

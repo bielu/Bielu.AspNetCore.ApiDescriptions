@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
@@ -214,14 +214,29 @@ internal static class JsonNodeSchemaExtensions
     {
         var type = context.TypeInfo.Type;
         var underlyingType = Nullable.GetUnderlyingType(type);
-        if (_simpleTypeToAsyncApiJsonSchema.TryGetValue(underlyingType ?? type, out var AsyncApiJsonSchema))
+        if (_simpleTypeToAsyncApiJsonSchema.TryGetValue(underlyingType ?? type, out var asyncApiJsonSchema))
         {
-            if (underlyingType != null && MapJsonNodeToSchemaType(schema[AsyncApiJsonSchemaKeywords.TypeKeyword]) is { } schemaTypes &&
-                !schemaTypes.HasFlag(SchemaType.Null))
+            var schemaTypes = MapJsonNodeToSchemaType(schema[AsyncApiJsonSchemaKeywords.TypeKeyword]);
+            if (underlyingType != null && schemaTypes is { } types && !types.HasFlag(SchemaType.Null))
             {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = (schemaTypes | SchemaType.Null).ToString();
+                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = (types | SchemaType.Null).ToString();
             }
-            schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = AsyncApiJsonSchema.Format;
+            else if (schemaTypes is not { } exportedTypes || (exportedTypes & ~SchemaType.Null) != asyncApiJsonSchema.Type)
+            {
+                // STJ reports the wire type, which differs from the CLR type's own for number handling
+                // such as WriteAsString ("string" for a float). Restore the CLR type, keeping "null" for
+                // nullable values as a type array, the form every later stage already understands.
+                var typeName = asyncApiJsonSchema.Type.ToString().ToLowerInvariant();
+                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = schemaTypes is { } exported && exported.HasFlag(SchemaType.Null)
+                    ? new JsonArray(typeName, "null")
+                    : typeName;
+                // The numeric-string "pattern" STJ emits alongside is meaningless once the type is numeric again.
+                if (asyncApiJsonSchema.Type != SchemaType.String)
+                {
+                    schema.AsObject().Remove(AsyncApiJsonSchemaKeywords.PatternKeyword);
+                }
+            }
+            schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = asyncApiJsonSchema.Format;
             schema[AsyncApiConstants.Id] = createSchemaReferenceId(context.TypeInfo);
         }
     }
@@ -537,9 +552,9 @@ internal static class JsonNodeSchemaExtensions
     {
         if (jsonNode is not JsonArray jsonArray)
         {
-            if (Enum.TryParse<SchemaType>(jsonNode?.GetValue<string>(), true, out var AsyncApiSchemaType))
+            if (Enum.TryParse<SchemaType>(jsonNode?.GetValue<string>(), true, out var asyncApiSchemaType))
             {
-                return AsyncApiSchemaType;
+                return asyncApiSchemaType;
             }
 
             return jsonNode is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var identifier)

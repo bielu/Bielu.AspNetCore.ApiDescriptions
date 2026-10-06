@@ -1,2 +1,4 @@
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.IAsyncApiMessageHeaderExampleProvider
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.IAsyncApiMessageHeaderExampleProvider.GetHeaderExample() -> object!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ContentType.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ContentType.set -> void

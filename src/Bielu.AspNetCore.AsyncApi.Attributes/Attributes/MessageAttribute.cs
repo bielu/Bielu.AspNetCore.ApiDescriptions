@@ -18,6 +18,12 @@ public class MessageAttribute(Type payloadType, params string[] tags) : Attribut
     public Type? HeadersType { get; set; }
 
     /// <summary>
+    /// The message content type.
+    /// Defaults to the document's DefaultContentType.
+    /// </summary>
+    public string? ContentType { get; set; }
+
+    /// <summary>
     /// A machine-friendly name for the message.
     /// Defaults to the generated schemaId.
     /// </summary>
