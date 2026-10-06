@@ -1,4 +1,4 @@
-using Bielu.Overlay.Readers;
+﻿using Bielu.Overlay.Readers;
 using Bielu.Overlay.Validation;
 using Shouldly;
 using Xunit;

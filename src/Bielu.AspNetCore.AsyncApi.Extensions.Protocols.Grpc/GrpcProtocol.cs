@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc;
+﻿namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc;
 
 /// <summary>
 /// Well-known constants for the custom <c>grpc</c> AsyncAPI protocol.

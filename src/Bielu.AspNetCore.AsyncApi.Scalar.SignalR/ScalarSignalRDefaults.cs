@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
 
 /// <summary>
 /// Shared defaults for the Scalar SignalR console integration.

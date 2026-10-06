@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar;
 
 /// <summary>
 /// A reference to an AsyncAPI document served by the application, scanned by a Scalar console

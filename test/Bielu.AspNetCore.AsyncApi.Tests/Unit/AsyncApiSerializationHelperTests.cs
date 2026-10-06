@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Services;
+﻿using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI.Models;
 using Shouldly;
 using Xunit;

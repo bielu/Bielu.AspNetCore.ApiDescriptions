@@ -1,4 +1,4 @@
-using Bielu.Arazzo.Models;
+﻿using Bielu.Arazzo.Models;
 using Bielu.AspNetCore.Arazzo.Services;
 using Shouldly;
 using Xunit;

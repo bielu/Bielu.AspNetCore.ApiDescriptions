@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 
 // Fixtures for the schema/message/operation identity collision tests in
 // Integration/SchemaMessageIdentityCollisionTests.cs. Every [AsyncApi] type below declares an explicit,

@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Bielu.Arazzo.Models;
 
 namespace Bielu.Arazzo.Writers;

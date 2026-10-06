@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Bielu.AspNetCore.AsyncApi.Cli.Commands;
@@ -86,7 +86,7 @@ public class ValidateCommandWorkerTests : IAsyncLifetime
         // Note: ByteBard validator might be lenient, but missing required address in v3 should be an error.
         // If it passes, I might need to provide a truly broken JSON.
     }
-    
+
     [Fact]
     public void Process_WithGlob_Works()
     {
@@ -96,7 +96,7 @@ public class ValidateCommandWorkerTests : IAsyncLifetime
         var worker = new ValidateCommandWorker(context, _ => { }, _ => { }, _ => { });
 
         var result = worker.Process();
-        
+
         // Should find both valid and invalid, returning 1 due to invalid.
         result.ShouldBe(1);
     }

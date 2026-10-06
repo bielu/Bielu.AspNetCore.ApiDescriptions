@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.Arazzo.SourceResolvers;
+﻿namespace Bielu.AspNetCore.Arazzo.SourceResolvers;
 
 /// <summary>
 /// Strictly unescapes a single RFC 6901 JSON Pointer reference-token. Shared by <see cref="AsyncApiSourceResolver"/>

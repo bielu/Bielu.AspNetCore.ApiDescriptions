@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -45,7 +45,7 @@ internal sealed class RuleBASYNC004UnusedDocumentName
             startContext.RegisterOperationAction(oc =>
             {
                 var invocation = (IInvocationOperation)oc.Operation;
-                if (invocation.TargetMethod.Name == "AddAsyncApi" && 
+                if (invocation.TargetMethod.Name == "AddAsyncApi" &&
                     invocation.TargetMethod.ContainingType.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiServiceCollectionExtensions")
                 {
                     if (invocation.Arguments.Length > 1) // first is 'services', second is 'documentName' if it exists

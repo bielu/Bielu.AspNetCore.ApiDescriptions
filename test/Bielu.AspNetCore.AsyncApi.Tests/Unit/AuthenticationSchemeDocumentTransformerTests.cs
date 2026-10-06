@@ -1,4 +1,4 @@
-using System.Text.Encodings.Web;
+﻿using System.Text.Encodings.Web;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Transformers;
@@ -209,11 +209,11 @@ public class AuthenticationSchemeDocumentTransformerTests
 
     private static AsyncApiDocumentTransformerContext CreateContext(
         IServiceProvider services, string documentName = "test") => new()
-    {
-        DocumentName = documentName,
-        DescriptionGroups = [],
-        ApplicationServices = services,
-    };
+        {
+            DocumentName = documentName,
+            DescriptionGroups = [],
+            ApplicationServices = services,
+        };
 
     private static IServiceProvider BuildProviderWithScheme(string schemeName)
     {

@@ -1,8 +1,6 @@
 ﻿using System.Linq;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using ByteBard.AsyncAPI.Bindings.Http;
-using Scalar.AspNetCore;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -10,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Scalar.AspNetCore;
 
 namespace StreetlightsAPI
 {

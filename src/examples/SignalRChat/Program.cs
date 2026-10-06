@@ -1,7 +1,7 @@
 ﻿using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
-using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
+using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI.Models;
 using Microsoft.AspNetCore.Authentication;
 using Scalar.AspNetCore;

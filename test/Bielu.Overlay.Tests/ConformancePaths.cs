@@ -1,4 +1,4 @@
-namespace Bielu.Overlay.Tests;
+﻿namespace Bielu.Overlay.Tests;
 
 /// <summary>Locates the vendored OAI conformance fixtures copied next to the test assembly.</summary>
 internal static class ConformancePaths

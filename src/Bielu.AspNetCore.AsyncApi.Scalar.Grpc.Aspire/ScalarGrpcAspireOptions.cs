@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire;
 
 /// <summary>
 /// Configuration for the interactive Scalar gRPC console in an Aspire AppHost.

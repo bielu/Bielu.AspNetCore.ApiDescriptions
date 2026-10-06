@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -6,8 +6,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Extensions;
-using Bielu.AspNetCore.AsyncApi.Transformers;
 using Bielu.AspNetCore.AsyncApi.Helpers;
+using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
@@ -89,7 +89,7 @@ public sealed class AsyncApiOptions
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
     public AsyncApiOptions AddDocumentTransformer<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        TTransformerType>()
+    TTransformerType>()
         where TTransformerType : IAsyncApiDocumentTransformer
     {
         DocumentTransformers.Add(new TypeBasedAsyncApiDocumentTransformer(typeof(TTransformerType)));
@@ -161,7 +161,7 @@ public sealed class AsyncApiOptions
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
     public AsyncApiOptions AddOperationTransformer<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        TTransformerType>()
+    TTransformerType>()
         where TTransformerType : IAsyncApiOperationTransformer
     {
         OperationTransformers.Add(new TypeBasedAsyncApiOperationTransformer(typeof(TTransformerType)));
@@ -202,7 +202,7 @@ public sealed class AsyncApiOptions
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
     public AsyncApiOptions AddSchemaTransformer<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        TTransformerType>()
+    TTransformerType>()
         where TTransformerType : IAsyncApiSchemaTransformer
     {
         SchemaTransformers.Add(new TypeBasedAsyncApiSchemaTransformer(typeof(TTransformerType)));

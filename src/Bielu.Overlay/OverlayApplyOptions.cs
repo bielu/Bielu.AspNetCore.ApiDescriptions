@@ -1,4 +1,4 @@
-namespace Bielu.Overlay;
+﻿namespace Bielu.Overlay;
 
 /// <summary>Options controlling how <see cref="OverlayApplier"/> applies an overlay.</summary>
 public sealed class OverlayApplyOptions

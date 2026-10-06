@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
@@ -15,8 +15,8 @@ using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Helpers;
-using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Bielu.AspNetCore.AsyncApi.Schemas;
+using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
@@ -295,97 +295,97 @@ internal sealed class AsyncApiJsonSchemaService
         }
     }
 
- internal async Task<AsyncApiJsonSchema> GetOrCreateUnresolvedSchemaAsync(AsyncApiDocument? document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
-{
-    var schemaAsJsonObject = CreateSchema(type);
-
-    // Convert string type values to numeric enum format and remove null IDs
-    ConvertTypeStringsToEnumValues(schemaAsJsonObject);
-    RemoveNullIds(schemaAsJsonObject);
-
-    if (parameterDescription is not null)
+    internal async Task<AsyncApiJsonSchema> GetOrCreateUnresolvedSchemaAsync(AsyncApiDocument? document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
     {
-        schemaAsJsonObject.ApplyParameterInfo(parameterDescription, _jsonSerializerOptions.GetTypeInfo(type));
-    }
+        var schemaAsJsonObject = CreateSchema(type);
 
-    try
-    {
-        var deserializedSchema = JsonSerializer.Deserialize(schemaAsJsonObject, _jsonSchemaContext.AsyncApiJsonSchema);
-        Debug.Assert(deserializedSchema != null, "The schema should have been deserialized successfully and materialize a non-null value.");
-        await ApplySchemaTransformersAsync(document, deserializedSchema, type, scopedServiceProvider, schemaTransformers, parameterDescription, cancellationToken);
-        return deserializedSchema;
-    }
-    catch (JsonException ex)
-    {
-        var schemaJson = schemaAsJsonObject.ToJsonString();
-        throw new InvalidOperationException(
-            $"Failed to deserialize schema for type '{type.FullName}'. Schema: {schemaJson}", ex);
-    }
-}
+        // Convert string type values to numeric enum format and remove null IDs
+        ConvertTypeStringsToEnumValues(schemaAsJsonObject);
+        RemoveNullIds(schemaAsJsonObject);
 
-private static void ConvertTypeStringsToEnumValues(JsonNode? node)
-{
-    if (node is JsonObject jsonObject)
-    {
-        if (jsonObject.ContainsKey("type") && jsonObject["type"] is JsonValue typeValue)
+        if (parameterDescription is not null)
         {
-            if (typeValue.GetValueKind() == JsonValueKind.String)
+            schemaAsJsonObject.ApplyParameterInfo(parameterDescription, _jsonSerializerOptions.GetTypeInfo(type));
+        }
+
+        try
+        {
+            var deserializedSchema = JsonSerializer.Deserialize(schemaAsJsonObject, _jsonSchemaContext.AsyncApiJsonSchema);
+            Debug.Assert(deserializedSchema != null, "The schema should have been deserialized successfully and materialize a non-null value.");
+            await ApplySchemaTransformersAsync(document, deserializedSchema, type, scopedServiceProvider, schemaTransformers, parameterDescription, cancellationToken);
+            return deserializedSchema;
+        }
+        catch (JsonException ex)
+        {
+            var schemaJson = schemaAsJsonObject.ToJsonString();
+            throw new InvalidOperationException(
+                $"Failed to deserialize schema for type '{type.FullName}'. Schema: {schemaJson}", ex);
+        }
+    }
+
+    private static void ConvertTypeStringsToEnumValues(JsonNode? node)
+    {
+        if (node is JsonObject jsonObject)
+        {
+            if (jsonObject.ContainsKey("type") && jsonObject["type"] is JsonValue typeValue)
             {
-                var typeString = typeValue.GetValue<string>();
-                if (MapTypeStringToSchemaTypeFlag(typeString) is { } enumValue)
+                if (typeValue.GetValueKind() == JsonValueKind.String)
                 {
-                    jsonObject["type"] = (int)enumValue;
+                    var typeString = typeValue.GetValue<string>();
+                    if (MapTypeStringToSchemaTypeFlag(typeString) is { } enumValue)
+                    {
+                        jsonObject["type"] = (int)enumValue;
+                    }
                 }
             }
-        }
 
-        var keys = ((IDictionary<string, JsonNode?>)jsonObject).Keys.ToList();
-        foreach (var key in keys)
+            var keys = ((IDictionary<string, JsonNode?>)jsonObject).Keys.ToList();
+            foreach (var key in keys)
+            {
+                ConvertTypeStringsToEnumValues(jsonObject[key]);
+            }
+        }
+        else if (node is JsonArray jsonArray)
         {
-            ConvertTypeStringsToEnumValues(jsonObject[key]);
+            for (var i = 0; i < jsonArray.Count; i++)
+            {
+                ConvertTypeStringsToEnumValues(jsonArray[i]);
+            }
         }
     }
-    else if (node is JsonArray jsonArray)
+
+    // SchemaType is a [Flags] enum, so a comma-separated combination like "Null, String" (the
+    // default ToString() output for a combined flags value) needs to parse back into the
+    // combined value too, not just the single lowercase type names ("string", "null", ...)
+    // that come straight from a JSON Schema "type" array/string.
+    private static SchemaType? MapTypeStringToSchemaTypeFlag(string? typeString) =>
+        !string.IsNullOrEmpty(typeString) && Enum.TryParse<SchemaType>(typeString, ignoreCase: true, out var result)
+            ? result
+            : null;
+
+    private static void RemoveNullIds(JsonNode? node)
     {
-        for (var i = 0; i < jsonArray.Count; i++)
+        if (node is JsonObject jsonObject)
         {
-            ConvertTypeStringsToEnumValues(jsonArray[i]);
+            if (jsonObject.ContainsKey(AsyncApiConstants.Id) && jsonObject[AsyncApiConstants.Id]?.GetValueKind() == JsonValueKind.Null)
+            {
+                jsonObject.Remove(AsyncApiConstants.Id);
+            }
+
+            var keys = ((IDictionary<string, JsonNode?>)jsonObject).Keys.ToList();
+            foreach (var key in keys)
+            {
+                RemoveNullIds(jsonObject[key]);
+            }
+        }
+        else if (node is JsonArray jsonArray)
+        {
+            for (var i = 0; i < jsonArray.Count; i++)
+            {
+                RemoveNullIds(jsonArray[i]);
+            }
         }
     }
-}
-
-// SchemaType is a [Flags] enum, so a comma-separated combination like "Null, String" (the
-// default ToString() output for a combined flags value) needs to parse back into the
-// combined value too, not just the single lowercase type names ("string", "null", ...)
-// that come straight from a JSON Schema "type" array/string.
-private static SchemaType? MapTypeStringToSchemaTypeFlag(string? typeString) =>
-    !string.IsNullOrEmpty(typeString) && Enum.TryParse<SchemaType>(typeString, ignoreCase: true, out var result)
-        ? result
-        : null;
-
-private static void RemoveNullIds(JsonNode? node)
-{
-    if (node is JsonObject jsonObject)
-    {
-        if (jsonObject.ContainsKey(AsyncApiConstants.Id) && jsonObject[AsyncApiConstants.Id]?.GetValueKind() == JsonValueKind.Null)
-        {
-            jsonObject.Remove(AsyncApiConstants.Id);
-        }
-
-        var keys = ((IDictionary<string, JsonNode?>)jsonObject).Keys.ToList();
-        foreach (var key in keys)
-        {
-            RemoveNullIds(jsonObject[key]);
-        }
-    }
-    else if (node is JsonArray jsonArray)
-    {
-        for (var i = 0; i < jsonArray.Count; i++)
-        {
-            RemoveNullIds(jsonArray[i]);
-        }
-    }
-}
 
     internal async Task<IAsyncApiSchema> GetOrCreateSchemaAsync(AsyncApiDocument document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
     {
@@ -524,7 +524,7 @@ private static void RemoveNullIds(JsonNode? node)
                 // }
                 // else
                 // {
-                    schema.Properties[property.Key] = resolvedProperty;
+                schema.Properties[property.Key] = resolvedProperty;
                 // }
             }
         }
@@ -572,9 +572,9 @@ private static void RemoveNullIds(JsonNode? node)
     {
         if (sourceSchema is AsyncApiJsonSchemaReference schemaReference)
         {
-       
-                return schemaReference;
-           
+
+            return schemaReference;
+
         }
         else if (sourceSchema is AsyncApiJsonSchema directSchema)
         {
@@ -657,7 +657,7 @@ private static void RemoveNullIds(JsonNode? node)
             }
         }
 
-        if (schema is {  AdditionalProperties: not null } &&
+        if (schema is { AdditionalProperties: not null } &&
             jsonTypeInfo.ElementType is not null)
         {
             var elementTypeInfo = _jsonSerializerOptions.GetTypeInfo(jsonTypeInfo.ElementType);

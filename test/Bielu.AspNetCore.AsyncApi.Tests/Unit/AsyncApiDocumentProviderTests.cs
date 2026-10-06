@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Extensions;
+﻿using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

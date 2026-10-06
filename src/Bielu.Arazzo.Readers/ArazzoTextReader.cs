@@ -1,4 +1,4 @@
-namespace Bielu.Arazzo.Readers;
+﻿namespace Bielu.Arazzo.Readers;
 
 /// <summary>Reads an Arazzo document from a <see cref="TextReader"/>, auto-detecting JSON or YAML.</summary>
 public static class ArazzoTextReader

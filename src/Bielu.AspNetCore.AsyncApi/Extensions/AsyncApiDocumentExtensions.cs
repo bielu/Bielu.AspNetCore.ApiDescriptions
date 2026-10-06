@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ByteBard.AsyncAPI.Models;
@@ -20,15 +20,15 @@ internal static class AsyncApiDocumentExtensions
     public static bool AddAsyncApiJsonSchemaByReference(this AsyncApiDocument document, string schemaId, AsyncApiMultiFormatSchema schema, out AsyncApiJsonSchemaReference schemaReference)
     {
         var schemaAdded = !document.Components.Schemas.ContainsKey(schemaId);
-       
+
         if (schemaAdded)
         {
-            document.Components.Schemas.Add(schemaId,schema);
+            document.Components.Schemas.Add(schemaId, schema);
         }
         object? description = null;
         object? example = null;
         object? defaultAnnotation = null;
-      
+
         schemaReference = new AsyncApiJsonSchemaReference(schemaId)
         {
             Description = description as string,

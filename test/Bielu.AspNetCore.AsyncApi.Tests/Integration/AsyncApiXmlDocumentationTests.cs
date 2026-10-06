@@ -22,7 +22,7 @@ public class AsyncApiXmlDocumentationTests
     {
         // Arrange
         var xmlPath = Path.Combine(AppContext.BaseDirectory, "Bielu.AspNetCore.AsyncApi.Tests.xml");
-        
+
         // Ensure the XML file exists for the test (it might not be generated in all test environments)
         if (!File.Exists(xmlPath))
         {
@@ -78,7 +78,7 @@ public class AsyncApiXmlDocumentationTests
         // Act
         var response = await client.GetAsync($"/asyncapi/{TestDocumentName}.json");
         var content = await response.Content.ReadAsStringAsync();
-        
+
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var json = JsonDocument.Parse(content);

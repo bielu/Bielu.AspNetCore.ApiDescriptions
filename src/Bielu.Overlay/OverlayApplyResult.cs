@@ -1,4 +1,4 @@
-namespace Bielu.Overlay;
+﻿namespace Bielu.Overlay;
 
 /// <summary>The outcome of applying an overlay: the transformed document plus the diagnostics collected on the way.</summary>
 public sealed class OverlayApplyResult

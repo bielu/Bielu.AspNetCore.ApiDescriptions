@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
+﻿namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 
 /// <summary>
 /// Well-known constants for the custom <c>signalr</c> AsyncAPI protocol.

@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.Arazzo.Validation;
+﻿namespace Bielu.AspNetCore.Arazzo.Validation;
 
 /// <summary>
 /// Thrown at app startup when one or more workflow steps' <c>operationId</c>/<c>operationPath</c>/<c>channelPath</c>

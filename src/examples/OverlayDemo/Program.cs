@@ -1,4 +1,4 @@
-// Applies an OpenAPI Overlay to an AsyncAPI document, and then to an Arazzo one.
+﻿// Applies an OpenAPI Overlay to an AsyncAPI document, and then to an Arazzo one.
 //
 // The Overlay Specification is written against OpenAPI, but its mechanism — select nodes by JSONPath,
 // then merge/copy/remove — carries no OpenAPI-specific assumptions. Bielu.Overlay.NET therefore operates

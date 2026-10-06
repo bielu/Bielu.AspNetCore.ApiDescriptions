@@ -1,4 +1,4 @@
-namespace Bielu.Arazzo.Readers;
+﻿namespace Bielu.Arazzo.Readers;
 
 /// <summary>Options controlling how <see cref="ArazzoStringReader"/>, <see cref="ArazzoTextReader"/>, and <see cref="ArazzoStreamReader"/> behave while reading a document.</summary>
 public sealed class ArazzoReaderSettings

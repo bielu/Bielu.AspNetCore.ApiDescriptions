@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 
 /// <summary>
 /// Adds an example to an AsyncAPI message.

@@ -1,4 +1,4 @@
-using ByteBard.AsyncAPI.Models;
+﻿using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Writers;
 
 namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse;

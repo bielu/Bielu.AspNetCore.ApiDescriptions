@@ -1,4 +1,4 @@
-using Bielu.Arazzo.Models;
+﻿using Bielu.Arazzo.Models;
 using Json.Schema;
 
 namespace Bielu.Arazzo.Validation;

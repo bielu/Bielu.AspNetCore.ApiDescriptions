@@ -19,7 +19,7 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Integration;
 /// </summary>
 public class AsyncApiEndpointTests
 {
-    private static string GetDocumentRoute(string documentName) => 
+    private static string GetDocumentRoute(string documentName) =>
         AsyncApiGeneratorConstants.DefaultAsyncApiRoute.Replace("{documentName}", documentName);
 
     /// <summary>
@@ -29,13 +29,13 @@ public class AsyncApiEndpointTests
     {
         var jsonDocument = JsonDocument.Parse(jsonContent);
         var root = jsonDocument.RootElement;
-        
+
         root.TryGetProperty("asyncapi", out var versionElement).ShouldBeTrue(
             "AsyncAPI document should contain 'asyncapi' version field");
-        
+
         var versionString = versionElement.GetString();
         versionString.ShouldNotBeNullOrEmpty("AsyncAPI version should not be empty");
-        
+
         switch (expectedVersion)
         {
             case AsyncApiVersion.AsyncApi2_0:
@@ -142,7 +142,7 @@ public class AsyncApiEndpointTests
 
         // Assert - use shared validator
         ValidateAsyncApiVersion(content, expectedVersion);
-        
+
         var jsonDoc = JsonDocument.Parse(content);
         var root = jsonDoc.RootElement;
         root.TryGetProperty("asyncapi", out var version).ShouldBeTrue();
@@ -166,7 +166,7 @@ public class AsyncApiEndpointTests
 
         // Assert - use shared validator
         ValidateAsyncApiVersion(content, expectedVersion);
-        
+
         var jsonDoc = JsonDocument.Parse(content);
         var root = jsonDoc.RootElement;
         root.TryGetProperty("asyncapi", out var version).ShouldBeTrue();
@@ -289,7 +289,7 @@ public class AsyncApiEndpointTests
         Action<AsyncApiOptions>? configureOptions = null,
         Func<string, string>? configureEndpoint = null)
     {
-        var pattern = configureEndpoint?.Invoke(AsyncApiGeneratorConstants.DefaultAsyncApiRoute) 
+        var pattern = configureEndpoint?.Invoke(AsyncApiGeneratorConstants.DefaultAsyncApiRoute)
                       ?? AsyncApiGeneratorConstants.DefaultAsyncApiRoute;
 
         var builder = Host.CreateDefaultBuilder()

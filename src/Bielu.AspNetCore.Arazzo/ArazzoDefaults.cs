@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.Arazzo;
+﻿namespace Bielu.AspNetCore.Arazzo;
 
 /// <summary>Default values shared across the Arazzo ASP.NET Core integration.</summary>
 public static class ArazzoDefaults

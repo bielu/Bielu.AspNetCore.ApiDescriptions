@@ -6,10 +6,10 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.LibraryChannels
     public interface IStreetlightMessageBus
     {
         /// <summary>
-/// Publishes a light measurement event to the message bus.
-/// </summary>
-/// <param name="lightMeasuredEvent">The external event containing the light measurement details.</param>
-void PublishLightMeasurement(ExternalEvent lightMeasuredEvent);
+        /// Publishes a light measurement event to the message bus.
+        /// </summary>
+        /// <param name="lightMeasuredEvent">The external event containing the light measurement details.</param>
+        void PublishLightMeasurement(ExternalEvent lightMeasuredEvent);
     }
 
     [AsyncApi]
@@ -17,7 +17,7 @@ void PublishLightMeasurement(ExternalEvent lightMeasuredEvent);
     {
         private const string SubscribeLightMeasuredTopic = "subscribe/external/events";
 
-      
+
 
         /// <summary>
         /// Publishes an external light measurement event to the configured message channel.
@@ -28,7 +28,7 @@ void PublishLightMeasurement(ExternalEvent lightMeasuredEvent);
         public void PublishLightMeasurement(ExternalEvent lightMeasuredEvent)
         {
             var payload = JsonSerializer.Serialize(lightMeasuredEvent);
-    
+
         }
     }
 

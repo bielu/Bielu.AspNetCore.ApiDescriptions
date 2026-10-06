@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using ByteBard.AsyncAPI.Bindings;
