@@ -179,8 +179,8 @@ internal sealed class AsyncApiDocumentService(
         // component key during this generation pass. Two *different* payload types (or operations) that
         // sanitize to the same key are a collision and must be reported instead of silently discarding
         // the second registration's data; the same payload Type (or member/operation) reusing its own key
-        // across multiple channels is not a collision and continues to be deduplicated as before.
-        var schemaKeyOwners = new Dictionary<string, Type>(StringComparer.Ordinal);
+        // across multiple channels is not a collision and continues to be deduplicated as before. Schema
+        // keys are tracked by AsyncApiJsonSchemaService per document, so document transformers share them.
         var messageKeyOwners = new Dictionary<string, Type>(StringComparer.Ordinal);
         var operationKeyOwners = new Dictionary<string, (MemberInfo Member, OperationAttribute Operation)>(StringComparer.Ordinal);
 
@@ -202,11 +202,11 @@ internal sealed class AsyncApiDocumentService(
 
                 var messageRefs = await ApplyChannelMessagesFromMetadataAsync(
                     document, channel, memberMetadata, scopedServiceProvider, schemaTransformers,
-                    schemaKeyOwners, messageKeyOwners, cancellationToken);
+                    messageKeyOwners, cancellationToken);
 
                 await ApplyOperationsFromMetadataAsync(
                     document, channel, memberMetadata, messageRefs, scopedServiceProvider, schemaTransformers,
-                    operationTransformers, schemaKeyOwners, messageKeyOwners, operationKeyOwners, cancellationToken);
+                    operationTransformers, messageKeyOwners, operationKeyOwners, cancellationToken);
             }
         }
     }
@@ -348,7 +348,6 @@ internal sealed class AsyncApiDocumentService(
         AsyncApiMemberMetadata memberMetadata,
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
-        Dictionary<string, Type> schemaKeyOwners,
         Dictionary<string, Type> messageKeyOwners,
         CancellationToken cancellationToken)
     {
@@ -370,7 +369,7 @@ internal sealed class AsyncApiDocumentService(
                 continue;
 
             var (schemaKey, payloadSchema) = await EnsureSchemaAsync(
-                document, payloadType, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
+                document, payloadType, scopedServiceProvider, schemaTransformers, cancellationToken);
 
             AsyncApiMultiFormatSchema payloadRef = schemaKey is not null
                 ? new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
@@ -388,7 +387,7 @@ internal sealed class AsyncApiDocumentService(
             ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType,
                 memberMetadata.MessageExamples, scopedServiceProvider);
 
-            await ApplyMessageAttributeAsync(document, message, msgAttr, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
+            await ApplyMessageAttributeAsync(document, message, msgAttr, scopedServiceProvider, schemaTransformers, cancellationToken);
 
             if (!document.Components.Messages.ContainsKey(messageKey))
             {
@@ -407,7 +406,6 @@ internal sealed class AsyncApiDocumentService(
         MessageAttribute messageAttr,
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
-        Dictionary<string, Type> schemaKeyOwners,
         CancellationToken cancellationToken)
     {
         if (messageAttr.ContentType is not null)
@@ -418,7 +416,7 @@ internal sealed class AsyncApiDocumentService(
         if (messageAttr.HeadersType is { } headersType)
         {
             var (headersSchemaKey, headersSchema) = await EnsureSchemaAsync(
-                document, headersType, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
+                document, headersType, scopedServiceProvider, schemaTransformers, cancellationToken);
 
             message.Headers = headersSchemaKey is not null
                 ? new AsyncApiJsonSchemaReference($"#/components/schemas/{headersSchemaKey}")
@@ -431,10 +429,9 @@ internal sealed class AsyncApiDocumentService(
         Type payloadType,
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
-        Dictionary<string, Type> schemaKeyOwners,
         CancellationToken cancellationToken) =>
         _componentService.GetOrCreateComponentSchemaAsync(
-            document, payloadType, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
+            document, payloadType, scopedServiceProvider, schemaTransformers, cancellationToken);
 
     /// <summary>
     /// Computes the key that would be used to name a schema/message for <paramref name="payloadType"/> when no
@@ -589,7 +586,6 @@ internal sealed class AsyncApiDocumentService(
     /// <param name="scopedServiceProvider">Scoped service provider used to resolve services during schema creation.</param>
     /// <param name="schemaTransformers">Schema transformers applied when creating or retrieving payload schemas.</param>
     /// <param name="operationTransformers">Activated operation transformers run against each operation before it is added to the document.</param>
-    /// <param name="schemaKeyOwners">Tracks which payload type claimed each schema component key during this generation pass.</param>
     /// <param name="messageKeyOwners">Tracks which payload type claimed each message component key during this generation pass.</param>
     /// <param name="operationKeyOwners">Tracks which member/operation claimed each operation id during this generation pass.</param>
     /// <param name="cancellationToken">Cancellation token to observe while performing async operations.</param>
@@ -601,7 +597,6 @@ internal sealed class AsyncApiDocumentService(
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
         IAsyncApiOperationTransformer[] operationTransformers,
-        Dictionary<string, Type> schemaKeyOwners,
         Dictionary<string, Type> messageKeyOwners,
         Dictionary<string, (MemberInfo Member, OperationAttribute Operation)> operationKeyOwners,
         CancellationToken cancellationToken)
@@ -630,7 +625,7 @@ internal sealed class AsyncApiDocumentService(
                 var payloadType = opAttr.MessagePayloadType;
 
                 var (schemaKey, payloadSchema) = await EnsureSchemaAsync(
-                    document, payloadType, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
+                    document, payloadType, scopedServiceProvider, schemaTransformers, cancellationToken);
 
                 var messageKey = ComputeSchemaKeyValue(payloadType);
                 RegisterMessageKeyOwner(messageKey, payloadType, messageKeyOwners);
@@ -654,7 +649,7 @@ internal sealed class AsyncApiDocumentService(
 
                     if (memberMetadata.Messages.FirstOrDefault() is MessageAttribute messageAttribute)
                     {
-                        await ApplyMessageAttributeAsync(document, message, messageAttribute, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
+                        await ApplyMessageAttributeAsync(document, message, messageAttribute, scopedServiceProvider, schemaTransformers, cancellationToken);
                     }
 
                     document.Components.Messages[messageKey] = message;

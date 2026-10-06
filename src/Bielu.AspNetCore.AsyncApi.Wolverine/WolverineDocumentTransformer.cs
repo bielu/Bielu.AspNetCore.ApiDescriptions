@@ -84,7 +84,6 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
         IServiceProvider services)
     {
         private readonly Dictionary<Uri, string> _channelKeys = [];
-        private readonly Dictionary<string, Type> _schemaKeyOwners = new(StringComparer.Ordinal);
         private readonly HashSet<(AsyncApiAction Action, Uri EndpointUri, Type MessageType)> _operations = [];
         private string? _hubPath;
 
@@ -185,7 +184,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             // Registered the way the attribute pipeline registers payloads: keyed by the schema reference id
             // (honoring AsyncApiOptions.CreateSchemaReferenceId), inlined when that opts the type out.
             var (schemaKey, schema) = await schemas.GetOrCreateComponentSchemaAsync(
-                document, messageType, services, context.SchemaTransformers, _schemaKeyOwners, cancellationToken);
+                document, messageType, services, context.SchemaTransformers, cancellationToken);
 
             var docs = xmlDocs.GetDocumentation(messageType);
             document.Components.Messages[key] = new AsyncApiMessage

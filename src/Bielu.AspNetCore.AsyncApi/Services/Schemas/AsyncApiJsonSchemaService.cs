@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
@@ -42,6 +43,9 @@ internal sealed class AsyncApiJsonSchemaService
     private readonly IOptionsMonitor<AsyncApiOptions> _optionsMonitor;
     private readonly XmlDocumentationProvider _xmlDocumentationProvider;
     private readonly ConcurrentDictionary<Type, string?> _schemaIdCache = new();
+    // The type that claimed each components/schemas key, per document being generated: shared by the
+    // attribute pipeline and document transformers, so neither can silently reuse the other's schema.
+    private readonly ConditionalWeakTable<AsyncApiDocument, Dictionary<string, Type>> _schemaKeyOwners = new();
     private readonly AsyncApiJsonSchemaContext _jsonSchemaContext;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly JsonSchemaExporterOptions _configuration;
@@ -430,14 +434,14 @@ private static void RemoveNullIds(JsonNode? node)
     /// <summary>
     /// Resolves (and if necessary creates and registers) the schema component for <paramref name="type"/>,
     /// keyed by <see cref="GetSchemaComponentKey"/> so a custom <see cref="AsyncApiOptions.CreateSchemaReferenceId"/>
-    /// is honored. Throws when a <em>different</em> type in <paramref name="schemaKeyOwners"/> already claimed
-    /// the same key: silently keeping the first registration would make one payload describe the wrong type.
+    /// is honored. Throws when a <em>different</em> type already claimed the same key for this document, whether
+    /// through the attribute pipeline or a document transformer: silently keeping the first registration would
+    /// make one payload describe the wrong type.
     /// </summary>
     /// <param name="document">The document whose <c>components/schemas</c> receives the schema.</param>
     /// <param name="type">The payload type.</param>
     /// <param name="scopedServiceProvider">The request-scoped service provider.</param>
     /// <param name="schemaTransformers">The schema transformers to apply.</param>
-    /// <param name="schemaKeyOwners">The type that claimed each key during this generation pass.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>
     /// The schema's component key, or <see langword="null"/> when <see cref="AsyncApiOptions.CreateSchemaReferenceId"/>
@@ -448,7 +452,6 @@ private static void RemoveNullIds(JsonNode? node)
         Type type,
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
-        Dictionary<string, Type> schemaKeyOwners,
         CancellationToken cancellationToken)
     {
         var schema = await GetOrCreateSchemaAsync(
@@ -460,6 +463,7 @@ private static void RemoveNullIds(JsonNode? node)
             return (null, schema);
         }
 
+        var schemaKeyOwners = _schemaKeyOwners.GetValue(document, _ => new Dictionary<string, Type>(StringComparer.Ordinal));
         if (!schemaKeyOwners.TryAdd(key, type) && schemaKeyOwners[key] != type)
         {
             throw new InvalidOperationException(

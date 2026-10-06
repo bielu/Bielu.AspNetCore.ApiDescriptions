@@ -255,6 +255,35 @@ public class WolverineDocumentTransformerTests
         }
     }
 
+    [Fact]
+    public async Task TransformAsync_MessageClashingWithAttributePayloadSchemaId_Throws()
+    {
+        // Act & Assert: the attribute pipeline already registered Billing.Created as "created"
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() =>
+            GetDocumentWithOrdersCreatedRouteAsync(AttributeChannels.ClashingDocument));
+        exception.Message.ShouldContain(typeof(Fixtures.Billing.Created).FullName!);
+        exception.Message.ShouldContain(typeof(Fixtures.Orders.Created).FullName!);
+    }
+
+    [Fact]
+    public async Task TransformAsync_MessageAlsoDeclaredByAttribute_SharesItsSchema()
+    {
+        // Act
+        var document = await GetDocumentWithOrdersCreatedRouteAsync(AttributeChannels.SharedDocument);
+
+        // Assert
+        var messages = document["components"]!["messages"]!;
+        messages[typeof(Fixtures.Orders.Created).FullName!]!["payload"]!["$ref"]!.GetValue<string>()
+            .ShouldBe("#/components/schemas/created");
+        messages["orderCreated"]!["payload"]!["$ref"]!.GetValue<string>().ShouldBe("#/components/schemas/created");
+        document["components"]!["schemas"]!["created"]!["properties"]!.AsObject().ContainsKey("orderId").ShouldBeTrue();
+    }
+
+    private static Task<JsonNode> GetDocumentWithOrdersCreatedRouteAsync(string documentName) =>
+        WolverineTestApp.GetDocumentAsync(documentName,
+            options => options.AddWolverine(wolverine => wolverine.IncludeSchemes("kafka")),
+            configureWolverine: opts => opts.PublishMessage<Fixtures.Orders.Created>().ToKafkaTopic("orders-created"));
+
     private static Task<JsonNode> GetSameNamedDocumentAsync(Action<AsyncApiOptions> configure) =>
         WolverineTestApp.GetDocumentAsync("messaging", options =>
             {
