@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Transformers;
@@ -68,6 +69,18 @@ public sealed class AsyncApiOptions
     /// the provided delegate returns <see langword="null"/>, the schema associated with the <see cref="JsonTypeInfo"/> will always be inlined.
     /// </remarks>
     public Func<JsonTypeInfo, string?> CreateSchemaReferenceId { get; set; } = CreateDefaultSchemaReferenceId;
+
+    /// <summary>
+    /// The <see cref="JsonSerializerOptions"/> used for JSON schema generation for this AsyncApi document,
+    /// for example to control property naming (<see cref="JsonSerializerOptions.PropertyNamingPolicy"/>).
+    /// </summary>
+    /// <remarks>
+    /// When set, these options take the place of the ASP.NET Core-wide
+    /// <see cref="Microsoft.AspNetCore.Http.Json.JsonOptions.SerializerOptions"/> for schema generation only —
+    /// the rest of the application's JSON (de)serialization behavior is unaffected. When <see langword="null"/>
+    /// (the default), schema generation uses the ASP.NET Core-wide JSON options, matching runtime serialization.
+    /// </remarks>
+    public JsonSerializerOptions? AsyncApiJsonSchemaJsonOptions { get; set; }
 
     /// <summary>
     /// Registers a new document transformer on the current <see cref="AsyncApiOptions"/> instance.

@@ -54,6 +54,17 @@ internal sealed class AsyncApiJsonSchemaService
         _documentName = documentName;
         _optionsMonitor = optionsMonitor;
         _xmlDocumentationProvider = serviceProvider.GetRequiredKeyedService<XmlDocumentationProvider>(documentName);
+        // A document-scoped AsyncApiJsonSchemaJsonOptions overrides the app-wide JsonOptions for schema
+        // generation only (e.g. to use a different PropertyNamingPolicy for message payload properties),
+        // without touching how the app actually serializes payloads at runtime.
+        var baseSerializerOptions = optionsMonitor.Get(documentName).AsyncApiJsonSchemaJsonOptions
+            ?? jsonOptions.Value.SerializerOptions;
+        // _jsonSchemaContext deserializes the raw JsonSchemaExporter output — which always uses fixed,
+        // lowercase JSON Schema keywords ("type", "properties", "required", ...) per the spec — into the
+        // internal AsyncApiJsonSchema model's PascalCase properties. That mapping relies on the app-wide
+        // JsonOptions' camelCase policy and must stay independent of AsyncApiJsonSchemaJsonOptions: honoring
+        // the override here (e.g. a user setting PropertyNamingPolicy = null for PascalCase payloads) would
+        // break the "type"->Type, "properties"->Properties lookup and silently deserialize every schema as empty.
         var schemaContextOptions = new JsonSerializerOptions(jsonOptions.Value.SerializerOptions);
         // Without this, any exported schema containing AsyncApiAny (an enum's "enum" keyword, a
         // "default", a "const", ...) throws JsonException the moment that property is populated —
@@ -61,11 +72,15 @@ internal sealed class AsyncApiJsonSchemaService
         // AsyncApiAnyJsonConverter's own remarks.
         schemaContextOptions.Converters.Add(new AsyncApiAnyJsonConverter());
         _jsonSchemaContext = new AsyncApiJsonSchemaContext(schemaContextOptions);
-        _jsonSerializerOptions = new JsonSerializerOptions(jsonOptions.Value.SerializerOptions)
+        // Fall back to the default reflection-based resolver when the base options don't carry one
+        // (e.g. a bare `new JsonSerializerOptions { PropertyNamingPolicy = ... }` passed via
+        // AsyncApiJsonSchemaJsonOptions), so the RequiredAttribute modifier below still has a resolver to attach to.
+        var baseTypeInfoResolver = baseSerializerOptions.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver();
+        _jsonSerializerOptions = new JsonSerializerOptions(baseSerializerOptions)
         {
             // In order to properly handle the `RequiredAttribute` on type properties, add a modifier to support
             // setting `JsonPropertyInfo.IsRequired` based on the presence of the `RequiredAttribute`.
-            TypeInfoResolver = jsonOptions.Value.SerializerOptions.TypeInfoResolver?.WithAddedModifier(jsonTypeInfo =>
+            TypeInfoResolver = baseTypeInfoResolver.WithAddedModifier(jsonTypeInfo =>
             {
                 if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
                 {
