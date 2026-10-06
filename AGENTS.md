@@ -19,6 +19,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.ApiDescription.Server` | MSBuild props/targets for build-time generation |
 | `Bielu.AspNetCore.AsyncApi.SourceGenerators` | Source Generator for Native AOT and compile-time metadata |
 | `Bielu.AspNetCore.AsyncApi.Versioning` | API Versioning integration (`Asp.Versioning`) |
+| `Bielu.AspNetCore.AsyncApi.Wolverine` | Wolverine integration: builds channels and operations from Wolverine's message routing |
 | `Bielu.AspNetCore.AsyncApi.Templates` | `dotnet new` template pack (`asyncapi-webapi`, `-signalr`, `-grpc`, `-console`, `-sln`) |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR` | SignalR protocol bindings |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc` | gRPC protocol bindings |

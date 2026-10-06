@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>Wolverine integration for Bielu.AspNetCore.AsyncApi. Builds AsyncAPI channels, operations and messages from Wolverine's own message routing (SignalR, Kafka and any other transport), so the document follows the routing configuration instead of repeating it in attributes.</Description>
+    <PackageTags>asyncapi;wolverine;messaging;signalr;kafka;aspnetcore</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
+    <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR\Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ByteBard.AsyncAPI.NET.Bindings" />
+    <PackageReference Include="WolverineFx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Wolverine.Tests" />
+  </ItemGroup>
+
+</Project>

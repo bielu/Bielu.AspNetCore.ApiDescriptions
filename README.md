@@ -64,6 +64,7 @@ public class MyService
 - ✅ **Roslyn Analyzers** for compile-time safety
 - ✅ **Native AOT support**
 - ✅ **API Versioning** integration for version-per-document support
+- ✅ **Wolverine** integration that documents channels and operations straight from Wolverine's message routing
 - ✅ **OpenAPI Overlays** applied in the generation pipeline, so the served document is already transformed
 
 ## Documentation Sections

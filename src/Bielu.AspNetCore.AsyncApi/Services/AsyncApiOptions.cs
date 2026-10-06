@@ -519,13 +519,19 @@ public sealed class AsyncApiOptions
     /// </summary>
     /// <param name="assembly">The assembly to include XML documentation for.</param>
     /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
-    [UnconditionalSuppressMessage("SingleFile", "IL3000",
-        Justification = "An empty Assembly.Location is exactly the single-file case this method " +
-                        "handles: it falls back to AppContext.BaseDirectory rather than using the value.")]
     public AsyncApiOptions IncludeXmlComments(Assembly assembly)
     {
         ArgumentNullException.ThrowIfNull(assembly);
 
+        return IncludeXmlComments(GetXmlDocumentationPath(assembly));
+    }
+
+    /// <summary>The path of the XML documentation file the compiler writes next to <paramref name="assembly"/>.</summary>
+    [UnconditionalSuppressMessage("SingleFile", "IL3000",
+        Justification = "An empty Assembly.Location is exactly the single-file case this method " +
+                        "handles: it falls back to AppContext.BaseDirectory rather than using the value.")]
+    internal static string GetXmlDocumentationPath(Assembly assembly)
+    {
         // Assembly.Location is an empty string for an assembly embedded in a single-file app, which
         // would otherwise reduce the path to a bare "{Name}.xml" resolved against the current working
         // directory. AppContext.BaseDirectory is the app directory in both layouts.
@@ -533,11 +539,9 @@ public sealed class AsyncApiOptions
             ? AppContext.BaseDirectory
             : Path.GetDirectoryName(assembly.Location);
 
-        var filePath = Path.Combine(
+        return Path.Combine(
             assemblyDirectory is { Length: > 0 } directory ? directory : AppContext.BaseDirectory,
             $"{assembly.GetName().Name}.xml");
-
-        return IncludeXmlComments(filePath);
     }
 
     /// <summary>

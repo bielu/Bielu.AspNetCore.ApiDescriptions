@@ -16,6 +16,8 @@
   href: cli.md
 - name: Multiple Documents
   href: multiple-documents.md
+- name: Wolverine
+  href: wolverine.md
 - name: Protocols
   items:
     - name: SignalR
