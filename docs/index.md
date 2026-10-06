@@ -3,6 +3,9 @@
 Tools for describing, generating, and validating API specifications for ASP.NET Core — spanning both
 request/response APIs and event-driven, workflow-based ones.
 
+[Supported .NET versions and EOL policy](articles/supported-dotnet-versions.md) covers the current support matrix,
+planned framework additions, and when targets are removed from the package family.
+
 <div class="landing-cards">
 
 <div class="landing-card">
