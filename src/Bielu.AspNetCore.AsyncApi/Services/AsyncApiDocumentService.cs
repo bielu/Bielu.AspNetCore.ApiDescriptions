@@ -73,52 +73,78 @@ internal sealed class AsyncApiDocumentService(
             ? new IAsyncApiOperationTransformer[_options.OperationTransformers.Count]
             : [];
 
-        InitializeTransformers(scopedServiceProvider, schemaTransformers, operationTransformers);
+        // Transformer instances activated for this generation request only (from type-based
+        // registrations). This list owns those instances and is responsible for disposing them,
+        // no matter which stage of generation fails or where cancellation happens. Caller-supplied
+        // instance/delegate transformers are reused across every request and are deliberately never
+        // added here - the caller owns their lifetime.
+        var ownedTransformers = new List<object>();
 
-        foreach (var file in _options.XmlDocumentationFiles)
-        {
-            _xmlDocumentationProvider.Load(file);
-        }
-
-        var document = new AsyncApiDocument
-        {
-            Id = $"urn:{AsyncApiNamingHelper.SanitizeKey(documentName)}",
-            Info = GetAsyncApiInfo(),
-            Servers = GetAsyncApiServers(httpRequest),
-            Components = new AsyncApiComponents { Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>() },
-            Channels = new Dictionary<string, AsyncApiChannel>(StringComparer.Ordinal),
-            Operations = new Dictionary<string, AsyncApiOperation>(StringComparer.Ordinal)
-        };
-        document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.1.0";
-        ApplyBindingsFromOptions(document);
-
+        AsyncApiDocument document;
         try
         {
+            InitializeTransformers(scopedServiceProvider, schemaTransformers, operationTransformers, ownedTransformers);
+
+            foreach (var file in _options.XmlDocumentationFiles)
+            {
+                _xmlDocumentationProvider.Load(file);
+            }
+
+            document = new AsyncApiDocument
+            {
+                Id = $"urn:{AsyncApiNamingHelper.SanitizeKey(documentName)}",
+                Info = GetAsyncApiInfo(),
+                Servers = GetAsyncApiServers(httpRequest),
+                Components = new AsyncApiComponents { Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>() },
+                Channels = new Dictionary<string, AsyncApiChannel>(StringComparer.Ordinal),
+                Operations = new Dictionary<string, AsyncApiOperation>(StringComparer.Ordinal)
+            };
+            document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.1.0";
+            ApplyBindingsFromOptions(document);
+
             await PopulateFromAttributeProjectAsync(document, scopedServiceProvider, schemaTransformers,
                 operationTransformers, cancellationToken);
+
             await ApplyTransformersAsync(document, scopedServiceProvider, schemaTransformers, cancellationToken);
-        }
-        finally
-        {
-            await FinalizeTransformersAsync(schemaTransformers, operationTransformers);
-        }
 
-        if (document.Components?.Schemas is not null)
-        {
-            document.Components.Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>(
-                document.Components.Schemas.OrderBy(kvp => kvp.Key),
-                StringComparer.Ordinal);
-        }
-
-        // AsyncAPI 2.x requires at least one channel; per requirement, throw if none are defined
-        if (_options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
-        {
-            var hasChannels = document.Channels is not null && document.Channels.Count > 0;
-            if (!hasChannels)
+            if (document.Components?.Schemas is not null)
             {
-                throw new InvalidOperationException(
-                    "AsyncAPI 2.x requires at least one channel. No channels were discovered for this document.");
+                document.Components.Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>(
+                    document.Components.Schemas.OrderBy(kvp => kvp.Key),
+                    StringComparer.Ordinal);
             }
+
+            // AsyncAPI 2.x requires at least one channel; per requirement, throw if none are defined
+            if (_options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0)
+            {
+                var hasChannels = document.Channels is not null && document.Channels.Count > 0;
+                if (!hasChannels)
+                {
+                    throw new InvalidOperationException("AsyncAPI 2.x requires at least one channel. No channels were discovered for this document.");
+                }
+            }
+        }
+        catch (Exception generationException)
+        {
+            // Cleanup must be attempted for every successfully activated instance regardless of
+            // which stage failed (activation, population, transformation, or cancellation), but the
+            // original failure must remain the primary/observable exception. Any disposal failures
+            // are surfaced alongside it rather than silently swallowed or allowed to mask it.
+            var disposalException = await FinalizeTransformersAsync(ownedTransformers);
+            if (disposalException is not null)
+            {
+                throw new AggregateException(generationException, disposalException);
+            }
+
+            throw;
+        }
+
+        // Successful generation still owns the activated instances and must release them; a
+        // disposal failure here has no original exception to be masked, so it is surfaced directly.
+        var successDisposalException = await FinalizeTransformersAsync(ownedTransformers);
+        if (successDisposalException is not null)
+        {
+            throw successDisposalException;
         }
 
         return document;
@@ -149,6 +175,15 @@ internal sealed class AsyncApiDocumentService(
         document.Components.Schemas ??= new Dictionary<string, AsyncApiMultiFormatSchema>();
         document.Components.Messages ??= new Dictionary<string, AsyncApiMessage>();
 
+        // Tracks the identity (payload Type, or declaring member/operation) that first claimed each
+        // component key during this generation pass. Two *different* payload types (or operations) that
+        // sanitize to the same key are a collision and must be reported instead of silently discarding
+        // the second registration's data; the same payload Type (or member/operation) reusing its own key
+        // across multiple channels is not a collision and continues to be deduplicated as before.
+        var schemaKeyOwners = new Dictionary<string, Type>(StringComparer.Ordinal);
+        var messageKeyOwners = new Dictionary<string, Type>(StringComparer.Ordinal);
+        var operationKeyOwners = new Dictionary<string, (MemberInfo Member, OperationAttribute Operation)>(StringComparer.Ordinal);
+
         foreach (var typeMetadata in _metadataProvider.GetMetadata(documentName))
         {
             foreach (var memberMetadata in typeMetadata.Members)
@@ -166,10 +201,12 @@ internal sealed class AsyncApiDocumentService(
                 ApplyChannelServersFromAttributes(document, channel, channelAttr);
 
                 var messageRefs = await ApplyChannelMessagesFromMetadataAsync(
-                    document, channel, memberMetadata, scopedServiceProvider, schemaTransformers, cancellationToken);
+                    document, channel, memberMetadata, scopedServiceProvider, schemaTransformers,
+                    schemaKeyOwners, messageKeyOwners, cancellationToken);
 
-                await ApplyOperationsFromMetadataAsync(document, channel, memberMetadata, messageRefs,
-                    scopedServiceProvider, schemaTransformers, operationTransformers, cancellationToken);
+                await ApplyOperationsFromMetadataAsync(
+                    document, channel, memberMetadata, messageRefs, scopedServiceProvider, schemaTransformers,
+                    operationTransformers, schemaKeyOwners, messageKeyOwners, operationKeyOwners, cancellationToken);
             }
         }
     }
@@ -311,6 +348,8 @@ internal sealed class AsyncApiDocumentService(
         AsyncApiMemberMetadata memberMetadata,
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
+        Dictionary<string, Type> schemaKeyOwners,
+        Dictionary<string, Type> messageKeyOwners,
         CancellationToken cancellationToken)
     {
         var messageKeys = new List<string>();
@@ -320,39 +359,30 @@ internal sealed class AsyncApiDocumentService(
         {
             var payloadType = msgAttr.PayloadType;
             var messageKey = AsyncApiNamingHelper.SanitizeKey(msgAttr.MessageId
-                                                              ?? msgAttr.Name
-                                                              ?? ToCamelCase(payloadType.Name));
+                             ?? msgAttr.Name
+                             ?? ComputeSchemaKeyValue(payloadType));
 
             messageKeys.Add(messageKey);
+
+            RegisterMessageKeyOwner(messageKey, payloadType, messageKeyOwners);
 
             if (channel.Messages.ContainsKey(messageKey))
                 continue;
 
-            var payloadSchema = await _componentService.GetOrCreateSchemaAsync(
-                document,
-                payloadType,
-                scopedServiceProvider,
-                schemaTransformers,
-                parameterDescription: null,
-                cancellationToken: cancellationToken);
+            var (schemaKey, payloadSchema) = await EnsureSchemaAsync(
+                document, payloadType, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
 
-            var schemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(payloadType.Name));
-            if (!document.Components.Schemas.ContainsKey(schemaKey))
-            {
-                document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
-                {
-                    Schema = payloadSchema as AsyncApiJsonSchema
-                };
-            }
+            AsyncApiMultiFormatSchema payloadRef = schemaKey is not null
+                ? new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
+                : new AsyncApiMultiFormatSchema { Schema = payloadSchema as AsyncApiJsonSchema };
 
             var message = new AsyncApiMessage
             {
                 Name = msgAttr.Name ?? messageKey,
                 Title = msgAttr.Title ?? messageKey,
                 Summary = msgAttr.Summary ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Summary,
-                Description =
-                    msgAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Remarks,
-                Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
+                Description = msgAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(payloadType)?.Remarks,
+                Payload = payloadRef
             };
 
             ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType,
@@ -368,6 +398,150 @@ internal sealed class AsyncApiDocumentService(
 
         return messageKeys;
     }
+
+    /// <summary>
+    /// Resolves (and if necessary creates and registers) the schema component for <paramref name="payloadType"/>,
+    /// using <see cref="AsyncApiJsonSchemaService.GetSchemaReferenceId"/> — which honors
+    /// <see cref="AsyncApiOptions.CreateSchemaReferenceId"/> — as the single authoritative source for the
+    /// component key, instead of deriving one independently from the CLR type name.
+    /// </summary>
+    /// <returns>
+    /// The schema's component key, or <see langword="null"/> when <see cref="AsyncApiOptions.CreateSchemaReferenceId"/>
+    /// opted the type out of componentization (per its documented contract, the schema is inlined instead), along
+    /// with the resolved schema itself.
+    /// </returns>
+    private async Task<(string? SchemaKey, IAsyncApiSchema Schema)> EnsureSchemaAsync(
+        AsyncApiDocument document,
+        Type payloadType,
+        IServiceProvider scopedServiceProvider,
+        IAsyncApiSchemaTransformer[] schemaTransformers,
+        Dictionary<string, Type> schemaKeyOwners,
+        CancellationToken cancellationToken)
+    {
+        var payloadSchema = await _componentService.GetOrCreateSchemaAsync(
+            document,
+            payloadType,
+            scopedServiceProvider,
+            schemaTransformers,
+            parameterDescription: null,
+            cancellationToken: cancellationToken);
+
+        var schemaKey = ResolveSchemaReferenceKey(payloadType, schemaKeyOwners);
+        if (schemaKey is not null && !document.Components.Schemas.ContainsKey(schemaKey))
+        {
+            document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
+            {
+                Schema = payloadSchema as AsyncApiJsonSchema
+            };
+        }
+
+        return (schemaKey, payloadSchema);
+    }
+
+    /// <summary>
+    /// Computes the sanitized component key for <paramref name="payloadType"/> per
+    /// <see cref="AsyncApiOptions.CreateSchemaReferenceId"/> and records it as claimed by that type, unless it
+    /// was already claimed by that same type. Throws when a <em>different</em> type already claimed the same
+    /// key: silently keeping the first registration would discard the second type's schema/message data, which
+    /// is exactly the defect this check exists to prevent.
+    /// </summary>
+    private string? ResolveSchemaReferenceKey(Type payloadType, Dictionary<string, Type> schemaKeyOwners)
+    {
+        var referenceId = _componentService.GetSchemaReferenceId(payloadType);
+        if (referenceId is null)
+        {
+            // AsyncApiOptions.CreateSchemaReferenceId opted this type out of componentization; per its
+            // documented contract the schema must be inlined wherever it is used, not added to components/schemas.
+            return null;
+        }
+
+        var key = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(referenceId));
+
+        if (schemaKeyOwners.TryGetValue(key, out var owningType))
+        {
+            if (owningType != payloadType)
+            {
+                throw new InvalidOperationException(
+                    $"AsyncAPI schema id '{key}' is already used by type '{owningType.FullName}' and cannot also " +
+                    $"represent type '{payloadType.FullName}': both types produced the same schema reference id " +
+                    "after sanitization. Configure AsyncApiOptions.CreateSchemaReferenceId to assign these types " +
+                    "distinct, stable ids.");
+            }
+        }
+        else
+        {
+            schemaKeyOwners[key] = payloadType;
+        }
+
+        return key;
+    }
+
+    /// <summary>
+    /// Computes the key that would be used to name a schema/message for <paramref name="payloadType"/> when no
+    /// explicit id was supplied, without recording or validating ownership of that key. Used only to derive
+    /// default message ids; the schema component key itself is always resolved (and collision-checked) through
+    /// <see cref="ResolveSchemaReferenceKey"/>.
+    /// </summary>
+    private string ComputeSchemaKeyValue(Type payloadType)
+    {
+        var referenceId = _componentService.GetSchemaReferenceId(payloadType) ?? payloadType.Name;
+        return AsyncApiNamingHelper.SanitizeKey(ToCamelCase(referenceId));
+    }
+
+    /// <summary>
+    /// Records <paramref name="payloadType"/> as the owner of <paramref name="messageKey"/>, unless it was
+    /// already claimed by that same type. Throws when a <em>different</em> payload type already claimed the
+    /// same message id, instead of silently keeping only the first message's data.
+    /// </summary>
+    private static void RegisterMessageKeyOwner(string messageKey, Type payloadType, Dictionary<string, Type> messageKeyOwners)
+    {
+        if (messageKeyOwners.TryGetValue(messageKey, out var owningType))
+        {
+            if (owningType != payloadType)
+            {
+                throw new InvalidOperationException(
+                    $"AsyncAPI message id '{messageKey}' is already used for payload type '{owningType.FullName}' " +
+                    $"and cannot also represent payload type '{payloadType.FullName}'. Assign distinct MessageId " +
+                    "values (for example via [Message(MessageId = \"...\")]) to disambiguate these messages.");
+            }
+        }
+        else
+        {
+            messageKeyOwners[messageKey] = payloadType;
+        }
+    }
+
+    /// <summary>
+    /// Records the (member, operation) pair that owns <paramref name="opId"/>. Returns <see langword="false"/>
+    /// when the exact same operation was already registered (so the caller can skip re-processing it, as
+    /// before), and throws when a <em>different</em> operation already claimed the same operation id instead of
+    /// silently discarding it.
+    /// </summary>
+    private static bool RegisterOperationKeyOwner(
+        string opId,
+        MemberInfo member,
+        OperationAttribute opAttr,
+        Dictionary<string, (MemberInfo Member, OperationAttribute Operation)> operationKeyOwners)
+    {
+        if (operationKeyOwners.TryGetValue(opId, out var owner))
+        {
+            if (!ReferenceEquals(owner.Member, member) || !ReferenceEquals(owner.Operation, opAttr))
+            {
+                throw new InvalidOperationException(
+                    $"AsyncAPI operation id '{opId}' is already used by '{DescribeMember(owner.Member)}' and cannot " +
+                    $"also be used by '{DescribeMember(member)}'. Assign distinct OperationId values to disambiguate " +
+                    "these operations.");
+            }
+
+            return false;
+        }
+
+        operationKeyOwners[opId] = (member, opAttr);
+        return true;
+    }
+
+    private static string DescribeMember(MemberInfo member)
+        => member.DeclaringType is { } declaringType ? $"{declaringType.FullName}.{member.Name}" : member.Name;
 
     private void ApplyMessageExamples(AsyncApiMessage message, AsyncApiJsonSchema? payloadSchema, Type payloadType,
         List<MessageExampleAttribute> exampleAttrs, IServiceProvider scopedServiceProvider)
@@ -443,6 +617,9 @@ internal sealed class AsyncApiDocumentService(
     /// <param name="scopedServiceProvider">Scoped service provider used to resolve services during schema creation.</param>
     /// <param name="schemaTransformers">Schema transformers applied when creating or retrieving payload schemas.</param>
     /// <param name="operationTransformers">Activated operation transformers run against each operation before it is added to the document.</param>
+    /// <param name="schemaKeyOwners">Tracks which payload type claimed each schema component key during this generation pass.</param>
+    /// <param name="messageKeyOwners">Tracks which payload type claimed each message component key during this generation pass.</param>
+    /// <param name="operationKeyOwners">Tracks which member/operation claimed each operation id during this generation pass.</param>
     /// <param name="cancellationToken">Cancellation token to observe while performing async operations.</param>
     private async Task ApplyOperationsFromMetadataAsync(
         AsyncApiDocument document,
@@ -452,6 +629,9 @@ internal sealed class AsyncApiDocumentService(
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
         IAsyncApiOperationTransformer[] operationTransformers,
+        Dictionary<string, Type> schemaKeyOwners,
+        Dictionary<string, Type> messageKeyOwners,
+        Dictionary<string, (MemberInfo Member, OperationAttribute Operation)> operationKeyOwners,
         CancellationToken cancellationToken)
     {
         var opAttrs = memberMetadata.Operations;
@@ -468,43 +648,36 @@ internal sealed class AsyncApiDocumentService(
                 opId = AsyncApiNamingHelper.SanitizeKey(opId);
             }
 
-            if (document.Operations.ContainsKey(opId))
+            if (!RegisterOperationKeyOwner(opId, memberMetadata.Member, opAttr, operationKeyOwners))
                 continue;
 
             // Process MessagePayloadType if present
             var operationMessageKeys = new List<string>(messageKeys);
             if (operationMessageKeys.Count == 0 && opAttr.MessagePayloadType is not null)
             {
-                var payloadSchema = await _componentService.GetOrCreateSchemaAsync(
-                    document,
-                    opAttr.MessagePayloadType,
-                    scopedServiceProvider,
-                    schemaTransformers,
-                    parameterDescription: null,
-                    cancellationToken: cancellationToken);
+                var payloadType = opAttr.MessagePayloadType;
 
-                var schemaKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
-                if (!document.Components.Schemas.ContainsKey(schemaKey))
-                {
-                    document.Components.Schemas[schemaKey] = new AsyncApiMultiFormatSchema
-                    {
-                        Schema = payloadSchema as AsyncApiJsonSchema
-                    };
-                }
+                var (schemaKey, payloadSchema) = await EnsureSchemaAsync(
+                    document, payloadType, scopedServiceProvider, schemaTransformers, schemaKeyOwners, cancellationToken);
 
-                var messageKey = AsyncApiNamingHelper.SanitizeKey(ToCamelCase(opAttr.MessagePayloadType.Name));
+                var messageKey = ComputeSchemaKeyValue(payloadType);
+                RegisterMessageKeyOwner(messageKey, payloadType, messageKeyOwners);
+
                 if (!document.Components.Messages.ContainsKey(messageKey))
                 {
+                    AsyncApiMultiFormatSchema payloadRef = schemaKey is not null
+                        ? new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
+                        : new AsyncApiMultiFormatSchema { Schema = payloadSchema as AsyncApiJsonSchema };
+
                     var message = new AsyncApiMessage
                     {
                         Name = messageKey,
                         Title = messageKey,
-                        Summary = _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Summary,
-                        Description =
-                            _xmlDocumentationProvider.GetDocumentation(opAttr.MessagePayloadType)?.Remarks,
-                        Payload = new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
+                        Summary = _xmlDocumentationProvider.GetDocumentation(payloadType)?.Summary,
+                        Description = _xmlDocumentationProvider.GetDocumentation(payloadType)?.Remarks,
+                        Payload = payloadRef
                     };
-                    ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, opAttr.MessagePayloadType,
+                    ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType,
                         memberMetadata.MessageExamples, scopedServiceProvider);
                     document.Components.Messages[messageKey] = message;
                 }
@@ -592,38 +765,85 @@ internal sealed class AsyncApiDocumentService(
         return char.ToLowerInvariant(value[0]) + value.Substring(1);
     }
 
+    /// <summary>
+    /// Populates <paramref name="schemaTransformers"/> and <paramref name="operationTransformers"/> with the
+    /// transformer instances to use for this generation request. Type-based registrations are activated into a
+    /// fresh, per-request instance; every other registration (a caller-supplied instance or delegate) is reused
+    /// as-is, since the caller owns its lifetime.
+    /// </summary>
+    /// <param name="scopedServiceProvider">The scoped service provider used to activate type-based transformers.</param>
+    /// <param name="schemaTransformers">Receives the schema transformer instance to use for this request, at the corresponding registration index.</param>
+    /// <param name="operationTransformers">Receives the operation transformer instance to use for this request, at the corresponding registration index.</param>
+    /// <param name="ownedTransformers">
+    /// Receives each freshly activated, per-request instance immediately after it is created - even if a later
+    /// activation in this same call throws - so the caller can dispose exactly the instances this method owns,
+    /// regardless of where activation stops.
+    /// </param>
     internal void InitializeTransformers(
         IServiceProvider scopedServiceProvider,
         IAsyncApiSchemaTransformer[] schemaTransformers,
-        IAsyncApiOperationTransformer[] operationTransformers)
+        IAsyncApiOperationTransformer[] operationTransformers,
+        List<object> ownedTransformers)
     {
         for (var i = 0; i < _options.SchemaTransformers.Count; i++)
         {
             var schemaTransformer = _options.SchemaTransformers[i];
-            schemaTransformers[i] = schemaTransformer is TypeBasedAsyncApiSchemaTransformer typeBasedTransformer
-                ? typeBasedTransformer.InitializeTransformer(scopedServiceProvider)
-                : schemaTransformer;
+            if (schemaTransformer is TypeBasedAsyncApiSchemaTransformer typeBasedTransformer)
+            {
+                var activated = typeBasedTransformer.InitializeTransformer(scopedServiceProvider);
+                schemaTransformers[i] = activated;
+                ownedTransformers.Add(activated);
+            }
+            else
+            {
+                schemaTransformers[i] = schemaTransformer;
+            }
         }
 
         for (var i = 0; i < _options.OperationTransformers.Count; i++)
         {
             var operationTransformer = _options.OperationTransformers[i];
-            operationTransformers[i] =
-                operationTransformer is TypeBasedAsyncApiOperationTransformer typeBasedTransformer
-                    ? typeBasedTransformer.InitializeTransformer(scopedServiceProvider)
-                    : operationTransformer;
+            if (operationTransformer is TypeBasedAsyncApiOperationTransformer typeBasedTransformer)
+            {
+                var activated = typeBasedTransformer.InitializeTransformer(scopedServiceProvider);
+                operationTransformers[i] = activated;
+                ownedTransformers.Add(activated);
+            }
+            else
+            {
+                operationTransformers[i] = operationTransformer;
+            }
         }
     }
 
-    internal static async Task FinalizeTransformersAsync(
-        IAsyncApiSchemaTransformer[] schemaTransformers,
-        IAsyncApiOperationTransformer[] operationTransformers)
+    /// <summary>
+    /// Disposes every transformer instance this generation request owns, attempting each one even if an earlier
+    /// disposal throws. Returns the resulting failure (a single <see cref="Exception"/>, or an
+    /// <see cref="AggregateException"/> when more than one instance failed to dispose) instead of throwing it, so
+    /// the caller can decide how to combine it with a generation failure that may already be in flight.
+    /// </summary>
+    private static async Task<Exception?> FinalizeTransformersAsync(List<object> ownedTransformers)
     {
-        for (var i = 0; i < schemaTransformers.Length; i++)
-            await schemaTransformers[i].FinalizeTransformerAsync();
+        List<Exception>? disposalExceptions = null;
 
-        for (var i = 0; i < operationTransformers.Length; i++)
-            await operationTransformers[i].FinalizeTransformerAsync();
+        foreach (var transformer in ownedTransformers)
+        {
+            try
+            {
+                await transformer.FinalizeTransformerAsync();
+            }
+            catch (Exception disposalException)
+            {
+                (disposalExceptions ??= []).Add(disposalException);
+            }
+        }
+
+        return disposalExceptions switch
+        {
+            null => null,
+            { Count: 1 } => disposalExceptions[0],
+            _ => new AggregateException(disposalExceptions)
+        };
     }
 
     internal AsyncApiInfo GetAsyncApiInfo()
