@@ -19,6 +19,12 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [1.1.1] - 2026-10-10
+
+### Patch Changes
+
+- [#83](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/83) [`60123ed`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/60123ed6ed8b5b297d2f1c824769a6a048351af3) Thanks [@bielu](https://github.com/bielu)! - Fix `MessageAttribute.Tags` being silently ignored. Tags passed to `[Message(typeof(T), "tag", ...)]` are now written to the generated message's `tags` and registered in `components/tags`, the same way operation tags already are.
+
 ## [1.1.0] - 2026-10-06
 
 ### Minor Changes
