@@ -60,6 +60,17 @@ public class MessageAttribute(Type payloadType, params string[] tags) : Attribut
     public string? MessageId { get; set; }
 
     /// <summary>
+    /// A runtime expression that specifies the location of the correlation ID within the message,
+    /// for example <c>$message.header#/correlationId</c>. Setting it adds a <c>correlationId</c> to the message.
+    /// </summary>
+    public string? CorrelationIdLocation { get; set; }
+
+    /// <summary>
+    /// An optional description of the correlation ID. Only used when <see cref="CorrelationIdLocation"/> is set.
+    /// </summary>
+    public string? CorrelationIdDescription { get; set; }
+
+    /// <summary>
     /// A list of tags for API documentation control. Tags can be used for logical grouping of messages.
     /// </summary>
     public string[] Tags { get; } = tags;

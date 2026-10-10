@@ -2,3 +2,7 @@ Bielu.AspNetCore.AsyncApi.Attributes.Attributes.IAsyncApiMessageHeaderExamplePro
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.IAsyncApiMessageHeaderExampleProvider.GetHeaderExample() -> object!
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ContentType.get -> string?
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ContentType.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.CorrelationIdLocation.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.CorrelationIdLocation.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.CorrelationIdDescription.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.CorrelationIdDescription.set -> void

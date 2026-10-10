@@ -423,6 +423,15 @@ internal sealed class AsyncApiDocumentService(
                 : new AsyncApiMultiFormatSchema { Schema = headersSchema as AsyncApiJsonSchema };
         }
 
+        if (messageAttr.CorrelationIdLocation is { Length: > 0 } correlationIdLocation)
+        {
+            message.CorrelationId = new AsyncApiCorrelationId
+            {
+                Location = correlationIdLocation,
+                Description = messageAttr.CorrelationIdDescription
+            };
+        }
+
         if (messageAttr.Tags is { Length: > 0 })
         {
             message.Tags ??= new List<AsyncApiTag>();
