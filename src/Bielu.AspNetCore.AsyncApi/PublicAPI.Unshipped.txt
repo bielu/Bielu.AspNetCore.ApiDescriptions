@@ -2,3 +2,7 @@
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Description.get -> Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription?
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiJsonSchemaJsonOptions.get -> System.Text.Json.JsonSerializerOptions?
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiJsonSchemaJsonOptions.set -> void
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddMessageBinding(string! name, ByteBard.AsyncAPI.Models.Interfaces.IMessageBinding! binding) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServerBinding(string! name, ByteBard.AsyncAPI.Models.Interfaces.IServerBinding! binding) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.MessageBindings.get -> System.Collections.Generic.Dictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IMessageBinding!>!>!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ServerBindings.get -> System.Collections.Generic.Dictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IServerBinding!>!>!
