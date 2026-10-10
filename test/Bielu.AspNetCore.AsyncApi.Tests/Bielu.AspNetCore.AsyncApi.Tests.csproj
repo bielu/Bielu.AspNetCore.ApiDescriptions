@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="ByteBard.AsyncAPI.NET" />
+    <PackageReference Include="JsonSchema.Net" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Microsoft.Playwright" />
@@ -34,6 +35,11 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The AsyncAPI Initiative's own JSON Schemas, vendored so the suite stays offline. See Conformance/asyncapi/README.md. -->
+    <Content Include="Conformance\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
