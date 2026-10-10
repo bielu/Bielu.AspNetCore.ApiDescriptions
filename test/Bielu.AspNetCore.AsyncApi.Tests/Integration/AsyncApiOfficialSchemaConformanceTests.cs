@@ -36,6 +36,8 @@ public class AsyncApiOfficialSchemaConformanceTests
     [InlineData(AsyncApiVersion.AsyncApi3_0, "security-requirements")]
     [InlineData(AsyncApiVersion.AsyncApi2_0, "traits")]
     [InlineData(AsyncApiVersion.AsyncApi3_0, "traits")]
+    [InlineData(AsyncApiVersion.AsyncApi2_0, "operation-reply")]
+    [InlineData(AsyncApiVersion.AsyncApi3_0, "operation-reply")]
     public async Task GetAsyncApiDocument_ServedDocument_ConformsToOfficialSchema(AsyncApiVersion version, string documentName)
     {
         // Arrange

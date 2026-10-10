@@ -60,6 +60,27 @@ public abstract class OperationAttribute : Attribute
     public string[] Traits { get; set; } = Array.Empty<string>();
 
     /// <summary>
+    /// The channel the reply to this operation is sent on, as declared with <see cref="ChannelAttribute"/>.
+    /// Setting it (or a reply address) adds a <c>reply</c> object to the operation. AsyncAPI 3.x only.
+    /// </summary>
+    public string? ReplyChannel { get; set; }
+
+    /// <summary>
+    /// A runtime expression that specifies where the reply is sent, for example <c>$message.header#/replyTo</c>.
+    /// </summary>
+    public string? ReplyAddressLocation { get; set; }
+
+    /// <summary>
+    /// An optional description of the reply address. Only used when <see cref="ReplyAddressLocation"/> is set.
+    /// </summary>
+    public string? ReplyAddressDescription { get; set; }
+
+    /// <summary>
+    /// The message ids of the reply, which must be messages of <see cref="ReplyChannel"/>.
+    /// </summary>
+    public string[] ReplyMessageIds { get; set; } = Array.Empty<string>();
+
+    /// <summary>
     /// A list of tags for API documentation control. Tags can be used for logical grouping of operations.
     /// </summary>
     public string[] Tags { get; protected set; } = Array.Empty<string>();
