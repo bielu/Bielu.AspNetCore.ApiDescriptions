@@ -445,6 +445,15 @@ internal sealed class AsyncApiDocumentService(
 
         AttachMessageBindings(document, message, messageAttr.BindingsRef);
 
+        if (messageAttr.CorrelationIdLocation is { Length: > 0 } correlationIdLocation)
+        {
+            message.CorrelationId = new AsyncApiCorrelationId
+            {
+                Location = correlationIdLocation,
+                Description = messageAttr.CorrelationIdDescription
+            };
+        }
+
         if (messageAttr.Tags is { Length: > 0 })
         {
             message.Tags ??= new List<AsyncApiTag>();
