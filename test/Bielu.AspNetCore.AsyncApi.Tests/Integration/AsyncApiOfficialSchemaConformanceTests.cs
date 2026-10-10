@@ -28,6 +28,8 @@ public class AsyncApiOfficialSchemaConformanceTests
     [InlineData(AsyncApiVersion.AsyncApi3_0, ProtocolBindingsCoverageTests.DocumentName)]
     [InlineData(AsyncApiVersion.AsyncApi2_0, MessageAttributeCorrelationIdTests.DocumentName)]
     [InlineData(AsyncApiVersion.AsyncApi3_0, MessageAttributeCorrelationIdTests.DocumentName)]
+    [InlineData(AsyncApiVersion.AsyncApi2_0, "attribute-external-docs")]
+    [InlineData(AsyncApiVersion.AsyncApi3_0, "attribute-external-docs")]
     public async Task GetAsyncApiDocument_ServedDocument_ConformsToOfficialSchema(AsyncApiVersion version, string documentName)
     {
         // Arrange

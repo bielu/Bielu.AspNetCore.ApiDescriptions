@@ -219,6 +219,7 @@ internal sealed class AsyncApiDocumentService(
             existing.Description ??=
                 channelAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(member)?.Summary;
             existing.Address ??= channelAttr.Name;
+            existing.ExternalDocs ??= CreateExternalDocs(channelAttr.ExternalDocsUrl, channelAttr.ExternalDocsDescription);
             AttachChannelBindings(document, existing, channelAttr.BindingsRef);
             return existing;
         }
@@ -229,6 +230,8 @@ internal sealed class AsyncApiDocumentService(
             Description = channelAttr.Description ??
                           _xmlDocumentationProvider.GetDocumentation(member)?.Summary ?? string.Empty,
         };
+
+        created.ExternalDocs = CreateExternalDocs(channelAttr.ExternalDocsUrl, channelAttr.ExternalDocsDescription);
 
         // Without an explicit BindingsRef, a channel picks up the bindings registered under its own name.
         AttachChannelBindings(document, created,
@@ -445,6 +448,8 @@ internal sealed class AsyncApiDocumentService(
 
         AttachMessageBindings(document, message, messageAttr.BindingsRef);
 
+        message.ExternalDocs = CreateExternalDocs(messageAttr.ExternalDocsUrl, messageAttr.ExternalDocsDescription);
+
         if (messageAttr.CorrelationIdLocation is { Length: > 0 } correlationIdLocation)
         {
             message.CorrelationId = new AsyncApiCorrelationId
@@ -460,6 +465,11 @@ internal sealed class AsyncApiDocumentService(
             AddTags(document, message.Tags, messageAttr.Tags);
         }
     }
+
+    private static AsyncApiExternalDocumentation? CreateExternalDocs(string? url, string? description) =>
+        string.IsNullOrWhiteSpace(url)
+            ? null
+            : new AsyncApiExternalDocumentation { Url = new Uri(url, UriKind.RelativeOrAbsolute), Description = description };
 
     /// <summary>
     /// Adds each tag name to <paramref name="target"/> and registers it in <c>components/tags</c> when it is
@@ -735,6 +745,7 @@ internal sealed class AsyncApiDocumentService(
                 new AsyncApiChannelReference($"#/channels/{AsyncApiNamingHelper.SanitizeKey(channel.Address!)}");
 
             AttachOperationBindings(document, op, opAttr.BindingsRef);
+            op.ExternalDocs = CreateExternalDocs(opAttr.ExternalDocsUrl, opAttr.ExternalDocsDescription);
 
             if (opAttr.Tags is { Length: > 0 })
             {
