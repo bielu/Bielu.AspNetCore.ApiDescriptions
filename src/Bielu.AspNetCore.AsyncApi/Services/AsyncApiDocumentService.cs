@@ -451,6 +451,45 @@ internal sealed class AsyncApiDocumentService(
         }
     }
 
+    /// <summary>
+    /// Builds the <c>reply</c> object of an operation from its request/reply properties, or returns
+    /// <see langword="null"/> when none of them is set.
+    /// </summary>
+    private static AsyncApiOperationReply? CreateOperationReply(OperationAttribute opAttr)
+    {
+        var hasChannel = !string.IsNullOrWhiteSpace(opAttr.ReplyChannel);
+        var hasAddress = !string.IsNullOrWhiteSpace(opAttr.ReplyAddressLocation);
+        if (!hasChannel && !hasAddress)
+        {
+            return null;
+        }
+
+        var reply = new AsyncApiOperationReply();
+        if (hasAddress)
+        {
+            reply.Address = new AsyncApiOperationReplyAddress
+            {
+                Location = opAttr.ReplyAddressLocation,
+                Description = opAttr.ReplyAddressDescription
+            };
+        }
+
+        if (hasChannel)
+        {
+            var channelKey = AsyncApiNamingHelper.SanitizeKey(opAttr.ReplyChannel!);
+            reply.Channel = new AsyncApiChannelReference($"#/channels/{channelKey}");
+            if (opAttr.ReplyMessageIds.Length > 0)
+            {
+                reply.Messages = opAttr.ReplyMessageIds
+                    .Select(id => new AsyncApiMessageReference(
+                        $"#/channels/{channelKey}/messages/{AsyncApiNamingHelper.SanitizeKey(id)}"))
+                    .ToList();
+            }
+        }
+
+        return reply;
+    }
+
     private static AsyncApiExternalDocumentation? CreateExternalDocs(string? url, string? description) =>
         string.IsNullOrWhiteSpace(url)
             ? null
@@ -731,6 +770,8 @@ internal sealed class AsyncApiDocumentService(
 
             AttachOperationBindings(document, op, opAttr.BindingsRef);
             op.ExternalDocs = CreateExternalDocs(opAttr.ExternalDocsUrl, opAttr.ExternalDocsDescription);
+
+            op.Reply = CreateOperationReply(opAttr);
 
             foreach (var traitKey in opAttr.Traits)
             {

@@ -239,7 +239,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var bindingsRef = attr.NamedArguments.FirstOrDefault(x => x.Key == "BindingsRef").Value.Value as string;
                         var bindingsValue = bindingsRef != null ? $"\"{bindingsRef}\"" : "null";
 
-                        sb.AppendLine($"                            {ctor} {{ OperationId = {opIdValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "SecuritySchemes")}{GetArrayInitializer(attr, "Traits")} }},");
+                        sb.AppendLine($"                            {ctor} {{ OperationId = {opIdValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "SecuritySchemes")}{GetArrayInitializer(attr, "Traits")}{GetArrayInitializer(attr, "ReplyMessageIds")}{GetStringInitializers(attr, "ReplyChannel", "ReplyAddressLocation", "ReplyAddressDescription")} }},");
                     }
                     sb.AppendLine("                        },");
 
