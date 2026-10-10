@@ -477,6 +477,47 @@ public sealed class AsyncApiOptions
         return this;
     }
 
+    internal Dictionary<string, AsyncApiSecurityScheme> SecuritySchemes { get; } = new();
+
+    internal Dictionary<string, List<string>> ServerSecurity { get; } = new();
+
+    /// <summary>
+    /// Registers a security scheme in <c>components/securitySchemes</c> so operations
+    /// (<c>SecuritySchemes</c> on the operation attributes) and servers (<see cref="AddServerSecurity"/>) can require it.
+    /// </summary>
+    /// <param name="name">The key of the scheme in <c>components/securitySchemes</c>.</param>
+    /// <param name="scheme">The security scheme.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions AddSecurityScheme(string name, AsyncApiSecurityScheme scheme)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(scheme);
+
+        SecuritySchemes[AsyncApiNamingHelper.SanitizeKey(name)] = scheme;
+        return this;
+    }
+
+    /// <summary>
+    /// Requires the named security schemes on a server declared with <c>AddServer</c>.
+    /// </summary>
+    /// <param name="serverName">The name of the server, as passed to <c>AddServer</c>.</param>
+    /// <param name="schemeNames">The keys of the schemes in <c>components/securitySchemes</c>.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions AddServerSecurity(string serverName, params string[] schemeNames)
+    {
+        ArgumentNullException.ThrowIfNull(serverName);
+        ArgumentNullException.ThrowIfNull(schemeNames);
+
+        var key = AsyncApiNamingHelper.SanitizeKey(serverName);
+        if (!ServerSecurity.TryGetValue(key, out var schemes))
+        {
+            ServerSecurity[key] = schemes = [];
+        }
+
+        schemes.AddRange(schemeNames.Select(AsyncApiNamingHelper.SanitizeKey));
+        return this;
+    }
+
     /// <summary>
     /// Adds a channel binding.
     /// </summary>

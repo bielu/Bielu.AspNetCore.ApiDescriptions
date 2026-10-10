@@ -101,6 +101,7 @@ internal sealed class AsyncApiDocumentService(
             };
             document.Asyncapi = _options.AsyncApiVersion == AsyncApiVersion.AsyncApi2_0 ? "2.6.0" : "3.1.0";
             ApplyBindingsFromOptions(document);
+            ApplySecurityFromOptions(document);
 
             await PopulateFromAttributeProjectAsync(document, scopedServiceProvider, schemaTransformers,
                 operationTransformers, cancellationToken);
@@ -724,6 +725,14 @@ internal sealed class AsyncApiDocumentService(
             AttachOperationBindings(document, op, opAttr.BindingsRef);
             op.ExternalDocs = CreateExternalDocs(opAttr.ExternalDocsUrl, opAttr.ExternalDocsDescription);
 
+            if (opAttr.SecuritySchemes is { Length: > 0 })
+            {
+                op.Security ??= new List<AsyncApiSecurityScheme>();
+                AuthenticationSchemeDocumentTransformer.AddReferences(
+                    op.Security,
+                    opAttr.SecuritySchemes.Select(AsyncApiNamingHelper.SanitizeKey).ToList());
+            }
+
             if (opAttr.Tags is { Length: > 0 })
             {
                 op.Tags ??= new List<AsyncApiTag>();
@@ -872,6 +881,27 @@ internal sealed class AsyncApiDocumentService(
         }
 
         return info;
+    }
+
+    private void ApplySecurityFromOptions(AsyncApiDocument document)
+    {
+        if (_options.SecuritySchemes.Count > 0)
+        {
+            document.Components.SecuritySchemes ??= new Dictionary<string, AsyncApiSecurityScheme>();
+            foreach (var (key, scheme) in _options.SecuritySchemes)
+            {
+                document.Components.SecuritySchemes[key] = scheme;
+            }
+        }
+
+        foreach (var (serverKey, schemeKeys) in _options.ServerSecurity)
+        {
+            if (document.Servers is not null && document.Servers.TryGetValue(serverKey, out var server))
+            {
+                server.Security ??= new List<AsyncApiSecurityScheme>();
+                AuthenticationSchemeDocumentTransformer.AddReferences(server.Security, schemeKeys);
+            }
+        }
     }
 
     private void ApplyBindingsFromOptions(AsyncApiDocument document)

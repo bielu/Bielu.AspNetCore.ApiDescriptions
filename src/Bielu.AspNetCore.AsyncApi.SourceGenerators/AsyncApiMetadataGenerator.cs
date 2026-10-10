@@ -239,7 +239,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var bindingsRef = attr.NamedArguments.FirstOrDefault(x => x.Key == "BindingsRef").Value.Value as string;
                         var bindingsValue = bindingsRef != null ? $"\"{bindingsRef}\"" : "null";
 
-                        sb.AppendLine($"                            {ctor} {{ OperationId = {opIdValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}{GetExternalDocsInitializers(attr)} }},");
+                        sb.AppendLine($"                            {ctor} {{ OperationId = {opIdValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "SecuritySchemes")} }},");
                     }
                     sb.AppendLine("                        },");
 
@@ -319,6 +319,17 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
             }
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Emits <c>, Name = new[] { ... }</c> when the named string-array argument is set on the attribute.
+        /// </summary>
+        private static string GetArrayInitializer(AttributeData attr, string name)
+        {
+            var argument = attr.NamedArguments.FirstOrDefault(x => x.Key == name).Value;
+            return argument.IsNull || argument.Kind != TypedConstantKind.Array
+                ? string.Empty
+                : $", {name} = {GetArrayInitialization(argument)}";
         }
 
         private static string GetExternalDocsInitializers(AttributeData attr) =>

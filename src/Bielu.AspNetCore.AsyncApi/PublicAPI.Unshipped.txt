@@ -2,3 +2,5 @@
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Description.get -> Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription?
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiJsonSchemaJsonOptions.get -> System.Text.Json.JsonSerializerOptions?
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiJsonSchemaJsonOptions.set -> void
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddSecurityScheme(string! name, ByteBard.AsyncAPI.Models.AsyncApiSecurityScheme! scheme) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServerSecurity(string! serverName, params string![]! schemeNames) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!

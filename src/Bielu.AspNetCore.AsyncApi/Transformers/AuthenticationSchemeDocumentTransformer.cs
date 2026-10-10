@@ -70,20 +70,18 @@ internal sealed class AuthenticationSchemeDocumentTransformer(AuthenticationDete
             return;
         }
 
-        var isV2 = document.Asyncapi?.StartsWith("2.", StringComparison.Ordinal) == true;
-
         if (options.AttachToServers)
         {
-            AttachToServers(document, referencedKeys, isV2);
+            AttachToServers(document, referencedKeys);
         }
 
         if (options.AttachToAuthorizedOperations)
         {
-            AttachToAuthorizedOperations(document, context.DocumentName, referencedKeys, isV2);
+            AttachToAuthorizedOperations(document, context.DocumentName, referencedKeys);
         }
     }
 
-    private void AttachToServers(AsyncApiDocument document, IReadOnlyList<string> referencedKeys, bool isV2)
+    private void AttachToServers(AsyncApiDocument document, IReadOnlyList<string> referencedKeys)
     {
         if (document.Servers is null)
         {
@@ -98,7 +96,7 @@ internal sealed class AuthenticationSchemeDocumentTransformer(AuthenticationDete
             }
 
             server.Security ??= new List<AsyncApiSecurityScheme>();
-            AddReferences(server.Security, referencedKeys, isV2);
+            AddReferences(server.Security, referencedKeys);
         }
     }
 
@@ -108,8 +106,7 @@ internal sealed class AuthenticationSchemeDocumentTransformer(AuthenticationDete
     private static void AttachToAuthorizedOperations(
         AsyncApiDocument document,
         string documentName,
-        IReadOnlyList<string> referencedKeys,
-        bool isV2)
+        IReadOnlyList<string> referencedKeys)
     {
         if (document.Operations is not { Count: > 0 })
         {
@@ -142,16 +139,17 @@ internal sealed class AuthenticationSchemeDocumentTransformer(AuthenticationDete
             }
 
             operation.Security ??= new List<AsyncApiSecurityScheme>();
-            AddReferences(operation.Security, keysToAttach, isV2);
+            AddReferences(operation.Security, keysToAttach);
         }
     }
 
-    private static void AddReferences(IList<AsyncApiSecurityScheme> target, IReadOnlyList<string> keys, bool isV2)
+    internal static void AddReferences(IList<AsyncApiSecurityScheme> target, IReadOnlyList<string> keys)
     {
         foreach (var key in keys)
         {
-            // V2 references the bare fragment id (#key); V3 uses the full JSON pointer.
-            var reference = isV2 ? $"#{key}" : $"#/components/securitySchemes/{key}";
+            // The full JSON pointer is used for both versions: a bare "#key" reference never resolves, which
+            // makes the AsyncAPI 2.x writer throw while serializing the security requirement.
+            var reference = $"#/components/securitySchemes/{key}";
 
             var alreadyReferenced = target
                 .OfType<AsyncApiSecuritySchemeReference>()
