@@ -422,6 +422,30 @@ internal sealed class AsyncApiDocumentService(
                 ? new AsyncApiJsonSchemaReference($"#/components/schemas/{headersSchemaKey}")
                 : new AsyncApiMultiFormatSchema { Schema = headersSchema as AsyncApiJsonSchema };
         }
+
+        if (messageAttr.Tags is { Length: > 0 })
+        {
+            message.Tags ??= new List<AsyncApiTag>();
+            AddTags(document, message.Tags, messageAttr.Tags);
+        }
+    }
+
+    /// <summary>
+    /// Adds each tag name to <paramref name="target"/> and registers it in <c>components/tags</c> when it is
+    /// not there yet.
+    /// </summary>
+    private static void AddTags(AsyncApiDocument document, IList<AsyncApiTag> target, string[] tagNames)
+    {
+        foreach (var tagName in tagNames)
+        {
+            target.Add(new AsyncApiTag { Name = tagName });
+
+            document.Components.Tags ??= new Dictionary<string, AsyncApiTag>();
+            if (!document.Components.Tags.ContainsKey(tagName))
+            {
+                document.Components.Tags[tagName] = new AsyncApiTag { Name = tagName };
+            }
+        }
     }
 
     private Task<(string? SchemaKey, IAsyncApiSchema Schema)> EnsureSchemaAsync(
@@ -684,16 +708,7 @@ internal sealed class AsyncApiDocumentService(
             if (opAttr.Tags is { Length: > 0 })
             {
                 op.Tags ??= new List<AsyncApiTag>();
-                foreach (var tagName in opAttr.Tags)
-                {
-                    op.Tags.Add(new AsyncApiTag { Name = tagName });
-
-                    document.Components.Tags ??= new Dictionary<string, AsyncApiTag>();
-                    if (!document.Components.Tags.ContainsKey(tagName))
-                    {
-                        document.Components.Tags[tagName] = new AsyncApiTag { Name = tagName };
-                    }
-                }
+                AddTags(document, op.Tags, opAttr.Tags);
             }
 
             if (operationMessageKeys.Count > 0)
