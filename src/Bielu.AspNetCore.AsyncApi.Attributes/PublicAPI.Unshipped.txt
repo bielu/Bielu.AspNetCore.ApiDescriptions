@@ -20,3 +20,7 @@ Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ExternalDocsDes
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ExternalDocsDescription.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.SecuritySchemes.get -> string![]!
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.SecuritySchemes.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Traits.get -> string![]!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Traits.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Traits.get -> string![]!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Traits.set -> void

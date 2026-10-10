@@ -477,6 +477,42 @@ public sealed class AsyncApiOptions
         return this;
     }
 
+    internal Dictionary<string, AsyncApiOperationTrait> OperationTraits { get; } = new();
+
+    internal Dictionary<string, AsyncApiMessageTrait> MessageTraits { get; } = new();
+
+    /// <summary>
+    /// Registers an operation trait in <c>components/operationTraits</c>. Operations opt in with
+    /// <c>Traits</c> on the operation attributes.
+    /// </summary>
+    /// <param name="name">The key of the trait in <c>components/operationTraits</c>.</param>
+    /// <param name="trait">The operation trait.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions AddOperationTrait(string name, AsyncApiOperationTrait trait)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(trait);
+
+        OperationTraits[AsyncApiNamingHelper.SanitizeKey(name)] = trait;
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a message trait in <c>components/messageTraits</c>. Messages opt in with
+    /// <see cref="Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Traits"/>.
+    /// </summary>
+    /// <param name="name">The key of the trait in <c>components/messageTraits</c>.</param>
+    /// <param name="trait">The message trait.</param>
+    /// <returns>The <see cref="AsyncApiOptions"/> instance for further customization.</returns>
+    public AsyncApiOptions AddMessageTrait(string name, AsyncApiMessageTrait trait)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(trait);
+
+        MessageTraits[AsyncApiNamingHelper.SanitizeKey(name)] = trait;
+        return this;
+    }
+
     internal Dictionary<string, AsyncApiSecurityScheme> SecuritySchemes { get; } = new();
 
     internal Dictionary<string, List<string>> ServerSecurity { get; } = new();
