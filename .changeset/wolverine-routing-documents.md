@@ -1,5 +1,0 @@
----
-"bielu-aspnetcore-asyncapi": minor
----
-
-New `Bielu.AspNetCore.AsyncApi.Wolverine` package. `options.AddWolverine(...)` builds channels, operations and messages from Wolverine's message routing: each route to an external transport (Kafka, SignalR, ...) becomes a `send` operation, each listener with a default incoming message type a `receive` operation, and messages are named by Wolverine's message type name (`[MessageIdentity]`), so the document uses the same names as the wire. SignalR channels resolve to the path the `WolverineHub` is mapped at and carry `signalr` bindings targeting `ReceiveMessage`; Kafka channels carry a `kafka` topic binding. Payload schemas are keyed like the attribute pipeline's, honoring `AsyncApiOptions.CreateSchemaReferenceId` (and inlined when it returns `null`); two message types whose schema ids collide fail generation with a pointer to `CreateSchemaReferenceId` rather than sharing one schema. Every route gets its own channel and operation, even when several endpoints resolve to the same address.
