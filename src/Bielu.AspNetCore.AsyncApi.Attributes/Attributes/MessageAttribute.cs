@@ -81,6 +81,12 @@ public class MessageAttribute(Type payloadType, params string[] tags) : Attribut
     public string? ExternalDocsDescription { get; set; }
 
     /// <summary>
+    /// The keys of the message traits to apply to this message. Each must be registered in
+    /// <c>components/messageTraits</c>, for example with <c>AsyncApiOptions.AddMessageTrait</c>.
+    /// </summary>
+    public string[] Traits { get; set; } = Array.Empty<string>();
+
+    /// <summary>
     /// A list of tags for API documentation control. Tags can be used for logical grouping of messages.
     /// </summary>
     public string[] Tags { get; } = tags;

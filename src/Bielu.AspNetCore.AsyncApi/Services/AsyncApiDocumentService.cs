@@ -428,6 +428,13 @@ internal sealed class AsyncApiDocumentService(
 
         message.ExternalDocs = CreateExternalDocs(messageAttr.ExternalDocsUrl, messageAttr.ExternalDocsDescription);
 
+        foreach (var traitKey in messageAttr.Traits)
+        {
+            message.Traits ??= new List<AsyncApiMessageTrait>();
+            message.Traits.Add(new AsyncApiMessageTraitReference(
+                $"#/components/messageTraits/{AsyncApiNamingHelper.SanitizeKey(traitKey)}"));
+        }
+
         if (messageAttr.CorrelationIdLocation is { Length: > 0 } correlationIdLocation)
         {
             message.CorrelationId = new AsyncApiCorrelationId
@@ -725,6 +732,13 @@ internal sealed class AsyncApiDocumentService(
             AttachOperationBindings(document, op, opAttr.BindingsRef);
             op.ExternalDocs = CreateExternalDocs(opAttr.ExternalDocsUrl, opAttr.ExternalDocsDescription);
 
+            foreach (var traitKey in opAttr.Traits)
+            {
+                op.Traits ??= new List<AsyncApiOperationTrait>();
+                op.Traits.Add(new AsyncApiOperationTraitReference(
+                    $"#/components/operationTraits/{AsyncApiNamingHelper.SanitizeKey(traitKey)}"));
+            }
+
             if (opAttr.SecuritySchemes is { Length: > 0 })
             {
                 op.Security ??= new List<AsyncApiSecurityScheme>();
@@ -885,6 +899,31 @@ internal sealed class AsyncApiDocumentService(
 
     private void ApplySecurityFromOptions(AsyncApiDocument document)
     {
+        if (_options.OperationTraits.Count > 0)
+        {
+            document.Components.OperationTraits ??= new Dictionary<string, AsyncApiOperationTrait>();
+            foreach (var (key, trait) in _options.OperationTraits)
+            {
+                document.Components.OperationTraits[key] = trait;
+            }
+        }
+
+        if (_options.MessageTraits.Count > 0)
+        {
+            document.Components.MessageTraits ??= new Dictionary<string, AsyncApiMessageTrait>();
+            foreach (var (key, trait) in _options.MessageTraits)
+            {
+                // ByteBard's AsyncAPI 2.x writer dereferences trait.Headers unconditionally and throws a
+                // NullReferenceException when a trait has none, so give it an empty headers schema.
+                if (document.Asyncapi.StartsWith("2.", StringComparison.Ordinal))
+                {
+                    trait.Headers ??= new AsyncApiMultiFormatSchema { Schema = new AsyncApiJsonSchema() };
+                }
+
+                document.Components.MessageTraits[key] = trait;
+            }
+        }
+
         if (_options.SecuritySchemes.Count > 0)
         {
             document.Components.SecuritySchemes ??= new Dictionary<string, AsyncApiSecurityScheme>();

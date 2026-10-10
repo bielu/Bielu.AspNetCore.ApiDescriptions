@@ -187,7 +187,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var correlationDescription = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdDescription").Value.Value as string;
                         var correlationDescriptionValue = correlationDescription != null ? $"\"{correlationDescription}\"" : "null";
 
-                        sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue}{GetExternalDocsInitializers(attr)} }},");
+                        sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "Traits")} }},");
                     }
                     sb.AppendLine("                        },");
 
@@ -239,7 +239,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var bindingsRef = attr.NamedArguments.FirstOrDefault(x => x.Key == "BindingsRef").Value.Value as string;
                         var bindingsValue = bindingsRef != null ? $"\"{bindingsRef}\"" : "null";
 
-                        sb.AppendLine($"                            {ctor} {{ OperationId = {opIdValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "SecuritySchemes")} }},");
+                        sb.AppendLine($"                            {ctor} {{ OperationId = {opIdValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "SecuritySchemes")}{GetArrayInitializer(attr, "Traits")} }},");
                     }
                     sb.AppendLine("                        },");
 
