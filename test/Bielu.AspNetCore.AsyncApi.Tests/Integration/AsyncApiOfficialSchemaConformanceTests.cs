@@ -24,6 +24,8 @@ public class AsyncApiOfficialSchemaConformanceTests
     [InlineData(AsyncApiVersion.AsyncApi3_0, "message-attribute-headers")]
     [InlineData(AsyncApiVersion.AsyncApi2_0, MessageAndServerBindingsTests.DocumentName)]
     [InlineData(AsyncApiVersion.AsyncApi3_0, MessageAndServerBindingsTests.DocumentName)]
+    [InlineData(AsyncApiVersion.AsyncApi2_0, ProtocolBindingsCoverageTests.DocumentName)]
+    [InlineData(AsyncApiVersion.AsyncApi3_0, ProtocolBindingsCoverageTests.DocumentName)]
     public async Task GetAsyncApiDocument_ServedDocument_ConformsToOfficialSchema(AsyncApiVersion version, string documentName)
     {
         // Arrange
@@ -39,6 +41,10 @@ public class AsyncApiOfficialSchemaConformanceTests
             if (documentName == MessageAndServerBindingsTests.DocumentName)
             {
                 MessageAndServerBindingsTests.Configure(options);
+            }
+            else if (documentName == ProtocolBindingsCoverageTests.DocumentName)
+            {
+                ProtocolBindingsCoverageTests.Configure(options);
             }
         });
 
@@ -97,7 +103,8 @@ public class AsyncApiOfficialSchemaConformanceTests
         string.Join(
             Environment.NewLine,
             result.Details
-                .Where(detail => detail.Errors is { Count: > 0 })
+                // A failed "if" only selects which branch applies; it is not a validation error.
+                .Where(detail => detail.Errors is { Count: > 0 } && !detail.EvaluationPath.ToString().Contains("/if"))
                 .SelectMany(detail => detail.Errors!.Select(error =>
                     $"{detail.InstanceLocation} [{error.Key}] {error.Value} (schema: {detail.EvaluationPath})"))
                 .Distinct());
