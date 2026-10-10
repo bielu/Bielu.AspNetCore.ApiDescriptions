@@ -181,8 +181,12 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var messageIdValue = messageId != null ? $"\"{messageId}\"" : "null";
                         var headersType = attr.NamedArguments.FirstOrDefault(x => x.Key == "HeadersType").Value.Value as ITypeSymbol;
                         var headersTypeValue = headersType != null ? $"typeof({headersType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})" : "null";
+                        var correlationLocation = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdLocation").Value.Value as string;
+                        var correlationLocationValue = correlationLocation != null ? $"\"{correlationLocation}\"" : "null";
+                        var correlationDescription = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdDescription").Value.Value as string;
+                        var correlationDescriptionValue = correlationDescription != null ? $"\"{correlationDescription}\"" : "null";
 
-                        sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue} }},");
+                        sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue} }},");
                     }
                     sb.AppendLine("                        },");
 
