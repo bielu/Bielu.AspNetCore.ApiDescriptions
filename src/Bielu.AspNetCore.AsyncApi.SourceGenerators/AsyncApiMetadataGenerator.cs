@@ -137,7 +137,8 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var bindingsValue = bindingsRef != null ? $"\"{bindingsRef}\"" : "null";
                         var servers = channelAttr.NamedArguments.FirstOrDefault(x => x.Key == "Servers").Value;
                         var serversValue = GetArrayInitialization(servers);
-                        sb.AppendLine($"                        new ChannelAttribute(\"{name}\") {{ Description = {descValue}, BindingsRef = {bindingsValue}, Servers = {serversValue} }},");
+                        var channelDocs = GetExternalDocsInitializers(channelAttr);
+                        sb.AppendLine($"                        new ChannelAttribute(\"{name}\") {{ Description = {descValue}, BindingsRef = {bindingsValue}, Servers = {serversValue}{channelDocs} }},");
                     }
                     else
                     {
@@ -186,7 +187,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var correlationDescription = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdDescription").Value.Value as string;
                         var correlationDescriptionValue = correlationDescription != null ? $"\"{correlationDescription}\"" : "null";
 
-                        sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue} }},");
+                        sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue}{GetExternalDocsInitializers(attr)} }},");
                     }
                     sb.AppendLine("                        },");
 
@@ -238,7 +239,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var bindingsRef = attr.NamedArguments.FirstOrDefault(x => x.Key == "BindingsRef").Value.Value as string;
                         var bindingsValue = bindingsRef != null ? $"\"{bindingsRef}\"" : "null";
 
-                        sb.AppendLine($"                            {ctor} {{ OperationId = {opIdValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue} }},");
+                        sb.AppendLine($"                            {ctor} {{ OperationId = {opIdValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}{GetExternalDocsInitializers(attr)} }},");
                     }
                     sb.AppendLine("                        },");
 
@@ -300,6 +301,28 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
 
             context.AddSource("GeneratedAsyncApiMetadataProvider.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
+
+        /// <summary>
+        /// Emits <c>, Name = "value"</c> for each of the named string arguments that is set on the attribute,
+        /// so newer attribute properties are copied without growing every initializer by hand.
+        /// </summary>
+        private static string GetStringInitializers(AttributeData attr, params string[] names)
+        {
+            var sb = new StringBuilder();
+            foreach (var name in names)
+            {
+                if (attr.NamedArguments.FirstOrDefault(x => x.Key == name).Value.Value is string value)
+                {
+                    var escaped = value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n");
+                    sb.Append($", {name} = \"{escaped}\"");
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        private static string GetExternalDocsInitializers(AttributeData attr) =>
+            GetStringInitializers(attr, "ExternalDocsUrl", "ExternalDocsDescription");
 
         private static string GetArrayInitialization(TypedConstant constant)
         {

@@ -29,4 +29,14 @@ public class ChannelAttribute(string name) : Attribute
     /// defined in the Servers Object.
     /// </summary>
     public string[] Servers { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// URL of additional external documentation. Setting it adds an <c>externalDocs</c> object.
+    /// </summary>
+    public string? ExternalDocsUrl { get; set; }
+
+    /// <summary>
+    /// A description of the external documentation. Only used when <see cref="ExternalDocsUrl"/> is set.
+    /// </summary>
+    public string? ExternalDocsDescription { get; set; }
 }

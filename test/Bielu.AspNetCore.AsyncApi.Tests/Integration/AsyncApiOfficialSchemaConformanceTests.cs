@@ -24,6 +24,8 @@ public class AsyncApiOfficialSchemaConformanceTests
     [InlineData(AsyncApiVersion.AsyncApi3_0, "message-attribute-headers")]
     [InlineData(AsyncApiVersion.AsyncApi2_0, "message-attribute-correlation-id")]
     [InlineData(AsyncApiVersion.AsyncApi3_0, "message-attribute-correlation-id")]
+    [InlineData(AsyncApiVersion.AsyncApi2_0, "attribute-external-docs")]
+    [InlineData(AsyncApiVersion.AsyncApi3_0, "attribute-external-docs")]
     public async Task GetAsyncApiDocument_ServedDocument_ConformsToOfficialSchema(AsyncApiVersion version, string documentName)
     {
         // Arrange
