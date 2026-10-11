@@ -128,8 +128,9 @@ dotnet test
 # Run a single test project
 dotnet test ./test/Bielu.AspNetCore.AsyncApi.Tests/Bielu.AspNetCore.AsyncApi.Tests.csproj
 
-# Verify formatting (CI enforces this) / apply it
-dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx
+# Verify formatting / apply it. IL2026 and IL3050 are excluded because the trim annotations on the
+# reflection-based default path are not settled yet; scripts/verify-aot.sh is the place to enforce them once they are.
+dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx --exclude-diagnostics IL2026 IL3050
 dotnet format src/Bielu.AspNetCore.AsyncApi.slnx
 ```
 
@@ -153,7 +154,7 @@ cd src/examples/StreetlightsAPI && dotnet run
 
 1. `dotnet build` succeeds with no errors.
 2. `dotnet test` passes.
-3. `dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx` is clean.
+3. `dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx --exclude-diagnostics IL2026 IL3050` is clean.
 4. Public-API changes are reflected in `PublicAPI.Unshipped.txt` and XML docs.
 5. Update `README.md` / `CHANGELOG.md` when behavior or public APIs change.
 6. Target the `main` branch. CI runs build, format check, and tests on every PR.

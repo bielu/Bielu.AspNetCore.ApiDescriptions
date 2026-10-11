@@ -26,7 +26,10 @@ internal static class AsyncApiJsonSchemaExtensions
     public static bool IsComponentizedSchema(this AsyncApiJsonSchema schema)
         => schema.IsComponentizedSchema(out _);
 
+    // The schema is unused while the lookup below stays disabled; it remains the receiver so callers do not change.
+#pragma warning disable IDE0060 // Remove unused parameter
     public static bool IsComponentizedSchema(this AsyncApiJsonSchema schema, [NotNullWhen(true)] out string? schemaId)
+#pragma warning restore IDE0060
     {
         // if(schema is not null
         //     && schema.Metadata.TryGetValue(AsyncApiConstants.SchemaId, out var schemaIdAsObject)

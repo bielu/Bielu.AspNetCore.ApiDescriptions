@@ -131,8 +131,10 @@ This project uses consistent code formatting enforced by `dotnet format`.
 ### Check Code Formatting
 
 ```bash
-dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx
+dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx --exclude-diagnostics IL2026 IL3050
 ```
+
+`IL2026` and `IL3050` are excluded because the trim annotations on the reflection-based default path are not settled yet; `scripts/verify-aot.sh` is the place to enforce them once they are.
 
 ### Apply Code Formatting
 
@@ -162,7 +164,7 @@ dotnet format src/Bielu.AspNetCore.AsyncApi.slnx
 
 3. **Check code formatting**:
    ```bash
-   dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx
+   dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx --exclude-diagnostics IL2026 IL3050
    ```
 
 4. **Update documentation** if you've changed public APIs

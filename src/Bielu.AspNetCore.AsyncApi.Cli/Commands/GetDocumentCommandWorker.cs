@@ -71,7 +71,7 @@ internal sealed class GetDocumentCommandWorker
 
         try
         {
-            var services = ResolveServiceProvider(assembly, entryPointType, assemblyName);
+            var services = ResolveServiceProvider(entryPointType, assemblyName);
             if (services == null)
             {
                 _writeError("Unable to resolve the service provider from the host.");
@@ -102,7 +102,7 @@ internal sealed class GetDocumentCommandWorker
     /// package instead, which has access to internal <c>HostFactoryResolver</c> APIs needed to
     /// properly boot the application.
     /// </remarks>
-    private IServiceProvider? ResolveServiceProvider(Assembly assembly, Type entryPointType, AssemblyName assemblyName)
+    private IServiceProvider? ResolveServiceProvider(Type entryPointType, AssemblyName assemblyName)
     {
         var args = new[] { $"--{HostDefaults.ApplicationKey}={assemblyName}" };
 

@@ -253,6 +253,12 @@ dotnet_diagnostic.IDE0060.severity = warning
 # IDE0060: Remove unused parameter
 dotnet_diagnostic.IDE0060.severity = none
 
+[{test,src/examples}/**/*.cs]
+
+# IDE0060: Remove unused parameter
+# Channel and handler fixtures declare a message parameter for its signature and never read it.
+dotnet_diagnostic.IDE0060.severity = none
+
 [src/{Analyzers,CodeStyle,Features,Workspaces,EditorFeatures,VisualStudio}/**/*.{cs,vb}]
 
 # IDE0011: Add braces
