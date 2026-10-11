@@ -496,8 +496,14 @@ public sealed class AsyncApiOptions
     }
 
     /// <summary>
-    /// Adds a channel binding.
+    /// Adds a channel binding. It is registered in <c>components/channelBindings</c> under
+    /// <paramref name="name"/> and attached to every channel declared with a matching
+    /// <c>[Channel(BindingsRef = "...")]</c>, and to the channel named <paramref name="name"/> when that
+    /// channel declares no <c>BindingsRef</c> of its own.
     /// </summary>
+    /// <param name="name">The channel name, or the name channels refer to through <c>BindingsRef</c>.</param>
+    /// <param name="binding">The protocol-specific channel binding.</param>
+    /// <returns>The same <see cref="AsyncApiOptions"/> instance, for chaining.</returns>
     public AsyncApiOptions AddChannelBinding(string name, IChannelBinding binding)
     {
         ArgumentNullException.ThrowIfNull(name);

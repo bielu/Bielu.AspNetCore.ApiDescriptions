@@ -20,6 +20,8 @@
   href: wolverine.md
 - name: Protocols
   items:
+    - name: Broker Bindings
+      href: protocols-broker-bindings.md
     - name: SignalR
       href: protocols-signalr.md
     - name: gRPC
