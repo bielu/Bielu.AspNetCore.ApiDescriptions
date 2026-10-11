@@ -32,6 +32,7 @@ builder.Services.AddAsyncApi("realtime", options =>
 | `UseServer(scheme, serverName)` | The scheme itself | The AsyncAPI server channels on that transport link to (it must be registered with `AddServer`) |
 | `MapChannel(endpointUri, address)` | Derived from the endpoint | Overrides a channel address |
 | `SignalRClientMethod` | `ReceiveMessage` | The client method SignalR operations target |
+| `IncludeReplies()` | Off | Documents what a handler returns as the `reply` of the listener's `receive` operation (AsyncAPI 3.x) |
 
 ## How the document is built
 
@@ -63,6 +64,27 @@ The transport serializes with its own `JsonSerializerOptions`, not ASP.NET Core'
 the document's schemas are generated from `JsonOptions`. If you customise JSON (enum naming, number
 handling), pass the same settings to the transport with
 `opts.UseSignalR<THub>().OverrideJson(options)` so the wire matches the document.
+
+### Replies
+
+A Wolverine handler can return a message. When the sender asked for a response, for example with
+`InvokeAsync<Quote>(new GetQuote(sku))`, Wolverine sends that message back to the endpoint named in the
+request's `reply-uri` header. Otherwise the returned message is published through the routing rules like
+any other, which is why replies are not documented unless you opt in:
+
+```csharp
+options.AddWolverine(wolverine => wolverine.IncludeReplies());
+```
+
+With `IncludeReplies()`, a `receive` operation whose handler returns a message gets a `reply`:
+
+- `reply.address.location` is `$message.header#/reply-uri`
+- `reply.channel` is a channel of its own, named after the operation (`receive.quotes.get-quote.reply`)
+  and without an address, because the address is only known from the request
+- `reply.messages` lists the returned message types
+
+Only listeners with a default incoming message type have a `receive` operation, so only their handlers
+are covered. AsyncAPI 2.x has no reply object, so a 2.x document is left unchanged.
 
 ## Combining with attributes
 

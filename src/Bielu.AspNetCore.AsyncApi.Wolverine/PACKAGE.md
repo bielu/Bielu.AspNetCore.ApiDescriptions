@@ -51,6 +51,7 @@ What it generates:
 |-----------|----------|
 | A route for a message type (`ToKafkaTopic`, `ToSignalR`, ...) | A `send` operation on the endpoint's channel |
 | A listener with `DefaultIncomingMessage<T>()` | A `receive` operation on the listener's channel |
+| A handler that returns a message, with `IncludeReplies()` | The `reply` of that `receive` operation, addressed by the `reply-uri` header |
 | The message type name (`[MessageIdentity]`, or Wolverine's default) | The message name, the same one used on the wire |
 | The SignalR transport | A channel at the path the `WolverineHub` is mapped at, with `signalr` bindings targeting `ReceiveMessage` |
 | A Kafka topic | A channel at the topic, with a `kafka` channel binding |

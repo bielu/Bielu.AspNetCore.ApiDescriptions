@@ -47,3 +47,19 @@ public static class StockChangedHandler
 /// <summary>Covers the schema shapes generated frontends rely on.</summary>
 [MessageIdentity("shapes.shape-probe")]
 public sealed record ShapeProbe(int Count, int? MaybeCount, string? Note, DateTimeOffset At, DayOfWeek Day, DayOfWeek? MaybeDay) : WebSocketMessage;
+
+/// <summary>Read from Kafka by a handler that answers with a <see cref="Quote"/>.</summary>
+/// <param name="Sku">The product to quote.</param>
+[MessageIdentity("quotes.get-quote")]
+public sealed record GetQuote(string Sku);
+
+/// <summary>The price quoted for a product.</summary>
+/// <param name="Sku">The quoted product.</param>
+/// <param name="Price">The quoted price.</param>
+[MessageIdentity("quotes.quote")]
+public sealed record Quote(string Sku, decimal Price);
+
+public static class GetQuoteHandler
+{
+    public static Quote Handle(GetQuote query) => new(query.Sku, 0m);
+}

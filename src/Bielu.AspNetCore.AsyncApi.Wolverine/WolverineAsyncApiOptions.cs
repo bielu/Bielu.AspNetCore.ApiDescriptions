@@ -21,6 +21,8 @@ public sealed class WolverineAsyncApiOptions
 
     internal Dictionary<Uri, string> ChannelAddresses { get; } = [];
 
+    internal bool RepliesIncluded { get; private set; }
+
     /// <summary>
     /// The client method Wolverine's SignalR transport invokes on connected clients, emitted as the
     /// <c>target</c> of each SignalR operation binding. Defaults to <see cref="DefaultSignalRClientMethod"/>.
@@ -98,6 +100,20 @@ public sealed class WolverineAsyncApiOptions
         ArgumentNullException.ThrowIfNull(endpointUri);
         ArgumentException.ThrowIfNullOrWhiteSpace(address);
         ChannelAddresses[endpointUri] = address;
+        return this;
+    }
+
+    /// <summary>
+    /// Documents what a handler returns as the <c>reply</c> of the listener's <c>receive</c> operation.
+    /// Wolverine sends a returned message back to the endpoint named in the request's <c>reply-uri</c>
+    /// header when the sender asked for a response, for example with <c>InvokeAsync&lt;T&gt;()</c>. Off by
+    /// default, because a handler may equally return messages that are simply published through the
+    /// routing rules. AsyncAPI 3.x only.
+    /// </summary>
+    /// <returns>The same options, for chaining.</returns>
+    public WolverineAsyncApiOptions IncludeReplies()
+    {
+        RepliesIncluded = true;
         return this;
     }
 
