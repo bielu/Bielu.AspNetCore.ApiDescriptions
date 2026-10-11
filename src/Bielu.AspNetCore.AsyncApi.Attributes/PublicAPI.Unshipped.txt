@@ -6,3 +6,15 @@ Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.CorrelationIdLo
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.CorrelationIdLocation.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.CorrelationIdDescription.get -> string?
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.CorrelationIdDescription.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.ExternalDocsUrl.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.ExternalDocsUrl.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.ExternalDocsDescription.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute.ExternalDocsDescription.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ExternalDocsUrl.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ExternalDocsUrl.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ExternalDocsDescription.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ExternalDocsDescription.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ExternalDocsUrl.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ExternalDocsUrl.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ExternalDocsDescription.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ExternalDocsDescription.set -> void

@@ -71,6 +71,16 @@ public class MessageAttribute(Type payloadType, params string[] tags) : Attribut
     public string? CorrelationIdDescription { get; set; }
 
     /// <summary>
+    /// URL of additional external documentation. Setting it adds an <c>externalDocs</c> object.
+    /// </summary>
+    public string? ExternalDocsUrl { get; set; }
+
+    /// <summary>
+    /// A description of the external documentation. Only used when <see cref="ExternalDocsUrl"/> is set.
+    /// </summary>
+    public string? ExternalDocsDescription { get; set; }
+
+    /// <summary>
     /// A list of tags for API documentation control. Tags can be used for logical grouping of messages.
     /// </summary>
     public string[] Tags { get; } = tags;

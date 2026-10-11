@@ -38,6 +38,16 @@ public abstract class OperationAttribute : Attribute
     public string? BindingsRef { get; set; }
 
     /// <summary>
+    /// URL of additional external documentation. Setting it adds an <c>externalDocs</c> object.
+    /// </summary>
+    public string? ExternalDocsUrl { get; set; }
+
+    /// <summary>
+    /// A description of the external documentation. Only used when <see cref="ExternalDocsUrl"/> is set.
+    /// </summary>
+    public string? ExternalDocsDescription { get; set; }
+
+    /// <summary>
     /// A list of tags for API documentation control. Tags can be used for logical grouping of operations.
     /// </summary>
     public string[] Tags { get; protected set; } = Array.Empty<string>();
