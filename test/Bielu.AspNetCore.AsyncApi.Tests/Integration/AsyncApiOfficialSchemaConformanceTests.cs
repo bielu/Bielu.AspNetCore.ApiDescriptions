@@ -104,7 +104,7 @@ public class AsyncApiOfficialSchemaConformanceTests
             Environment.NewLine,
             result.Details
                 // A failed "if" only selects which branch applies; it is not a validation error.
-                .Where(detail => detail.Errors is { Count: > 0 } && !detail.EvaluationPath.ToString().Contains("/if"))
+                .Where(detail => detail.Errors is { Count: > 0 } && !detail.EvaluationPath.ToString().Split('/').Contains("if"))
                 .SelectMany(detail => detail.Errors!.Select(error =>
                     $"{detail.InstanceLocation} [{error.Key}] {error.Value} (schema: {detail.EvaluationPath})"))
                 .Distinct());

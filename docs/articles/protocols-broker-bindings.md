@@ -28,9 +28,15 @@ section.
 ## Registering bindings
 
 Each binding level has a method on `AsyncApiOptions`. The first argument is the name the binding is
-registered under in the document's `components`.
+registered under in the document's `components`. Servers and channels are attached by that name, and a
+channel can instead name its bindings through a `BindingsRef`; operations and messages are attached only
+through a `BindingsRef` (see below).
 
 ```csharp
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using ByteBard.AsyncAPI.Bindings.Kafka;
+using ByteBard.AsyncAPI.Models;
+
 builder.Services.AddAsyncApi(options =>
 {
     options.AddServer("broker", "localhost:9092", "kafka");
@@ -50,25 +56,33 @@ builder.Services.AddAsyncApi(options =>
 | Method | Registered in | Attached to |
 | --- | --- | --- |
 | `AddServerBinding` | `components/serverBindings` | The server added with `AddServer` under the same name |
-| `AddChannelBinding` | `components/channelBindings` | The channel of the same name, or any `[Channel(BindingsRef = "...")]` |
+| `AddChannelBinding` | `components/channelBindings` | Any `[Channel(BindingsRef = "...")]` that names it, and the channel of the same name when that channel has no `BindingsRef` |
 | `AddOperationBinding` | `components/operationBindings` | Any operation attribute with a matching `BindingsRef` |
 | `AddMessageBinding` | `components/messageBindings` | Any `[Message(BindingsRef = "...")]` |
 
 ```csharp
+using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+
 [AsyncApi]
 public class OrderEvents
 {
-    [Channel("orders", BindingsRef = "orders")]
+    [Channel("orders")]
     [Message(typeof(OrderPlaced), BindingsRef = "orderPlaced")]
     [PublishOperation(typeof(OrderPlaced), BindingsRef = "publishOrder")]
     public void PublishOrder(OrderPlaced order) { }
 }
 ```
 
-A `BindingsRef` that matches no registered name is ignored: the element is generated without bindings.
+The `orders` channel above declares no `BindingsRef`, so it gets the bindings registered under its own name.
+A channel that does declare one uses only that: a `BindingsRef` takes precedence over the channel's name.
+
+An operation or message binding that no attribute references is added to `components` but attached to
+nothing. Conversely, a `BindingsRef` that matches no registered name is ignored: the element is generated
+without bindings.
 
 Calling an `Add…Binding` method again with the same name adds a second binding under it, which is how one
-channel documents more than one protocol.
+channel documents more than one protocol. Two bindings of the *same* protocol under one name do not
+accumulate: the last one registered replaces the earlier one, and no exception is thrown.
 
 ## Known upstream issues
 
@@ -83,4 +97,4 @@ that the official AsyncAPI JSON Schema rejects:
   standard (non-FIFO) queue serializes without it.
 
 Until they are fixed upstream, a transformer registered with
-`AsyncApiOptions.AddSerializedDocumentTransformer` can correct the JSON before it is served.
+`AsyncApiOptions.AddSerializedDocumentTransformer` can correct the serialized document before it is served.
