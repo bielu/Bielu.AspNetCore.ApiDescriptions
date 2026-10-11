@@ -258,8 +258,11 @@ internal sealed class AsyncApiGenerator
         }
     }
 
+    // Placeholder: the parameters are the inputs message inference will need once it is implemented.
+#pragma warning disable IDE0060 // Remove unused parameter
     private IList<AsyncApiMessageReference> GetAsyncApiMessages(MethodInfo methodInfo, EndpointMetadataCollection metadata,
         RoutePattern pattern, bool disableInferredBody)
+#pragma warning restore IDE0060
     {
         //todo: implement
         return [];
@@ -318,7 +321,7 @@ internal sealed class AsyncApiGenerator
             }
 
             var (_, parameterLocation, attributeName) =
-                GetAsyncApiParameterLocation(parameter, pattern, disableInferredBody);
+                GetAsyncApiParameterLocation(parameter, disableInferredBody);
 
             // if the parameter doesn't have a valid location
             // then we should ignore it
@@ -345,7 +348,7 @@ internal sealed class AsyncApiGenerator
     }
 
     private (bool isBodyOrForm, ParameterLocation? locatedIn, string? name) GetAsyncApiParameterLocation(
-        ParameterInfo parameter, RoutePattern pattern, bool disableInferredBody)
+        ParameterInfo parameter, bool disableInferredBody)
     {
         var attributes = parameter.GetCustomAttributes();
 
