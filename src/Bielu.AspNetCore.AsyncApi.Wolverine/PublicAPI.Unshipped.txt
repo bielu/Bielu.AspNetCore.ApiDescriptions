@@ -1,2 +1,1 @@
 #nullable enable
-Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.IncludeReplies() -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
