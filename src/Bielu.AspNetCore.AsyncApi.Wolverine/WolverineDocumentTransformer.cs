@@ -1,11 +1,13 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
+using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using Bielu.AspNetCore.AsyncApi.Helpers;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Bielu.AspNetCore.AsyncApi.Transformers;
+using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Bindings.Kafka;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
@@ -68,15 +70,13 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                      .OrderBy(e => e.Uri.ToString(), StringComparer.Ordinal))
         {
             var operation = await builder.AddOperationAsync(AsyncApiAction.Receive, endpoint.Uri, endpoint.MessageType!, cancellationToken);
-            if (operation is not null && !IsV2(document))
+            if (operation is not null && !document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0))
             {
                 await builder.AddReplyAsync(operation.Value.Id, operation.Value.Operation,
                     ReplyTypes(runtime, endpoint.MessageType!), cancellationToken);
             }
         }
     }
-
-    private static bool IsV2(AsyncApiDocument document) => document.Asyncapi.StartsWith("2.", StringComparison.Ordinal);
 
     /// <summary>
     /// The message types the handlers of <paramref name="messageType"/> return that are documented as its
@@ -226,7 +226,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             var serverKey = AsyncApiNamingHelper.SanitizeKey(options.ServerNameFor(endpointUri.Scheme));
             if (document.Servers?.ContainsKey(serverKey) == true)
             {
-                channel.Servers.Add(new AsyncApiServerReference(document.Asyncapi.StartsWith("2.", StringComparison.Ordinal)
+                channel.Servers.Add(new AsyncApiServerReference(document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0)
                     ? $"#{serverKey}"
                     : $"#/servers/{serverKey}"));
             }

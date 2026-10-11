@@ -10,3 +10,5 @@ Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddSecurityScheme(string! nam
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServerSecurity(string! serverName, params string![]! schemeNames) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddOperationTrait(string! name, ByteBard.AsyncAPI.Models.AsyncApiOperationTrait! trait) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddMessageTrait(string! name, ByteBard.AsyncAPI.Models.AsyncApiMessageTrait! trait) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiDocumentVersionExtensions
+static Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiDocumentVersionExtensions.IsAsyncApiVersion(this ByteBard.AsyncAPI.Models.AsyncApiDocument! document, ByteBard.AsyncAPI.AsyncApiVersion version) -> bool
