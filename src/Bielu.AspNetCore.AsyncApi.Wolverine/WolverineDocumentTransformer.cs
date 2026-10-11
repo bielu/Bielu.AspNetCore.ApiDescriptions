@@ -68,7 +68,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                      .OrderBy(e => e.Uri.ToString(), StringComparer.Ordinal))
         {
             var operation = await builder.AddOperationAsync(AsyncApiAction.Receive, endpoint.Uri, endpoint.MessageType!, cancellationToken);
-            if (operation is not null && options.RepliesIncluded && !IsV2(document))
+            if (operation is not null && !IsV2(document))
             {
                 await builder.AddReplyAsync(operation.Value.Id, operation.Value.Operation,
                     ReplyTypes(runtime, endpoint.MessageType!), cancellationToken);
@@ -79,15 +79,23 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
     private static bool IsV2(AsyncApiDocument document) => document.Asyncapi.StartsWith("2.", StringComparison.Ordinal);
 
     /// <summary>
-    /// The message types the handlers of <paramref name="messageType"/> return. Wolverine's own types
-    /// (side effects, <c>OutgoingMessages</c>, ...) and open-ended ones such as <see cref="object"/> are
-    /// left out, since they do not describe a payload.
+    /// The message types the handlers of <paramref name="messageType"/> return that are documented as its
+    /// reply. Wolverine's own types (side effects, <c>OutgoingMessages</c>, ...) and open-ended ones such as
+    /// <see cref="object"/> are left out, since they do not describe a payload.
     /// </summary>
-    private static List<Type> ReplyTypes(IWolverineRuntime runtime, Type messageType) =>
+    /// <remarks>
+    /// A handler does not say whether its return value is a reply: Wolverine sends it to the request's
+    /// <c>reply-uri</c> when the request names its type in <c>reply-requested</c>, and publishes it through
+    /// the routing rules otherwise. A returned type with no route can therefore only ever leave as a reply,
+    /// so it is always documented; a routed one is ambiguous and needs
+    /// <see cref="WolverineAsyncApiOptions.IncludeReplies"/>.
+    /// </remarks>
+    private List<Type> ReplyTypes(IWolverineRuntime runtime, Type messageType) =>
         (runtime as WolverineRuntime)?.Handlers.ChainFor(messageType)?.PublishedTypes()
             .Where(t => t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
                         && t != typeof(object)
-                        && t.Assembly != typeof(IWolverineRuntime).Assembly)
+                        && t.Assembly != typeof(IWolverineRuntime).Assembly
+                        && (options.RepliesIncluded || !runtime.RoutingFor(t).Routes.Any()))
             .Distinct()
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToList() ?? [];
@@ -174,7 +182,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 Address = new AsyncApiOperationReplyAddress
                 {
                     Location = $"$message.header#/{EnvelopeConstants.ReplyUriKey}",
-                    Description = "The Wolverine endpoint the reply is sent to. Present when the sender asked for a response.",
+                    Description = $"The Wolverine endpoint the reply is sent to. A reply is sent when the request's '{EnvelopeConstants.ReplyRequestedKey}' header names the reply's message type.",
                 },
                 Channel = new AsyncApiChannelReference($"#/channels/{channelKey}"),
                 Messages = [],

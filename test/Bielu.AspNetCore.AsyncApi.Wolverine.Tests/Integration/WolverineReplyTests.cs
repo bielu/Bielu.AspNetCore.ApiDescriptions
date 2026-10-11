@@ -9,36 +9,39 @@ using Xunit;
 namespace Bielu.AspNetCore.AsyncApi.Wolverine.Tests.Integration;
 
 /// <summary>
-/// <see cref="WolverineAsyncApiOptions.IncludeReplies"/> must document what a handler returns as the
-/// reply of the listener's receive operation.
+/// What a handler returns must be documented as the reply of the listener's receive operation: always
+/// when the returned message has no route, and with
+/// <see cref="WolverineAsyncApiOptions.IncludeReplies"/> when it has one.
 /// </summary>
 public class WolverineReplyTests
 {
-    private const string ReceiveOperation = "receive.quotes.get-quote";
-    private const string ReplyChannel = "receive.quotes.get-quote.reply";
+    private const string QuoteOperation = "receive.quotes.get-quote";
+    private const string QuoteReplyChannel = "receive.quotes.get-quote.reply";
+    private const string TrackOperation = "receive.orders.track-order";
+    private const string TrackReplyChannel = "receive.orders.track-order.reply";
 
     [Fact]
-    public async Task TransformAsync_HandlerReturnsMessageAndRepliesIncluded_AddsReplyToReceiveOperation()
+    public async Task TransformAsync_HandlerReturnsUnroutedMessage_AddsReplyToReceiveOperation()
     {
         // Act
-        var document = await GetDocumentAsync(wolverine => wolverine.IncludeReplies());
+        var document = await GetDocumentAsync();
 
         // Assert
-        var reply = document["operations"]![ReceiveOperation]!["reply"]!;
+        var reply = document["operations"]![QuoteOperation]!["reply"]!;
         reply["address"]!["location"]!.GetValue<string>().ShouldBe("$message.header#/reply-uri");
-        reply["channel"]!["$ref"]!.GetValue<string>().ShouldBe($"#/channels/{ReplyChannel}");
+        reply["channel"]!["$ref"]!.GetValue<string>().ShouldBe($"#/channels/{QuoteReplyChannel}");
         reply["messages"]!.AsArray().Single()!["$ref"]!.GetValue<string>()
-            .ShouldBe($"#/channels/{ReplyChannel}/messages/quotes.quote");
+            .ShouldBe($"#/channels/{QuoteReplyChannel}/messages/quotes.quote");
     }
 
     [Fact]
-    public async Task TransformAsync_HandlerReturnsMessageAndRepliesIncluded_AddsAddresslessReplyChannelWithReplyMessage()
+    public async Task TransformAsync_HandlerReturnsUnroutedMessage_AddsAddresslessReplyChannelWithReplyMessage()
     {
         // Act
-        var document = await GetDocumentAsync(wolverine => wolverine.IncludeReplies());
+        var document = await GetDocumentAsync();
 
         // Assert
-        var channel = document["channels"]![ReplyChannel]!.AsObject();
+        var channel = document["channels"]![QuoteReplyChannel]!.AsObject();
         channel["address"].ShouldBeNull();
         channel["messages"]!["quotes.quote"]!["$ref"]!.GetValue<string>().ShouldBe("#/components/messages/quotes.quote");
 
@@ -48,7 +51,33 @@ public class WolverineReplyTests
     }
 
     [Fact]
-    public async Task TransformAsync_HandlerReturnsNothingAndRepliesIncluded_LeavesReceiveOperationWithoutReply()
+    public async Task TransformAsync_HandlerReturnsRoutedMessage_LeavesReceiveOperationWithoutReply()
+    {
+        // Act
+        var document = await GetDocumentAsync();
+
+        // Assert
+        document["operations"]![TrackOperation]!.AsObject().ContainsKey("reply").ShouldBeFalse();
+        document["channels"]!.AsObject().ContainsKey(TrackReplyChannel).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task TransformAsync_HandlerReturnsRoutedMessageAndRepliesIncluded_AddsReplyToReceiveOperation()
+    {
+        // Act
+        var document = await GetDocumentAsync(wolverine => wolverine.IncludeReplies());
+
+        // Assert
+        var reply = document["operations"]![TrackOperation]!["reply"]!;
+        reply["channel"]!["$ref"]!.GetValue<string>().ShouldBe($"#/channels/{TrackReplyChannel}");
+        reply["messages"]!.AsArray().Single()!["$ref"]!.GetValue<string>()
+            .ShouldBe($"#/channels/{TrackReplyChannel}/messages/orders.order-placed");
+        document["channels"]![TrackReplyChannel]!["messages"]!["orders.order-placed"]!["$ref"]!.GetValue<string>()
+            .ShouldBe("#/components/messages/orders.order-placed");
+    }
+
+    [Fact]
+    public async Task TransformAsync_HandlerReturnsNothing_LeavesReceiveOperationWithoutReply()
     {
         // Act
         var document = await GetDocumentAsync(wolverine => wolverine.IncludeReplies());
@@ -59,25 +88,13 @@ public class WolverineReplyTests
     }
 
     [Fact]
-    public async Task TransformAsync_RepliesNotIncluded_LeavesReceiveOperationWithoutReply()
-    {
-        // Act
-        var document = await GetDocumentAsync(_ => { });
-
-        // Assert
-        document["operations"]![ReceiveOperation]!.AsObject().ContainsKey("reply").ShouldBeFalse();
-        document["channels"]!.AsObject().ContainsKey(ReplyChannel).ShouldBeFalse();
-        document["components"]!["messages"]!.AsObject().ContainsKey("quotes.quote").ShouldBeFalse();
-    }
-
-    [Fact]
-    public async Task TransformAsync_AsyncApi2DocumentAndRepliesIncluded_AddsNoReplyChannel()
+    public async Task TransformAsync_AsyncApi2Document_AddsNoReplyChannel()
     {
         // Act
         var document = await GetDocumentAsync(wolverine => wolverine.IncludeReplies(), AsyncApiVersion.AsyncApi2_0);
 
         // Assert
-        document["channels"]!.AsObject().Select(c => c.Key).ShouldBe(["orders", "quotes", "stock"], ignoreOrder: true);
+        document["channels"]!.AsObject().Select(c => c.Key).ShouldBe(["orders", "quotes", "stock", "tracking"], ignoreOrder: true);
         document["components"]!["messages"]!.AsObject().ContainsKey("quotes.quote").ShouldBeFalse();
     }
 
@@ -96,13 +113,17 @@ public class WolverineReplyTests
     }
 
     private static Task<JsonNode> GetDocumentAsync(
-        Action<WolverineAsyncApiOptions> configure,
+        Action<WolverineAsyncApiOptions>? configure = null,
         AsyncApiVersion version = AsyncApiVersion.AsyncApi3_0) =>
         WolverineTestApp.GetDocumentAsync("messaging", options =>
             {
                 options.AsyncApiVersion = version;
                 options.AddServer("kafka", "localhost:9092", "kafka");
-                options.AddWolverine(wolverine => configure(wolverine.IncludeSchemes("kafka")));
+                options.AddWolverine(wolverine => configure?.Invoke(wolverine.IncludeSchemes("kafka")));
             },
-            configureWolverine: opts => opts.ListenToKafkaTopic("quotes").DefaultIncomingMessage<GetQuote>());
+            configureWolverine: opts =>
+            {
+                opts.ListenToKafkaTopic("quotes").DefaultIncomingMessage<GetQuote>();
+                opts.ListenToKafkaTopic("tracking").DefaultIncomingMessage<TrackOrder>();
+            });
 }

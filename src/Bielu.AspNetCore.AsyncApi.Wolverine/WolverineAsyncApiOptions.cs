@@ -104,11 +104,12 @@ public sealed class WolverineAsyncApiOptions
     }
 
     /// <summary>
-    /// Documents what a handler returns as the <c>reply</c> of the listener's <c>receive</c> operation.
-    /// Wolverine sends a returned message back to the endpoint named in the request's <c>reply-uri</c>
-    /// header when the sender asked for a response, for example with <c>InvokeAsync&lt;T&gt;()</c>. Off by
-    /// default, because a handler may equally return messages that are simply published through the
-    /// routing rules. AsyncAPI 3.x only.
+    /// Documents every message a handler returns as the <c>reply</c> of the listener's <c>receive</c>
+    /// operation, including messages that also have a route. Wolverine sends a returned message back to
+    /// the endpoint named in the request's <c>reply-uri</c> header when the sender asked for it, for
+    /// example with <c>InvokeAsync&lt;T&gt;()</c>, and publishes it through the routing rules otherwise.
+    /// Without this, only returned messages that have no route are documented as replies, since a reply
+    /// is the only way those can leave the handler. AsyncAPI 3.x only.
     /// </summary>
     /// <returns>The same options, for chaining.</returns>
     public WolverineAsyncApiOptions IncludeReplies()

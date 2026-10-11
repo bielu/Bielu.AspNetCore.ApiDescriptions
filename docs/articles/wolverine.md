@@ -32,7 +32,7 @@ builder.Services.AddAsyncApi("realtime", options =>
 | `UseServer(scheme, serverName)` | The scheme itself | The AsyncAPI server channels on that transport link to (it must be registered with `AddServer`) |
 | `MapChannel(endpointUri, address)` | Derived from the endpoint | Overrides a channel address |
 | `SignalRClientMethod` | `ReceiveMessage` | The client method SignalR operations target |
-| `IncludeReplies()` | Off | Documents what a handler returns as the `reply` of the listener's `receive` operation (AsyncAPI 3.x) |
+| `IncludeReplies()` | Off | Also documents a returned message as a `reply` when it has a route of its own; unrouted ones always are (AsyncAPI 3.x) |
 
 ## How the document is built
 
@@ -67,21 +67,29 @@ handling), pass the same settings to the transport with
 
 ### Replies
 
-A Wolverine handler can return a message. When the sender asked for a response, for example with
-`InvokeAsync<Quote>(new GetQuote(sku))`, Wolverine sends that message back to the endpoint named in the
-request's `reply-uri` header. Otherwise the returned message is published through the routing rules like
-any other, which is why replies are not documented unless you opt in:
+A Wolverine handler can return a message. Every request carries a `reply-uri` header, and when it also
+names the returned type in its `reply-requested` header, as `InvokeAsync<Quote>(new GetQuote(sku))` does,
+Wolverine sends the returned message to that address instead of publishing it. Otherwise the message is
+published through the routing rules like any other.
+
+The handler itself does not say which of the two is meant, so the package goes by the routing:
+
+- A returned message with **no route** can only ever leave the handler as a reply, so it is always
+  documented as one
+- A returned message that **has a route** may be a reply or an ordinary published event. It is
+  documented as a reply only when you opt in:
 
 ```csharp
 options.AddWolverine(wolverine => wolverine.IncludeReplies());
 ```
 
-With `IncludeReplies()`, a `receive` operation whose handler returns a message gets a `reply`:
+A `receive` operation with a reply gets:
 
-- `reply.address.location` is `$message.header#/reply-uri`
-- `reply.channel` is a channel of its own, named after the operation (`receive.quotes.get-quote.reply`)
-  and without an address, because the address is only known from the request
-- `reply.messages` lists the returned message types
+- `reply.address.location` set to `$message.header#/reply-uri`
+- `reply.channel` pointing at a channel of its own, named after the operation
+  (`receive.quotes.get-quote.reply`) and without an address, because the address is only known from the
+  request
+- `reply.messages` listing the returned message types
 
 Only listeners with a default incoming message type have a `receive` operation, so only their handlers
 are covered. AsyncAPI 2.x has no reply object, so a 2.x document is left unchanged.

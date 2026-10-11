@@ -48,7 +48,7 @@ public static class StockChangedHandler
 [MessageIdentity("shapes.shape-probe")]
 public sealed record ShapeProbe(int Count, int? MaybeCount, string? Note, DateTimeOffset At, DayOfWeek Day, DayOfWeek? MaybeDay) : WebSocketMessage;
 
-/// <summary>Read from Kafka by a handler that answers with a <see cref="Quote"/>.</summary>
+/// <summary>Read from Kafka by a handler that answers with a quote.</summary>
 /// <param name="Sku">The product to quote.</param>
 [MessageIdentity("quotes.get-quote")]
 public sealed record GetQuote(string Sku);
@@ -62,4 +62,14 @@ public sealed record Quote(string Sku, decimal Price);
 public static class GetQuoteHandler
 {
     public static Quote Handle(GetQuote query) => new(query.Sku, 0m);
+}
+
+/// <summary>Read from Kafka by a handler that answers with a message that is also published.</summary>
+/// <param name="OrderId">The order to look up.</param>
+[MessageIdentity("orders.track-order")]
+public sealed record TrackOrder(Guid OrderId);
+
+public static class TrackOrderHandler
+{
+    public static OrderPlaced Handle(TrackOrder query) => new(query.OrderId);
 }
