@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Helpers;
 using Bielu.AspNetCore.AsyncApi.Models.Metadata;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
@@ -355,7 +356,7 @@ internal sealed class AsyncApiDocumentService(
             // Use correct reference format based on version to avoid ByteBard V2 serializer bug
             // V2 needs FragmentId to be the bare key, which we get with #key
             // V3 needs the full JSON pointer #/servers/key
-            if (document.Asyncapi.StartsWith("2."))
+            if (document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0))
             {
                 channel.Servers.Add(new AsyncApiServerReference($"#{sanitizedServerKey}"));
             }
@@ -979,7 +980,7 @@ internal sealed class AsyncApiDocumentService(
             {
                 // ByteBard's AsyncAPI 2.x writer dereferences trait.Headers unconditionally and throws a
                 // NullReferenceException when a trait has none, so give it an empty headers schema.
-                if (document.Asyncapi.StartsWith("2.", StringComparison.Ordinal))
+                if (document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0))
                 {
                     trait.Headers ??= new AsyncApiMultiFormatSchema { Schema = new AsyncApiJsonSchema() };
                 }

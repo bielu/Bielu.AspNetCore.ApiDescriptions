@@ -1,18 +1,22 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
+using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using Bielu.AspNetCore.AsyncApi.Helpers;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services.XmlDocs;
 using Bielu.AspNetCore.AsyncApi.Transformers;
+using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Bindings.Kafka;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Wolverine;
 using Wolverine.Runtime;
+using Wolverine.Runtime.Handlers;
 using Wolverine.Runtime.Routing;
 using Wolverine.Util;
 
@@ -66,9 +70,56 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                      .Where(e => e is { IsListener: true, MessageType: not null } && options.IsIncluded(e.Uri))
                      .OrderBy(e => e.Uri.ToString(), StringComparer.Ordinal))
         {
-            await builder.AddOperationAsync(AsyncApiAction.Receive, endpoint.Uri, endpoint.MessageType!, cancellationToken);
+            var operation = await builder.AddOperationAsync(AsyncApiAction.Receive, endpoint.Uri, endpoint.MessageType!, cancellationToken);
+            if (operation is not null && !document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0))
+            {
+                await builder.AddReplyAsync(operation.Value.Id, operation.Value.Operation,
+                    ReplyTypes(runtime, endpoint.MessageType!), cancellationToken);
+            }
         }
     }
+
+    /// <summary>
+    /// The message types the handlers of <paramref name="messageType"/> return that are documented as its
+    /// reply. Wolverine's own types (side effects, <c>OutgoingMessages</c>, ...) and open-ended ones such as
+    /// <see cref="object"/> are left out, since they do not describe a payload.
+    /// </summary>
+    /// <remarks>
+    /// A handler does not say whether its return value is a reply: Wolverine sends it to the request's
+    /// <c>reply-uri</c> when the request names its type in <c>reply-requested</c>, and publishes it through
+    /// the routing rules otherwise. A returned type with no route can therefore only ever leave as a reply,
+    /// so it is always documented; a routed one is ambiguous and needs
+    /// <see cref="WolverineAsyncApiOptions.IncludeReplies"/>.
+    /// </remarks>
+    private List<Type> ReplyTypes(IWolverineRuntime runtime, Type messageType) =>
+        (runtime as WolverineRuntime)?.Handlers.ChainFor(messageType) is not { } chain
+            ? []
+            : ReturnedMessageTypes(chain)
+                .Where(t => t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
+                            && t != typeof(object)
+                            && t.Assembly != typeof(IWolverineRuntime).Assembly
+                            && (options.RepliesIncluded || !runtime.RoutingFor(t).Routes.Any()))
+                .Distinct()
+                .OrderBy(t => t.FullName, StringComparer.Ordinal)
+                .ToList();
+
+    /// <summary>
+    /// What the handlers in <paramref name="chain"/> return as messages. Wolverine publishes each element of a
+    /// returned array or collection on its own, but leaves collections out of
+    /// <see cref="HandlerChain.PublishedTypes"/>, so their element types are added here.
+    /// </summary>
+    private static IEnumerable<Type> ReturnedMessageTypes(HandlerChain chain) =>
+        chain.PublishedTypes().Concat(chain.Handlers
+            .SelectMany(handler => handler.Creates)
+            .Select(variable => ElementType(variable.VariableType))
+            .OfType<Type>());
+
+    private static Type? ElementType(Type type) =>
+        type.IsArray
+            ? type.GetElementType()
+            : type.GetInterfaces().Append(type)
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                ?.GetGenericArguments()[0];
 
     private static IEnumerable<Type> CandidateTypes(Assembly assembly) =>
         assembly.GetExportedTypes().Where(t =>
@@ -87,11 +138,16 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
         private readonly HashSet<(AsyncApiAction Action, Uri EndpointUri, Type MessageType)> _operations = [];
         private string? _hubPath;
 
-        public async Task AddOperationAsync(AsyncApiAction action, Uri endpointUri, Type messageType, CancellationToken cancellationToken)
+        /// <summary>
+        /// Adds the operation and returns it with its id, or <see langword="null"/> when the same route was
+        /// already documented.
+        /// </summary>
+        public async Task<(string Id, AsyncApiOperation Operation)?> AddOperationAsync(
+            AsyncApiAction action, Uri endpointUri, Type messageType, CancellationToken cancellationToken)
         {
             if (!_operations.Add((action, endpointUri, messageType)))
             {
-                return;
+                return null;
             }
 
             var channelKey = GetOrCreateChannel(endpointUri);
@@ -110,7 +166,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             }
 
             var docs = xmlDocs.GetDocumentation(messageType);
-            document.Operations[operationId] = new AsyncApiOperation
+            var operation = new AsyncApiOperation
             {
                 Action = action,
                 Title = operationId,
@@ -119,6 +175,48 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 Messages = [new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{messageKey}")],
                 Bindings = OperationBindings(endpointUri, action),
             };
+            document.Operations[operationId] = operation;
+            return (operationId, operation);
+        }
+
+        /// <summary>
+        /// Sets the <c>reply</c> of <paramref name="operation"/> to <paramref name="replyTypes"/>, on a channel
+        /// of its own. That channel has no address: Wolverine replies to whichever endpoint the request names
+        /// in its <c>reply-uri</c> header, which is what the reply address points at.
+        /// </summary>
+        public async Task AddReplyAsync(string operationId, AsyncApiOperation operation, IReadOnlyList<Type> replyTypes, CancellationToken cancellationToken)
+        {
+            if (replyTypes.Count == 0)
+            {
+                return;
+            }
+
+            var channelKey = UniqueKey(AsyncApiNamingHelper.SanitizeKey($"{operationId}.reply"), document.Channels.ContainsKey);
+            var channel = new AsyncApiChannel
+            {
+                Description = $"Replies to '{operationId}'. Wolverine sends them to the endpoint named in the request's '{EnvelopeConstants.ReplyUriKey}' header.",
+            };
+            document.Channels[channelKey] = channel;
+
+            var reply = new AsyncApiOperationReply
+            {
+                Address = new AsyncApiOperationReplyAddress
+                {
+                    Location = $"$message.header#/{EnvelopeConstants.ReplyUriKey}",
+                    Description = $"The Wolverine endpoint the reply is sent to. A reply is sent when the request's '{EnvelopeConstants.ReplyRequestedKey}' header names the reply's message type.",
+                },
+                Channel = new AsyncApiChannelReference($"#/channels/{channelKey}"),
+                Messages = [],
+            };
+
+            foreach (var replyType in replyTypes)
+            {
+                var messageKey = await GetOrCreateMessageAsync(replyType, cancellationToken);
+                channel.Messages.TryAdd(messageKey, new AsyncApiMessageReference($"#/components/messages/{messageKey}"));
+                reply.Messages.Add(new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{messageKey}"));
+            }
+
+            operation.Reply = reply;
         }
 
         /// <summary>
@@ -149,7 +247,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             var serverKey = AsyncApiNamingHelper.SanitizeKey(options.ServerNameFor(endpointUri.Scheme));
             if (document.Servers?.ContainsKey(serverKey) == true)
             {
-                channel.Servers.Add(new AsyncApiServerReference(document.Asyncapi.StartsWith("2.", StringComparison.Ordinal)
+                channel.Servers.Add(new AsyncApiServerReference(document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0)
                     ? $"#{serverKey}"
                     : $"#/servers/{serverKey}"));
             }
