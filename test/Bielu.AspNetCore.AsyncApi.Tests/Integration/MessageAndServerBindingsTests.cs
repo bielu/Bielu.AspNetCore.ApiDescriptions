@@ -2,7 +2,9 @@
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI.Bindings.Kafka;
+using ByteBard.AsyncAPI.Bindings.MQTT;
 using ByteBard.AsyncAPI.Models;
+using ByteBard.AsyncAPI.Models.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -93,12 +95,54 @@ public class MessageAndServerBindingsTests
         document.Servers.ShouldNotContainKey("unknown-server");
     }
 
-    private static async Task<AsyncApiDocument> GetDocumentAsync()
+    [Fact]
+    public async Task GetAsyncApiDocument_ServerBindingForKnownServer_DoesNotMutateOptionsServer()
+    {
+        // Arrange
+        AsyncApiServer? optionsServer = null;
+        void ConfigureCapture(AsyncApiOptions options) => options
+            .AddServer("broker", "localhost:9092", "kafka", null, s => optionsServer = s)
+            .AddServerBinding("broker", new KafkaServerBinding { SchemaRegistryVendor = "confluent" });
+
+        // Act
+        var first = await GetDocumentAsync(ConfigureCapture);
+        var second = await GetDocumentAsync(ConfigureCapture);
+
+        // Assert
+        optionsServer.ShouldNotBeNull();
+        (optionsServer.Bindings?.Count ?? 0).ShouldBe(0);
+        first.Servers["broker"].ShouldNotBeSameAs(optionsServer);
+        first.Servers["broker"].Bindings.Values.ShouldHaveSingleItem();
+        second.Servers["broker"].Bindings.Values.ShouldHaveSingleItem();
+    }
+
+    [Fact]
+    public async Task GetAsyncApiDocument_ServerBindingAddedToConfiguredServer_PreservesBindingsSetOnServer()
+    {
+        // Arrange
+        void ConfigureMerge(AsyncApiOptions options) => options
+            .AddServer("broker", "localhost:9092", "kafka", null, s =>
+                s.Bindings = new AsyncApiBindings<IServerBinding> { new KafkaServerBinding { SchemaRegistryVendor = "own" } })
+            .AddServerBinding("broker", new MQTTServerBinding { ClientId = "registered" });
+
+        // Act
+        var document = await GetDocumentAsync(ConfigureMerge);
+
+        // Assert
+        var bindings = document.Servers["broker"].Bindings;
+        bindings.Count.ShouldBe(2);
+        bindings.Values.OfType<KafkaServerBinding>().Single().SchemaRegistryVendor.ShouldBe("own");
+        bindings.Values.OfType<MQTTServerBinding>().Single().ClientId.ShouldBe("registered");
+    }
+
+    private static Task<AsyncApiDocument> GetDocumentAsync() => GetDocumentAsync(Configure);
+
+    private static async Task<AsyncApiDocument> GetDocumentAsync(Action<AsyncApiOptions> configure)
     {
         // Arrange
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        builder.Services.AddAsyncApi(DocumentName, Configure);
+        builder.Services.AddAsyncApi(DocumentName, configure);
 
         await using var app = builder.Build();
         await app.StartAsync();

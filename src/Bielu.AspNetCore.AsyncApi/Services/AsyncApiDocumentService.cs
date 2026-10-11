@@ -939,10 +939,45 @@ internal sealed class AsyncApiDocumentService(
 
             if (document.Servers.TryGetValue(key, out var server))
             {
-                server.Bindings = bindings;
+                // The document shares server instances with the options, so attach to a per-document copy.
+                var documentServer = CopyServer(server);
+                var merged = new AsyncApiBindings<IServerBinding>();
+                if (server.Bindings is not null)
+                {
+                    foreach (var existing in server.Bindings)
+                    {
+                        merged[existing.Key] = existing.Value;
+                    }
+                }
+
+                // Bindings registered through AddServerBinding win over ones set on the server itself.
+                foreach (var registered in bindings)
+                {
+                    merged[registered.Key] = registered.Value;
+                }
+
+                documentServer.Bindings = merged;
+                document.Servers[key] = documentServer;
             }
         }
     }
+
+    private static AsyncApiServer CopyServer(AsyncApiServer source) => new()
+    {
+        Host = source.Host,
+        PathName = source.PathName,
+        Protocol = source.Protocol,
+        ProtocolVersion = source.ProtocolVersion,
+        Description = source.Description,
+        Title = source.Title,
+        Summary = source.Summary,
+        Variables = source.Variables,
+        Security = source.Security,
+        Tags = source.Tags,
+        ExternalDocs = source.ExternalDocs,
+        Bindings = source.Bindings,
+        Extensions = source.Extensions
+    };
 
     private static AsyncApiBindings<TBinding> ToBindings<TBinding>(IEnumerable<TBinding> source)
         where TBinding : IBinding
