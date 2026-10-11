@@ -124,6 +124,14 @@ dotnet test ./test/Bielu.AspNetCore.AsyncApi.Cli.Tests/Bielu.AspNetCore.AsyncApi
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
+## Public API
+
+The core, `Attributes` and `Wolverine` projects track their public surface with
+`Microsoft.CodeAnalysis.PublicApiAnalyzers`. If you add, change or remove a public member there, record it
+in that project's `PublicAPI.Unshipped.txt` (the IDE offers a code fix for RS0016); the build fails
+otherwise. Leave `PublicAPI.Shipped.txt` alone: the release step moves entries into it when a stable
+version ships. To start tracking another project, add both files next to its csproj.
+
 ## Code Style
 
 This project uses consistent code formatting enforced by `dotnet format`.

@@ -57,4 +57,21 @@
         <None Include="$(MSBuildThisFileDirectory)../assets/logo.png" Pack="true" PackagePath="/" />
     </ItemGroup>
 
+    <!--
+      Public API tracking is opt-in per project: adding PublicAPI.Shipped.txt and PublicAPI.Unshipped.txt
+      next to the csproj turns it on. A public member missing from those files (RS0016), or listed there
+      but gone from the code (RS0017), then fails the build instead of only warning, so a change to the
+      public surface cannot merge unrecorded. scripts/ship-public-api.mjs moves Unshipped to Shipped
+      when a stable version is released.
+    -->
+    <PropertyGroup Condition="Exists('$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt')">
+        <WarningsAsErrors>$(WarningsAsErrors);RS0016;RS0017</WarningsAsErrors>
+    </PropertyGroup>
+    <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt')">
+        <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
 </Project>
