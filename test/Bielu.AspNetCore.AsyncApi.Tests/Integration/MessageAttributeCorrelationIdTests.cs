@@ -15,11 +15,13 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Integration;
 /// </summary>
 public class MessageAttributeCorrelationIdTests
 {
-    private const string DocumentName = "message-attribute-correlation-id";
+    internal const string DocumentName = "message-attribute-correlation-id";
 
     public sealed record OrderPlaced(string OrderId);
 
     public sealed record OrderCancelled(string OrderId);
+
+    public sealed record OrderShipped(string OrderId);
 
     [AsyncApi(DocumentName)]
     public sealed class Channels
@@ -37,6 +39,14 @@ public class MessageAttributeCorrelationIdTests
         [Message(typeof(OrderCancelled), MessageId = "orderCancelled")]
         [SubscribeOperation(OperationId = "orderCancelledOperation")]
         public void OrderCancelledEvent()
+        {
+        }
+
+        [Channel("orders/shipped")]
+        [Message(typeof(OrderShipped), MessageId = "orderShipped",
+            CorrelationIdDescription = "Ignored without a location.")]
+        [SubscribeOperation(OperationId = "orderShippedOperation")]
+        public void OrderShippedEvent()
         {
         }
     }
@@ -62,6 +72,16 @@ public class MessageAttributeCorrelationIdTests
 
         // Assert
         document.Components.Messages["orderCancelled"].CorrelationId.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task GetAsyncApiDocument_MessageWithCorrelationIdDescriptionOnly_LeavesCorrelationIdEmpty()
+    {
+        // Act
+        var document = await GetDocumentAsync();
+
+        // Assert
+        document.Components.Messages["orderShipped"].CorrelationId.ShouldBeNull();
     }
 
     private static async Task<AsyncApiDocument> GetDocumentAsync()

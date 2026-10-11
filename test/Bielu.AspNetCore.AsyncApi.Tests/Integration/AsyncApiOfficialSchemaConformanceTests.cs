@@ -26,8 +26,8 @@ public class AsyncApiOfficialSchemaConformanceTests
     [InlineData(AsyncApiVersion.AsyncApi3_0, MessageAndServerBindingsTests.DocumentName)]
     [InlineData(AsyncApiVersion.AsyncApi2_0, ProtocolBindingsCoverageTests.DocumentName)]
     [InlineData(AsyncApiVersion.AsyncApi3_0, ProtocolBindingsCoverageTests.DocumentName)]
-    [InlineData(AsyncApiVersion.AsyncApi2_0, "message-attribute-correlation-id")]
-    [InlineData(AsyncApiVersion.AsyncApi3_0, "message-attribute-correlation-id")]
+    [InlineData(AsyncApiVersion.AsyncApi2_0, MessageAttributeCorrelationIdTests.DocumentName)]
+    [InlineData(AsyncApiVersion.AsyncApi3_0, MessageAttributeCorrelationIdTests.DocumentName)]
     public async Task GetAsyncApiDocument_ServedDocument_ConformsToOfficialSchema(AsyncApiVersion version, string documentName)
     {
         // Arrange

@@ -31,7 +31,7 @@ app.Run();
 public class LightService
 {
     [Channel("light/measured")]
-    [Message(typeof(LightMeasurement))]
+    [Message(typeof(LightMeasurement), CorrelationIdLocation = "$message.header#/correlationId", CorrelationIdDescription = "Correlates a measurement with the \"measure\" request that triggered it.")]
     public void MeasureLight(object message) { }
 }
 

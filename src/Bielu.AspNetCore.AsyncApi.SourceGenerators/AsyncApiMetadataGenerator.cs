@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
@@ -182,9 +183,9 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var headersType = attr.NamedArguments.FirstOrDefault(x => x.Key == "HeadersType").Value.Value as ITypeSymbol;
                         var headersTypeValue = headersType != null ? $"typeof({headersType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})" : "null";
                         var correlationLocation = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdLocation").Value.Value as string;
-                        var correlationLocationValue = correlationLocation != null ? $"\"{correlationLocation}\"" : "null";
+                        var correlationLocationValue = ToStringLiteral(correlationLocation);
                         var correlationDescription = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdDescription").Value.Value as string;
-                        var correlationDescriptionValue = correlationDescription != null ? $"\"{correlationDescription}\"" : "null";
+                        var correlationDescriptionValue = ToStringLiteral(correlationDescription);
 
                         sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue} }},");
                     }
@@ -306,6 +307,13 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
             if (constant.Kind != TypedConstantKind.Array || constant.Values.IsDefaultOrEmpty) return "Array.Empty<string>()";
             var values = constant.Values.Select(v => $"\"{v.Value}\"");
             return $"new string[] {{ {string.Join(", ", values)} }}";
+        }
+
+        // Emits a C# string literal with quotes, backslashes, newlines and other control characters
+        // escaped, so free-text attribute values cannot break the generated source.
+        private static string ToStringLiteral(string? value)
+        {
+            return value != null ? SymbolDisplay.FormatLiteral(value, quote: true) : "null";
         }
     }
 }
