@@ -21,7 +21,8 @@ public class AsyncApiOfficialSchemaConformanceTests
     {
         [MessageAndServerBindingsTests.DocumentName] = MessageAndServerBindingsTests.Configure,
         [ProtocolBindingsCoverageTests.DocumentName] = ProtocolBindingsCoverageTests.Configure,
-        ["security-requirements"] = SecurityRequirementsTests.Configure
+        ["security-requirements"] = SecurityRequirementsTests.Configure,
+        ["traits"] = TraitsTests.Configure
     };
 
     [Theory]
@@ -39,6 +40,8 @@ public class AsyncApiOfficialSchemaConformanceTests
     [InlineData(AsyncApiVersion.AsyncApi3_0, "attribute-external-docs")]
     [InlineData(AsyncApiVersion.AsyncApi2_0, "security-requirements")]
     [InlineData(AsyncApiVersion.AsyncApi3_0, "security-requirements")]
+    [InlineData(AsyncApiVersion.AsyncApi2_0, "traits")]
+    [InlineData(AsyncApiVersion.AsyncApi3_0, "traits")]
     public async Task GetAsyncApiDocument_ServedDocument_ConformsToOfficialSchema(AsyncApiVersion version, string documentName)
     {
         // Arrange

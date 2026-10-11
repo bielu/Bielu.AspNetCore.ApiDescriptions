@@ -54,6 +54,12 @@ public abstract class OperationAttribute : Attribute
     public string[] SecuritySchemes { get; set; } = Array.Empty<string>();
 
     /// <summary>
+    /// The keys of the operation traits to apply to this operation. Each must be registered in
+    /// <c>components/operationTraits</c>, for example with <c>AsyncApiOptions.AddOperationTrait</c>.
+    /// </summary>
+    public string[] Traits { get; set; } = Array.Empty<string>();
+
+    /// <summary>
     /// A list of tags for API documentation control. Tags can be used for logical grouping of operations.
     /// </summary>
     public string[] Tags { get; protected set; } = Array.Empty<string>();
