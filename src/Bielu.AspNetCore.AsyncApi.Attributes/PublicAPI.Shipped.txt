@@ -79,3 +79,7 @@ Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute.SubscribeOperationAttribute() -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute.SubscribeOperationAttribute(System.Type! messagePayloadType) -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute.SubscribeOperationAttribute(System.Type! messagePayloadType, params string![]! tags) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.IAsyncApiMessageHeaderExampleProvider
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.IAsyncApiMessageHeaderExampleProvider.GetHeaderExample() -> object!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ContentType.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.ContentType.set -> void

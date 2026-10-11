@@ -1,0 +1,13 @@
+#nullable enable
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.IncludeAssembly(System.Reflection.Assembly! assembly) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.IncludeAssemblyContaining<T>() -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.IncludeSchemes(params string![]! schemes) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.MapChannel(System.Uri! endpointUri, string! address) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.SignalRClientMethod.get -> string!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.SignalRClientMethod.set -> void
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.UseServer(string! scheme, string! serverName) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.WolverineAsyncApiOptions() -> void
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptionsExtensions
+const Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.DefaultSignalRClientMethod = "ReceiveMessage" -> string!
+static Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptionsExtensions.AddWolverine(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!

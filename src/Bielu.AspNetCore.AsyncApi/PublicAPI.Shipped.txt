@@ -181,3 +181,6 @@ virtual Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.<Clone>$(
 virtual Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.EqualityContract.get -> System.Type!
 virtual Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Equals(Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata? other) -> bool
 virtual Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiJsonSchemaJsonOptions.get -> System.Text.Json.JsonSerializerOptions?
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiJsonSchemaJsonOptions.set -> void
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Description.get -> Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription?
