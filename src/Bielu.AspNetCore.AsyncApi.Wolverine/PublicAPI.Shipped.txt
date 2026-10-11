@@ -11,3 +11,4 @@ Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.WolverineAsyncApiOp
 Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptionsExtensions
 const Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.DefaultSignalRClientMethod = "ReceiveMessage" -> string!
 static Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptionsExtensions.AddWolverine(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.IncludeReplies() -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!

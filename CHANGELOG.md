@@ -19,6 +19,32 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [1.2.0] - 2026-10-11
+
+### Minor Changes
+
+- [#90](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/90) [`5b092b2`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/5b092b2457be39208a30267351d5ba736c77c7cf) Thanks [@bielu](https://github.com/bielu)! - Add `ExternalDocsUrl` and `ExternalDocsDescription` to `[Channel]`, `[PublishOperation]`/`[SubscribeOperation]` and `[Message]`. Setting a URL writes `externalDocs` on the generated channel, operation or message, including through the source generator.
+
+- [#97](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/97) [`05b3a50`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/05b3a50e56951593a754c261434d46f1774ec4ce) Thanks [@bielu](https://github.com/bielu)! - Add `AsyncApiDocument.IsAsyncApiVersion(AsyncApiVersion)`, a public extension that tells whether a document declares a given AsyncAPI major version, so transformers no longer need to inspect the `asyncapi` string themselves.
+
+- [#88](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/88) [`19d6ec3`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/19d6ec369dc7a63059ca798883c7b40c5852fd41) Thanks [@bielu](https://github.com/bielu)! - Add `MessageAttribute.CorrelationIdLocation` and `CorrelationIdDescription`. Setting a location (for example `$message.header#/correlationId`) writes a `correlationId` on the generated message, including through the source generator.
+
+- [#86](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/86) [`a5c08bd`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/a5c08bd28370362b976d1adb87eeb91339992528) Thanks [@bielu](https://github.com/bielu)! - Add `AsyncApiOptions.AddMessageBinding` and `AsyncApiOptions.AddServerBinding`. Message bindings are registered in `components/messageBindings` and attached to messages declared with a matching `[Message(BindingsRef = "...")]`, which was previously ignored. Server bindings are registered in `components/serverBindings` and attached to the server of the same name.
+
+- [#93](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/93) [`8e320d4`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/8e320d466b48174d3e655f519639a3fb720f64eb) Thanks [@bielu](https://github.com/bielu)! - Add explicit request/reply declaration to operation attributes: `ReplyChannel`, `ReplyAddressLocation`, `ReplyAddressDescription` and `ReplyMessageIds` on `[PublishOperation]`/`[SubscribeOperation]` write the operation's `reply` object (AsyncAPI 3.x).
+
+- [#91](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/91) [`aef1d49`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/aef1d498b248b6193e39211ada543827449501aa) Thanks [@bielu](https://github.com/bielu)! - Add attribute-declared security requirements. `SecuritySchemes` on `[PublishOperation]`/`[SubscribeOperation]` and the new `AsyncApiOptions.AddServerSecurity(...)` reference schemes registered with the new `AsyncApiOptions.AddSecurityScheme(...)`, writing `security` on the generated operation or server.
+
+- [#92](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/92) [`193f99c`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/193f99c382d76dcdda6c80f222f09fe2a0bcac64) Thanks [@bielu](https://github.com/bielu)! - Add operation and message traits. Register them with `AsyncApiOptions.AddOperationTrait(...)`/`AddMessageTrait(...)` and apply them with `Traits` on `[PublishOperation]`/`[SubscribeOperation]` and `[Message]`, which writes `traits` references on the generated operation or message.
+
+- [#97](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/97) [`50a65d2`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/50a65d275a5303c36354469d83b59141f9f6c45c) Thanks [@bielu](https://github.com/bielu)! - Document Wolverine handler responses as operation replies. A `receive` operation whose handler returns a message that has no route now gets a `reply`, addressed by the `reply-uri` header, on an address-less reply channel (AsyncAPI 3.x). `IncludeReplies()` extends this to returned messages that also have a route.
+
+### Patch Changes
+
+- [#87](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/87) [`e36cf8a`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/e36cf8a7201d3299554d72721011813ca569b747) Thanks [@bielu](https://github.com/bielu)! - Fix `AsyncApiOptions.AddChannelBinding` not attaching to the channel of the same name. The binding was registered in `components/channelBindings` but only reached a channel that named it through `[Channel(BindingsRef = "...")]`. A channel without a `BindingsRef` now gets the bindings registered under its own name; an explicit `BindingsRef` still takes precedence.
+
+- [#83](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/83) [`60123ed`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/60123ed6ed8b5b297d2f1c824769a6a048351af3) Thanks [@bielu](https://github.com/bielu)! - Fix `MessageAttribute.Tags` being silently ignored. Tags passed to `[Message(typeof(T), "tag", ...)]` are now written to the generated message's `tags` and registered in `components/tags`, the same way operation tags already are.
+
 ## [1.1.0] - 2026-10-06
 
 ### Minor Changes
