@@ -48,6 +48,12 @@ public abstract class OperationAttribute : Attribute
     public string? ExternalDocsDescription { get; set; }
 
     /// <summary>
+    /// The keys of the security schemes this operation requires. Each must be registered in
+    /// <c>components/securitySchemes</c>, for example with <c>AsyncApiOptions.AddSecurityScheme</c>.
+    /// </summary>
+    public string[] SecuritySchemes { get; set; } = Array.Empty<string>();
+
+    /// <summary>
     /// A list of tags for API documentation control. Tags can be used for logical grouping of operations.
     /// </summary>
     public string[] Tags { get; protected set; } = Array.Empty<string>();

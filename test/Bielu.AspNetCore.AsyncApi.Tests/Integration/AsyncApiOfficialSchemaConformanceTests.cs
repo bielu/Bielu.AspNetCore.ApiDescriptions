@@ -17,6 +17,13 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Integration;
 /// </summary>
 public class AsyncApiOfficialSchemaConformanceTests
 {
+    private static readonly Dictionary<string, Action<AsyncApiOptions>> FixtureOptions = new()
+    {
+        [MessageAndServerBindingsTests.DocumentName] = MessageAndServerBindingsTests.Configure,
+        [ProtocolBindingsCoverageTests.DocumentName] = ProtocolBindingsCoverageTests.Configure,
+        ["security-requirements"] = SecurityRequirementsTests.Configure
+    };
+
     [Theory]
     [InlineData(AsyncApiVersion.AsyncApi2_0, AsyncApiGeneratorConstants.DefaultDocumentName)]
     [InlineData(AsyncApiVersion.AsyncApi3_0, AsyncApiGeneratorConstants.DefaultDocumentName)]
@@ -30,6 +37,8 @@ public class AsyncApiOfficialSchemaConformanceTests
     [InlineData(AsyncApiVersion.AsyncApi3_0, MessageAttributeCorrelationIdTests.DocumentName)]
     [InlineData(AsyncApiVersion.AsyncApi2_0, "attribute-external-docs")]
     [InlineData(AsyncApiVersion.AsyncApi3_0, "attribute-external-docs")]
+    [InlineData(AsyncApiVersion.AsyncApi2_0, "security-requirements")]
+    [InlineData(AsyncApiVersion.AsyncApi3_0, "security-requirements")]
     public async Task GetAsyncApiDocument_ServedDocument_ConformsToOfficialSchema(AsyncApiVersion version, string documentName)
     {
         // Arrange
@@ -42,13 +51,9 @@ public class AsyncApiOfficialSchemaConformanceTests
             options.AddServer("websocket-server", "localhost", "ws");
             options.WithInfo("Schema Conformance Test", "1.0.0");
 
-            if (documentName == MessageAndServerBindingsTests.DocumentName)
+            if (FixtureOptions.TryGetValue(documentName, out var configureFixture))
             {
-                MessageAndServerBindingsTests.Configure(options);
-            }
-            else if (documentName == ProtocolBindingsCoverageTests.DocumentName)
-            {
-                ProtocolBindingsCoverageTests.Configure(options);
+                configureFixture(options);
             }
         });
 
