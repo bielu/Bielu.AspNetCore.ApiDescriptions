@@ -24,3 +24,11 @@ Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Traits.get ->
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Traits.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Traits.get -> string![]!
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Traits.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ReplyChannel.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ReplyChannel.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ReplyAddressLocation.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ReplyAddressLocation.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ReplyAddressDescription.get -> string?
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ReplyAddressDescription.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ReplyMessageIds.get -> string![]!
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.ReplyMessageIds.set -> void
