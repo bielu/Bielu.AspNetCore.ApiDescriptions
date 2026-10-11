@@ -230,7 +230,9 @@ internal sealed class AsyncApiDocumentService(
                           _xmlDocumentationProvider.GetDocumentation(member)?.Summary ?? string.Empty,
         };
 
-        AttachChannelBindings(document, created, channelAttr.BindingsRef);
+        // Without an explicit BindingsRef, a channel picks up the bindings registered under its own name.
+        AttachChannelBindings(document, created,
+            string.IsNullOrWhiteSpace(channelAttr.BindingsRef) ? sanitizedKey : channelAttr.BindingsRef);
         document.Channels[sanitizedKey] = created;
         return created;
     }
@@ -911,14 +913,9 @@ internal sealed class AsyncApiDocumentService(
                         bindings.Add(binding);
                     }
 
-                    var key = AsyncApiNamingHelper.SanitizeKey(kvp.Key);
-                    document.Components.ChannelBindings[key] = bindings;
-
-                    // Apply bindings to the actual channel if it exists
-                    if (document.Channels.TryGetValue(key, out var channel))
-                    {
-                        channel.Bindings = bindings;
-                    }
+                    // Channels do not exist yet at this point; GetOrCreateChannel attaches these by
+                    // BindingsRef, or by channel name when no BindingsRef is given.
+                    document.Components.ChannelBindings[AsyncApiNamingHelper.SanitizeKey(kvp.Key)] = bindings;
                 }
             }
         }
