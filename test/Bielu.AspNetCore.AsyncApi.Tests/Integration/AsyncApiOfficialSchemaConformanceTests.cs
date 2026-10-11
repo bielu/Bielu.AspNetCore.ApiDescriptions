@@ -22,6 +22,8 @@ public class AsyncApiOfficialSchemaConformanceTests
     [InlineData(AsyncApiVersion.AsyncApi3_0, AsyncApiGeneratorConstants.DefaultDocumentName)]
     [InlineData(AsyncApiVersion.AsyncApi2_0, "message-attribute-headers")]
     [InlineData(AsyncApiVersion.AsyncApi3_0, "message-attribute-headers")]
+    [InlineData(AsyncApiVersion.AsyncApi2_0, MessageAndServerBindingsTests.DocumentName)]
+    [InlineData(AsyncApiVersion.AsyncApi3_0, MessageAndServerBindingsTests.DocumentName)]
     public async Task GetAsyncApiDocument_ServedDocument_ConformsToOfficialSchema(AsyncApiVersion version, string documentName)
     {
         // Arrange
@@ -33,6 +35,11 @@ public class AsyncApiOfficialSchemaConformanceTests
             options.AsyncApiVersion = version;
             options.AddServer("websocket-server", "localhost", "ws");
             options.WithInfo("Schema Conformance Test", "1.0.0");
+
+            if (documentName == MessageAndServerBindingsTests.DocumentName)
+            {
+                MessageAndServerBindingsTests.Configure(options);
+            }
         });
 
         await using var app = builder.Build();

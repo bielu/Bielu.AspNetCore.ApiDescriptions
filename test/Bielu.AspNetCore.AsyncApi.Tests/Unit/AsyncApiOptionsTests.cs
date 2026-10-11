@@ -280,6 +280,62 @@ public class AsyncApiOptionsTests
     }
 
     [Fact]
+    public void AddMessageBinding_AddsMultipleBindingsUnderSameName()
+    {
+        // Arrange
+        var options = new AsyncApiOptions();
+
+        // Act
+        var returned = options
+            .AddMessageBinding("my-message", new ByteBard.AsyncAPI.Bindings.Kafka.KafkaMessageBinding())
+            .AddMessageBinding("my-message", new ByteBard.AsyncAPI.Bindings.Http.HttpMessageBinding());
+
+        // Assert
+        returned.ShouldBeSameAs(options);
+        options.MessageBindings["my-message"].Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public void AddMessageBinding_ThrowsForNullArguments()
+    {
+        // Arrange
+        var options = new AsyncApiOptions();
+
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() =>
+            options.AddMessageBinding(null!, new ByteBard.AsyncAPI.Bindings.Kafka.KafkaMessageBinding()));
+        Should.Throw<ArgumentNullException>(() => options.AddMessageBinding("my-message", null!));
+    }
+
+    [Fact]
+    public void AddServerBinding_AddsMultipleBindingsUnderSameName()
+    {
+        // Arrange
+        var options = new AsyncApiOptions();
+
+        // Act
+        var returned = options
+            .AddServerBinding("my-server", new ByteBard.AsyncAPI.Bindings.Kafka.KafkaServerBinding())
+            .AddServerBinding("my-server", new ByteBard.AsyncAPI.Bindings.MQTT.MQTTServerBinding());
+
+        // Assert
+        returned.ShouldBeSameAs(options);
+        options.ServerBindings["my-server"].Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public void AddServerBinding_ThrowsForNullArguments()
+    {
+        // Arrange
+        var options = new AsyncApiOptions();
+
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() =>
+            options.AddServerBinding(null!, new ByteBard.AsyncAPI.Bindings.Kafka.KafkaServerBinding()));
+        Should.Throw<ArgumentNullException>(() => options.AddServerBinding("my-server", null!));
+    }
+
+    [Fact]
     public void MethodChaining_AllowsFluentConfiguration()
     {
         // Arrange & Act

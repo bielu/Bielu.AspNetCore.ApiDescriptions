@@ -277,6 +277,24 @@ internal sealed class AsyncApiDocumentService(
         }
     }
 
+    /// <summary>
+    /// Attaches a message bindings item registered in <c>components/messageBindings</c> (via
+    /// <see cref="AsyncApiOptions.AddMessageBinding"/>) to the message referenced by <paramref name="bindingsRef"/>.
+    /// </summary>
+    private static void AttachMessageBindings(AsyncApiDocument document, AsyncApiMessage message, string? bindingsRef)
+    {
+        if (string.IsNullOrWhiteSpace(bindingsRef))
+        {
+            return;
+        }
+
+        if (document.Components?.MessageBindings is { } registered &&
+            registered.TryGetValue(AsyncApiNamingHelper.SanitizeKey(bindingsRef), out var bindings))
+        {
+            message.Bindings = bindings;
+        }
+    }
+
     private void ApplyChannelParametersFromMetadata(AsyncApiChannel channel, AsyncApiMemberMetadata memberMetadata)
     {
         var paramAttrs = memberMetadata.Parameters;
@@ -422,6 +440,8 @@ internal sealed class AsyncApiDocumentService(
                 ? new AsyncApiJsonSchemaReference($"#/components/schemas/{headersSchemaKey}")
                 : new AsyncApiMultiFormatSchema { Schema = headersSchema as AsyncApiJsonSchema };
         }
+
+        AttachMessageBindings(document, message, messageAttr.BindingsRef);
 
         if (messageAttr.Tags is { Length: > 0 })
         {
@@ -902,6 +922,73 @@ internal sealed class AsyncApiDocumentService(
                 }
             }
         }
+
+        foreach (var kvp in _options.MessageBindings.Where(kvp => kvp.Value.Count > 0))
+        {
+            document.Components.MessageBindings ??= new Dictionary<string, AsyncApiBindings<IMessageBinding>>();
+            document.Components.MessageBindings[AsyncApiNamingHelper.SanitizeKey(kvp.Key)] = ToBindings(kvp.Value);
+        }
+
+        foreach (var kvp in _options.ServerBindings.Where(kvp => kvp.Value.Count > 0))
+        {
+            var key = AsyncApiNamingHelper.SanitizeKey(kvp.Key);
+            var bindings = ToBindings(kvp.Value);
+
+            document.Components.ServerBindings ??= new Dictionary<string, AsyncApiBindings<IServerBinding>>();
+            document.Components.ServerBindings[key] = bindings;
+
+            if (document.Servers.TryGetValue(key, out var server))
+            {
+                // The document shares server instances with the options, so attach to a per-document copy.
+                var documentServer = CopyServer(server);
+                var merged = new AsyncApiBindings<IServerBinding>();
+                if (server.Bindings is not null)
+                {
+                    foreach (var existing in server.Bindings)
+                    {
+                        merged[existing.Key] = existing.Value;
+                    }
+                }
+
+                // Bindings registered through AddServerBinding win over ones set on the server itself.
+                foreach (var registered in bindings)
+                {
+                    merged[registered.Key] = registered.Value;
+                }
+
+                documentServer.Bindings = merged;
+                document.Servers[key] = documentServer;
+            }
+        }
+    }
+
+    private static AsyncApiServer CopyServer(AsyncApiServer source) => new()
+    {
+        Host = source.Host,
+        PathName = source.PathName,
+        Protocol = source.Protocol,
+        ProtocolVersion = source.ProtocolVersion,
+        Description = source.Description,
+        Title = source.Title,
+        Summary = source.Summary,
+        Variables = source.Variables,
+        Security = source.Security,
+        Tags = source.Tags,
+        ExternalDocs = source.ExternalDocs,
+        Bindings = source.Bindings,
+        Extensions = source.Extensions
+    };
+
+    private static AsyncApiBindings<TBinding> ToBindings<TBinding>(IEnumerable<TBinding> source)
+        where TBinding : IBinding
+    {
+        var bindings = new AsyncApiBindings<TBinding>();
+        foreach (var binding in source)
+        {
+            bindings.Add(binding);
+        }
+
+        return bindings;
     }
 
     internal Dictionary<string, AsyncApiServer> GetAsyncApiServers(HttpRequest? httpRequest = null)

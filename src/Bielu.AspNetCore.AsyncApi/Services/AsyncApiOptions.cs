@@ -435,6 +435,24 @@ public sealed class AsyncApiOptions
     public Dictionary<string, IList<IChannelBinding>> ChannelBindings { get; } = new();
 
     /// <summary>
+    /// Message bindings collection, keyed by the name a <c>[Message(BindingsRef = "...")]</c> refers to.
+    /// </summary>
+    /// <remarks>
+    /// The dictionary's contents can be added to, replaced and cleared; the dictionary
+    /// <em>instance</em> cannot be replaced. Build the contents up, or call <see cref="AddMessageBinding"/>.
+    /// </remarks>
+    public Dictionary<string, IList<IMessageBinding>> MessageBindings { get; } = new();
+
+    /// <summary>
+    /// Server bindings collection, keyed by server name.
+    /// </summary>
+    /// <remarks>
+    /// The dictionary's contents can be added to, replaced and cleared; the dictionary
+    /// <em>instance</em> cannot be replaced. Build the contents up, or call <see cref="AddServerBinding"/>.
+    /// </remarks>
+    public Dictionary<string, IList<IServerBinding>> ServerBindings { get; } = new();
+
+    /// <summary>
     /// The route pattern the document is served from. Set by <c>MapAsyncApi(pattern)</c>; defaults to
     /// <see cref="AsyncApiGeneratorConstants.DefaultAsyncApiRoute"/> so it is never null for anything
     /// reading it before the endpoint is mapped (build-time generation, for one).
@@ -491,6 +509,61 @@ public sealed class AsyncApiOptions
         }
 
         ChannelBindings[name].Add(binding);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a message binding. It is registered in <c>components/messageBindings</c> under
+    /// <paramref name="name"/> and attached to every message declared with a matching
+    /// <c>[Message(BindingsRef = "...")]</c>.
+    /// </summary>
+    /// <param name="name">The name messages refer to through <c>BindingsRef</c>.</param>
+    /// <param name="binding">The protocol-specific message binding.</param>
+    /// <returns>The same <see cref="AsyncApiOptions"/> instance, for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// options.AddMessageBinding("orderPlaced", new KafkaMessageBinding { SchemaLookupStrategy = "TopicIdStrategy" });
+    /// </code>
+    /// </example>
+    public AsyncApiOptions AddMessageBinding(string name, IMessageBinding binding)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(binding);
+
+        if (!MessageBindings.ContainsKey(name))
+        {
+            MessageBindings[name] = new List<IMessageBinding>();
+        }
+
+        MessageBindings[name].Add(binding);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a server binding. It is registered in <c>components/serverBindings</c> under
+    /// <paramref name="name"/> and attached to the server of the same name, when one was added with
+    /// <c>AddServer</c>.
+    /// </summary>
+    /// <param name="name">The server name, as passed to <c>AddServer</c>.</param>
+    /// <param name="binding">The protocol-specific server binding.</param>
+    /// <returns>The same <see cref="AsyncApiOptions"/> instance, for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// options.AddServer("broker", "localhost:9092", "kafka");
+    /// options.AddServerBinding("broker", new KafkaServerBinding { SchemaRegistryVendor = "confluent" });
+    /// </code>
+    /// </example>
+    public AsyncApiOptions AddServerBinding(string name, IServerBinding binding)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(binding);
+
+        if (!ServerBindings.ContainsKey(name))
+        {
+            ServerBindings[name] = new List<IServerBinding>();
+        }
+
+        ServerBindings[name].Add(binding);
         return this;
     }
 
