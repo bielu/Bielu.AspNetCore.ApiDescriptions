@@ -73,3 +73,23 @@ public static class TrackOrderHandler
 {
     public static OrderPlaced Handle(TrackOrder query) => new(query.OrderId);
 }
+
+/// <summary>Read from Kafka by a handler that answers with an array of quotes.</summary>
+/// <param name="Category">The product category to quote.</param>
+[MessageIdentity("quotes.list-quotes")]
+public sealed record ListQuotes(string Category);
+
+/// <summary>Read from Kafka by a handler that answers with a sequence of quotes.</summary>
+/// <param name="Text">The text to search products by.</param>
+[MessageIdentity("quotes.find-quotes")]
+public sealed record FindQuotes(string Text);
+
+public static class ListQuotesHandler
+{
+    public static Quote[] Handle(ListQuotes query) => [new(query.Category, 0m)];
+}
+
+public static class FindQuotesHandler
+{
+    public static IEnumerable<Quote> Handle(FindQuotes query) => [new(query.Text, 0m)];
+}

@@ -50,6 +50,21 @@ public class WolverineReplyTests
         message["summary"]!.GetValue<string>().ShouldBe("The price quoted for a product.");
     }
 
+    [Theory]
+    [InlineData("receive.quotes.list-quotes")]
+    [InlineData("receive.quotes.find-quotes")]
+    public async Task TransformAsync_HandlerReturnsCollectionOfMessages_AddsReplyWithElementMessage(string operationId)
+    {
+        // Act
+        var document = await GetDocumentAsync();
+
+        // Assert
+        var reply = document["operations"]![operationId]!["reply"]!;
+        reply["channel"]!["$ref"]!.GetValue<string>().ShouldBe($"#/channels/{operationId}.reply");
+        reply["messages"]!.AsArray().Single()!["$ref"]!.GetValue<string>()
+            .ShouldBe($"#/channels/{operationId}.reply/messages/quotes.quote");
+    }
+
     [Fact]
     public async Task TransformAsync_HandlerReturnsRoutedMessage_LeavesReceiveOperationWithoutReply()
     {
@@ -94,7 +109,7 @@ public class WolverineReplyTests
         var document = await GetDocumentAsync(wolverine => wolverine.IncludeReplies(), AsyncApiVersion.AsyncApi2_0);
 
         // Assert
-        document["channels"]!.AsObject().Select(c => c.Key).ShouldBe(["orders", "quotes", "stock", "tracking"], ignoreOrder: true);
+        document["channels"]!.AsObject().Select(c => c.Key).ShouldBe(["orders", "quote-lists", "quote-searches", "quotes", "stock", "tracking"], ignoreOrder: true);
         document["components"]!["messages"]!.AsObject().ContainsKey("quotes.quote").ShouldBeFalse();
     }
 
@@ -125,5 +140,7 @@ public class WolverineReplyTests
             {
                 opts.ListenToKafkaTopic("quotes").DefaultIncomingMessage<GetQuote>();
                 opts.ListenToKafkaTopic("tracking").DefaultIncomingMessage<TrackOrder>();
+                opts.ListenToKafkaTopic("quote-lists").DefaultIncomingMessage<ListQuotes>();
+                opts.ListenToKafkaTopic("quote-searches").DefaultIncomingMessage<FindQuotes>();
             });
 }

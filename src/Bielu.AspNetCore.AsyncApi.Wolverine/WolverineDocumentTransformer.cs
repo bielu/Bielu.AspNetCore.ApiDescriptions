@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
 using Wolverine.Runtime;
+using Wolverine.Runtime.Handlers;
 using Wolverine.Runtime.Routing;
 using Wolverine.Util;
 
@@ -91,14 +92,34 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
     /// <see cref="WolverineAsyncApiOptions.IncludeReplies"/>.
     /// </remarks>
     private List<Type> ReplyTypes(IWolverineRuntime runtime, Type messageType) =>
-        (runtime as WolverineRuntime)?.Handlers.ChainFor(messageType)?.PublishedTypes()
-            .Where(t => t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
-                        && t != typeof(object)
-                        && t.Assembly != typeof(IWolverineRuntime).Assembly
-                        && (options.RepliesIncluded || !runtime.RoutingFor(t).Routes.Any()))
-            .Distinct()
-            .OrderBy(t => t.FullName, StringComparer.Ordinal)
-            .ToList() ?? [];
+        (runtime as WolverineRuntime)?.Handlers.ChainFor(messageType) is not { } chain
+            ? []
+            : ReturnedMessageTypes(chain)
+                .Where(t => t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
+                            && t != typeof(object)
+                            && t.Assembly != typeof(IWolverineRuntime).Assembly
+                            && (options.RepliesIncluded || !runtime.RoutingFor(t).Routes.Any()))
+                .Distinct()
+                .OrderBy(t => t.FullName, StringComparer.Ordinal)
+                .ToList();
+
+    /// <summary>
+    /// What the handlers in <paramref name="chain"/> return as messages. Wolverine publishes each element of a
+    /// returned array or collection on its own, but leaves collections out of
+    /// <see cref="HandlerChain.PublishedTypes"/>, so their element types are added here.
+    /// </summary>
+    private static IEnumerable<Type> ReturnedMessageTypes(HandlerChain chain) =>
+        chain.PublishedTypes().Concat(chain.Handlers
+            .SelectMany(handler => handler.Creates)
+            .Select(variable => ElementType(variable.VariableType))
+            .OfType<Type>());
+
+    private static Type? ElementType(Type type) =>
+        type.IsArray
+            ? type.GetElementType()
+            : type.GetInterfaces().Append(type)
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                ?.GetGenericArguments()[0];
 
     private static IEnumerable<Type> CandidateTypes(Assembly assembly) =>
         assembly.GetExportedTypes().Where(t =>
