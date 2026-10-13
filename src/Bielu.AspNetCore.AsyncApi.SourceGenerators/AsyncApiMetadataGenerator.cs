@@ -188,7 +188,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var correlationDescription = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdDescription").Value.Value as string;
                         var correlationDescriptionValue = ToStringLiteral(correlationDescription);
 
-                        sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "Traits")} }},");
+                        sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue}{GetStringInitializers(attr, "ContentType")}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "Traits")} }},");
                     }
                     sb.AppendLine("                        },");
 
