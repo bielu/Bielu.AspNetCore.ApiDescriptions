@@ -175,6 +175,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 Messages = [new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{messageKey}")],
                 Bindings = OperationBindings(endpointUri, action),
             };
+            ApplyOperationMetadata(operation, messageType);
             document.Operations[operationId] = operation;
             return (operationId, operation);
         }
@@ -296,7 +297,64 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                     : new AsyncApiMultiFormatSchema { Schema = schema as AsyncApiJsonSchema },
             };
 
+            ApplyMessageMetadata(document.Components.Messages[key], messageType);
             return key;
+        }
+
+        private void ApplyMessageMetadata(AsyncApiMessage message, Type messageType)
+        {
+            if (options.CorrelationIdIncluded)
+            {
+                message.CorrelationId = new AsyncApiCorrelationId
+                {
+                    Location = $"$message.header#/{EnvelopeConstants.CorrelationIdKey}",
+                    Description = "The correlation id Wolverine stamps on every envelope it sends through a broker.",
+                };
+            }
+
+            if (!options.Metadata.TryGetValue(messageType, out var metadata))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(metadata.ExternalDocsUrl))
+            {
+                message.ExternalDocs = new AsyncApiExternalDocumentation
+                {
+                    Url = new Uri(metadata.ExternalDocsUrl, UriKind.RelativeOrAbsolute),
+                    Description = metadata.ExternalDocsDescription,
+                };
+            }
+
+            foreach (var traitKey in metadata.MessageTraits)
+            {
+                message.Traits ??= new List<AsyncApiMessageTrait>();
+                message.Traits.Add(new AsyncApiMessageTraitReference(
+                    $"#/components/messageTraits/{AsyncApiNamingHelper.SanitizeKey(traitKey)}"));
+            }
+        }
+
+        private void ApplyOperationMetadata(AsyncApiOperation operation, Type messageType)
+        {
+            if (!options.Metadata.TryGetValue(messageType, out var metadata))
+            {
+                return;
+            }
+
+            foreach (var traitKey in metadata.OperationTraits)
+            {
+                operation.Traits ??= new List<AsyncApiOperationTrait>();
+                operation.Traits.Add(new AsyncApiOperationTraitReference(
+                    $"#/components/operationTraits/{AsyncApiNamingHelper.SanitizeKey(traitKey)}"));
+            }
+
+            if (metadata.SecuritySchemes.Count > 0)
+            {
+                operation.Security ??= new List<AsyncApiSecurityScheme>();
+                AuthenticationSchemeDocumentTransformer.AddReferences(
+                    operation.Security,
+                    metadata.SecuritySchemes.Select(AsyncApiNamingHelper.SanitizeKey).ToList());
+            }
         }
 
         private string ResolveAddress(Uri endpointUri)
