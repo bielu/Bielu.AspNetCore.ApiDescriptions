@@ -29,7 +29,7 @@ internal sealed class ArazzoDocumentService([ServiceKey] string documentName, IO
 
         var document = new ArazzoDocument
         {
-            Arazzo = ArazzoVersion.V1_1.ToVersionString(),
+            Arazzo = options.Version.ToVersionString(),
             Info = options.Info,
             SourceDescriptions = [.. options.SourceDescriptions],
             Workflows = [.. options.Workflows],
