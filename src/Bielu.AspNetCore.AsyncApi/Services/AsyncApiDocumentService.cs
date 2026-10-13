@@ -379,9 +379,13 @@ internal sealed class AsyncApiDocumentService(
         var messageKeys = new List<string>();
         var messageAttrs = memberMetadata.Messages;
 
-        foreach (var msgAttr in messageAttrs)
+        foreach (var declaredAttr in messageAttrs)
         {
-            var payloadType = msgAttr.PayloadType;
+            // A parameterless [Message] describes the class it sits on; on a member there is no payload to document.
+            if (declaredAttr.PayloadType is not { } payloadType)
+                continue;
+
+            var msgAttr = ResolveMessageAttribute(payloadType, declaredAttr)!;
             var messageKey = AsyncApiNamingHelper.SanitizeKey(msgAttr.MessageId
                              ?? msgAttr.Name
                              ?? ComputeSchemaKeyValue(payloadType));
@@ -423,6 +427,36 @@ internal sealed class AsyncApiDocumentService(
         }
 
         return messageKeys;
+    }
+
+    /// <summary>
+    /// Combines the <see cref="MessageAttribute"/> placed on a payload class with the one declared on a member:
+    /// whatever the member leaves unset falls back to the class. Returns whichever exists when only one does.
+    /// </summary>
+    private static MessageAttribute? ResolveMessageAttribute(Type payloadType, MessageAttribute? declared)
+    {
+        var typeAttr = payloadType.GetCustomAttribute<MessageAttribute>(inherit: false);
+        if (typeAttr is null)
+            return declared;
+        if (declared is null)
+            return typeAttr;
+
+        return new MessageAttribute(payloadType, declared.Tags.Length > 0 ? declared.Tags : typeAttr.Tags)
+        {
+            HeadersType = declared.HeadersType ?? typeAttr.HeadersType,
+            ContentType = declared.ContentType ?? typeAttr.ContentType,
+            Name = declared.Name ?? typeAttr.Name,
+            Title = declared.Title ?? typeAttr.Title,
+            Summary = declared.Summary ?? typeAttr.Summary,
+            Description = declared.Description ?? typeAttr.Description,
+            BindingsRef = declared.BindingsRef ?? typeAttr.BindingsRef,
+            MessageId = declared.MessageId ?? typeAttr.MessageId,
+            CorrelationIdLocation = declared.CorrelationIdLocation ?? typeAttr.CorrelationIdLocation,
+            CorrelationIdDescription = declared.CorrelationIdDescription ?? typeAttr.CorrelationIdDescription,
+            ExternalDocsUrl = declared.ExternalDocsUrl ?? typeAttr.ExternalDocsUrl,
+            ExternalDocsDescription = declared.ExternalDocsDescription ?? typeAttr.ExternalDocsDescription,
+            Traits = declared.Traits.Length > 0 ? declared.Traits : typeAttr.Traits,
+        };
     }
 
     private async Task ApplyMessageAttributeAsync(
@@ -760,7 +794,7 @@ internal sealed class AsyncApiDocumentService(
                     ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType,
                         memberMetadata.MessageExamples, scopedServiceProvider);
 
-                    if (memberMetadata.Messages.FirstOrDefault() is MessageAttribute messageAttribute)
+                    if (ResolveMessageAttribute(payloadType, memberMetadata.Messages.FirstOrDefault()) is { } messageAttribute)
                     {
                         await ApplyMessageAttributeAsync(document, message, messageAttribute, scopedServiceProvider, schemaTransformers, cancellationToken);
                     }

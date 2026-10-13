@@ -38,6 +38,19 @@ You can use the `[Message]` attribute to customize how a message appears in the 
 public class UserEvent { ... }
 ```
 
+On a class the payload type is the class itself, so no type argument is needed. The values become the
+defaults for every channel that uses the class as a payload. A `[Message]` on a method still names the
+payload and overrides whatever it sets:
+
+```csharp
+[Channel("users/created")]
+[Message(typeof(UserEvent), Title = "User created")] // Name and Summary come from the class
+public void UserCreated() { }
+```
+
+Class-level metadata is read by reflection, so it is not part of the source-generated metadata used for
+Native AOT yet.
+
 ### Message Examples
 
 Examples can be defined as JSON literals or via a provider class.
