@@ -1,4 +1,5 @@
-﻿using Bielu.Arazzo.Models;
+﻿using Bielu.Arazzo;
+using Bielu.Arazzo.Models;
 using Bielu.AspNetCore.Arazzo.Transformers;
 
 namespace Bielu.AspNetCore.Arazzo.Services;
@@ -8,6 +9,12 @@ public sealed class ArazzoOptions
 {
     /// <summary>The name of this document, used in the <c>MapArazzo</c> route and for keyed-service lookup.</summary>
     public string DocumentName { get; internal set; } = ArazzoDefaults.DefaultDocumentName;
+
+    /// <summary>
+    /// The Arazzo Specification version the document declares in its <c>arazzo</c> field. Defaults to
+    /// <see cref="ArazzoVersion.V1_1"/>.
+    /// </summary>
+    public ArazzoVersion Version { get; set; } = ArazzoVersion.V1_1;
 
     /// <summary>The document's <c>info</c> object. Set via <see cref="WithInfo(string,string)"/>.</summary>
     public ArazzoInfo? Info { get; set; }

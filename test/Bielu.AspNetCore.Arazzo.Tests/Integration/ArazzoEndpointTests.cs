@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using Bielu.Arazzo;
 using Bielu.AspNetCore.Arazzo.Extensions;
 using Bielu.AspNetCore.Arazzo.Services;
 using Microsoft.AspNetCore.Builder;
@@ -32,6 +33,24 @@ public class ArazzoEndpointTests
         using var document = JsonDocument.Parse(json);
         document.RootElement.GetProperty("arazzo").GetString().ShouldBe("1.1.0");
         document.RootElement.GetProperty("info").GetProperty("title").GetString().ShouldBe("Test Workflows");
+    }
+
+    [Theory]
+    [InlineData(ArazzoVersion.V1_0, "1.0.0")]
+    [InlineData(ArazzoVersion.V1_1, "1.1.0")]
+    public async Task MapArazzo_ConfiguredVersion_DeclaresThatVersion(ArazzoVersion version, string expected)
+    {
+        // Arrange
+        using var host = await CreateTestHostAsync(configureOptions: o => o.Version = version);
+        var client = host.GetTestClient();
+
+        // Act
+        var response = await client.GetAsync(GetDocumentRoute(ArazzoDefaults.DefaultDocumentName));
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        document.RootElement.GetProperty("arazzo").GetString().ShouldBe(expected);
     }
 
     [Fact]
