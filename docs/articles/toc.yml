@@ -1,5 +1,7 @@
 - name: Getting Started
   href: getting-started.md
+- name: Supported Specifications
+  href: supported-specifications.md
 - name: Supported .NET Versions
   href: supported-dotnet-versions.md
 - name: Templates

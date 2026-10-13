@@ -70,6 +70,7 @@ public class MyService
 ## Documentation Sections
 
 - [Getting Started](https://apidescriptions.bielu.pl/articles/getting-started.html)
+- [Supported specifications](https://apidescriptions.bielu.pl/articles/supported-specifications.html)
 - [Attributes Reference](https://apidescriptions.bielu.pl/articles/attributes.html)
 - [Configuration Guide](https://apidescriptions.bielu.pl/articles/configuration.html)
 - [Scalar & Live Consoles](https://apidescriptions.bielu.pl/articles/scalar-consoles.html)
