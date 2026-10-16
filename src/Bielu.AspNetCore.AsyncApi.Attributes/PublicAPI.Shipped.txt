@@ -34,7 +34,6 @@ Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageId.get -
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageId.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Name.get -> string?
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Name.set -> void
-Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.PayloadType.get -> System.Type!
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Summary.get -> string?
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Summary.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Tags.get -> string![]!
@@ -113,3 +112,5 @@ Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.SecuritySchem
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.SecuritySchemes.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Traits.get -> string![]!
 Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute.Traits.set -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageAttribute() -> void
+Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.PayloadType.get -> System.Type?

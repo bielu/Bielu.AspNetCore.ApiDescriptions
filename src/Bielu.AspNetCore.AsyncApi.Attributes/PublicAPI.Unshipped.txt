@@ -1,3 +1,0 @@
-*REMOVED*Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.PayloadType.get -> System.Type!
-Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.PayloadType.get -> System.Type?
-Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.MessageAttribute() -> void

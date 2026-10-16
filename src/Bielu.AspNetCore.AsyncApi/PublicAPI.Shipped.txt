@@ -194,3 +194,5 @@ Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServerSecurity(string! ser
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.MessageBindings.get -> System.Collections.Generic.Dictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IMessageBinding!>!>!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ServerBindings.get -> System.Collections.Generic.Dictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IServerBinding!>!>!
 static Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiDocumentVersionExtensions.IsAsyncApiVersion(this ByteBard.AsyncAPI.Models.AsyncApiDocument! document, ByteBard.AsyncAPI.AsyncApiVersion version) -> bool
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.BuildTimeDocumentName.get -> string?
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.BuildTimeDocumentName.set -> void

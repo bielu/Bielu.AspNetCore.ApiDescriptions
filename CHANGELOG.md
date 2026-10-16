@@ -19,6 +19,26 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [1.3.0] - 2026-10-16
+
+### Minor Changes
+
+- [#100](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/100) [`71df387`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/71df387c4ef22080c38bc376e6a81bd6f97f952c) Thanks [@bielu](https://github.com/bielu)! - Add `ArazzoOptions.Version` to choose the Arazzo Specification version of the served document (`ArazzoVersion.V1_0` or `V1_1`). It defaults to `V1_1`, the version emitted before.
+
+- [#106](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/106) [`5ff3d07`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/5ff3d07ec30adb83def2caf99670a7fea75acf0a) Thanks [@bielu](https://github.com/bielu)! - Fix build-time generation (`dotnet getdocument`, `OpenApiGenerateDocuments=true`) in apps that call both `AddOpenApi()` and `AddAsyncApi()`. Previously only the AsyncAPI document was written, to `<Project>.json`, and no OpenAPI document was written. Both are now written. An AsyncAPI document whose name matches an OpenAPI one (both default to `v1`) is written as `<Project>_asyncapi-<name>.json`. Set the new `AsyncApiOptions.BuildTimeDocumentName` to choose a different name.
+
+  Add the **BASYNC010** analyzer warning, reported when `AddOpenApi()` is called after `AddAsyncApi()` in the same method. Register OpenAPI first so build-time generation reliably writes both documents.
+
+  The BASYNC analyzers now reach apps that reference only `Bielu.AspNetCore.AsyncApi`. Previously they ran only when `Bielu.AspNetCore.AsyncApi.Attributes` was referenced directly, so existing BASYNC warnings may appear for the first time after upgrading.
+
+- [#105](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/105) [`d5b9fa1`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/d5b9fa18dbc601a70da0607aa7ce3d3de156acce) Thanks [@bielu](https://github.com/bielu)! - Allow `[Message]` on a payload class. The class is the payload, so the type argument is optional (`new MessageAttribute()`), and its values become defaults wherever the class is used as a payload; a `[Message]` on a method still overrides them. `MessageAttribute.PayloadType` is now nullable. Class-level metadata is read by reflection and is not yet part of the source-generated (Native AOT) metadata.
+
+- [#104](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/104) [`b841c13`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/b841c13acc87e5b1c9509066495bc74dba1d5242) Thanks [@bielu](https://github.com/bielu)! - Document more of the AsyncAPI spec from Wolverine routing: `AddWolverine` gains `IncludeCorrelationId()`, `WithExternalDocs<T>()`, `WithMessageTraits<T>()`, `WithOperationTraits<T>()` and `RequireSecurity<T>()`.
+
+### Patch Changes
+
+- [#101](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/101) [`26fc9ff`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/26fc9ff2a9ce7eb2a4bc83bf6c8f84f935b6238f) Thanks [@bielu](https://github.com/bielu)! - Fix the source generator dropping `MessageAttribute.ContentType`, so source-generated (Native AOT) metadata now sets the same message content type as the reflection path.
+
 ## [1.2.0] - 2026-10-11
 
 ### Minor Changes
