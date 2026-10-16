@@ -3,6 +3,7 @@ using Bielu.AspNetCore.AsyncApi.Wolverine.Tests.Fixtures;
 using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Models;
 using Shouldly;
+using Wolverine.Kafka;
 using Xunit;
 
 namespace Bielu.AspNetCore.AsyncApi.Wolverine.Tests.Integration;
@@ -38,6 +39,67 @@ public class WolverineSpecMetadataTests
 
         // Assert
         document["components"]!["messages"]!["orders.order-placed"]!.AsObject().ContainsKey("correlationId").ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task TransformAsync_IncludeCorrelationId_SignalRMessage_AddsNoHeaderCorrelationLocation()
+    {
+        // Act: Wolverine's SignalR transport sends a CloudEvents JSON wrapper, not a broker header, so
+        // '$message.header#/correlation-id' never identifies anything in a SignalR message.
+        var document = await WolverineTestApp.GetDocumentAsync("realtime", options =>
+        {
+            options.AddServer("signalr", "localhost", "signalr");
+            options.AddWolverine(wolverine => wolverine.IncludeSchemes("signalr").IncludeCorrelationId());
+        });
+
+        // Assert
+        foreach (var key in new[] { "notice", "orders.order-shipped", "shapes.shape-probe" })
+        {
+            document["components"]!["messages"]![key]!.AsObject().ContainsKey("correlationId").ShouldBeFalse();
+        }
+    }
+
+    [Fact]
+    public async Task TransformAsync_MessageAlsoDeclaredByAttributeWithSameKey_StillReceivesWolverineMetadata()
+    {
+        // Act: the attribute pipeline registers "orders.order-placed" before Wolverine's own routing loop
+        // asks for the same message, so Wolverine's metadata must reach the component it finds already there.
+        var document = await WolverineTestApp.GetDocumentAsync(AttributeChannels.MetadataSharedDocument, options =>
+        {
+            options.AddServer("kafka", "localhost:9092", "kafka");
+            options.AddWolverine(wolverine => wolverine
+                .IncludeSchemes("kafka")
+                .IncludeCorrelationId()
+                .WithExternalDocs<OrderPlaced>("https://example.com/orders"));
+        });
+
+        // Assert
+        var message = document["components"]!["messages"]!["orders.order-placed"]!;
+        message["correlationId"]!["location"]!.GetValue<string>().ShouldBe("$message.header#/correlation-id");
+        message["externalDocs"]!["url"]!.GetValue<string>().ShouldBe("https://example.com/orders");
+    }
+
+    [Fact]
+    public async Task TransformAsync_MessageRequestedByMultipleRoutes_ReferencesItsTraitOnlyOnce()
+    {
+        // Act: with replies included, OrderPlaced is requested once as the "orders" route's own message and
+        // again as TrackOrder's reply, so ApplyMessageMetadata runs twice for the same component.
+        var document = await WolverineTestApp.GetDocumentAsync(
+            "messaging",
+            options =>
+            {
+                options.AddServer("kafka", "localhost:9092", "kafka");
+                options.AddWolverine(wolverine => wolverine
+                    .IncludeSchemes("kafka")
+                    .IncludeReplies()
+                    .WithMessageTraits<OrderPlaced>("traced"));
+                options.AddMessageTrait("traced", new AsyncApiMessageTrait { ContentType = "application/json" });
+            },
+            configureWolverine: opts => opts.ListenToKafkaTopic("tracking").DefaultIncomingMessage<TrackOrder>());
+
+        // Assert
+        document["components"]!["messages"]!["orders.order-placed"]!["traits"]!.AsArray().Single()!["$ref"]!
+            .GetValue<string>().ShouldBe("#/components/messageTraits/traced");
     }
 
     [Fact]
@@ -115,6 +177,19 @@ public class WolverineSpecMetadataTests
         Should.Throw<ArgumentNullException>(() => options.WithMessageTraits<OrderPlaced>(null!));
         Should.Throw<ArgumentException>(() => options.WithOperationTraits<OrderPlaced>(""));
         Should.Throw<ArgumentException>(() => options.RequireSecurity<OrderPlaced>(" "));
+    }
+
+    [Theory]
+    [InlineData("orders")]
+    [InlineData("/orders")]
+    [InlineData("not a url")]
+    public void WithExternalDocs_RelativeOrMalformedUrl_Throws(string url)
+    {
+        // Arrange
+        var options = new WolverineAsyncApiOptions();
+
+        // Act & Assert: AsyncAPI requires externalDocs.url to be absolute.
+        Should.Throw<ArgumentException>(() => options.WithExternalDocs<OrderPlaced>(url));
     }
 
     [Fact]

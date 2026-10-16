@@ -137,6 +137,11 @@ public sealed class WolverineAsyncApiOptions
     public WolverineAsyncApiOptions WithExternalDocs<TMessage>(string url, string? description = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(url);
+        if (!Uri.TryCreate(url, UriKind.Absolute, out _))
+        {
+            throw new ArgumentException($"'{url}' must be an absolute URL, as AsyncAPI requires for externalDocs.url.", nameof(url));
+        }
+
         var metadata = MetadataFor<TMessage>();
         metadata.ExternalDocsUrl = url;
         metadata.ExternalDocsDescription = description;

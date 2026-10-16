@@ -117,8 +117,8 @@ builder.Services.AddAsyncApi("realtime", options =>
 
 | Method | Effect |
 |--------|--------|
-| `IncludeCorrelationId()` | Every message gets a `correlationId` at `$message.header#/correlation-id`, the header Wolverine stamps on each envelope it sends through a broker |
-| `WithExternalDocs<T>(url, description)` | `externalDocs` on the message for `T` |
+| `IncludeCorrelationId()` | Every message sent through a broker gets a `correlationId` at `$message.header#/correlation-id`, the header Wolverine stamps on each envelope it sends that way. SignalR messages are left out: that transport sends a CloudEvents JSON wrapper, not this header |
+| `WithExternalDocs<T>(url, description)` | `externalDocs` on the message for `T`. `url` must be absolute, as AsyncAPI requires |
 | `WithMessageTraits<T>(keys)` | `traits` references on the message for `T` |
 | `WithOperationTraits<T>(keys)` | `traits` references on every operation of `T` |
 | `RequireSecurity<T>(keys)` | `security` references on every operation of `T` |
