@@ -325,6 +325,35 @@ public class Startup
     }
 
     [Fact]
+    public async Task BASYNC010_AddAsyncApiNestedAsAddOpenApiArgument_ReportsWarning()
+    {
+        // AddAsyncApi appears after AddOpenApi in the source, but runs first: arguments are evaluated before the call.
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+OpenApiServiceCollectionExtensions.AddOpenApi(services.AddAsyncApi());
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        diagnostics.Where(d => d.Id == "BASYNC010").Count().ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task BASYNC010_AddOpenApiNestedAsAddAsyncApiArgument_NoWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+AsyncApiServiceCollectionExtensions.AddAsyncApi(services.AddOpenApi());
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        diagnostics.Where(d => d.Id == "BASYNC010").ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task BASYNC010_OtherAsyncApiExtensionBeforeAddOpenApi_NoWarning()
     {
         // AddAsyncApiGeneratedMetadata doesn't register the build-time document provider.

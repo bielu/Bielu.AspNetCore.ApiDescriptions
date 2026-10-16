@@ -101,6 +101,42 @@ public class OpenApiBuildTimeGenerationTests
     }
 
     [Fact]
+    public async Task GetDocumentNames_BuildTimeDocumentNameMatchingOpenApiDocument_Throws()
+    {
+        // Arrange
+        await using var app = await CreateAppAsync(configureAsyncApi: options => options.BuildTimeDocumentName = "v1");
+        var provider = app.Services.GetRequiredService<IDocumentProvider>();
+
+        // Act
+        var exception = Should.Throw<InvalidOperationException>(() => provider.GetDocumentNames().ToList());
+
+        // Assert
+        exception.Message.ShouldContain("'v1'");
+        exception.Message.ShouldContain("OpenAPI document");
+    }
+
+    [Fact]
+    public async Task GetDocumentNames_TwoAsyncApiDocumentsWithSameBuildTimeName_Throws()
+    {
+        // Arrange
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddAsyncApi("orders", options => options.BuildTimeDocumentName = "events");
+        builder.Services.AddAsyncApi("payments", options => options.BuildTimeDocumentName = "events");
+        await using var app = builder.Build();
+        await app.StartAsync();
+        var provider = app.Services.GetRequiredService<IDocumentProvider>();
+
+        // Act
+        var exception = Should.Throw<InvalidOperationException>(() => provider.GetDocumentNames().ToList());
+
+        // Assert
+        exception.Message.ShouldContain("'orders'");
+        exception.Message.ShouldContain("'payments'");
+        exception.Message.ShouldContain("'events'");
+    }
+
+    [Fact]
     public async Task GetDocumentNames_WithoutOpenApi_KeepsDocumentName()
     {
         // Arrange

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -32,27 +33,48 @@ internal static class RuleBASYNC010AddOpenApiAfterAddAsyncApi
     public static void AnalyzeOperationBlock(OperationBlockAnalysisContext context)
     {
         var invocations = context.OperationBlocks
-            .SelectMany(block => block.DescendantsAndSelf())
-            .OfType<IInvocationOperation>()
-            .Where(invocation => invocation.Syntax.SyntaxTree == context.OperationBlocks[0].Syntax.SyntaxTree)
-            // Ordered by the method name, not the whole invocation: in a chain like
-            // services.AddAsyncApi().AddOpenApi() every invocation starts at 'services'.
-            .OrderBy(invocation => GetNameLocation(invocation).SourceSpan.Start)
+            .SelectMany(InEvaluationOrder)
             .ToList();
 
-        var firstAddAsyncApi = invocations.FirstOrDefault(IsAddAsyncApi);
-        if (firstAddAsyncApi is null)
+        var firstAddAsyncApi = invocations.FindIndex(IsAddAsyncApi);
+        if (firstAddAsyncApi < 0)
         {
             return;
         }
 
-        var addAsyncApiStart = GetNameLocation(firstAddAsyncApi).SourceSpan.Start;
-        foreach (var addOpenApi in invocations.Where(IsAddOpenApi))
+        foreach (var addOpenApi in invocations.Skip(firstAddAsyncApi + 1).Where(IsAddOpenApi))
         {
-            var location = GetNameLocation(addOpenApi);
-            if (location.SourceSpan.Start > addAsyncApiStart)
+            context.ReportDiagnostic(Diagnostic.Create(
+                Descriptor,
+                GetNameLocation(addOpenApi),
+                invocations[firstAddAsyncApi].TargetMethod.Name));
+        }
+    }
+
+    // The order the invocations run in, which isn't their order in the source: a call's receiver and
+    // arguments run before the call itself, so in both services.AddAsyncApi().AddOpenApi() and
+    // AddOpenApi(services.AddAsyncApi()), AddAsyncApi runs first. A post-order walk yields exactly that.
+    private static IEnumerable<IInvocationOperation> InEvaluationOrder(IOperation operation)
+    {
+        var pending = new Stack<(IOperation Operation, bool ChildrenVisited)>();
+        pending.Push((operation, false));
+        while (pending.Count > 0)
+        {
+            var (current, childrenVisited) = pending.Pop();
+            if (childrenVisited)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, location, firstAddAsyncApi.TargetMethod.Name));
+                if (current is IInvocationOperation invocation)
+                {
+                    yield return invocation;
+                }
+
+                continue;
+            }
+
+            pending.Push((current, true));
+            foreach (var child in current.ChildOperations.Reverse())
+            {
+                pending.Push((child, false));
             }
         }
     }

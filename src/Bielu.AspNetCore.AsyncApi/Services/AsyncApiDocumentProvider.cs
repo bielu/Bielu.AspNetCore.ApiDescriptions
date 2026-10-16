@@ -138,6 +138,9 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
     /// Maps each AsyncApi document's build-time name to its document name.
     /// </summary>
     /// <param name="openApiNames">The OpenAPI document names, empty when <c>AddOpenApi()</c> wasn't called.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Two AsyncApi documents share a build-time name, or one uses the name of an OpenAPI document.
+    /// </exception>
     private Dictionary<string, string> GetBuildTimeDocumentNames(out HashSet<string> openApiNames)
     {
         openApiNames = new HashSet<string>(
@@ -154,7 +157,21 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
                 : openApiNames.Contains(documentName)
                     ? BuildTimeDocumentNamePrefix + documentName
                     : documentName;
-            buildTimeNames.TryAdd(buildTimeName, documentName);
+
+            // A shared name would make one document silently replace the other in the generated files.
+            if (openApiNames.Contains(buildTimeName))
+            {
+                throw new InvalidOperationException(
+                    $"AsyncAPI document '{documentName}' uses the build-time name '{buildTimeName}', which is also the name of an OpenAPI document. " +
+                    $"Set a different {nameof(AsyncApiOptions)}.{nameof(AsyncApiOptions.BuildTimeDocumentName)}.");
+            }
+
+            if (!buildTimeNames.TryAdd(buildTimeName, documentName))
+            {
+                throw new InvalidOperationException(
+                    $"AsyncAPI documents '{buildTimeNames[buildTimeName]}' and '{documentName}' both use the build-time name '{buildTimeName}'. " +
+                    $"Set a different {nameof(AsyncApiOptions)}.{nameof(AsyncApiOptions.BuildTimeDocumentName)} on one of them.");
+            }
         }
 
         return buildTimeNames;

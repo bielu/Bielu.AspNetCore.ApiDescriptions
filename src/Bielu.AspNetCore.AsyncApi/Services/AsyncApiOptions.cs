@@ -61,7 +61,7 @@ public sealed class AsyncApiOptions
     /// writes it to <c>&lt;Project&gt;_&lt;name&gt;.json</c> (or <c>&lt;Project&gt;.json</c> for <c>v1</c>).
     /// When <see langword="null"/>, <see cref="DocumentName"/> is used, unless a <c>Microsoft.AspNetCore.OpenApi</c>
     /// document has the same name, in which case <c>asyncapi-{DocumentName}</c> is used so the two documents
-    /// are not written to the same file.
+    /// are not written to the same file. Build-time generation fails if two documents end up with the same name.
     /// </summary>
     /// <example>
     /// <code>
