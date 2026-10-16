@@ -32,7 +32,10 @@
       <Folder Include="Attributes\" />
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
+      <!-- PrivateAssets="none" so the BASYNC analyzers the Attributes package ships reach apps that reference only
+           this package. By default NuGet excludes a dependency's analyzers, which would leave the rules that inspect
+           app startup code (BASYNC004, BASYNC010) with nothing to run on. -->
+      <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" PrivateAssets="none" />
       <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.SourceGenerators\Bielu.AspNetCore.AsyncApi.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" AdditionalProperties="Configuration=Release" />
     </ItemGroup>
     <ItemGroup>

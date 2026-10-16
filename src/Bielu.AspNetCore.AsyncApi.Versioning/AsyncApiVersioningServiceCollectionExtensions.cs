@@ -65,7 +65,7 @@ public static class AsyncApiVersioningServiceCollectionExtensions
         services.TryAddKeyedSingleton<IAsyncApiDocumentProvider>(KeyedService.AnyKey, (sp, key) => sp.GetRequiredKeyedService<AsyncApiDocumentService>(key));
 
         // Required for build-time generation
-        services.TryAddSingleton<IDocumentProvider, AsyncApiDocumentProvider>();
+        services.AddAsyncApiBuildTimeDocumentProvider();
 
         // Required to support JSON serializations
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>, AsyncApiJsonSchemaJsonOptions>());

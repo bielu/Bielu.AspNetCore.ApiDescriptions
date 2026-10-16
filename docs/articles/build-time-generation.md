@@ -22,6 +22,34 @@ Then configure your `.csproj`:
 
 AsyncAPI documents will be generated during `dotnet build` using the `IDocumentProvider` interface registered by `AddAsyncApi()`.
 
+### Alongside `Microsoft.AspNetCore.OpenApi`
+
+An app can call both `AddOpenApi()` and `AddAsyncApi()`, and build-time generation then writes both the OpenAPI and the AsyncAPI documents. Call `AddOpenApi()` first:
+
+```csharp
+builder.Services.AddOpenApi();
+builder.Services.AddAsyncApi();
+```
+
+`AddAsyncApi()` makes build-time generation serve both libraries' documents by redirecting the document provider that `AddOpenApi()` has already registered. An `AddOpenApi()` call made afterwards registers that provider again, so depending on which provider `dotnet getdocument` picks, the AsyncAPI documents can be missing. The **BASYNC010** analyzer warns when `AddOpenApi()` follows `AddAsyncApi()` (or `AddAsyncApiForApiVersions()`) in the same method. It can't compare calls made from different methods, so keep both registrations in one place, such as `Program.cs`.
+
+`dotnet getdocument` writes the `v1` document to `<Project>.json` and every other document to `<Project>_<name>.json`. Both libraries name their default document `v1`, so when an OpenAPI document has the same name as an AsyncAPI one, the AsyncAPI document is listed as `asyncapi-<name>` instead:
+
+| Document | File |
+|----------|------|
+| OpenAPI `v1` | `MyApi.json` |
+| AsyncAPI `v1` | `MyApi_asyncapi-v1.json` |
+
+To choose the name yourself, set `BuildTimeDocumentName`. It changes only the build-time name; the `/asyncapi/{documentName}.json` endpoint keeps its route:
+
+```csharp
+builder.Services.AddOpenApi();
+builder.Services.AddAsyncApi(options => options.BuildTimeDocumentName = "events");
+// MyApi.json (OpenAPI) and MyApi_events.json (AsyncAPI)
+```
+
+Apps that don't call `AddOpenApi()` keep their existing document names and files.
+
 ## Option 2: Using the AsyncAPI CLI Tool
 
 Install the `dotnet asyncapi` CLI tool for more control:

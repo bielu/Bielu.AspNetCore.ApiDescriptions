@@ -19,7 +19,8 @@ public class AsyncApiAttributeAnalyzer : DiagnosticAnalyzer
         RuleBASYNC006InvalidJsonExample.Descriptor,
         RuleBASYNC007MissingParameterlessConstructor.Descriptor,
         RuleBASYNC008DiscouragedCharacters.Descriptor,
-        RuleBASYNC009MissingDocumentation.Descriptor);
+        RuleBASYNC009MissingDocumentation.Descriptor,
+        RuleBASYNC010AddOpenApiAfterAddAsyncApi.Descriptor);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -48,5 +49,7 @@ public class AsyncApiAttributeAnalyzer : DiagnosticAnalyzer
             RuleBASYNC008DiscouragedCharacters.AnalyzeMethod(sc);
             RuleBASYNC009MissingDocumentation.AnalyzeMethod(sc);
         }, SymbolKind.Method);
+
+        context.RegisterOperationBlockAction(RuleBASYNC010AddOpenApiAfterAddAsyncApi.AnalyzeOperationBlock);
     }
 }
