@@ -1,4 +1,6 @@
-﻿namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 
 /// <summary>
 /// Adds an example to an AsyncAPI message.
@@ -24,5 +26,6 @@ public class MessageExampleAttribute : Attribute
     /// <summary>
     /// The type of a provider that implements <see cref="IAsyncApiMessageExampleProvider"/>.
     /// </summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
     public Type? ProviderType { get; set; }
 }
