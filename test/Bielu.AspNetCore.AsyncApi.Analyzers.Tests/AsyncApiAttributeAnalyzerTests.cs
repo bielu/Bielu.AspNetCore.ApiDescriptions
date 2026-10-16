@@ -11,7 +11,7 @@ namespace Bielu.AspNetCore.AsyncApi.Analyzers.Tests;
 
 public class AsyncApiAttributeAnalyzerTests
 {
-    private async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(string source)
+    private async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(string source, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source);
         var references = new[]
@@ -22,7 +22,7 @@ public class AsyncApiAttributeAnalyzerTests
             MetadataReference.CreateFromFile(System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new System.Reflection.AssemblyName("netstandard")).Location),
         };
 
-        var compilation = CSharpCompilation.Create("Test", new[] { syntaxTree }, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var compilation = CSharpCompilation.Create("Test", new[] { syntaxTree }, references, new CSharpCompilationOptions(outputKind));
         var analyzer = new AsyncApiAttributeAnalyzer();
         var compilationWithAnalyzers = compilation.WithAnalyzers(ImmutableArray.Create<DiagnosticAnalyzer>(analyzer));
         return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
@@ -243,5 +243,119 @@ public class TestHub
 ";
         var diagnostics = await GetDiagnosticsAsync(testCode);
         diagnostics.Where(d => d.Id == "BASYNC009").ShouldBeEmpty();
+    }
+
+    // Stand-ins for the real AddOpenApi/AddAsyncApi extension methods: the rule matches them by
+    // containing type and namespace, so the stubs only need the same names.
+    private const string RegistrationStubs = @"
+namespace Microsoft.Extensions.DependencyInjection
+{
+    public class ServiceCollection { }
+
+    public static class OpenApiServiceCollectionExtensions
+    {
+        public static ServiceCollection AddOpenApi(this ServiceCollection services) => services;
+        public static ServiceCollection AddOpenApi(this ServiceCollection services, string documentName) => services;
+    }
+}
+
+namespace Bielu.AspNetCore.AsyncApi.Extensions
+{
+    using Microsoft.Extensions.DependencyInjection;
+
+    public static class AsyncApiServiceCollectionExtensions
+    {
+        public static ServiceCollection AddAsyncApi(this ServiceCollection services) => services;
+        public static ServiceCollection AddAsyncApiGeneratedMetadata(this ServiceCollection services) => services;
+    }
+}
+";
+
+    [Fact]
+    public async Task BASYNC010_AddOpenApiAfterAddAsyncApi_ReportsWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddAsyncApi();
+services.AddOpenApi();
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        var diagnostic = diagnostics.Single(d => d.Id == "BASYNC010");
+        diagnostic.Severity.ShouldBe(DiagnosticSeverity.Warning);
+        diagnostic.GetMessage().ShouldContain("AddAsyncApi");
+        diagnostic.Location.SourceTree!.ToString().Substring(diagnostic.Location.SourceSpan.Start, diagnostic.Location.SourceSpan.Length)
+            .ShouldBe("AddOpenApi");
+    }
+
+    [Fact]
+    public async Task BASYNC010_AddOpenApiBeforeAddAsyncApi_NoWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddOpenApi();
+services.AddAsyncApi();
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        diagnostics.Where(d => d.Id == "BASYNC010").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BASYNC010_ChainedAddOpenApiAfterAddAsyncApi_ReportsWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+public class Startup
+{
+    public void ConfigureServices(ServiceCollection services)
+    {
+        services.AddOpenApi(""internal"").AddAsyncApi().AddOpenApi(""public"");
+    }
+}
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode);
+        diagnostics.Where(d => d.Id == "BASYNC010").Count().ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task BASYNC010_OtherAsyncApiExtensionBeforeAddOpenApi_NoWarning()
+    {
+        // AddAsyncApiGeneratedMetadata doesn't register the build-time document provider.
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddAsyncApiGeneratedMetadata();
+services.AddOpenApi();
+services.AddAsyncApi();
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        diagnostics.Where(d => d.Id == "BASYNC010").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BASYNC010_CallsInDifferentMethods_NoWarning()
+    {
+        // Order across methods isn't knowable statically, so only one method body is compared.
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+public class Startup
+{
+    public void AddEvents(ServiceCollection services) => services.AddAsyncApi();
+    public void AddHttp(ServiceCollection services) => services.AddOpenApi();
+}
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode);
+        diagnostics.Where(d => d.Id == "BASYNC010").ShouldBeEmpty();
     }
 }

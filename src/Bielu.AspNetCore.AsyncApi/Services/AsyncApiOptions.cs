@@ -57,6 +57,22 @@ public sealed class AsyncApiOptions
     public string DocumentName { get; internal set; } = AsyncApiGeneratorConstants.DefaultDocumentName;
 
     /// <summary>
+    /// The name this document is exposed under to build-time generation (<c>dotnet getdocument</c>), which
+    /// writes it to <c>&lt;Project&gt;_&lt;name&gt;.json</c> (or <c>&lt;Project&gt;.json</c> for <c>v1</c>).
+    /// When <see langword="null"/>, <see cref="DocumentName"/> is used, unless a <c>Microsoft.AspNetCore.OpenApi</c>
+    /// document has the same name, in which case <c>asyncapi-{DocumentName}</c> is used so the two documents
+    /// are not written to the same file.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// builder.Services.AddOpenApi();
+    /// builder.Services.AddAsyncApi(options => options.BuildTimeDocumentName = "events");
+    /// // Build-time generation writes MyApi.json (OpenAPI) and MyApi_events.json (AsyncAPI).
+    /// </code>
+    /// </example>
+    public string? BuildTimeDocumentName { get; set; }
+
+    /// <summary>
     /// A delegate to determine whether a given <see cref="ApiDescription"/> should be included in the given AsyncApi document.
     /// </summary>
     public Func<ApiDescription, bool> ShouldInclude { get; set; }

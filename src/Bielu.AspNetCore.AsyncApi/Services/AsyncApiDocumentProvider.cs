@@ -12,25 +12,31 @@ namespace Microsoft.Extensions.ApiDescriptions;
 /// <summary>
 /// Provides an implementation of <see cref="IDocumentProvider"/> to use for build-time generation of AsyncApi documents.
 /// </summary>
+/// <remarks>
+/// When the app also calls <c>AddOpenApi()</c>, this provider serves the OpenAPI documents too, because
+/// <c>dotnet getdocument</c> only asks one <c>IDocumentProvider</c> (see <see cref="OpenApiDocumentProviderAdapter"/>).
+/// AsyncAPI documents are then listed under their build-time names (<see cref="AsyncApiOptions.BuildTimeDocumentName"/>),
+/// so an AsyncAPI <c>v1</c> and an OpenAPI <c>v1</c> are not written to the same file.
+/// </remarks>
 /// <param name="serviceProvider">The <see cref="IServiceProvider"/> to use.</param>
 internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider) : IDocumentProvider
 {
     /// <summary>
-    /// Serializes the AsyncApi document associated with a given document name to
+    /// The prefix given to an AsyncAPI document's build-time name when an OpenAPI document has the same name.
+    /// </summary>
+    internal const string BuildTimeDocumentNamePrefix = "asyncapi-";
+
+    private readonly Lazy<OpenApiDocumentProviderAdapter?> _openApi =
+        new(() => OpenApiDocumentProviderAdapter.TryCreate(serviceProvider));
+
+    /// <summary>
+    /// Serializes the document associated with a given build-time document name to
     /// the provided writer.
     /// </summary>
     /// <param name="documentName">The name of the document to resolve.</param>
     /// <param name="writer">A text writer associated with the document to write to.</param>
-    public async Task GenerateAsync(string documentName, TextWriter writer)
-    {
-        // See AsyncApiServiceCollectionExtensions.cs to learn why we lowercase the document name
-        var lowercasedDocumentName = documentName.ToLowerInvariant();
-
-        var options = serviceProvider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>();
-        var namedOption = options.Get(lowercasedDocumentName);
-        var resolvedAsyncApiVersion = namedOption.AsyncApiVersion;
-        await GenerateAsync(lowercasedDocumentName, writer, resolvedAsyncApiVersion);
-    }
+    public Task GenerateAsync(string documentName, TextWriter writer) =>
+        GenerateWithOpenApiVersionAsync(documentName, writer, openApiSpecVersion: null);
 
     /// <summary>
     /// Serializes the AsyncApi document associated with a given document name to
@@ -39,7 +45,60 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
     /// <param name="documentName">The name of the document to resolve.</param>
     /// <param name="writer">A text writer associated with the document to write to.</param>
     /// <param name="AsyncApiSpecVersion">The AsyncApi specification version to use when serializing the document.</param>
-    public async Task GenerateAsync(string documentName, TextWriter writer, AsyncApiVersion AsyncApiSpecVersion)
+    public Task GenerateAsync(string documentName, TextWriter writer, AsyncApiVersion AsyncApiSpecVersion)
+    {
+        var buildTimeNames = GetBuildTimeDocumentNames(out _);
+        var asyncApiDocumentName = buildTimeNames.GetValueOrDefault(documentName, documentName);
+        return GenerateAsyncApiDocumentAsync(asyncApiDocumentName, writer, AsyncApiSpecVersion);
+    }
+
+    /// <summary>
+    /// Serializes the document associated with a given build-time document name, routing OpenAPI document
+    /// names to <c>Microsoft.AspNetCore.OpenApi</c> with the <c>OpenApiSpecVersion</c> the caller asked for.
+    /// </summary>
+    /// <param name="documentName">The build-time name of the document to resolve.</param>
+    /// <param name="writer">A text writer associated with the document to write to.</param>
+    /// <param name="openApiSpecVersion">The <c>Microsoft.OpenApi.OpenApiSpecVersion</c> to use for an OpenAPI document, if any.</param>
+    internal Task GenerateWithOpenApiVersionAsync(string documentName, TextWriter writer, object? openApiSpecVersion)
+    {
+        var buildTimeNames = GetBuildTimeDocumentNames(out var openApiNames);
+        if (buildTimeNames.TryGetValue(documentName, out var asyncApiDocumentName))
+        {
+            return GenerateAsyncApiDocumentAsync(asyncApiDocumentName, writer);
+        }
+
+        if (openApiNames.Contains(documentName))
+        {
+            return _openApi.Value!.GenerateAsync(documentName, writer, openApiSpecVersion);
+        }
+
+        // Not a listed name: keep resolving it as an AsyncAPI document name, which is what versioned
+        // documents registered against KeyedService.AnyKey rely on.
+        return GenerateAsyncApiDocumentAsync(documentName, writer);
+    }
+
+    /// <summary>
+    /// Provides all document names that are currently managed in the application: the OpenAPI document
+    /// names, if any, and the build-time names of the AsyncApi documents.
+    /// </summary>
+    public IEnumerable<string> GetDocumentNames()
+    {
+        var buildTimeNames = GetBuildTimeDocumentNames(out var openApiNames);
+        return openApiNames.Concat(buildTimeNames.Keys).Distinct(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private Task GenerateAsyncApiDocumentAsync(string documentName, TextWriter writer)
+    {
+        // See AsyncApiServiceCollectionExtensions.cs to learn why we lowercase the document name
+        var lowercasedDocumentName = documentName.ToLowerInvariant();
+
+        var options = serviceProvider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>();
+        var namedOption = options.Get(lowercasedDocumentName);
+        var resolvedAsyncApiVersion = namedOption.AsyncApiVersion;
+        return GenerateAsyncApiDocumentAsync(lowercasedDocumentName, writer, resolvedAsyncApiVersion);
+    }
+
+    private async Task GenerateAsyncApiDocumentAsync(string documentName, TextWriter writer, AsyncApiVersion AsyncApiSpecVersion)
     {
         // We need to retrieve the document name in a case-insensitive manner to support case-insensitive document name resolution.
         // The document service is registered with a key equal to the document name, but in lowercase.
@@ -76,9 +135,32 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
     }
 
     /// <summary>
-    /// Provides all document names that are currently managed in the application.
+    /// Maps each AsyncApi document's build-time name to its document name.
     /// </summary>
-    public IEnumerable<string> GetDocumentNames()
+    /// <param name="openApiNames">The OpenAPI document names, empty when <c>AddOpenApi()</c> wasn't called.</param>
+    private Dictionary<string, string> GetBuildTimeDocumentNames(out HashSet<string> openApiNames)
+    {
+        openApiNames = new HashSet<string>(
+            _openApi.Value?.GetDocumentNames() ?? [],
+            StringComparer.OrdinalIgnoreCase);
+
+        var options = serviceProvider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>();
+        var buildTimeNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var documentName in GetAsyncApiDocumentNames())
+        {
+            var configuredName = options.Get(documentName.ToLowerInvariant()).BuildTimeDocumentName;
+            var buildTimeName = !string.IsNullOrWhiteSpace(configuredName)
+                ? configuredName
+                : openApiNames.Contains(documentName)
+                    ? BuildTimeDocumentNamePrefix + documentName
+                    : documentName;
+            buildTimeNames.TryAdd(buildTimeName, documentName);
+        }
+
+        return buildTimeNames;
+    }
+
+    private IEnumerable<string> GetAsyncApiDocumentNames()
     {
         // Keyed services lack an API to resolve all registered keys.
         // We use the service provider to resolve an internal type.

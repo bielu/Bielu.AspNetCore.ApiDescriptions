@@ -123,11 +123,45 @@ public static class AsyncApiServiceCollectionExtensions
         services.AddKeyedSingleton<IAsyncApiDocumentProvider, AsyncApiDocumentService>(documentName);
 
         // Required for build-time generation
-        services.AddSingleton<IDocumentProvider, AsyncApiDocumentProvider>();
+        services.AddAsyncApiBuildTimeDocumentProvider();
         // Required to resolve document names for build-time generation
         services.AddSingleton(new NamedService<AsyncApiDocumentService>(documentName));
         // Required to support JSON serializations
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<JsonOptions>, AsyncApiJsonSchemaJsonOptions>());
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the <see cref="IDocumentProvider"/> that <c>dotnet getdocument</c> queries at build time.
+    /// </summary>
+    /// <remarks>
+    /// <c>Microsoft.AspNetCore.OpenApi</c> declares an <c>IDocumentProvider</c> with the same full name, and the
+    /// tool asks only the first of the two types it finds. Whichever it finds has to list both libraries'
+    /// documents: ours does so by composing with OpenAPI's provider, and an OpenAPI registration that already
+    /// exists is replaced by a proxy forwarding to ours. An <c>AddOpenApi()</c> call made after every
+    /// <c>AddAsyncApi()</c> call registers OpenAPI's provider again, and the AsyncAPI documents are then missing
+    /// if the tool finds OpenAPI's type. The BASYNC010 analyzer warns about that order.
+    /// </remarks>
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "The proxy is only resolved by build-time document generation, which runs the app under the JIT.")]
+    internal static IServiceCollection AddAsyncApiBuildTimeDocumentProvider(this IServiceCollection services)
+    {
+        services.TryAddSingleton<AsyncApiDocumentProvider>();
+        services.TryAddSingleton<IDocumentProvider>(sp => sp.GetRequiredService<AsyncApiDocumentProvider>());
+
+        var openApiDocumentProviderTypes = services
+            .Select(descriptor => descriptor.ServiceType)
+            .Where(type => type.FullName == OpenApiDocumentProviderAdapter.DocumentProviderInterfaceName
+                && type != typeof(IDocumentProvider))
+            .Distinct()
+            .ToList();
+        foreach (var openApiDocumentProviderType in openApiDocumentProviderTypes)
+        {
+            services.RemoveAll(openApiDocumentProviderType);
+            services.AddSingleton(openApiDocumentProviderType, sp => OpenApiDocumentProviderProxy.Create(
+                openApiDocumentProviderType,
+                sp.GetRequiredService<AsyncApiDocumentProvider>()));
+        }
+
         return services;
     }
 }

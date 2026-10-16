@@ -19,6 +19,7 @@ internal sealed class GetDocumentCommandWorker
 {
     private const string DefaultDocumentName = "v1";
     private const string DocumentService = "Microsoft.Extensions.ApiDescriptions.IDocumentProvider";
+    private const string CoreAssemblyName = "Bielu.AspNetCore.AsyncApi";
     private const string DotString = ".";
     private const string InvalidFilenameString = "..";
     private const string JsonExtension = ".json";
@@ -182,15 +183,14 @@ internal sealed class GetDocumentCommandWorker
 
     private bool GetDocuments(IServiceProvider services)
     {
-        Type? serviceType = null;
-        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-        {
-            serviceType = assembly.GetType(DocumentService, throwOnError: false);
-            if (serviceType != null)
-            {
-                break;
-            }
-        }
+        // Microsoft.AspNetCore.OpenApi declares a type with the same name. Prefer ours, so the result doesn't
+        // depend on assembly load order (either one lists both libraries' documents, but ours is the one we own).
+        var serviceTypes = AppDomain.CurrentDomain.GetAssemblies()
+            .Select(assembly => assembly.GetType(DocumentService, throwOnError: false))
+            .OfType<Type>()
+            .ToList();
+        var serviceType = serviceTypes.FirstOrDefault(type => type.Assembly.GetName().Name == CoreAssemblyName)
+            ?? serviceTypes.FirstOrDefault();
 
         if (serviceType == null)
         {
