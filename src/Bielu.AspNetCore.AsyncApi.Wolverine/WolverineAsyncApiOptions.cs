@@ -118,6 +118,110 @@ public sealed class WolverineAsyncApiOptions
         return this;
     }
 
+    /// <summary>
+    /// Adds a <c>correlationId</c> to every message, pointing at the <c>correlation-id</c> header Wolverine
+    /// stamps on each envelope it sends through a broker.
+    /// </summary>
+    /// <returns>The same options, for chaining.</returns>
+    public WolverineAsyncApiOptions IncludeCorrelationId()
+    {
+        CorrelationIdIncluded = true;
+        return this;
+    }
+
+    /// <summary>Adds an <c>externalDocs</c> link to the message for <typeparamref name="TMessage"/>.</summary>
+    /// <typeparam name="TMessage">The message type.</typeparam>
+    /// <param name="url">URL of the external documentation.</param>
+    /// <param name="description">An optional description of the documentation.</param>
+    /// <returns>The same options, for chaining.</returns>
+    public WolverineAsyncApiOptions WithExternalDocs<TMessage>(string url, string? description = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+
+        // Scheme is checked explicitly rather than trusting UriKind.Absolute alone: on Unix, Uri.TryCreate
+        // treats a rooted path like "/orders" as an absolute "file" URI, which would otherwise slip past
+        // a scheme-less check here while still failing AsyncAPI's requirement for an absolute URL.
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed) || parsed.Scheme is not ("http" or "https"))
+        {
+            throw new ArgumentException($"'{url}' must be an absolute http or https URL, as AsyncAPI requires for externalDocs.url.", nameof(url));
+        }
+
+        var metadata = MetadataFor<TMessage>();
+        metadata.ExternalDocsUrl = url;
+        metadata.ExternalDocsDescription = description;
+        return this;
+    }
+
+    /// <summary>
+    /// Applies message traits to the message for <typeparamref name="TMessage"/>. Each key must be registered
+    /// with <c>AsyncApiOptions.AddMessageTrait</c>.
+    /// </summary>
+    /// <typeparam name="TMessage">The message type.</typeparam>
+    /// <param name="traitKeys">The keys of the message traits.</param>
+    /// <returns>The same options, for chaining.</returns>
+    public WolverineAsyncApiOptions WithMessageTraits<TMessage>(params string[] traitKeys)
+    {
+        MetadataFor<TMessage>().MessageTraits.AddRange(Validated(traitKeys));
+        return this;
+    }
+
+    /// <summary>
+    /// Applies operation traits to every operation of <typeparamref name="TMessage"/>. Each key must be registered
+    /// with <c>AsyncApiOptions.AddOperationTrait</c>.
+    /// </summary>
+    /// <typeparam name="TMessage">The message type.</typeparam>
+    /// <param name="traitKeys">The keys of the operation traits.</param>
+    /// <returns>The same options, for chaining.</returns>
+    public WolverineAsyncApiOptions WithOperationTraits<TMessage>(params string[] traitKeys)
+    {
+        MetadataFor<TMessage>().OperationTraits.AddRange(Validated(traitKeys));
+        return this;
+    }
+
+    /// <summary>
+    /// Requires security schemes on every operation of <typeparamref name="TMessage"/>. Each key must be registered
+    /// with <c>AsyncApiOptions.AddSecurityScheme</c>.
+    /// </summary>
+    /// <typeparam name="TMessage">The message type.</typeparam>
+    /// <param name="schemeKeys">The keys of the security schemes.</param>
+    /// <returns>The same options, for chaining.</returns>
+    public WolverineAsyncApiOptions RequireSecurity<TMessage>(params string[] schemeKeys)
+    {
+        MetadataFor<TMessage>().SecuritySchemes.AddRange(Validated(schemeKeys));
+        return this;
+    }
+
+    internal bool CorrelationIdIncluded { get; private set; }
+
+    internal Dictionary<Type, MessageMetadata> Metadata { get; } = [];
+
+    private MessageMetadata MetadataFor<TMessage>() =>
+        Metadata.TryGetValue(typeof(TMessage), out var metadata) ? metadata : Metadata[typeof(TMessage)] = new MessageMetadata();
+
+    private static string[] Validated(string[] keys)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+        foreach (var key in keys)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        }
+
+        return keys;
+    }
+
+    internal sealed class MessageMetadata
+    {
+        public string? ExternalDocsUrl { get; set; }
+
+        public string? ExternalDocsDescription { get; set; }
+
+        public List<string> MessageTraits { get; } = [];
+
+        public List<string> OperationTraits { get; } = [];
+
+        public List<string> SecuritySchemes { get; } = [];
+    }
+
     internal bool IsIncluded(Uri uri) =>
         Schemes.Count > 0 ? Schemes.Contains(uri.Scheme) : !_internalSchemes.Contains(uri.Scheme, StringComparer.OrdinalIgnoreCase);
 

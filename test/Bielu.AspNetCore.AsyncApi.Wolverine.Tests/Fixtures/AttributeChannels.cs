@@ -11,6 +11,9 @@ public static class AttributeChannels
     /// <summary>A document whose attribute payload is also routed by Wolverine.</summary>
     public const string SharedDocument = "mixed-shared";
 
+    /// <summary>A document whose attribute message uses the exact key Wolverine gives the same routed type.</summary>
+    public const string MetadataSharedDocument = "mixed-metadata-shared";
+
     [AsyncApi(ClashingDocument)]
     public sealed class Invoices
     {
@@ -29,6 +32,17 @@ public static class AttributeChannels
         [Message(typeof(Fixtures.Orders.Created), MessageId = "orderCreated")]
         [SubscribeOperation(OperationId = "orderCreatedOperation")]
         public void OrderCreated()
+        {
+        }
+    }
+
+    [AsyncApi(MetadataSharedDocument)]
+    public sealed class OrderNotifications
+    {
+        [Channel("orders/placed-legacy")]
+        [Message(typeof(OrderPlaced), MessageId = "orders.order-placed")]
+        [SubscribeOperation(OperationId = "orderPlacedLegacyOperation")]
+        public void OrderPlacedLegacy()
         {
         }
     }

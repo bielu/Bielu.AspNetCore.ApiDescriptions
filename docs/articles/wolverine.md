@@ -94,6 +94,39 @@ A `receive` operation with a reply gets:
 Only listeners with a default incoming message type have a `receive` operation, so only their handlers
 are covered. AsyncAPI 2.x has no reply object, so a 2.x document is left unchanged.
 
+## Spec metadata
+
+Routing doesn't say everything a document can: how to correlate a request with a reply, where to read
+more, which traits apply, who may call. Declare those on the Wolverine options:
+
+```csharp
+builder.Services.AddAsyncApi("realtime", options =>
+{
+    options.AddMessageTrait("traced", new AsyncApiMessageTrait { ContentType = "application/json" });
+    options.AddOperationTrait("audited", new AsyncApiOperationTrait { Summary = "Audited operation" });
+    options.AddSecurityScheme("apiKey", new AsyncApiSecurityScheme { Type = SecuritySchemeType.ApiKey, In = ParameterLocation.User });
+
+    options.AddWolverine(wolverine => wolverine
+        .IncludeCorrelationId()
+        .WithExternalDocs<OrderPlaced>("https://example.com/orders", "Order events")
+        .WithMessageTraits<OrderPlaced>("traced")
+        .WithOperationTraits<OrderPlaced>("audited")
+        .RequireSecurity<OrderPlaced>("apiKey"));
+});
+```
+
+| Method | Effect |
+|--------|--------|
+| `IncludeCorrelationId()` | Every message sent through a broker gets a `correlationId` at `$message.header#/correlation-id`, the header Wolverine stamps on each envelope it sends that way. SignalR messages are left out: that transport sends a CloudEvents JSON wrapper, not this header |
+| `WithExternalDocs<T>(url, description)` | `externalDocs` on the message for `T`. `url` must be absolute, as AsyncAPI requires |
+| `WithMessageTraits<T>(keys)` | `traits` references on the message for `T` |
+| `WithOperationTraits<T>(keys)` | `traits` references on every operation of `T` |
+| `RequireSecurity<T>(keys)` | `security` references on every operation of `T` |
+
+Traits and security schemes are registered on the document's own options (`AddMessageTrait`,
+`AddOperationTrait`, `AddSecurityScheme`), exactly as for attribute-declared documents; the Wolverine
+methods only reference them by key.
+
 ## Combining with attributes
 
 `AddWolverine` runs as a document transformer, after attribute discovery. Integrations that don't go

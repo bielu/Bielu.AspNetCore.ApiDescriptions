@@ -153,7 +153,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             var channelKey = GetOrCreateChannel(endpointUri);
             var channel = document.Channels[channelKey];
 
-            var messageKey = await GetOrCreateMessageAsync(messageType, cancellationToken);
+            var messageKey = await GetOrCreateMessageAsync(messageType, endpointUri.Scheme != SignalRScheme, cancellationToken);
             channel.Messages.TryAdd(messageKey, new AsyncApiMessageReference($"#/components/messages/{messageKey}"));
 
             // The first route of a message gets the short id; any further route is qualified by its channel,
@@ -175,6 +175,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 Messages = [new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{messageKey}")],
                 Bindings = OperationBindings(endpointUri, action),
             };
+            ApplyOperationMetadata(operation, messageType);
             document.Operations[operationId] = operation;
             return (operationId, operation);
         }
@@ -211,7 +212,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
 
             foreach (var replyType in replyTypes)
             {
-                var messageKey = await GetOrCreateMessageAsync(replyType, cancellationToken);
+                var messageKey = await GetOrCreateMessageAsync(replyType, supportsHeaderCorrelation: true, cancellationToken);
                 channel.Messages.TryAdd(messageKey, new AsyncApiMessageReference($"#/components/messages/{messageKey}"));
                 reply.Messages.Add(new AsyncApiMessageReference($"#/channels/{channelKey}/messages/{messageKey}"));
             }
@@ -267,15 +268,18 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             return candidate;
         }
 
-        private async Task<string> GetOrCreateMessageAsync(Type messageType, CancellationToken cancellationToken)
+        private async Task<string> GetOrCreateMessageAsync(Type messageType, bool supportsHeaderCorrelation, CancellationToken cancellationToken)
         {
             var name = messageType.ToMessageTypeName();
             var key = AsyncApiNamingHelper.SanitizeKey(name);
 
             document.Components ??= new AsyncApiComponents();
             document.Components.Messages ??= new Dictionary<string, AsyncApiMessage>();
-            if (document.Components.Messages.ContainsKey(key))
+            if (document.Components.Messages.TryGetValue(key, out var existing))
             {
+                // The attribute pipeline (or an earlier route of this same message) may have created this
+                // component already; still apply Wolverine's own metadata so it isn't silently dropped.
+                ApplyMessageMetadata(existing, messageType, supportsHeaderCorrelation);
                 return key;
             }
 
@@ -285,7 +289,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 document, messageType, services, context.SchemaTransformers, cancellationToken);
 
             var docs = xmlDocs.GetDocumentation(messageType);
-            document.Components.Messages[key] = new AsyncApiMessage
+            var message = new AsyncApiMessage
             {
                 Name = name,
                 Title = messageType.Name,
@@ -295,8 +299,80 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                     ? new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
                     : new AsyncApiMultiFormatSchema { Schema = schema as AsyncApiJsonSchema },
             };
+            document.Components.Messages[key] = message;
 
+            ApplyMessageMetadata(message, messageType, supportsHeaderCorrelation);
             return key;
+        }
+
+        /// <summary>
+        /// Applies Wolverine's own message metadata to <paramref name="message"/>. Called once per route of
+        /// <paramref name="messageType"/>, so every addition here must be idempotent: it must not duplicate a
+        /// reference already present, and it must not erase something an earlier call (or the attribute
+        /// pipeline) already set.
+        /// </summary>
+        private void ApplyMessageMetadata(AsyncApiMessage message, Type messageType, bool supportsHeaderCorrelation)
+        {
+            // Only ever added, never cleared: a message with routes through both a broker and SignalR still
+            // gets the header location, from whichever call here is for the broker route.
+            if (options.CorrelationIdIncluded && supportsHeaderCorrelation && message.CorrelationId is null)
+            {
+                message.CorrelationId = new AsyncApiCorrelationId
+                {
+                    Location = $"$message.header#/{EnvelopeConstants.CorrelationIdKey}",
+                    Description = "The correlation id Wolverine stamps on every envelope it sends through a broker.",
+                };
+            }
+
+            if (!options.Metadata.TryGetValue(messageType, out var metadata))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(metadata.ExternalDocsUrl) && message.ExternalDocs is null)
+            {
+                message.ExternalDocs = new AsyncApiExternalDocumentation
+                {
+                    Url = new Uri(metadata.ExternalDocsUrl, UriKind.Absolute),
+                    Description = metadata.ExternalDocsDescription,
+                };
+            }
+
+            foreach (var traitKey in metadata.MessageTraits)
+            {
+                var reference = $"#/components/messageTraits/{AsyncApiNamingHelper.SanitizeKey(traitKey)}";
+                message.Traits ??= new List<AsyncApiMessageTrait>();
+                var alreadyReferenced = message.Traits
+                    .OfType<AsyncApiMessageTraitReference>()
+                    .Any(existing => string.Equals(existing.Reference?.Reference, reference, StringComparison.Ordinal));
+                if (!alreadyReferenced)
+                {
+                    message.Traits.Add(new AsyncApiMessageTraitReference(reference));
+                }
+            }
+        }
+
+        private void ApplyOperationMetadata(AsyncApiOperation operation, Type messageType)
+        {
+            if (!options.Metadata.TryGetValue(messageType, out var metadata))
+            {
+                return;
+            }
+
+            foreach (var traitKey in metadata.OperationTraits)
+            {
+                operation.Traits ??= new List<AsyncApiOperationTrait>();
+                operation.Traits.Add(new AsyncApiOperationTraitReference(
+                    $"#/components/operationTraits/{AsyncApiNamingHelper.SanitizeKey(traitKey)}"));
+            }
+
+            if (metadata.SecuritySchemes.Count > 0)
+            {
+                operation.Security ??= new List<AsyncApiSecurityScheme>();
+                AuthenticationSchemeDocumentTransformer.AddReferences(
+                    operation.Security,
+                    metadata.SecuritySchemes.Select(AsyncApiNamingHelper.SanitizeKey).ToList());
+            }
         }
 
         private string ResolveAddress(Uri endpointUri)
