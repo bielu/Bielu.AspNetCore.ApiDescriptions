@@ -12,3 +12,8 @@ Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptionsExtensions
 const Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.DefaultSignalRClientMethod = "ReceiveMessage" -> string!
 static Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptionsExtensions.AddWolverine(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.IncludeReplies() -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.IncludeCorrelationId() -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.RequireSecurity<TMessage>(params string![]! schemeKeys) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.WithExternalDocs<TMessage>(string! url, string? description = null) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.WithMessageTraits<TMessage>(params string![]! traitKeys) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.WithOperationTraits<TMessage>(params string![]! traitKeys) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!

@@ -1,2 +1,0 @@
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.BuildTimeDocumentName.get -> string?
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.BuildTimeDocumentName.set -> void
