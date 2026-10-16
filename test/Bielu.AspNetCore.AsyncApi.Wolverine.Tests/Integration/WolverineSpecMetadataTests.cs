@@ -183,12 +183,16 @@ public class WolverineSpecMetadataTests
     [InlineData("orders")]
     [InlineData("/orders")]
     [InlineData("not a url")]
-    public void WithExternalDocs_RelativeOrMalformedUrl_Throws(string url)
+    [InlineData("ftp://example.com/orders")]
+    [InlineData("file:///etc/orders")]
+    public void WithExternalDocs_RelativeMalformedOrNonHttpUrl_Throws(string url)
     {
         // Arrange
         var options = new WolverineAsyncApiOptions();
 
-        // Act & Assert: AsyncAPI requires externalDocs.url to be absolute.
+        // Act & Assert: AsyncAPI requires externalDocs.url to be an absolute http(s) URL. "/orders" is
+        // covered because on Unix, Uri.TryCreate(..., UriKind.Absolute) treats a rooted path as a valid
+        // absolute "file" URI, which a scheme-less absolute check would have let through.
         Should.Throw<ArgumentException>(() => options.WithExternalDocs<OrderPlaced>(url));
     }
 

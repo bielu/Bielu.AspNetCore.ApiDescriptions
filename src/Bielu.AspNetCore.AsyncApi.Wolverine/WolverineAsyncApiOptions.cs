@@ -137,9 +137,13 @@ public sealed class WolverineAsyncApiOptions
     public WolverineAsyncApiOptions WithExternalDocs<TMessage>(string url, string? description = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(url);
-        if (!Uri.TryCreate(url, UriKind.Absolute, out _))
+
+        // Scheme is checked explicitly rather than trusting UriKind.Absolute alone: on Unix, Uri.TryCreate
+        // treats a rooted path like "/orders" as an absolute "file" URI, which would otherwise slip past
+        // a scheme-less check here while still failing AsyncAPI's requirement for an absolute URL.
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed) || parsed.Scheme is not ("http" or "https"))
         {
-            throw new ArgumentException($"'{url}' must be an absolute URL, as AsyncAPI requires for externalDocs.url.", nameof(url));
+            throw new ArgumentException($"'{url}' must be an absolute http or https URL, as AsyncAPI requires for externalDocs.url.", nameof(url));
         }
 
         var metadata = MetadataFor<TMessage>();
