@@ -23,6 +23,9 @@ namespace Bielu.AspNetCore.AsyncApi.Transformers;
 internal sealed class AuthenticationSchemeDocumentTransformer(AuthenticationDetectionOptions options)
     : IAsyncApiDocumentTransformer
 {
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "AttachToAuthorizedOperations is an opt-in, off by default, documented as unsafe " +
+                        "under trimming and Native AOT unless the annotated types are rooted explicitly.")]
     public async Task TransformAsync(
         AsyncApiDocument document,
         AsyncApiDocumentTransformerContext context,

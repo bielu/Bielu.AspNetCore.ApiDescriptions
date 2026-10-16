@@ -1,6 +1,12 @@
 ﻿namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+/// <summary>
+/// Describes a message. On a method it declares a message of the channel, naming the payload type.
+/// On a class it describes that class as a message: the payload type is the class itself, and the
+/// values act as defaults wherever the class is used as a payload. Values set on a method's
+/// <see cref="MessageAttribute"/> take precedence.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
 public class MessageAttribute(Type payloadType, params string[] tags) : Attribute
 {
     public MessageAttribute(Type payloadType) : this(payloadType, Array.Empty<string>())
@@ -8,9 +14,18 @@ public class MessageAttribute(Type payloadType, params string[] tags) : Attribut
     }
 
     /// <summary>
-    /// The type to use to generate the message payload schema.
+    /// Describes the class this attribute is placed on as a message; its payload type is that class.
+    /// Not meaningful on a method, where the payload type must be given.
     /// </summary>
-    public Type PayloadType { get; } = payloadType;
+    public MessageAttribute() : this(null!, Array.Empty<string>())
+    {
+    }
+
+    /// <summary>
+    /// The type to use to generate the message payload schema. <see langword="null"/> when the attribute
+    /// is placed on the payload class itself.
+    /// </summary>
+    public Type? PayloadType { get; } = payloadType;
 
     /// <summary>
     /// The type to use to generate the message headers schema.

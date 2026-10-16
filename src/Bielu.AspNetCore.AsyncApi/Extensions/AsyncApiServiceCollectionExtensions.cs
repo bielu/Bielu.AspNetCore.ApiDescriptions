@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using Bielu.AspNetCore.AsyncApi.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
@@ -108,6 +109,10 @@ public static class AsyncApiServiceCollectionExtensions
     public static IServiceCollection AddAsyncApi(this IServiceCollection services)
         => services.AddAsyncApi(AsyncApiGeneratorConstants.DefaultDocumentName);
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "The reflection-based metadata provider is a default that trimmed and AOT apps replace " +
+                        "with the source-generated provider. Schema generation honours the " +
+                        "JsonSerializerContext configured on JsonOptions.")]
     private static IServiceCollection AddAsyncApiCore(this IServiceCollection services, string documentName)
     {
         services.AddEndpointsApiExplorer();

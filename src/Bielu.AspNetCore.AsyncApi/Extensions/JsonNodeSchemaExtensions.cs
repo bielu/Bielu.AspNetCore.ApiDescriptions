@@ -226,7 +226,7 @@ internal static class JsonNodeSchemaExtensions
                 // STJ reports the wire type, which differs from the CLR type's own for number handling
                 // such as WriteAsString ("string" for a float). Restore the CLR type, keeping "null" for
                 // nullable values as a type array, the form every later stage already understands.
-                var typeName = asyncApiJsonSchema.Type.ToString().ToLowerInvariant();
+                var typeName = asyncApiJsonSchema.Type.GetValueOrDefault().ToString().ToLowerInvariant();
                 schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = schemaTypes is { } exported && exported.HasFlag(SchemaType.Null)
                     ? new JsonArray(typeName, "null")
                     : typeName;

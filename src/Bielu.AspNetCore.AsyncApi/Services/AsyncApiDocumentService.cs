@@ -379,9 +379,13 @@ internal sealed class AsyncApiDocumentService(
         var messageKeys = new List<string>();
         var messageAttrs = memberMetadata.Messages;
 
-        foreach (var msgAttr in messageAttrs)
+        foreach (var declaredAttr in messageAttrs)
         {
-            var payloadType = msgAttr.PayloadType;
+            // A parameterless [Message] describes the class it sits on; on a member there is no payload to document.
+            if (declaredAttr.PayloadType is not { } payloadType)
+                continue;
+
+            var msgAttr = ResolveMessageAttribute(payloadType, declaredAttr)!;
             var messageKey = AsyncApiNamingHelper.SanitizeKey(msgAttr.MessageId
                              ?? msgAttr.Name
                              ?? ComputeSchemaKeyValue(payloadType));
@@ -423,6 +427,36 @@ internal sealed class AsyncApiDocumentService(
         }
 
         return messageKeys;
+    }
+
+    /// <summary>
+    /// Combines the <see cref="MessageAttribute"/> placed on a payload class with the one declared on a member:
+    /// whatever the member leaves unset falls back to the class. Returns whichever exists when only one does.
+    /// </summary>
+    private static MessageAttribute? ResolveMessageAttribute(Type payloadType, MessageAttribute? declared)
+    {
+        var typeAttr = payloadType.GetCustomAttribute<MessageAttribute>(inherit: false);
+        if (typeAttr is null)
+            return declared;
+        if (declared is null)
+            return typeAttr;
+
+        return new MessageAttribute(payloadType, declared.Tags.Length > 0 ? declared.Tags : typeAttr.Tags)
+        {
+            HeadersType = declared.HeadersType ?? typeAttr.HeadersType,
+            ContentType = declared.ContentType ?? typeAttr.ContentType,
+            Name = declared.Name ?? typeAttr.Name,
+            Title = declared.Title ?? typeAttr.Title,
+            Summary = declared.Summary ?? typeAttr.Summary,
+            Description = declared.Description ?? typeAttr.Description,
+            BindingsRef = declared.BindingsRef ?? typeAttr.BindingsRef,
+            MessageId = declared.MessageId ?? typeAttr.MessageId,
+            CorrelationIdLocation = declared.CorrelationIdLocation ?? typeAttr.CorrelationIdLocation,
+            CorrelationIdDescription = declared.CorrelationIdDescription ?? typeAttr.CorrelationIdDescription,
+            ExternalDocsUrl = declared.ExternalDocsUrl ?? typeAttr.ExternalDocsUrl,
+            ExternalDocsDescription = declared.ExternalDocsDescription ?? typeAttr.ExternalDocsDescription,
+            Traits = declared.Traits.Length > 0 ? declared.Traits : typeAttr.Traits,
+        };
     }
 
     private async Task ApplyMessageAttributeAsync(
@@ -611,6 +645,13 @@ internal sealed class AsyncApiDocumentService(
     private static string DescribeMember(MemberInfo member)
         => member.DeclaringType is { } declaringType ? $"{declaringType.FullName}.{member.Name}" : member.Name;
 
+    /// <summary>
+    /// Serializes an example value by its runtime type through the configured
+    /// <see cref="JsonSerializerOptions.TypeInfoResolver"/>, so a source-generated <c>JsonSerializerContext</c> is honoured under trimming and Native AOT.
+    /// </summary>
+    private JsonNode? SerializeExample(object value)
+        => JsonSerializer.SerializeToNode(value, _jsonSerializerOptions.GetTypeInfo(value.GetType()));
+
     private void ApplyMessageExamples(AsyncApiMessage message, AsyncApiJsonSchema? payloadSchema, Type payloadType,
         List<MessageExampleAttribute> exampleAttrs, IServiceProvider scopedServiceProvider)
     {
@@ -634,7 +675,7 @@ internal sealed class AsyncApiDocumentService(
                     var payloadValue = payloadProvider.GetExample();
                     if (payloadValue != null)
                     {
-                        example.Payload = new AsyncApiAny(JsonSerializer.SerializeToNode(payloadValue, _jsonSerializerOptions));
+                        example.Payload = new AsyncApiAny(SerializeExample(payloadValue));
                     }
                 }
 
@@ -644,7 +685,7 @@ internal sealed class AsyncApiDocumentService(
                     // Headers is a map of header name to example value, not a single AsyncApiAny like
                     // Payload, so the provider's return value must serialize to a JSON object.
                     if (headerValue != null &&
-                        JsonSerializer.SerializeToNode(headerValue, _jsonSerializerOptions) is JsonObject headerNode)
+                        SerializeExample(headerValue) is JsonObject headerNode)
                     {
                         example.Headers = headerNode.ToDictionary(kvp => kvp.Key, kvp => new AsyncApiAny(kvp.Value));
                     }
@@ -663,8 +704,7 @@ internal sealed class AsyncApiDocumentService(
                 {
                     Name = fluentExample.Name,
                     Summary = fluentExample.Summary,
-                    Payload = new AsyncApiAny(JsonSerializer.SerializeToNode(fluentExample.Value,
-                        _jsonSerializerOptions))
+                    Payload = new AsyncApiAny(SerializeExample(fluentExample.Value))
                 };
 
                 examples.Add(example);
@@ -760,7 +800,7 @@ internal sealed class AsyncApiDocumentService(
                     ApplyMessageExamples(message, payloadSchema as AsyncApiJsonSchema, payloadType,
                         memberMetadata.MessageExamples, scopedServiceProvider);
 
-                    if (memberMetadata.Messages.FirstOrDefault() is MessageAttribute messageAttribute)
+                    if (ResolveMessageAttribute(payloadType, memberMetadata.Messages.FirstOrDefault()) is { } messageAttribute)
                     {
                         await ApplyMessageAttributeAsync(document, message, messageAttribute, scopedServiceProvider, schemaTransformers, cancellationToken);
                     }
