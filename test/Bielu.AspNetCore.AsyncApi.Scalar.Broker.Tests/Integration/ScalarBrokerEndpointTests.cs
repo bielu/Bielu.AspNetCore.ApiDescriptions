@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
@@ -206,5 +206,34 @@ public class ScalarBrokerEndpointTests
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<List<BrokerConnectionDescriptor>>()).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void PluginBundle_IsEmbeddedUnderTheExpectedResourceName()
+    {
+        // Arrange — the endpoint looks the bundle up by this name, and ScalarPluginBundle.targets
+        // derives it from RootNamespace, so a rename on either side would silently serve a 404.
+        var assembly = typeof(ScalarBrokerOptionsExtensions).Assembly;
+
+        // Act
+        var resources = assembly.GetManifestResourceNames();
+
+        // Assert
+        resources.ShouldContain("Bielu.AspNetCore.AsyncApi.Scalar.Broker.plugin.js");
+    }
+
+    [Fact]
+    public async Task PluginBundle_IsServedAsJavaScript()
+    {
+        // Arrange
+        using var host = await BrokerConsoleHost.StartAsync();
+
+        // Act
+        var response = await host.GetTestClient().GetAsync($"{BrokerConsoleHost.BasePath}/plugin.js");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType.ShouldBe("text/javascript");
+        (await response.Content.ReadAsStringAsync()).ShouldNotBeNullOrWhiteSpace();
     }
 }
