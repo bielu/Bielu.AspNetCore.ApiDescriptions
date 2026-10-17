@@ -85,4 +85,69 @@ public class DiffReportWriterTests
         // Assert
         writer.ToString().ShouldContain("No changes detected.");
     }
+
+    private static readonly List<DocumentChange> MixedChanges =
+    [
+        new("channels/retired", "Channel 'retired' was removed.", ChangeSeverity.Breaking),
+        new("channels/new", "Channel 'new' was added.", ChangeSeverity.NonBreaking),
+    ];
+
+    private static string CaptureConsole(Action write)
+    {
+        var writer = new StringWriter();
+        var original = Console.Out;
+        Console.SetOut(writer);
+        try
+        {
+            write();
+        }
+        finally
+        {
+            Console.SetOut(original);
+        }
+
+        return writer.ToString();
+    }
+
+    [Fact]
+    public void Write_TextFormat_LogsNonBreakingChangesAsInfoUnderTheirSeverity()
+    {
+        // Arrange
+        var logger = new FakeCliLogger();
+
+        // Act
+        DiffReportWriter.Write(MixedChanges, "text", "Report", logger);
+
+        // Assert
+        logger.InfoMessages.ShouldContain("Breaking:");
+        logger.InfoMessages.ShouldContain("NonBreaking:");
+        logger.InfoMessages.ShouldContain("  - channels/new: Channel 'new' was added.");
+        logger.ErrorMessages.ShouldHaveSingleItem().ShouldBe("  - channels/retired: Channel 'retired' was removed.");
+    }
+
+    [Fact]
+    public void Write_MarkdownFormat_WithChanges_WritesATablePerSeverity()
+    {
+        // Act
+        var output = CaptureConsole(() => DiffReportWriter.Write(MixedChanges, "MARKDOWN", "AsyncAPI Diff Report", new FakeCliLogger()));
+
+        // Assert
+        output.ShouldContain("### AsyncAPI Diff Report");
+        output.ShouldContain("#### Breaking Changes");
+        output.ShouldContain("#### NonBreaking Changes");
+        output.ShouldContain("| `channels/retired` | Channel 'retired' was removed. |");
+    }
+
+    [Fact]
+    public void Write_JsonFormat_SerializesEveryChange()
+    {
+        // Act
+        var output = CaptureConsole(() => DiffReportWriter.Write(MixedChanges, "json", "Report", new FakeCliLogger()));
+
+        // Assert
+        var json = System.Text.Json.Nodes.JsonNode.Parse(output)!.AsArray();
+        json.Count.ShouldBe(2);
+        output.ShouldContain("channels/retired");
+        output.ShouldContain("channels/new");
+    }
 }
