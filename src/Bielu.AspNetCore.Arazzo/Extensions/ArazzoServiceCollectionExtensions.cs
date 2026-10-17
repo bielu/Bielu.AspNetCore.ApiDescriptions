@@ -1,7 +1,10 @@
 ﻿using Bielu.Arazzo;
+using Bielu.AspNetCore.ApiDescriptions;
 using Bielu.AspNetCore.Arazzo.Services;
 using Bielu.AspNetCore.Arazzo.SourceResolvers;
 using Bielu.AspNetCore.Arazzo.Validation;
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using Bielu.AspNetCore.AsyncApi.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -53,6 +56,10 @@ public static class ArazzoServiceCollectionExtensions
         services.AddKeyedSingleton<IArazzoDocumentProvider, ArazzoDocumentService>(documentName);
         services.AddKeyedSingleton<ArazzoWorkspaceFactory>(documentName);
         services.AddSingleton(new NamedArazzoDocument(documentName));
+
+        // Lets `dotnet getdocument` list and write this document. The registration is idempotent, so this works
+        // whether or not, and in whatever order, AddAsyncApi is called.
+        services.AddBuildTimeDocumentSource<ArazzoBuildTimeDocumentSource>();
         services.TryAddEnumerable(ServiceDescriptor.Transient<IStartupFilter, ArazzoStartupValidationStartupFilter>());
 
         // Registered as IArazzoSourceResolver (not constructed directly by ArazzoWorkspaceFactory) so a
