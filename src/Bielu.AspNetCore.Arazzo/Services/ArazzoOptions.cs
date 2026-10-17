@@ -16,6 +16,14 @@ public sealed class ArazzoOptions
     /// </summary>
     public ArazzoVersion Version { get; set; } = ArazzoVersion.V1_1;
 
+    /// <summary>
+    /// The name this document is listed under when it is generated at build time (<c>dotnet getdocument</c>).
+    /// By default it is <see cref="DocumentName"/>, or <c>arazzo-</c> followed by it when an AsyncAPI or OpenAPI
+    /// document already has that name. It changes only the build-time name; the <c>MapArazzo</c> route is
+    /// not affected.
+    /// </summary>
+    public string? BuildTimeDocumentName { get; set; }
+
     /// <summary>The document's <c>info</c> object. Set via <see cref="WithInfo(string,string)"/>.</summary>
     public ArazzoInfo? Info { get; set; }
 
