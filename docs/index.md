@@ -18,7 +18,7 @@ developer experience as `Microsoft.AspNetCore.OpenApi`, for event-driven channel
 
 - Runtime and build-time document generation
 - Document and schema transformers
-- Protocol bindings — AMQP, HTTP, MQTT, Kafka, WebSockets, Pulsar, SNS, SQS, SignalR, gRPC, SSE, WebRTC
+- Protocol bindings — AMQP, Anypoint MQ, Google Pub/Sub, HTTP, IBM MQ, JMS, Kafka, MQTT, MQTT 5, NATS, Pulsar, ROS 2, SNS, Solace, SQS, WebSockets, SignalR, gRPC, SSE, WebRTC
 - Interactive UI via [Scalar](https://scalar.com/)
 - CLI validation/diff and Roslyn analyzers
 

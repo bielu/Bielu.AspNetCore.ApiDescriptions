@@ -1,4 +1,4 @@
-# Broker Bindings (Kafka, AMQP, MQTT, HTTP, WebSockets, Pulsar, SNS, SQS)
+# Broker Bindings (Kafka, AMQP, MQTT, HTTP, WebSockets, Pulsar, SNS, SQS, JMS, IBM MQ, Solace, NATS and more)
 
 Bindings for these protocols come from the
 [`ByteBard.AsyncAPI.NET.Bindings`](https://www.nuget.org/packages/ByteBard.AsyncAPI.NET.Bindings/) package.
@@ -14,13 +14,30 @@ dotnet add package ByteBard.AsyncAPI.NET.Bindings
 | Protocol | Server | Channel | Operation | Message |
 | --- | --- | --- | --- | --- |
 | AMQP | | `AMQPChannelBinding` | `AMQPOperationBinding` | `AMQPMessageBinding` |
+| Anypoint MQ ¹ | | `AnypointMQChannelBinding` | | `AnypointMQMessageBinding` |
+| Google Cloud Pub/Sub ¹ | | `GooglePubSubChannelBinding` | | `GooglePubSubMessageBinding` |
 | HTTP | | | `HttpOperationBinding` | `HttpMessageBinding` |
+| IBM MQ ¹ | `IBMMQServerBinding` | `IBMMQChannelBinding` | | `IBMMQMessageBinding` |
+| JMS ¹ | `JMSServerBinding` | `JMSChannelBinding` | | `JMSMessageBinding` |
 | Kafka | `KafkaServerBinding` | `KafkaChannelBinding` | `KafkaOperationBinding` | `KafkaMessageBinding` |
 | MQTT | `MQTTServerBinding` | | `MQTTOperationBinding` | `MQTTMessageBinding` |
+| MQTT 5 ¹ | `MQTT5ServerBinding` | | | |
+| NATS ¹ | | | `NATSOperationBinding` | |
 | Pulsar | `PulsarServerBinding` | `PulsarChannelBinding` | | |
+| ROS 2 ¹ | `ROS2ServerBinding` | | `ROS2OperationBinding` | |
 | SNS | | `SnsChannelBinding` | `SnsOperationBinding` | |
+| Solace ¹ | `SolaceServerBinding` | | `SolaceOperationBinding` | |
 | SQS | | `SqsChannelBinding` | `SqsOperationBinding` | |
 | WebSockets | | `WebSocketsChannelBinding` | | |
+
+¹ Added in `ByteBard.AsyncAPI.NET.Bindings` 3.1.0-beta.19; not available in the 3.0.1 stable release. The types
+live in a namespace per protocol, such as `ByteBard.AsyncAPI.Bindings.Solace` or
+`ByteBard.AsyncAPI.Bindings.GooglePubSub`. A cell left empty means the package has no binding at that level
+for the protocol.
+
+Every binding implements `IServerBinding`, `IChannelBinding`, `IOperationBinding` or `IMessageBinding`, which
+are the types the `Add…Binding` methods below accept, so the newer bindings work without any change on this
+library's side.
 
 SignalR, gRPC, SSE and WebRTC bindings ship in this repository's own packages; see the other pages in this
 section.
@@ -84,10 +101,11 @@ Calling an `Add…Binding` method again with the same name adds a second binding
 channel documents more than one protocol. Two bindings of the *same* protocol under one name do not
 accumulate: the last one registered replaces the earlier one, and no exception is thrown.
 
-## Known upstream issues
+## Known upstream issues in 3.0.1
 
-These come from `ByteBard.AsyncAPI.NET.Bindings` 3.0.1, not from this library. Each one produces a document
-that the official AsyncAPI JSON Schema rejects:
+`ByteBard.AsyncAPI.NET.Bindings` 3.0.1 has three bugs, none in this library. Each one produces a document
+that the official AsyncAPI JSON Schema rejects. **They are fixed in 3.1.0-beta.19**, so upgrading to that
+version or later removes the need for a workaround:
 
 - **WebSockets:** the binding is written under the key `websockets`; the AsyncAPI bindings specification
   uses `ws`.
@@ -96,5 +114,5 @@ that the official AsyncAPI JSON Schema rejects:
 - **SQS:** `fifoQueue` is required by the schema but is omitted when `Queue.FifoQueue` is `false`, so a
   standard (non-FIFO) queue serializes without it.
 
-Until they are fixed upstream, a transformer registered with
-`AsyncApiOptions.AddSerializedDocumentTransformer` can correct the serialized document before it is served.
+If you stay on 3.0.1, a transformer registered with `AsyncApiOptions.AddSerializedDocumentTransformer` can
+correct the serialized document before it is served.

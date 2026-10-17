@@ -55,7 +55,7 @@ public class MyService
 ## Key Features
 
 - ✅ **Runtime & Build-time document generation**
-- ✅ **Protocol bindings** (AMQP, HTTP, MQTT, Kafka, WebSockets, Pulsar, SNS, SQS, SignalR, gRPC, SSE, WebRTC)
+- ✅ **Protocol bindings** (AMQP, Anypoint MQ, Google Pub/Sub, HTTP, IBM MQ, JMS, Kafka, MQTT, MQTT 5, NATS, Pulsar, ROS 2, SNS, Solace, SQS, WebSockets, SignalR, gRPC, SSE, WebRTC)
 - ✅ **Interactive Scalar UI** with live protocol consoles
 - ✅ **Multiple documents** support
 - ✅ **XML Documentation** support

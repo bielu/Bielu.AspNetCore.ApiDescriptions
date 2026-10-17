@@ -24,8 +24,8 @@ Generated documents for both versions are validated against the official AsyncAP
 Some features only exist in one version of the specification. `reply` on operations, for example, is an AsyncAPI 3.x
 concept and has no equivalent in 2.6.0.
 
-Protocol bindings come from `ByteBard.AsyncAPI.NET.Bindings`. A few of its bindings currently produce output that fails
-the official 3.1.0 schema; see [Broker bindings](protocols-broker-bindings.md) for the list.
+Protocol bindings come from `ByteBard.AsyncAPI.NET.Bindings`. In 3.0.1 a few of its bindings produce output that fails
+the official 3.1.0 schema. 3.1.0-beta.19 fixes them; see [Broker bindings](protocols-broker-bindings.md).
 
 ## Arazzo
 
