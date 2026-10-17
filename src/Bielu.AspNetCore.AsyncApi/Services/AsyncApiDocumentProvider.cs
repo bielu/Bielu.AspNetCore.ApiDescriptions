@@ -47,8 +47,7 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
     /// <param name="AsyncApiSpecVersion">The AsyncApi specification version to use when serializing the document.</param>
     public Task GenerateAsync(string documentName, TextWriter writer, AsyncApiVersion AsyncApiSpecVersion)
     {
-        var buildTimeNames = GetBuildTimeDocumentNames(out _);
-        var asyncApiDocumentName = buildTimeNames.GetValueOrDefault(documentName, documentName);
+        var asyncApiDocumentName = GetBuildTimeDocumentNames().AsyncApi.GetValueOrDefault(documentName, documentName);
         return GenerateAsyncApiDocumentAsync(asyncApiDocumentName, writer, AsyncApiSpecVersion);
     }
 
@@ -61,13 +60,18 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
     /// <param name="openApiSpecVersion">The <c>Microsoft.OpenApi.OpenApiSpecVersion</c> to use for an OpenAPI document, if any.</param>
     internal Task GenerateWithOpenApiVersionAsync(string documentName, TextWriter writer, object? openApiSpecVersion)
     {
-        var buildTimeNames = GetBuildTimeDocumentNames(out var openApiNames);
-        if (buildTimeNames.TryGetValue(documentName, out var asyncApiDocumentName))
+        var buildTimeNames = GetBuildTimeDocumentNames();
+        if (buildTimeNames.AsyncApi.TryGetValue(documentName, out var asyncApiDocumentName))
         {
             return GenerateAsyncApiDocumentAsync(asyncApiDocumentName, writer);
         }
 
-        if (openApiNames.Contains(documentName))
+        if (buildTimeNames.Sources.TryGetValue(documentName, out var sourceDocument))
+        {
+            return sourceDocument.Source.GenerateAsync(sourceDocument.Name, writer);
+        }
+
+        if (buildTimeNames.OpenApi.Contains(documentName))
         {
             return _openApi.Value!.GenerateAsync(documentName, writer, openApiSpecVersion);
         }
@@ -79,12 +83,16 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
 
     /// <summary>
     /// Provides all document names that are currently managed in the application: the OpenAPI document
-    /// names, if any, and the build-time names of the AsyncApi documents.
+    /// names, if any, the build-time names of the AsyncApi documents, and those of every other registered
+    /// <see cref="IBuildTimeDocumentSource"/>.
     /// </summary>
     public IEnumerable<string> GetDocumentNames()
     {
-        var buildTimeNames = GetBuildTimeDocumentNames(out var openApiNames);
-        return openApiNames.Concat(buildTimeNames.Keys).Distinct(StringComparer.OrdinalIgnoreCase);
+        var buildTimeNames = GetBuildTimeDocumentNames();
+        return buildTimeNames.OpenApi
+            .Concat(buildTimeNames.AsyncApi.Keys)
+            .Concat(buildTimeNames.Sources.Keys)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
     private Task GenerateAsyncApiDocumentAsync(string documentName, TextWriter writer)
@@ -141,9 +149,9 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
     /// <exception cref="InvalidOperationException">
     /// Two AsyncApi documents share a build-time name, or one uses the name of an OpenAPI document.
     /// </exception>
-    private Dictionary<string, string> GetBuildTimeDocumentNames(out HashSet<string> openApiNames)
+    private BuildTimeNames GetBuildTimeDocumentNames()
     {
-        openApiNames = new HashSet<string>(
+        var openApiNames = new HashSet<string>(
             _openApi.Value?.GetDocumentNames() ?? [],
             StringComparer.OrdinalIgnoreCase);
 
@@ -174,8 +182,69 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
             }
         }
 
-        return buildTimeNames;
+        return new BuildTimeNames(buildTimeNames, openApiNames, GetSourceDocumentNames(openApiNames, buildTimeNames));
     }
+
+    /// <summary>
+    /// Names the documents of the other <see cref="IBuildTimeDocumentSource"/>s. AsyncAPI and OpenAPI names are
+    /// settled first, so adding a source never renames them. A source's document keeps its own name unless that
+    /// name is taken, by an AsyncAPI or OpenAPI document or by another source's document, in which case it gets
+    /// the source's prefix. Sources and documents are visited in a fixed order, so registration order never
+    /// changes the result.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Two documents end up with the same build-time name.</exception>
+    private Dictionary<string, SourceDocument> GetSourceDocumentNames(
+        HashSet<string> openApiNames, Dictionary<string, string> asyncApiNames)
+    {
+        var documents = serviceProvider.GetServices<IBuildTimeDocumentSource>()
+            .OrderBy(source => source.NamePrefix, StringComparer.Ordinal)
+            .SelectMany(source => source.GetDocuments()
+                .OrderBy(document => document.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(document => new SourceDocument(source, document.Name, document.BuildTimeName)))
+            .ToList();
+
+        var sharedNames = documents
+            .GroupBy(document => document.Name, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var names = new Dictionary<string, SourceDocument>(StringComparer.OrdinalIgnoreCase);
+        foreach (var document in documents)
+        {
+            var taken = openApiNames.Contains(document.Name)
+                        || asyncApiNames.ContainsKey(document.Name)
+                        || sharedNames.Contains(document.Name);
+            var buildTimeName = !string.IsNullOrWhiteSpace(document.ConfiguredName)
+                ? document.ConfiguredName
+                : taken
+                    ? document.Source.NamePrefix + document.Name
+                    : document.Name;
+
+            if (openApiNames.Contains(buildTimeName) || asyncApiNames.ContainsKey(buildTimeName))
+            {
+                throw new InvalidOperationException(
+                    $"Document '{document.Name}' uses the build-time name '{buildTimeName}', which is also the name of an AsyncAPI or OpenAPI document. " +
+                    "Set a different BuildTimeDocumentName on it.");
+            }
+
+            if (!names.TryAdd(buildTimeName, document))
+            {
+                throw new InvalidOperationException(
+                    $"Documents '{names[buildTimeName].Name}' and '{document.Name}' both use the build-time name '{buildTimeName}'. " +
+                    "Set a different BuildTimeDocumentName on one of them.");
+            }
+        }
+
+        return names;
+    }
+
+    private sealed record BuildTimeNames(
+        Dictionary<string, string> AsyncApi,
+        HashSet<string> OpenApi,
+        Dictionary<string, SourceDocument> Sources);
+
+    private sealed record SourceDocument(IBuildTimeDocumentSource Source, string Name, string? ConfiguredName);
 
     private IEnumerable<string> GetAsyncApiDocumentNames()
     {
