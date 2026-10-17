@@ -148,7 +148,7 @@ public sealed class AsyncApiDocumentMerger
 
     internal static AsyncApiDocument ParseDocument(string content, string sourceUri)
     {
-        var reader = new AsyncApiStringReader(new AsyncApiReaderSettings());
+        var reader = new AsyncApiStringReader(AsyncApiReaderSettingsFactory.Create());
         var document = reader.Read(content, out var diagnostic);
 
         if (diagnostic?.Errors is { Count: > 0 } errs)
