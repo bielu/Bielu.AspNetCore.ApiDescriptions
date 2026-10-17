@@ -1,4 +1,4 @@
-using ByteBard.AsyncAPI.Bindings;
+﻿using ByteBard.AsyncAPI.Bindings;
 using ByteBard.AsyncAPI.Readers;
 
 namespace Bielu.AspNetCore.AsyncApi.Merger.Merge;
