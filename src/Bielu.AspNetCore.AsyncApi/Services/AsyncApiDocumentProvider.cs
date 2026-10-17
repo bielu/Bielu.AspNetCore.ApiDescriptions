@@ -143,9 +143,9 @@ internal sealed class AsyncApiDocumentProvider(IServiceProvider serviceProvider)
     }
 
     /// <summary>
-    /// Maps each AsyncApi document's build-time name to its document name.
+    /// Works out the build-time name of every document: the OpenAPI names, the AsyncApi names mapped to their
+    /// document names, and those of the other <see cref="IBuildTimeDocumentSource"/>s.
     /// </summary>
-    /// <param name="openApiNames">The OpenAPI document names, empty when <c>AddOpenApi()</c> wasn't called.</param>
     /// <exception cref="InvalidOperationException">
     /// Two AsyncApi documents share a build-time name, or one uses the name of an OpenAPI document.
     /// </exception>
