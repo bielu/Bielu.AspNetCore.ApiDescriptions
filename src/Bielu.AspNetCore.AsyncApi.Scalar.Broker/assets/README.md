@@ -12,6 +12,11 @@ The bridge is provided by the
 NuGet package, which also embeds and serves this bundle. **This package on its own does nothing** —
 there is no broker to reach without it.
 
+Kafka is the only bridge driver that ships today
+([`Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka)).
+`mqtt` and `amqp` channels are listed, but they are only offered a connection of the same protocol,
+so they stay inert until a driver for them is registered.
+
 ## Build outputs
 
 | File | Shape | Loaded by |

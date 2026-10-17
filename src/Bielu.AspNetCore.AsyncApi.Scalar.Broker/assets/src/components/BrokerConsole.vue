@@ -47,14 +47,17 @@ const selectedChannel = computed<BrokerChannelModel | null>(
   () => channels.value.find((channel) => channel.id === selectedChannelId.value) ?? channels.value[0] ?? null,
 )
 
-/** Connections whose protocol matches the selected channel's bindings. */
+/**
+ * Connections whose protocol matches the selected channel's bindings. There is deliberately no
+ * fallback to the other connections: the bridge addresses whatever channel it is handed, so offering
+ * a Kafka connection for an MQTT channel would publish to a Kafka topic named after the MQTT topic.
+ */
 const usableConnections = computed(() => {
   const protocol = selectedChannel.value?.protocol
   if (!protocol) {
     return connections.value
   }
-  const matching = connections.value.filter((connection) => connection.protocol === protocol)
-  return matching.length > 0 ? matching : connections.value
+  return connections.value.filter((connection) => connection.protocol === protocol)
 })
 
 const channelKey = (channel: BrokerChannelModel) => `${channel.documentName}:${channel.id}`
@@ -229,6 +232,14 @@ onBeforeUnmount(stopTail)
       <p v-if="connections.length === 0" class="bielu-broker__status bielu-broker__status--error">
         The server reported no broker connections. Register one with
         <code>AddScalarBrokerBridge(o =&gt; o.AddKafkaConnection(…))</code>.
+      </p>
+      <p
+        v-else-if="selectedChannel && usableConnections.length === 0"
+        class="bielu-broker__status bielu-broker__status--error"
+      >
+        The server has no <code>{{ selectedChannel.protocol }}</code> connection for this channel. Only a
+        Kafka driver ships today; an MQTT or AMQP channel needs a driver that implements
+        <code>IBrokerBridge</code>.
       </p>
 
       <p v-if="selectedChannel?.description" class="bielu-broker__description">
