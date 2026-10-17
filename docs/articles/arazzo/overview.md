@@ -162,6 +162,10 @@ By default (`ArazzoOptions.ValidateSourceReferencesOnStartup = true`), every ste
 documents once at app startup — a renamed channel or operation throws `ArazzoStartupValidationException`
 and fails startup, rather than failing the first time a workflow actually runs in production.
 
+The documents can also be written at build time with `dotnet getdocument`, next to the OpenAPI and AsyncAPI ones; see
+[Build-time document generation](../build-time-generation.md#arazzo-documents). The tool starts the app, so the same
+validation fails the build when a step references something that no longer exists.
+
 ### Identifying workflows and steps by type
 
 Workflow and step ids are cross-referenced by string (`dependsOn`, a step targeting another workflow),

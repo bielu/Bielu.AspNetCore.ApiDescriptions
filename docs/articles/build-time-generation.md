@@ -63,6 +63,41 @@ builder.Services.AddAsyncApi(options => options.BuildTimeDocumentName = "events"
 
 Apps that don't call `AddOpenApi()` keep their existing document names and files.
 
+### Arazzo documents
+
+`AddArazzo()` documents are written by the same run. An Arazzo document is JSON, uses the version from
+`ArazzoOptions.Version` (1.1.0 by default), and has its serialized-document transformers, such as overlays, applied, so the
+file is the one `MapArazzo()` would serve.
+
+It keeps its own name unless an AsyncAPI or OpenAPI document already has it, in which case it is listed as
+`arazzo-<name>`. All three libraries name their default document `v1`, so an app that uses them all gets:
+
+| Document | File |
+|----------|------|
+| OpenAPI `v1` | `MyApi.json` |
+| AsyncAPI `v1` | `MyApi_asyncapi-v1.json` |
+| Arazzo `v1` | `MyApi_arazzo-v1.json` |
+
+Set `ArazzoOptions.BuildTimeDocumentName` to choose the name yourself. It changes only the build-time name; the
+`/arazzo/{documentName}.json` route is not affected:
+
+```csharp
+builder.Services.AddArazzo(options => options.BuildTimeDocumentName = "workflows");
+// MyApi_workflows.json
+```
+
+`AddArazzo()` and `AddAsyncApi()` can be called in either order, and `AddArazzo()` also works in an app that has no
+AsyncAPI documents. Only `AddOpenApi()` has to come first, as described above.
+
+The tool starts the app to write the documents, so Arazzo's startup validation runs first. A workflow step that points
+at an operation or channel the app doesn't have fails the build with the same
+`ArazzoStartupValidationException` it would raise at startup, instead of producing a dangling workflow. Set
+`ArazzoOptions.ValidateSourceReferencesOnStartup = false` to skip the check.
+
+Build-time generation writes JSON only; `dotnet getdocument` has no way to ask for YAML. Minimal `WebApplication` apps
+should use `Microsoft.Extensions.ApiDescription.Server`, as above: the standalone `dotnet asyncapi getdocument` tool
+only supports apps that expose `CreateHostBuilder`.
+
 ## Option 2: Using the AsyncAPI CLI Tool
 
 Install the `dotnet asyncapi` CLI tool for more control:
