@@ -98,6 +98,22 @@ jobs:
       - name: Verify Native AOT
         run: bash scripts/verify-aot.sh linux-x64
 
+  # Pull request: prove build-time document generation works with Microsoft's own
+  # `dotnet getdocument` tool. Unit tests can only exercise our provider; this runs the real tool
+  # against an app that registers OpenAPI, AsyncAPI and Arazzo, checks the three files that come out and that a stale Arazzo reference fails the build.
+  build-time-documents:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+      - name: Verify build-time document generation
+        run: bash scripts/verify-build-time-documents.sh
+
   # Push to main: consume changesets into a "Version Packages" PR. While changesets are pending it
   # (re)opens that PR; once it is merged and the changesets are gone, hasChangesets becomes false and
   # the release jobs below take over.

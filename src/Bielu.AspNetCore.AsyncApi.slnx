@@ -6,6 +6,7 @@
   </Configurations>
   <Folder Name="/examples/">
     <Project Path="examples/AotStreetlights/AotStreetlights.csproj" />
+    <Project Path="examples/BuildTimeDocuments/BuildTimeDocuments.csproj" />
     <Project Path="examples/GrpcGreeter/GrpcGreeter.csproj" />
     <Project Path="examples/OverlayDemo/OverlayDemo.csproj" />
     <Project Path="examples/SignalRChat/SignalRChat.csproj" />
