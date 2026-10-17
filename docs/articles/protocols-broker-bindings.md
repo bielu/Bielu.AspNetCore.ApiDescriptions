@@ -101,10 +101,11 @@ Calling an `Add…Binding` method again with the same name adds a second binding
 channel documents more than one protocol. Two bindings of the *same* protocol under one name do not
 accumulate: the last one registered replaces the earlier one, and no exception is thrown.
 
-## Known upstream issues
+## Known upstream issues in 3.0.1
 
-These were found in `ByteBard.AsyncAPI.NET.Bindings` 3.0.1, not in this library, and have not been re-checked
-against the 3.1.0 betas. Each one produces a document that the official AsyncAPI JSON Schema rejects:
+`ByteBard.AsyncAPI.NET.Bindings` 3.0.1 has three bugs, none in this library. Each one produces a document
+that the official AsyncAPI JSON Schema rejects. **They are fixed in 3.1.0-beta.19**, so upgrading to that
+version or later removes the need for a workaround:
 
 - **WebSockets:** the binding is written under the key `websockets`; the AsyncAPI bindings specification
   uses `ws`.
@@ -113,5 +114,5 @@ against the 3.1.0 betas. Each one produces a document that the official AsyncAPI
 - **SQS:** `fifoQueue` is required by the schema but is omitted when `Queue.FifoQueue` is `false`, so a
   standard (non-FIFO) queue serializes without it.
 
-Until they are fixed upstream, a transformer registered with
-`AsyncApiOptions.AddSerializedDocumentTransformer` can correct the serialized document before it is served.
+If you stay on 3.0.1, a transformer registered with `AsyncApiOptions.AddSerializedDocumentTransformer` can
+correct the serialized document before it is served.
