@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker;
 
 /// <summary>
 /// Default values for the interactive Scalar broker console.

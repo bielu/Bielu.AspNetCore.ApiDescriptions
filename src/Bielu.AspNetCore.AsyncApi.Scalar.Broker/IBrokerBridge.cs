@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker;
 
 /// <summary>
 /// The server-side half of the broker console: publishes a message to, and tails messages from, one

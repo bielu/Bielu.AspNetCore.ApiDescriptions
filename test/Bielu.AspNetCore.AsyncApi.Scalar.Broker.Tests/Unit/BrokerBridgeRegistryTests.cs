@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
+﻿using Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;

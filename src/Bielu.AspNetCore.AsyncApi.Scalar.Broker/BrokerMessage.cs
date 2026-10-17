@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker;
 
 /// <summary>
 /// A message consumed from a broker channel and forwarded to the console's tail stream.
