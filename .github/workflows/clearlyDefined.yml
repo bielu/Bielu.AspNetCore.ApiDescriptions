@@ -1,0 +1,30 @@
+name: ClearlyDefined harvest
+
+# ClearlyDefined only indexes a package version once a harvest is requested for it. Rather than
+# hooking the release jobs (a freshly pushed version sits in NuGet's validation queue for a while
+# and would be requested too early), this sweeps daily and requests whatever is published but not
+# indexed yet. The script is idempotent, so a run with nothing new is a no-op.
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clearlydefined-harvest
+  cancel-in-progress: false
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Request harvests for unindexed package versions
+        run: node scripts/clearlydefined-harvest.mjs

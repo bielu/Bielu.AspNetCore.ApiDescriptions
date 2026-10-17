@@ -34,5 +34,5 @@ travel badly across tooling, circular `dependsOn` graphs, dangling same-document
 
 ## Feedback & Contributing
 
-Released under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are
-welcome at [the GitHub repository](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions).
+Copyright (c) 2025 Arkadiusz Biel. Released under the [MIT license](https://licenses.nuget.org/MIT).
+Bug reports and contributions are welcome at [the GitHub repository](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions).

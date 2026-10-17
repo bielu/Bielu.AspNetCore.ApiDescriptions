@@ -37,5 +37,5 @@ instead, which adds the console to a Scalar resource from the AppHost.
 
 ## Feedback & Contributing
 
-Released under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are
-welcome at [the GitHub repository](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions).
+Copyright (c) 2025 Arkadiusz Biel. Released under the [MIT license](https://licenses.nuget.org/MIT).
+Bug reports and contributions are welcome at [the GitHub repository](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions).

@@ -58,6 +58,36 @@
     </ItemGroup>
 
     <!--
+      License evidence inside the package, for ClearlyDefined (clearlydefined.io). Its licensed score
+      counts the share of a package's files in which ScanCode finds both a license and a copyright
+      notice. The nuspec already has both; these give the same to the files we produce:
+        - LICENSE at the package root (the full MIT text with the copyright line);
+        - an SPDX identifier in every assembly, next to the AssemblyCopyright from <Copyright> above;
+        - a comment in the XML documentation file (_StampLicenseOnDocumentationFile below).
+      The PACKAGE.md files carry a copyright line in their license paragraph for the same reason.
+      NuGet's own files ([Content_Types].xml, .rels, .psmdcp, the signature) cannot carry one.
+    -->
+    <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)../LICENSE" Pack="true" PackagePath="/" Visible="false" />
+        <AssemblyMetadata Include="License" Value="SPDX-License-Identifier: MIT" />
+    </ItemGroup>
+
+    <Target Name="_StampLicenseOnDocumentationFile"
+            AfterTargets="CoreCompile"
+            Condition="'$(GenerateDocumentationFile)' == 'true' and '@(DocFileItem)' != '' and Exists('@(DocFileItem)')">
+        <PropertyGroup>
+            <_LicenseStamp>&lt;!-- $(Copyright). SPDX-License-Identifier: MIT --&gt;</_LicenseStamp>
+            <_DocFilePath>@(DocFileItem->'%(FullPath)')</_DocFilePath>
+            <_DocFileText>$([System.IO.File]::ReadAllText('$(_DocFilePath)'))</_DocFileText>
+        </PropertyGroup>
+        <!-- CoreCompile skips an up-to-date build, so the file can already be stamped. -->
+        <WriteLinesToFile Condition="!$(_DocFileText.Contains('SPDX-License-Identifier'))"
+                          File="@(DocFileItem)"
+                          Lines="$([MSBuild]::Escape($(_DocFileText.Replace('&lt;doc&gt;', '&lt;doc&gt;$(_LicenseStamp)').TrimEnd())))"
+                          Overwrite="true" />
+    </Target>
+
+    <!--
       Public API tracking is opt-in per project: adding PublicAPI.Shipped.txt and PublicAPI.Unshipped.txt
       next to the csproj turns it on. A public member missing from those files (RS0016), or listed there
       but gone from the code (RS0017), then fails the build instead of only warning, so a change to the

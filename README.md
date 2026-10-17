@@ -86,4 +86,4 @@ public class MyService
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+Copyright (c) 2025 Arkadiusz Biel. Licensed under the [MIT License](LICENSE).
