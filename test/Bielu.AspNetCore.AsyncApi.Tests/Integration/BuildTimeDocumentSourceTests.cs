@@ -1,4 +1,5 @@
-﻿using Bielu.AspNetCore.AsyncApi.Extensions;
+﻿using Bielu.AspNetCore.ApiDescriptions;
+using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
@@ -11,14 +12,18 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Integration;
 
 /// <summary>
 /// Other document families (such as Arazzo) join build-time generation through <see cref="IBuildTimeDocumentSource"/>.
-/// Their names must never rename an AsyncAPI or OpenAPI document, and the result must not depend on the order
-/// anything was registered in.
+/// Sources ordered after AsyncAPI must never rename an AsyncAPI or OpenAPI document, and the result must not depend
+/// on the order anything was registered in.
 /// </summary>
 public class BuildTimeDocumentSourceTests
 {
     private sealed class FakeSource(string prefix, params BuildTimeDocument[] documents) : IBuildTimeDocumentSource
     {
+        public string Kind => "Fake";
+
         public string NamePrefix => prefix;
+
+        public int Order => 100;
 
         public IEnumerable<BuildTimeDocument> GetDocuments() => documents;
 

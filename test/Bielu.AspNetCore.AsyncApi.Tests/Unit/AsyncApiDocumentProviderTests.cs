@@ -1,4 +1,5 @@
-﻿using Bielu.AspNetCore.AsyncApi.Extensions;
+﻿using Bielu.AspNetCore.ApiDescriptions;
+using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -162,11 +163,11 @@ public class AsyncApiDocumentProviderTests
         {
             options.WithInfo("Test API", "1.0.0");
         });
-        var documentProvider = host.Services.GetRequiredService<IDocumentProvider>();
+        var source = host.Services.GetServices<IBuildTimeDocumentSource>().OfType<AsyncApiBuildTimeDocumentSource>().Single();
 
         // Act
         using var writer = new StringWriter();
-        await documentProvider.GenerateAsync("v1", writer, ByteBard.AsyncAPI.AsyncApiVersion.AsyncApi3_0);
+        await source.GenerateAsync("v1", writer, ByteBard.AsyncAPI.AsyncApiVersion.AsyncApi3_0);
         var output = writer.ToString();
 
         // Assert
@@ -204,6 +205,6 @@ public class AsyncApiDocumentProviderTests
 
         // Assert
         documentProvider.ShouldNotBeNull();
-        documentProvider.ShouldBeOfType<AsyncApiDocumentProvider>();
+        documentProvider.ShouldBeOfType<BuildTimeDocumentProvider>();
     }
 }

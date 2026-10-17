@@ -9,15 +9,15 @@ namespace Microsoft.Extensions.ApiDescriptions;
 
 /// <summary>
 /// Reaches <c>Microsoft.AspNetCore.OpenApi</c>'s build-time document provider by reflection, so that
-/// <see cref="AsyncApiDocumentProvider"/> can serve OpenAPI documents alongside AsyncAPI ones.
+/// <see cref="BuildTimeDocumentProvider"/> can serve OpenAPI documents alongside the other ones.
 /// </summary>
 /// <remarks>
-/// Both libraries declare an internal <c>Microsoft.Extensions.ApiDescriptions.IDocumentProvider</c>, and
+/// Both packages declare an internal <c>Microsoft.Extensions.ApiDescriptions.IDocumentProvider</c>, and
 /// <c>dotnet getdocument</c> resolves only the first one it finds across the loaded assemblies. Whichever
-/// one it picks has to answer for both libraries, which is why the provider types are reached by name here.
+/// one it picks has to answer for both packages, which is why the provider types are reached by name here.
 /// The adapter instantiates <c>OpenApiDocumentProvider</c> directly rather than resolving the OpenAPI
 /// <c>IDocumentProvider</c> service, because that service may itself be forwarded to
-/// <see cref="AsyncApiDocumentProvider"/> (see <see cref="OpenApiDocumentProviderProxy"/>).
+/// <see cref="BuildTimeDocumentProvider"/> (see <see cref="OpenApiDocumentProviderProxy"/>).
 /// </remarks>
 internal sealed class OpenApiDocumentProviderAdapter
 {

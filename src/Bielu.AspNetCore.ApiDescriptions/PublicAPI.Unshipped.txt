@@ -1,0 +1,23 @@
+#nullable enable
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.BuildTimeDocument() -> void
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.BuildTimeDocument(string! Name, string? BuildTimeName = null) -> void
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.BuildTimeName.get -> string?
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.BuildTimeName.init -> void
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.Deconstruct(out string! Name, out string? BuildTimeName) -> void
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.Equals(Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument other) -> bool
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.Name.get -> string!
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.Name.init -> void
+Bielu.AspNetCore.ApiDescriptions.BuildTimeDocumentServiceCollectionExtensions
+Bielu.AspNetCore.ApiDescriptions.IBuildTimeDocumentSource
+Bielu.AspNetCore.ApiDescriptions.IBuildTimeDocumentSource.GenerateAsync(string! documentName, System.IO.TextWriter! writer) -> System.Threading.Tasks.Task!
+Bielu.AspNetCore.ApiDescriptions.IBuildTimeDocumentSource.GetDocuments() -> System.Collections.Generic.IEnumerable<Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument>!
+Bielu.AspNetCore.ApiDescriptions.IBuildTimeDocumentSource.Kind.get -> string!
+Bielu.AspNetCore.ApiDescriptions.IBuildTimeDocumentSource.NamePrefix.get -> string!
+Bielu.AspNetCore.ApiDescriptions.IBuildTimeDocumentSource.Order.get -> int
+override Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.GetHashCode() -> int
+static Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.operator !=(Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument left, Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument right) -> bool
+static Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.operator ==(Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument left, Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument right) -> bool
+static Bielu.AspNetCore.ApiDescriptions.BuildTimeDocumentServiceCollectionExtensions.AddBuildTimeDocumentSource<TSource>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+~override Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.Equals(object obj) -> bool
+~override Bielu.AspNetCore.ApiDescriptions.BuildTimeDocument.ToString() -> string

@@ -8,17 +8,17 @@ namespace Microsoft.Extensions.ApiDescriptions;
 
 /// <summary>
 /// Implements <c>Microsoft.AspNetCore.OpenApi</c>'s internal <c>IDocumentProvider</c> by forwarding to
-/// <see cref="AsyncApiDocumentProvider"/>, which serves both the OpenAPI and the AsyncAPI documents.
+/// <see cref="BuildTimeDocumentProvider"/>, which serves the OpenAPI documents and those of every <see cref="Bielu.AspNetCore.ApiDescriptions.IBuildTimeDocumentSource"/>.
 /// </summary>
 /// <remarks>
 /// <c>dotnet getdocument</c> resolves whichever <c>IDocumentProvider</c> type it finds first across the loaded
-/// assemblies. When that is the OpenAPI one, this proxy is what it gets back, so the AsyncAPI documents are
+/// assemblies. When that is the OpenAPI one, this proxy is what it gets back, so the other documents are
 /// still listed and written. The interface is internal to another assembly, so it can only be implemented at
 /// runtime, which is what <see cref="DispatchProxy"/> does.
 /// </remarks>
 internal class OpenApiDocumentProviderProxy : DispatchProxy
 {
-    private AsyncApiDocumentProvider _target = null!;
+    private BuildTimeDocumentProvider _target = null!;
 
     /// <summary>
     /// Creates a proxy implementing <paramref name="interfaceType"/> that forwards to <paramref name="target"/>.
@@ -26,7 +26,7 @@ internal class OpenApiDocumentProviderProxy : DispatchProxy
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Only resolved by build-time document generation, which runs the app under the JIT.")]
     public static object Create(
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType,
-        AsyncApiDocumentProvider target)
+        BuildTimeDocumentProvider target)
     {
         ArgumentNullException.ThrowIfNull(interfaceType);
         ArgumentNullException.ThrowIfNull(target);
