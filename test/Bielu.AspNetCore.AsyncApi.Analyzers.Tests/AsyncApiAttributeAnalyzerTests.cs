@@ -269,6 +269,26 @@ namespace Bielu.AspNetCore.AsyncApi.Extensions
         public static ServiceCollection AddAsyncApiGeneratedMetadata(this ServiceCollection services) => services;
     }
 }
+
+namespace Bielu.AspNetCore.Arazzo.Extensions
+{
+    using Microsoft.Extensions.DependencyInjection;
+
+    public static class ArazzoServiceCollectionExtensions
+    {
+        public static ServiceCollection AddArazzo(this ServiceCollection services) => services;
+    }
+}
+
+namespace Some.Other.Library
+{
+    using Microsoft.Extensions.DependencyInjection;
+
+    public static class UnrelatedExtensions
+    {
+        public static ServiceCollection AddArazzo(this ServiceCollection services) => services;
+    }
+}
 ";
 
     [Fact]
@@ -367,6 +387,87 @@ services.AddOpenApi();
 services.AddAsyncApi();
 " + RegistrationStubs;
         var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        diagnostics.Where(d => d.Id == "BASYNC010").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BASYNC010_AddOpenApiAfterAddArazzo_ReportsWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.Arazzo.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddArazzo();
+services.AddOpenApi();
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        var diagnostic = diagnostics.Single(d => d.Id == "BASYNC010");
+        diagnostic.GetMessage().ShouldContain("'AddArazzo'");
+        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).ShouldBe("AddOpenApi");
+    }
+
+    [Fact]
+    public async Task BASYNC010_AddOpenApiBeforeAddArazzo_NoWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.Arazzo.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddOpenApi();
+services.AddArazzo();
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        diagnostics.Where(d => d.Id == "BASYNC010").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BASYNC010_AddOpenApiAfterAddAsyncApiAndAddArazzo_ReportsOnce()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.Arazzo.Extensions;
+using Bielu.AspNetCore.AsyncApi.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddAsyncApi();
+services.AddArazzo();
+services.AddOpenApi();
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        diagnostics.Where(d => d.Id == "BASYNC010").Count().ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task BASYNC010_AddArazzoFromOtherNamespaceBeforeAddOpenApi_NoWarning()
+    {
+        var testCode = @"
+using Some.Other.Library;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddArazzo();
+services.AddOpenApi();
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode, OutputKind.ConsoleApplication);
+        diagnostics.Where(d => d.Id == "BASYNC010").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BASYNC010_AddArazzoAndAddOpenApiInDifferentMethods_NoWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.Arazzo.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+public class Startup
+{
+    public void AddWorkflows(ServiceCollection services) => services.AddArazzo();
+    public void AddHttp(ServiceCollection services) => services.AddOpenApi();
+}
+" + RegistrationStubs;
+        var diagnostics = await GetDiagnosticsAsync(testCode);
         diagnostics.Where(d => d.Id == "BASYNC010").ShouldBeEmpty();
     }
 
