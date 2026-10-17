@@ -9,6 +9,8 @@
     <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults\Bielu.AspNetCore.AsyncApi.Aspire.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
     <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi.Attributes\Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
+    <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi.Scalar.Broker\Bielu.AspNetCore.AsyncApi.Scalar.Broker.csproj" />
+    <ProjectReference Include="..\..\..\Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka\Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.csproj" />
   </ItemGroup>
 
   <ItemGroup>
