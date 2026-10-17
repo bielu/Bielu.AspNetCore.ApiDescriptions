@@ -202,16 +202,4 @@ public class OpenApiBuildTimeGenerationTests
         // Assert
         JsonNode.Parse(writer.ToString())!["asyncapi"].ShouldNotBeNull();
     }
-
-    [Fact]
-    public void OpenApiDocumentProviderProxy_Create_ThrowsForNullArguments()
-    {
-        // Arrange
-        var serviceType = Type.GetType(OpenApiDocumentProviderInterface, throwOnError: true)!;
-        var target = new AsyncApiDocumentProvider(new ServiceCollection().BuildServiceProvider());
-
-        // Act & Assert
-        Should.Throw<ArgumentNullException>(() => OpenApiDocumentProviderProxy.Create(null!, target));
-        Should.Throw<ArgumentNullException>(() => OpenApiDocumentProviderProxy.Create(serviceType, null!));
-    }
 }

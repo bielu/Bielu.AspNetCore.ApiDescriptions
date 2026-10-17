@@ -1,12 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using ByteBard.AsyncAPI;
-
 namespace Microsoft.Extensions.ApiDescriptions;
 
 /// <summary>
-/// Represents a provider for AsyncApi documents to support build-time generation.
+/// Represents a provider for documents to support build-time generation.
 /// </summary>
 /// <remarks>
 /// The Microsoft.Extensions.ApiDescription.Server package and associated configuration
@@ -22,5 +20,4 @@ internal interface IDocumentProvider
 {
     IEnumerable<string> GetDocumentNames();
     Task GenerateAsync(string documentName, TextWriter writer);
-    Task GenerateAsync(string documentName, TextWriter writer, AsyncApiVersion AsyncApiSpecVersion);
 }

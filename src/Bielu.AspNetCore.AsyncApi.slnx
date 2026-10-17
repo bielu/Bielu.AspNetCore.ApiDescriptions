@@ -22,6 +22,7 @@
   <Folder Name="/tests/">
     <Project Path="../test/Bielu.Arazzo.Cli.Tests/Bielu.Arazzo.Cli.Tests.csproj" />
     <Project Path="../test/Bielu.Arazzo.Tests/Bielu.Arazzo.Tests.csproj" />
+    <Project Path="../test/Bielu.AspNetCore.ApiDescriptions.Tests/Bielu.AspNetCore.ApiDescriptions.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.Arazzo.Overlay.Tests/Bielu.AspNetCore.Arazzo.Overlay.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.Arazzo.Tests/Bielu.AspNetCore.Arazzo.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Analyzers.Tests/Bielu.AspNetCore.AsyncApi.Analyzers.Tests.csproj" />
@@ -64,6 +65,7 @@
   </Folder>
   <Project Path="Bielu.Arazzo.Readers/Bielu.Arazzo.Readers.csproj" />
   <Project Path="Bielu.Arazzo/Bielu.Arazzo.csproj" />
+  <Project Path="Bielu.AspNetCore.ApiDescriptions/Bielu.AspNetCore.ApiDescriptions.csproj" />
   <Project Path="Bielu.AspNetCore.Arazzo.Overlay/Bielu.AspNetCore.Arazzo.Overlay.csproj" />
   <Project Path="Bielu.AspNetCore.Arazzo/Bielu.AspNetCore.Arazzo.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj" />

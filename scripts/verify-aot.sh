@@ -89,11 +89,12 @@ fetch_document "$WORK/jit/AotStreetlights" "$PORT" "$WORK/jit.json"
 # ---------------------------------------------------------------------------------------------
 echo "==> Packing the library so the example can consume it as a package"
 FEED="$WORK/feed"
-# Attributes as well as the core package: core depends on it, and restoring core from a local feed
-# means its dependency has to resolve from somewhere other than nuget.org, where this version does
-# not exist yet.
+# Attributes and ApiDescriptions as well as the core package: core depends on them, and restoring core
+# from a local feed means its dependencies have to resolve from somewhere other than nuget.org, where
+# this version does not exist yet.
 dotnet pack src/Bielu.AspNetCore.AsyncApi/Bielu.AspNetCore.AsyncApi.csproj -c Release -o "$FEED" --nologo -v quiet
 dotnet pack src/Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj -c Release -o "$FEED" --nologo -v quiet
+dotnet pack src/Bielu.AspNetCore.ApiDescriptions/Bielu.AspNetCore.ApiDescriptions.csproj -c Release -o "$FEED" --nologo -v quiet
 
 PACKAGE_VERSION="$(dotnet msbuild src/Bielu.AspNetCore.AsyncApi/Bielu.AspNetCore.AsyncApi.csproj \
   -getProperty:PackageVersion -nologo | tr -d '[:space:]')"

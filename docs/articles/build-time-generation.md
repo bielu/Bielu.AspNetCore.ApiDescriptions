@@ -20,7 +20,7 @@ Then configure your `.csproj`:
 </PropertyGroup>
 ```
 
-AsyncAPI documents will be generated during `dotnet build` using the `IDocumentProvider` interface registered by `AddAsyncApi()`.
+AsyncAPI documents will be generated during `dotnet build` using the `IDocumentProvider` interface registered by `AddAsyncApi()`. That provider lives in the `Bielu.AspNetCore.ApiDescriptions` package (a dependency of `Bielu.AspNetCore.AsyncApi`), which lets other document families, such as Arazzo, be written by the same run through an `IBuildTimeDocumentSource`.
 
 ### Alongside `Microsoft.AspNetCore.OpenApi`
 
