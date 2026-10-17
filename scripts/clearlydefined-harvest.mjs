@@ -24,8 +24,11 @@ const NUGET_FLAT = "https://api.nuget.org/v3-flatcontainer";
 const CLEARLY_DEFINED = "https://api.clearlydefined.io";
 // POST /harvest rejects more than 1000 entries per request.
 const HARVEST_BATCH = 500;
-// POST /definitions is rate limited to 250 requests a minute; keep each one small and fast.
-const DEFINITIONS_BATCH = 100;
+// POST /definitions is rate limited to 250 requests a minute, and it computes a definition on the
+// spot for every coordinate it has not cached, so a large batch of never-seen versions outlives
+// Cloudflare's gateway timeout (HTTP 502/524). Keep each request small.
+const DEFINITIONS_BATCH = 20;
+const MAX_ATTEMPTS = 4;
 
 function packageIds() {
   const srcDir = join(repoRoot, "src");
@@ -65,19 +68,48 @@ async function publishedVersions(id) {
 async function unindexed(coordinates) {
   const pending = [];
   for (let i = 0; i < coordinates.length; i += DEFINITIONS_BATCH) {
-    const batch = coordinates.slice(i, i + DEFINITIONS_BATCH);
+    pending.push(...(await unindexedBatch(coordinates.slice(i, i + DEFINITIONS_BATCH))));
+  }
+  return pending;
+}
+
+// A batch that keeps failing on a transient status is split in half, since one slow coordinate is
+// enough to time the whole request out. A single coordinate that still cannot be answered counts as
+// unindexed: requesting a harvest for something already harvested is a harmless no-op.
+async function unindexedBatch(batch) {
+  const definitions = await fetchDefinitions(batch);
+  if (definitions) {
+    return batch.filter((c) => !definitions[c.toLowerCase()]?.described?.tools?.length);
+  }
+  if (batch.length === 1) {
+    console.log(`  no definition answer for ${batch[0]}, treating it as unindexed`);
+    return batch;
+  }
+  const half = Math.ceil(batch.length / 2);
+  return [...(await unindexedBatch(batch.slice(0, half))), ...(await unindexedBatch(batch.slice(half)))];
+}
+
+// Definitions keyed by lower-cased coordinates, or null when the service kept answering with a
+// transient status (429 or 5xx). Any other failure is a real error and aborts the run.
+async function fetchDefinitions(batch) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const response = await fetch(`${CLEARLY_DEFINED}/definitions`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(batch),
     });
-    if (!response.ok) throw new Error(`POST /definitions -> ${response.status} ${response.statusText}`);
-    const definitions = Object.fromEntries(
-      Object.entries(await response.json()).map(([key, value]) => [key.toLowerCase(), value]),
-    );
-    pending.push(...batch.filter((c) => !definitions[c.toLowerCase()]?.described?.tools?.length));
+    if (response.ok) {
+      return Object.fromEntries(
+        Object.entries(await response.json()).map(([key, value]) => [key.toLowerCase(), value]),
+      );
+    }
+    if (response.status !== 429 && response.status < 500) {
+      throw new Error(`POST /definitions -> ${response.status} ${response.statusText}`);
+    }
+    console.log(`  POST /definitions (${batch.length}) -> ${response.status}, attempt ${attempt}/${MAX_ATTEMPTS}`);
+    if (attempt < MAX_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, 2 ** attempt * 1000));
   }
-  return pending;
+  return null;
 }
 
 const published = [];
