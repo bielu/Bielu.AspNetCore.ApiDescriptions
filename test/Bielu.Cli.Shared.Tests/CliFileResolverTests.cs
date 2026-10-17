@@ -70,4 +70,17 @@ public class CliFileResolverTests : IDisposable
         result.Count.ShouldBe(2);
         result.ShouldContain(literal);
     }
+
+    [Fact]
+    public void ExpandFilePatterns_GlobInMissingDirectory_MatchesNothing()
+    {
+        // Arrange
+        var pattern = Path.Combine(_tempDir, "does-not-exist", "*.json");
+
+        // Act
+        var files = CliFileResolver.ExpandFilePatterns([pattern]);
+
+        // Assert
+        files.ShouldBeEmpty();
+    }
 }

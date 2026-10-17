@@ -24,6 +24,12 @@ public static class CliFileResolver
                     directory = ".";
                 }
 
+                // A glob in a directory that does not exist matches nothing, rather than crashing the command.
+                if (!Directory.Exists(directory))
+                {
+                    continue;
+                }
+
                 var fileNamePattern = Path.GetFileName(pattern);
                 files.AddRange(Directory.GetFiles(directory, fileNamePattern, SearchOption.TopDirectoryOnly));
             }
