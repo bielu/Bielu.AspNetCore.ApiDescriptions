@@ -48,8 +48,8 @@ payload and overrides whatever it sets:
 public void UserCreated() { }
 ```
 
-Class-level metadata is read by reflection, so it is not part of the source-generated metadata used for
-Native AOT yet.
+The source generator picks up class-level `[Message]` attributes too, so the same document is produced
+under Native AOT.
 
 ### Message Examples
 

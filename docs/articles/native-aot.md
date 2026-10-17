@@ -10,7 +10,7 @@ Native AOT support is available starting from version 1.0.0. Ensure your project
 
 ## Configuration
 
-In a Native AOT application, the library cannot scan your assemblies for attributes at runtime. Instead, a Source Generator finds all `[AsyncApi]` and `[Channel]` attributes during compilation and generates metadata classes.
+In a Native AOT application, the library cannot scan your assemblies for attributes at runtime. Instead, a Source Generator finds all `[AsyncApi]` and `[Channel]` attributes during compilation and generates metadata classes. It also records `[Message]` attributes placed on payload classes, so class-level message metadata applies without reflection (open generic and inaccessible classes are skipped).
 
 ### 1. Register Generated Metadata
 
@@ -95,6 +95,6 @@ app.MapScalarApiReference(options =>
 
 ## Known Limitations
 
-- **Custom Providers**: If you implement custom `IAsyncApiMetadataProvider` or `IAsyncApiSchemaTransformer`, ensure they are also AOT-compatible and do not rely on reflection to discover types.
+- **Custom Providers**: If you implement custom `IAsyncApiMetadataProvider` or `IAsyncApiSchemaTransformer`, ensure they are also AOT-compatible and do not rely on reflection to discover types. To supply class-level `[Message]` metadata without reflection, also implement `IAsyncApiMetadataProvider.GetPayloadMessageAttributes()`; the default (`null`) falls back to reading the attribute from the payload type.
 - **Dynamic Types**: Using `dynamic` or non-annotated `object` types for messages is not supported in Native AOT.
 - **Publish warnings from `ByteBard.AsyncAPI`**: the dependency is not trim/AOT-annotated, so an AOT publish reports `IL2104`/`IL3053` from that assembly. They come from outside this project and do not affect the generated document — the `aot-verification` CI job asserts the AOT build and the reflection-based build serve documents that are equal once parsed as JSON. The comparison is deliberately structural rather than byte-for-byte, since property ordering is not part of the contract.

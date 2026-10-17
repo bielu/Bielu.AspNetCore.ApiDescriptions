@@ -1,0 +1,1 @@
+Bielu.AspNetCore.AsyncApi.Services.IAsyncApiMetadataProvider.GetPayloadMessageAttributes() -> System.Collections.Generic.IReadOnlyDictionary<System.Type!, Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute!>?
