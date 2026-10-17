@@ -194,12 +194,10 @@ internal sealed class AsyncApiJsonSchemaService
                         }
                     }
                 }
-                // Disabled: this stripped "null" from nullable componentized-object schemas on
-                // the assumption that the oneOf-wrapping restoration above (also disabled) would
-                // re-add nullability at the property reference site. Since that restoration never
-                // worked (it references a nonexistent Metadata property and the wrong constants
-                // class), pruning here silently and permanently dropped nullability instead.
-                // schema.PruneNullTypeForComponentizedTypes();
+                // Nullable componentized-object schemas deliberately keep "null" in their type. A former
+                // PruneNullTypeForComponentizedTypes step stripped it, assuming a oneOf-wrapping restoration
+                // would re-add nullability at the property reference site. That restoration never worked,
+                // so pruning silently dropped nullability; see NullablePropertySchemaTests.
                 return schema;
             }
         };
