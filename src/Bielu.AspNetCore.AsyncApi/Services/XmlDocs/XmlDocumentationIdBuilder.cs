@@ -113,7 +113,8 @@ internal static class XmlDocumentationIdBuilder
         }
 
         var name = type.Name;
-        if (type.IsGenericType && !type.IsGenericTypeDefinition)
+        // Type.Name already carries the arity ("List`1"); strip it so a definition doesn't get it twice.
+        if (type.IsGenericType)
         {
             var index = name.IndexOf('`');
             if (index != -1) name = name.Substring(0, index);
@@ -164,7 +165,13 @@ internal static class XmlDocumentationIdBuilder
                 var rank = type.GetArrayRank();
                 if (rank > 1)
                 {
-                    for (var i = 0; i < rank - 1; i++) builder.Append(',');
+                    // The compiler writes each dimension of a multi-dimensional array with its lower bound:
+                    // int[,] is "System.Int32[0:,0:]", not "System.Int32[,]".
+                    for (var i = 0; i < rank; i++)
+                    {
+                        if (i > 0) builder.Append(',');
+                        builder.Append("0:");
+                    }
                 }
                 builder.Append(']');
             }
