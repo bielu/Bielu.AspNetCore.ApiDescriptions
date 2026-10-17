@@ -31,7 +31,20 @@ builder.Services.AddOpenApi();
 builder.Services.AddAsyncApi();
 ```
 
-`AddAsyncApi()` makes build-time generation serve both libraries' documents by redirecting the document provider that `AddOpenApi()` has already registered. An `AddOpenApi()` call made afterwards registers that provider again, so depending on which provider `dotnet getdocument` picks, the AsyncAPI documents can be missing. The **BASYNC010** analyzer warns when `AddOpenApi()` follows `AddAsyncApi()` (or `AddAsyncApiForApiVersions()`) in the same method. It can't compare calls made from different methods, so keep both registrations in one place, such as `Program.cs`.
+`AddAsyncApi()` makes build-time generation serve both libraries' documents by redirecting the document provider that `AddOpenApi()` has already registered. An `AddOpenApi()` call made afterwards registers that provider again, so depending on which provider `dotnet getdocument` picks, the AsyncAPI documents can be missing. The **BASYNC010** analyzer warns when `AddOpenApi()` follows `AddAsyncApi()` or `AddAsyncApiForApiVersions()` in the same method, and **BARAZZO001** warns when it follows `AddArazzo()`. It can't compare calls made from different methods, so keep these registrations in one place, such as `Program.cs`.
+
+#### Ordering
+
+What depends on registration order, and what doesn't:
+
+| Situation | `AddOpenApi()` first | `AddOpenApi()` after `AddAsyncApi()` |
+|-----------|----------------------|--------------------------------------|
+| `dotnet asyncapi getdocument` (this repo's CLI) | Both documents | Both documents |
+| Resolving this library's `IDocumentProvider` | Both documents | Both documents |
+| `dotnet getdocument` / `Microsoft.Extensions.ApiDescription.Server`, when it finds OpenAPI's `IDocumentProvider` type | Both documents (the proxy forwards to ours) | **OpenAPI documents only** |
+| `dotnet getdocument`, when it finds this library's type | Both documents | Both documents |
+
+`AddOpenApi()` registers its provider with a plain `AddSingleton`, and the container resolves the last registration of a service type, so a later `AddOpenApi()` call replaces the proxy that `AddAsyncApi()` installed. `AddAsyncApi()` can't prevent that: an `IServiceCollection` extension only sees the registrations made so far, and neither the .NET container nor OpenAPI's provider offers a hook that runs after the caller's later registrations and before the container is built. The Microsoft tool picks the first `IDocumentProvider` type among the loaded assemblies, so which row applies depends on assembly load order. The CLI shipped here prefers this library's type and is therefore order-independent. Keep `AddOpenApi()` first when you use the Microsoft tool.
 
 `dotnet getdocument` writes the `v1` document to `<Project>.json` and every other document to `<Project>_<name>.json`. Both libraries name their default document `v1`, so when an OpenAPI document has the same name as an AsyncAPI one, the AsyncAPI document is listed as `asyncapi-<name>` instead:
 

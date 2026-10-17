@@ -202,4 +202,24 @@ public class OpenApiBuildTimeGenerationTests
         // Assert
         JsonNode.Parse(writer.ToString())!["asyncapi"].ShouldNotBeNull();
     }
+
+    [Fact]
+    public async Task OpenApiDocumentProvider_WhenRegisteredAfterAddAsyncApi_IsNotForwarded()
+    {
+        // Arrange - documents the known limit behind analyzer BASYNC010: AddOpenApi() registers its provider with a
+        // plain AddSingleton, the last registration wins, and an IServiceCollection extension has no hook that runs
+        // after the caller's later registrations. Our own IDocumentProvider is unaffected by the order.
+        await using var app = await CreateAppAsync(openApiFirst: false);
+        var serviceType = Type.GetType(OpenApiDocumentProviderInterface, throwOnError: true)!;
+        var openApiService = app.Services.GetRequiredService(serviceType);
+        var getDocumentNames = serviceType.GetMethod("GetDocumentNames", Type.EmptyTypes)!;
+
+        // Act
+        var openApiNames = ((IEnumerable<string>)getDocumentNames.Invoke(openApiService, null)!).ToList();
+        var ourNames = app.Services.GetRequiredService<IDocumentProvider>().GetDocumentNames().ToList();
+
+        // Assert
+        openApiNames.ShouldBe(["v1"]);
+        ourNames.ShouldBe(["v1", "asyncapi-v1"], ignoreOrder: true);
+    }
 }

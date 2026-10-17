@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- See the same note in the SourceGenerators project: a netstandard2.0 analyzer must not
+         inherit PublishAot from an app that publishes AOT, or that publish fails with NETSDK1207. -->
+    <PublishAot>false</PublishAot>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Helpers shared with the AsyncAPI analyzer, compiled in as source (see Bielu.Analyzers.Shared). -->
+  <ItemGroup>
+    <Compile Include="..\Bielu.Analyzers.Shared\**\*.cs" LinkBase="Shared" />
+  </ItemGroup>
+
+  <!-- Release tracking for the BARAZZO rules (RS2008). These declare when each rule was added,
+       changed or removed, which is how consumers find out a rule appeared between two versions. -->
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bielu.AspNetCore.Arazzo.Analyzers.Tests" />
+  </ItemGroup>
+
+</Project>

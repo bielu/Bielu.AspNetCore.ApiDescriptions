@@ -194,6 +194,30 @@ casing idiomatic while the marker types stay idiomatic C#, and it means the two 
 `AddWorkflow("measureAndAlert", …)` and `DependsOn<MeasureAndAlert>()` refer to the same workflow, so you
 can adopt the generic form incrementally.
 
+### Analyzers
+
+`Bielu.AspNetCore.Arazzo` ships the `BARAZZO` Roslyn analyzers, which check workflow-builder code at
+compile time. Most of these mistakes otherwise surface as an exception at startup, and two of them
+(BARAZZO006 and BARAZZO007) aren't caught at runtime at all.
+
+| Rule | Severity | Reports |
+|------|----------|---------|
+| BARAZZO001 | Warning | `AddOpenApi()` called after `AddArazzo()` in the same method, so build-time generation may miss the Arazzo documents (see [Build-time Generation](../build-time-generation.md#alongside-microsoftaspnetcoreopenapi)). |
+| BARAZZO002 | Error | A literal workflow id, step id or source name, or a marker type's derived id, that doesn't match `^[A-Za-z0-9_-]+$`. |
+| BARAZZO003 | Error | A step that sets no target, or more than one, of `Operation`, `OperationPath`, `Channel` and `Workflow`. |
+| BARAZZO004 | Error | A `Channel` step action other than `"send"` or `"receive"` (case-sensitive). |
+| BARAZZO005 | Warning | `WithCorrelationId` on a step that doesn't receive: a `send` step, or an operation or workflow step. |
+| BARAZZO006 | Warning | A `Channel` or `OperationPath` step naming a source description the document never declares. |
+| BARAZZO007 | Warning | `DependsOn` or `Workflow` naming a workflow, or a step of the same workflow, that the document never defines. |
+| BARAZZO008 | Info | `AddAsyncApiSource`/`AddOpenApiSource` pointing at a document name the project never registers with `AddAsyncApi`/`AddOpenApi`. |
+
+The analyzers only read what's written inline: string constants, marker types, and the lambdas passed to
+`AddArazzo`, `AddWorkflow` and `Step`. When a check can't see the whole picture, it stays quiet rather than
+guess. That happens when a builder is passed to a helper method, an id isn't a constant, a step's lambda
+branches, or something other than `AddArazzo` configures `ArazzoOptions` (for example
+`Configure<ArazzoOptions>`). Several `AddArazzo` calls with the same document name are merged, as they are
+at runtime.
+
 > ⚠️ **Security note:** `Bielu.AspNetCore.Arazzo` only *serves* and *validates* workflow documents — it
 > does not execute them. Any future execution engine is intended to be CLI/test-only by design, and would
 > never be exposed as a default ASP.NET Core endpoint: a hosted endpoint that ran arbitrary workflow steps

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- The test code is compiled against the real Arazzo, AsyncAPI and OpenAPI assemblies rather than stubs, so a
+       renamed builder method or parameter fails these tests instead of silently disabling a rule. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bielu.AspNetCore.Arazzo.Analyzers\Bielu.AspNetCore.Arazzo.Analyzers.csproj" />
+    <ProjectReference Include="..\..\src\Bielu.AspNetCore.Arazzo\Bielu.AspNetCore.Arazzo.csproj" />
+    <ProjectReference Include="..\..\src\Bielu.AspNetCore.Arazzo.Overlay\Bielu.AspNetCore.Arazzo.Overlay.csproj" />
+  </ItemGroup>
+
+</Project>

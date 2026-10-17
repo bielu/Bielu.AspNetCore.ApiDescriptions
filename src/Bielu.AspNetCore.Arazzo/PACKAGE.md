@@ -36,6 +36,12 @@ every `operationId` and `channelPath` a step references is checked **at startup*
 failing in production. Rename a channel and the app fails to start, instead of the workflow silently
 pointing at nothing.
 
+## Analyzers
+
+The package also ships the `BARAZZO` Roslyn analyzers, which catch workflow-builder mistakes at compile
+time: invalid ids, a step with no target or two, an unknown step action, and `DependsOn`/`Workflow`
+references or source names that the document never defines.
+
 ## Documentation
 
 - [Arazzo overview](https://apidescriptions.bielu.pl/articles/arazzo/overview.html)

@@ -16,6 +16,11 @@
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
+  <!-- Helpers shared with the Arazzo analyzer, compiled in as source (see Bielu.Analyzers.Shared). -->
+  <ItemGroup>
+    <Compile Include="..\Bielu.Analyzers.Shared\**\*.cs" LinkBase="Shared" />
+  </ItemGroup>
+
   <!-- Release tracking for the BASYNC rules (RS2008). These declare when each rule was added,
        changed or removed, which is how consumers find out a rule appeared between two versions. -->
   <ItemGroup>
