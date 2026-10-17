@@ -517,17 +517,7 @@ internal sealed class AsyncApiJsonSchemaService
         {
             foreach (var property in schema.Properties)
             {
-                var resolvedProperty = ResolveReferenceForSchema(document, property.Value, rootSchemaId);
-                // if (property.Value is AsyncApiJsonSchema targetSchema &&
-                //     targetSchema.Metadata?.TryGetValue(AsyncApiConstants.NullableProperty, out var isNullableProperty) == true &&
-                //     isNullableProperty is true)
-                // {
-                //     schema.Properties[property.Key] = resolvedProperty.CreateOneOfNullableWrapper();
-                // }
-                // else
-                // {
-                schema.Properties[property.Key] = resolvedProperty;
-                // }
+                schema.Properties[property.Key] = ResolveReferenceForSchema(document, property.Value, rootSchemaId);
             }
         }
 
