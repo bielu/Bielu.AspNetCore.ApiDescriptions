@@ -56,7 +56,7 @@ public class MyService
 
 - ✅ **Runtime & Build-time document generation**
 - ✅ **Protocol bindings** (AMQP, Anypoint MQ, Google Pub/Sub, HTTP, IBM MQ, JMS, Kafka, MQTT, MQTT 5, NATS, Pulsar, ROS 2, SNS, Solace, SQS, WebSockets, SignalR, gRPC, SSE, WebRTC)
-- ✅ **Interactive Scalar UI** with live protocol consoles
+- ✅ **Interactive Scalar UI** with live protocol consoles — invoke SignalR hubs and gRPC methods straight from the docs, and publish to or tail Kafka/MQTT/AMQP channels through an opt-in server-side bridge
 - ✅ **Multiple documents** support
 - ✅ **XML Documentation** support
 - ✅ **CLI Tool** for validation and diffing
