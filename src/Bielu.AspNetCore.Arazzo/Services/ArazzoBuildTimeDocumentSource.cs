@@ -46,14 +46,24 @@ internal sealed class ArazzoBuildTimeDocumentSource(
             .GetRequiredKeyedService<IArazzoDocumentProvider>(lowercasedDocumentName)
             .GetArazzoDocumentAsync();
 
+        // MapArazzo hands transformers the request's services, so give them a scope here too: a transformer that
+        // resolves a scoped service would otherwise get it from the root provider.
+        using var scope = serviceProvider.CreateScope();
         var serialized = ArazzoJsonWriter.Write(document);
         serialized = await ArazzoSerializedDocumentPipeline.ApplyAsync(
             serialized,
             optionsMonitor.Get(lowercasedDocumentName),
             lowercasedDocumentName,
             ArazzoDocumentFormat.Json,
-            serviceProvider,
+            scope.ServiceProvider,
             CancellationToken.None);
+
+        // MapArazzo refuses to serve an empty document, so don't write one to disk either.
+        if (string.IsNullOrWhiteSpace(serialized))
+        {
+            throw new InvalidOperationException(
+                $"The Arazzo document '{lowercasedDocumentName}' serialized to an empty document.");
+        }
 
         await writer.WriteAsync(serialized);
     }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.ApiDescriptions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Shouldly;
 using Xunit;
 
@@ -30,6 +31,9 @@ public class ArazzoBuildTimeGenerationTests
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        // Off by default outside Development; on here so resolving a scoped service from the root provider fails.
+        builder.Host.UseDefaultServiceProvider(o => o.ValidateScopes = true);
+        builder.Services.AddScoped<ScopedDependency>();
 
         foreach (var registration in order)
         {
@@ -124,6 +128,39 @@ public class ArazzoBuildTimeGenerationTests
         // Assert
         json.ShouldContain("Transformed");
         json.ShouldNotContain("Test Workflows");
+    }
+
+    [Fact]
+    public async Task GenerateAsync_TransformerResolvesScopedService_ResolvesItFromAScope()
+    {
+        // Arrange
+        await using var app = await CreateAppAsync([Registration.Arazzo], o =>
+            o.AddSerializedDocumentTransformer((json, context, _) =>
+            {
+                context.ApplicationServices.GetRequiredService<ScopedDependency>();
+                return ValueTask.FromResult(json);
+            }));
+
+        // Act
+        var json = await GenerateAsync(app, "v1");
+
+        // Assert
+        json.ShouldContain("Test Workflows");
+    }
+
+    [Fact]
+    public async Task GenerateAsync_TransformerReturnsEmpty_Throws()
+    {
+        // Arrange
+        await using var app = await CreateAppAsync([Registration.Arazzo], o =>
+            o.AddSerializedDocumentTransformer((_, _, _) => ValueTask.FromResult(" ")));
+
+        // Act
+        var act = () => GenerateAsync(app, "v1");
+
+        // Assert
+        var exception = await act.ShouldThrowAsync<InvalidOperationException>();
+        exception.Message.ShouldContain("'v1' serialized to an empty document");
     }
 
     [Fact]
@@ -236,4 +273,6 @@ public class ArazzoBuildTimeGenerationTests
         // Assert
         names.ShouldBe(["asyncapi-v1", "v1"]);
     }
+
+    private sealed class ScopedDependency;
 }
