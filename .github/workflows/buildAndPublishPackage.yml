@@ -98,12 +98,9 @@ jobs:
       - name: Verify Native AOT
         run: bash scripts/verify-aot.sh linux-x64
 
-  # Pull request: prove build-time document generation works with Microsoft's own Possible reasons for this include:
-  * You misspelled a built-in dotnet command.
-  * You intended to execute a .NET program, but dotnet-getdocument does not exist.
-  * You intended to run a global tool, but a dotnet-prefixed executable with this name could not be found on the PATH.. Unit
-  # tests can only exercise our provider; this runs the real tool against an app that registers OpenAPI,
-  # AsyncAPI and Arazzo, checks the three files that come out and that a stale Arazzo reference fails the build.
+  # Pull request: prove build-time document generation works with Microsoft's own
+  # `dotnet getdocument` tool. Unit tests can only exercise our provider; this runs the real tool
+  # against an app that registers OpenAPI, AsyncAPI and Arazzo, checks the three files that come out and that a stale Arazzo reference fails the build.
   build-time-documents:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
