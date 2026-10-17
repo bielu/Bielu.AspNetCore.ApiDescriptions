@@ -28,8 +28,19 @@
         <ProjectReference Include="..\Bielu.AspNetCore.Arazzo.Analyzers\Bielu.AspNetCore.Arazzo.Analyzers.csproj" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
-    <ItemGroup>
-        <None Include="..\Bielu.AspNetCore.Arazzo.Analyzers\bin\$(Configuration)\netstandard2.0\Bielu.AspNetCore.Arazzo.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    </ItemGroup>
+    <!-- Ask the analyzer project for its output path rather than assuming bin\, so packing with an artifacts
+         layout (UseArtifactsOutput or the artifacts-path option of dotnet pack) picks up the DLL this build produced. -->
+    <PropertyGroup>
+        <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddArazzoAnalyzerToPackage</TargetsForTfmSpecificContentInPackage>
+    </PropertyGroup>
+
+    <Target Name="_AddArazzoAnalyzerToPackage">
+        <MSBuild Projects="..\Bielu.AspNetCore.Arazzo.Analyzers\Bielu.AspNetCore.Arazzo.Analyzers.csproj" Targets="GetTargetPath" RemoveProperties="TargetFramework;RuntimeIdentifier">
+            <Output TaskParameter="TargetOutputs" ItemName="_ArazzoAnalyzerAssembly" />
+        </MSBuild>
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="@(_ArazzoAnalyzerAssembly)" PackagePath="analyzers/dotnet/cs" />
+        </ItemGroup>
+    </Target>
 
 </Project>

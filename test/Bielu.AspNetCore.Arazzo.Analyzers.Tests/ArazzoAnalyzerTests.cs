@@ -149,6 +149,79 @@ public class Startup
         diagnostics.Where(d => d.Id == "BARAZZO001").ShouldBeEmpty();
     }
 
+    [Theory]
+    [InlineData("if (args.Length > 0) { services.AddArazzo(); } else { services.AddOpenApi(); }")]
+    [InlineData("_ = args.Length > 0 ? services.AddArazzo() : services.AddOpenApi();")]
+    [InlineData("switch (args.Length) { case 0: services.AddArazzo(); break; default: services.AddOpenApi(); break; }")]
+    [InlineData("_ = args.Length switch { 0 => services.AddArazzo(), _ => services.AddOpenApi() };")]
+    public async Task BARAZZO001_CallsInMutuallyExclusiveBranches_NoWarning(string statement)
+    {
+        // Arrange
+        var source = @"
+var services = new ServiceCollection();
+" + statement;
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        diagnostics.Where(d => d.Id == "BARAZZO001").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BARAZZO001_AddOpenApiInBranchAfterAddArazzo_ReportsWarning()
+    {
+        // Arrange - the branch may run after AddArazzo, so the ordering problem is real.
+        var source = @"
+var services = new ServiceCollection();
+services.AddArazzo();
+if (args.Length > 0) { services.AddOpenApi(); }
+";
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        diagnostics.Count(d => d.Id == "BARAZZO001").ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task BARAZZO001_AddOpenApiInLambdaOrLocalFunction_NoWarning()
+    {
+        // Arrange - neither body runs as part of the method's own sequence.
+        var source = @"
+var services = new ServiceCollection();
+services.AddArazzo();
+System.Action later = () => services.AddOpenApi();
+void Unused() => services.AddOpenApi();
+";
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        diagnostics.Where(d => d.Id == "BARAZZO001").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BARAZZO001_BothCallsInsideOneLambda_ReportsWarning()
+    {
+        // Arrange - a deferred body is checked as a sequence of its own.
+        var source = @"
+System.Action<IServiceCollection> configure = services =>
+{
+    services.AddArazzo();
+    services.AddOpenApi();
+};
+";
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        diagnostics.Count(d => d.Id == "BARAZZO001").ShouldBe(1);
+    }
+
     // BARAZZO002
 
     [Theory]
