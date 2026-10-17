@@ -51,6 +51,9 @@ internal sealed class AsyncApiDocumentService(
     private readonly IAsyncApiMetadataProvider _metadataProvider =
         serviceProvider.GetRequiredKeyedService<IAsyncApiMetadataProvider>(documentName);
 
+    private readonly Lazy<IReadOnlyDictionary<Type, MessageAttribute>?> _payloadMessageAttributes =
+        new(() => serviceProvider.GetRequiredKeyedService<IAsyncApiMetadataProvider>(documentName).GetPayloadMessageAttributes());
+
     private readonly ConcurrentDictionary<string, AsyncApiOperationTransformerContext>
         _operationTransformerContextCache = new();
 
@@ -433,9 +436,13 @@ internal sealed class AsyncApiDocumentService(
     /// Combines the <see cref="MessageAttribute"/> placed on a payload class with the one declared on a member:
     /// whatever the member leaves unset falls back to the class. Returns whichever exists when only one does.
     /// </summary>
-    private static MessageAttribute? ResolveMessageAttribute(Type payloadType, MessageAttribute? declared)
+    private MessageAttribute? ResolveMessageAttribute(Type payloadType, MessageAttribute? declared)
     {
-        var typeAttr = payloadType.GetCustomAttribute<MessageAttribute>(inherit: false);
+        // A provider that supplies class-level metadata (the source generator) is authoritative and needs no
+        // reflection; otherwise read the attribute off the payload type.
+        var typeAttr = _payloadMessageAttributes.Value is { } classAttributes
+            ? classAttributes.GetValueOrDefault(payloadType)
+            : payloadType.GetCustomAttribute<MessageAttribute>(inherit: false);
         if (typeAttr is null)
             return declared;
         if (declared is null)

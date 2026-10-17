@@ -13,11 +13,14 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
     [Generator]
     public class AsyncApiMetadataGenerator : IIncrementalGenerator
     {
+        private const string AsyncApiAttributeName = "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute";
+        private const string MessageAttributeName = "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute";
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             var provider = context.SyntaxProvider
                 .CreateSyntaxProvider(
-                    predicate: (s, _) => (s is ClassDeclarationSyntax cds && cds.AttributeLists.Count > 0) || (s is InterfaceDeclarationSyntax ids && ids.AttributeLists.Count > 0),
+                    predicate: (s, _) => (s is ClassDeclarationSyntax cds && cds.AttributeLists.Count > 0) || (s is RecordDeclarationSyntax rds && rds.AttributeLists.Count > 0) || (s is InterfaceDeclarationSyntax ids && ids.AttributeLists.Count > 0),
                     transform: (ctx, _) => GetSemanticTargetForGeneration(ctx))
                 .Where(t => t != null)
                 .Select((t, _) => t!);
@@ -40,7 +43,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                     var attributeContainingTypeSymbol = attributeSymbol.ContainingType;
                     var fullName = attributeContainingTypeSymbol.ToDisplayString();
 
-                    if (fullName == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute")
+                    if (fullName == AsyncApiAttributeName || fullName == MessageAttributeName)
                     {
                         return typeDeclaration;
                     }
@@ -169,26 +172,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                         var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
                         var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
 
-                        var name = attr.NamedArguments.FirstOrDefault(x => x.Key == "Name").Value.Value as string;
-                        var nameValue = name != null ? $"\"{name}\"" : "null";
-                        var title = attr.NamedArguments.FirstOrDefault(x => x.Key == "Title").Value.Value as string;
-                        var titleValue = title != null ? $"\"{title}\"" : "null";
-                        var summary = attr.NamedArguments.FirstOrDefault(x => x.Key == "Summary").Value.Value as string;
-                        var summaryValue = summary != null ? $"\"{summary}\"" : "null";
-                        var description = attr.NamedArguments.FirstOrDefault(x => x.Key == "Description").Value.Value as string;
-                        var descValue = description != null ? $"\"{description}\"" : "null";
-                        var bindingsRef = attr.NamedArguments.FirstOrDefault(x => x.Key == "BindingsRef").Value.Value as string;
-                        var bindingsValue = bindingsRef != null ? $"\"{bindingsRef}\"" : "null";
-                        var messageId = attr.NamedArguments.FirstOrDefault(x => x.Key == "MessageId").Value.Value as string;
-                        var messageIdValue = messageId != null ? $"\"{messageId}\"" : "null";
-                        var headersType = attr.NamedArguments.FirstOrDefault(x => x.Key == "HeadersType").Value.Value as ITypeSymbol;
-                        var headersTypeValue = headersType != null ? $"typeof({headersType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})" : "null";
-                        var correlationLocation = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdLocation").Value.Value as string;
-                        var correlationLocationValue = ToStringLiteral(correlationLocation);
-                        var correlationDescription = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdDescription").Value.Value as string;
-                        var correlationDescriptionValue = ToStringLiteral(correlationDescription);
-
-                        sb.AppendLine($"                            new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags}) {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue}{GetStringInitializers(attr, "ContentType")}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "Traits")} }},");
+                        sb.AppendLine($"                            {BuildMessageAttribute(attr, $"new MessageAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})")},");
                     }
                     sb.AppendLine("                        },");
 
@@ -269,7 +253,32 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                 sb.AppendLine("        }");
             }
 
-            sb.AppendLine("}");
+            sb.AppendLine("        yield break;");
+            sb.AppendLine("    }");
+            sb.AppendLine();
+
+            // Class-level [Message]: the payload class itself carries the metadata, so it is emitted as a
+            // lookup the document service consults instead of reading the attribute by reflection.
+            sb.AppendLine("    public IReadOnlyDictionary<Type, MessageAttribute>? GetPayloadMessageAttributes()");
+            sb.AppendLine("    {");
+            sb.AppendLine("        return new Dictionary<Type, MessageAttribute>");
+            sb.AppendLine("        {");
+            foreach (var typeDecl in distinctTypes)
+            {
+                var model = compilation.GetSemanticModel(typeDecl.SyntaxTree);
+                var symbol = model.GetDeclaredSymbol(typeDecl) as INamedTypeSymbol;
+                // Open generics have no typeof() spelling and inaccessible types cannot be named from here.
+                if (symbol == null || symbol.IsGenericType || !compilation.IsSymbolAccessibleWithin(symbol, compilation.Assembly)) continue;
+
+                // Mirrors GetCustomAttribute<MessageAttribute>(inherit: false): only attributes declared on the class itself.
+                var messageAttr = symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == MessageAttributeName);
+                if (messageAttr == null) continue;
+
+                var fullTypeName = symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                sb.AppendLine($"            [typeof({fullTypeName})] = {BuildMessageAttribute(messageAttr, "new MessageAttribute()")},");
+            }
+            sb.AppendLine("        };");
+            sb.AppendLine("    }");
             sb.AppendLine("}");
             sb.AppendLine("}");
             sb.AppendLine();
@@ -301,6 +310,35 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
             sb.AppendLine("}");
 
             context.AddSource("GeneratedAsyncApiMetadataProvider.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+        }
+
+        /// <summary>
+        /// Emits a <c>MessageAttribute</c> construction: the given constructor call followed by an object
+        /// initializer copying every named property of <paramref name="attr"/>. Shared by method-level
+        /// attributes and by class-level ones, so both copy exactly the same properties.
+        /// </summary>
+        private static string BuildMessageAttribute(AttributeData attr, string constructorCall)
+        {
+            var name = attr.NamedArguments.FirstOrDefault(x => x.Key == "Name").Value.Value as string;
+            var nameValue = name != null ? $"\"{name}\"" : "null";
+            var title = attr.NamedArguments.FirstOrDefault(x => x.Key == "Title").Value.Value as string;
+            var titleValue = title != null ? $"\"{title}\"" : "null";
+            var summary = attr.NamedArguments.FirstOrDefault(x => x.Key == "Summary").Value.Value as string;
+            var summaryValue = summary != null ? $"\"{summary}\"" : "null";
+            var description = attr.NamedArguments.FirstOrDefault(x => x.Key == "Description").Value.Value as string;
+            var descValue = description != null ? $"\"{description}\"" : "null";
+            var bindingsRef = attr.NamedArguments.FirstOrDefault(x => x.Key == "BindingsRef").Value.Value as string;
+            var bindingsValue = bindingsRef != null ? $"\"{bindingsRef}\"" : "null";
+            var messageId = attr.NamedArguments.FirstOrDefault(x => x.Key == "MessageId").Value.Value as string;
+            var messageIdValue = messageId != null ? $"\"{messageId}\"" : "null";
+            var headersType = attr.NamedArguments.FirstOrDefault(x => x.Key == "HeadersType").Value.Value as ITypeSymbol;
+            var headersTypeValue = headersType != null ? $"typeof({headersType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})" : "null";
+            var correlationLocation = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdLocation").Value.Value as string;
+            var correlationLocationValue = ToStringLiteral(correlationLocation);
+            var correlationDescription = attr.NamedArguments.FirstOrDefault(x => x.Key == "CorrelationIdDescription").Value.Value as string;
+            var correlationDescriptionValue = ToStringLiteral(correlationDescription);
+
+            return $"{constructorCall} {{ Name = {nameValue}, Title = {titleValue}, Summary = {summaryValue}, Description = {descValue}, BindingsRef = {bindingsValue}, MessageId = {messageIdValue}, HeadersType = {headersTypeValue}, CorrelationIdLocation = {correlationLocationValue}, CorrelationIdDescription = {correlationDescriptionValue}{GetStringInitializers(attr, "ContentType")}{GetExternalDocsInitializers(attr)}{GetArrayInitializer(attr, "Traits")} }}";
         }
 
         /// <summary>

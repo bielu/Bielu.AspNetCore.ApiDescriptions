@@ -35,6 +35,8 @@ public class LightService
     public void MeasureLight(object message) { }
 }
 
+// Class-level [Message]: picked up by the source generator, so it applies under Native AOT without reflection.
+[Message(Title = "Light measurement", Summary = "A lumens reading taken by a streetlight.")]
 public record LightMeasurement(int Lumens, DateTime MeasuredAt);
 
 [JsonSerializable(typeof(LightMeasurement))]
