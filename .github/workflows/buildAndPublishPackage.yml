@@ -310,9 +310,12 @@ jobs:
 
   # In-flight prereleases for the third npm package (@bielu/scalar-broker).
   releaseBetaBrokerNpm:
-    needs: [version, releaseBetaGrpcNpm]
+    needs: [version, betaVersions, releaseBetaGrpcNpm]
+    # Chained after the gRPC job so npm publishes stay serialised. The same `always()` caveat as
+    # releaseBetaGrpcNpm applies, so the dependencies that matter are re-asserted by hand.
     if: >-
       always() && !cancelled()
+      && needs.betaVersions.result == 'success' && needs.releaseBetaGrpcNpm.result == 'success'
       && (github.event_name == 'workflow_dispatch'
           || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
@@ -320,7 +323,7 @@ jobs:
       contents: read
       id-token: write
     with:
-      suffix: "beta"
+      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-broker'] }}
       publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
       artifact-name: npm-scalar-broker
