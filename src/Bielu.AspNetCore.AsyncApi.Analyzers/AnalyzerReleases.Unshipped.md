@@ -9,4 +9,4 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|------------------------------------------------------------------
-BASYNC010 | Usage | Warning | AddOpenApi() is called after AddAsyncApi() or AddArazzo() in the same method, so build-time generation may miss the AsyncAPI and Arazzo documents.
+BASYNC010 | Usage | Warning | AddOpenApi() is called after AddAsyncApi() in the same method, so build-time generation may miss the AsyncAPI documents.

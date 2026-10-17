@@ -31,7 +31,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddAsyncApi();
 ```
 
-`AddAsyncApi()` makes build-time generation serve both libraries' documents by redirecting the document provider that `AddOpenApi()` has already registered. An `AddOpenApi()` call made afterwards registers that provider again, so depending on which provider `dotnet getdocument` picks, the AsyncAPI documents can be missing. The **BASYNC010** analyzer warns when `AddOpenApi()` follows `AddAsyncApi()`, `AddAsyncApiForApiVersions()` or `AddArazzo()` in the same method. It can't compare calls made from different methods, so keep these registrations in one place, such as `Program.cs`.
+`AddAsyncApi()` makes build-time generation serve both libraries' documents by redirecting the document provider that `AddOpenApi()` has already registered. An `AddOpenApi()` call made afterwards registers that provider again, so depending on which provider `dotnet getdocument` picks, the AsyncAPI documents can be missing. The **BASYNC010** analyzer warns when `AddOpenApi()` follows `AddAsyncApi()` or `AddAsyncApiForApiVersions()` in the same method, and **BARAZZO001** warns when it follows `AddArazzo()`. It can't compare calls made from different methods, so keep these registrations in one place, such as `Program.cs`.
 
 #### Ordering
 

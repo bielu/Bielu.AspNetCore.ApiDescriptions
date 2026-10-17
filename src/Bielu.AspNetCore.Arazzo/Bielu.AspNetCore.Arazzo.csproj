@@ -23,4 +23,13 @@
       <InternalsVisibleTo Include="Bielu.AspNetCore.Arazzo.Tests" />
     </ItemGroup>
 
+    <!-- Ship the BARAZZO analyzers in this package, so every app that calls AddArazzo gets them. -->
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.AspNetCore.Arazzo.Analyzers\Bielu.AspNetCore.Arazzo.Analyzers.csproj" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\Bielu.AspNetCore.Arazzo.Analyzers\bin\$(Configuration)\netstandard2.0\Bielu.AspNetCore.Arazzo.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+
 </Project>
