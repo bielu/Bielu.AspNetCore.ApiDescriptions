@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Shared code coverage settings, applied to every test project through RunSettingsFilePath in Directory.Build.props.
-  Collect by passing the "XPlat Code Coverage" collector to dotnet test (see AGENTS.md, "Code coverage").
+  Declaring the collector here turns coverage on for every dotnet test run, so CI always produces reports.
   Only hand-written library code is measured: generated sources, the example apps and test helper assemblies are excluded.
 -->
 <RunSettings>

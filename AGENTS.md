@@ -117,7 +117,7 @@ Target **70%+ line coverage** for code you add or change. Coverage is collected 
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-This writes Cobertura reports under each test project's `TestResults/`. Collector settings live in [`coverlet.runsettings`](./coverlet.runsettings), applied to every test project via `Directory.Build.props`: only `Bielu.*` library assemblies are measured, and generated sources (`obj/`), examples and test helper assemblies are excluded. Every test project must reference `coverlet.collector`, or its packages silently drop out of the report. New public behavior should ship with tests that exercise both the happy path and argument-validation/error paths (mirroring the existing `Unit/` and `Integration/` suites).
+This writes Cobertura reports under each test project's `TestResults/`. A plain `dotnet test` collects them too: [`coverlet.runsettings`](./coverlet.runsettings), applied to every test project via `Directory.Build.props`, enables the collector. In it, only `Bielu.*` library assemblies are measured, and generated sources (`obj/`), examples and test helper assemblies are excluded. Every test project must reference `coverlet.collector`, or its packages silently drop out of the report. New public behavior should ship with tests that exercise both the happy path and argument-validation/error paths (mirroring the existing `Unit/` and `Integration/` suites).
 
 ## Build, test, format
 
