@@ -196,3 +196,4 @@ Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ServerBindings.get -> System.
 static Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiDocumentVersionExtensions.IsAsyncApiVersion(this ByteBard.AsyncAPI.Models.AsyncApiDocument! document, ByteBard.AsyncAPI.AsyncApiVersion version) -> bool
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.BuildTimeDocumentName.get -> string?
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.BuildTimeDocumentName.set -> void
+Bielu.AspNetCore.AsyncApi.Services.IAsyncApiMetadataProvider.GetPayloadMessageAttributes() -> System.Collections.Generic.IReadOnlyDictionary<System.Type!, Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute!>?

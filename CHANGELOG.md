@@ -19,6 +19,83 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [1.4.0] - 2026-10-17
+
+### Minor Changes
+
+- [#110](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/110) [`8832287`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/8832287ff8c678d146826fa85eda3689eed9b64b) Thanks [@bielu](https://github.com/bielu)! - Generate Arazzo documents at build time. `dotnet getdocument` and `dotnet asyncapi getdocument` now also write the app's `AddArazzo` documents, with the version from `ArazzoOptions.Version` and serialized-document transformers (such as overlays) applied. An Arazzo document is listed under its own name, or under an `arazzo-` prefix when an AsyncAPI or OpenAPI document already has that name (`MyApi_arazzo-v1.json`); set `ArazzoOptions.BuildTimeDocumentName` to choose another name. `AddArazzo` works with or without `AddAsyncApi`, in any order.
+
+- [#107](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/107) [`dd6b4cd`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/dd6b4cdb0d8fe2ab1e7654ac1563e3ee38136cf4) Thanks [@bielu](https://github.com/bielu)! - Add `Bielu.AspNetCore.ApiDescriptions`, a new package that owns build-time document generation (`dotnet getdocument`) for every document family. Packages register an `IBuildTimeDocumentSource` with `AddBuildTimeDocumentSource<TSource>()`, and one provider lists and writes their documents next to `Microsoft.AspNetCore.OpenApi`'s. OpenAPI names are settled first, then sources in ascending `Order`; a document keeps its own name unless an earlier document already uses it, in which case it gets its source's prefix. `Bielu.AspNetCore.AsyncApi` now depends on it and registers AsyncAPI as the first source, so existing AsyncAPI and OpenAPI file names are unchanged. Asking build-time generation for a document name it doesn't list now throws instead of being treated as an AsyncAPI document name.
+
+- [#111](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/111) [`66ac36e`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/66ac36ea85e54a2af195397d5c07694a9796c14d) Thanks [@bielu](https://github.com/bielu)! - The source generator now picks up `[Message]` placed on a payload class, so class-level message metadata applies under Native AOT and the source-generated document matches the reflection-based one. `IAsyncApiMetadataProvider` gains a default interface member, `GetPayloadMessageAttributes()`, that the generated provider implements; providers that leave it at `null` keep reading the attribute by reflection.
+
+- [#109](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/109) [`7c4ca87`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/7c4ca87179209c2b4694048cd629ca59e5e3bbe7) Thanks [@bielu](https://github.com/bielu)! - `Bielu.AspNetCore.Arazzo` now ships its own Roslyn analyzers, with `BARAZZO` rule ids, which check workflow-builder code at compile time:
+
+  - **BARAZZO001** (warning): `AddOpenApi()` is called after `AddArazzo()` in the same method, so build-time generation may miss the Arazzo documents.
+  - **BARAZZO002** (error): a literal workflow id, step id or source name, or a marker type's derived id, isn't a valid Arazzo identifier. The builders throw this at startup.
+  - **BARAZZO003** (error): a step sets no target, or more than one, of `Operation`/`OperationPath`/`Channel`/`Workflow`.
+  - **BARAZZO004** (error): a `Channel` step's action is neither `"send"` nor `"receive"`.
+  - **BARAZZO005** (warning): `WithCorrelationId` is set on a step that doesn't receive.
+  - **BARAZZO006** (warning): a step names a source description the document never declares.
+  - **BARAZZO007** (warning): `DependsOn` or `Workflow` names a step or workflow the document never defines. Nothing checked this before, not even at runtime.
+  - **BARAZZO008** (info): `AddAsyncApiSource`/`AddOpenApiSource` points at a document the project never registers.
+
+  Existing code that sets an invalid id, two step targets or an unknown action already fails at startup, and now fails to compile instead. The build-time generation docs also state exactly which registration orders affect which tools.
+
+- [#62](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/62) [`b205404`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/b2054049584860d1c50a97637e3dfc83dbdf02fe) Thanks [@bielu](https://github.com/bielu)! - Added `Bielu.AspNetCore.AsyncApi.Scalar.Broker` and the `@bielu/scalar-broker` npm bundle: an
+  interactive message-broker console for the Scalar API Reference, mirroring the SignalR and gRPC
+  consoles on the shared `Bielu.AspNetCore.AsyncApi.Scalar` / `@bielu/scalar-core` foundation. The
+  console reads `kafka`, `mqtt` and `amqp` bindings out of your AsyncAPI document(s), prefills a
+  publish editor from the channel's message payload schema, and tails the channel live.
+
+  A browser cannot speak any of these protocols, so — unlike the gRPC console, which reaches the
+  server directly over gRPC-Web — this console goes through a server-side bridge that
+  `MapScalarBrokerAssets()` mounts alongside the bundle: `GET {path}/connections`,
+  `POST {path}/publish`, and `GET {path}/tail` (Server-Sent Events). Driver packages implement
+  `IBrokerBridge` and register connections through `AddScalarBrokerBridge(o => o.Add…Connection(…))`;
+  bridges are built lazily, so a broker that is unreachable at startup cannot stop the app from
+  starting.
+
+  **The bridge can publish to your broker, so it is not open by default.** Nothing is exposed until
+  `MapScalarBrokerAssets()` is called, and that call returns a convention builder covering all three
+  proxy endpoints so one `RequireAuthorization(...)` protects them together. Without authorization
+  metadata the proxy allows requests only in the Development environment (logging a warning once) and
+  answers `403` anywhere else, unless the operator explicitly sets `AllowAnonymous`. The bundle itself
+  stays unauthenticated: it is static JavaScript holding no configuration or secrets, and it is inert
+  without the proxy behind it.
+
+  Two consequences of that shape worth recording. Tail subscriptions are ephemeral and start at the
+  newest offset, so opening a console never disturbs a real consumer group's committed position and
+  never replays a backlog into the browser. And the tail stream is read with `fetch` +
+  `ReadableStream` rather than `EventSource`, because `EventSource` cannot send the `Authorization`
+  header the proxy sits behind — which also lets Scalar's auth panel drive the proxy, including API
+  keys in a query parameter, which the gRPC console has to downgrade to a header.
+
+  `Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka` is the first driver, and the reference for the next
+  ones. Tailing a topic uses a throwaway consumer group (`bielu-scalar-broker-{guid}`) starting at
+  `AutoOffsetReset.Latest` with auto-commit off, so opening a console cannot move a real consumer
+  group's committed offsets or replay a backlog into someone's browser. `Confluent.Kafka` is pinned to
+  `2.14.0`, the version `Aspire.Confluent.Kafka` 13.4.6 already depends on, so the Aspire mini-shop
+  resolves one copy rather than two. The connection descriptor sent to the browser carries a redacted
+  endpoint only — any `user:password@` in `bootstrapServers` is stripped, and a plain `host:port` is
+  left alone.
+
+  Wired into the Aspire mini-shop's Order Service, which already publishes order events to Kafka and
+  already declares `kafka` channel bindings.
+
+  This package ships no `dist/scalar-plugin.mjs` and no standalone bundle, and there is no `.Aspire`
+  companion. All three exist to load a console into the Scalar _container_ from a CDN, and a
+  CDN-hosted broker plugin would have no server-side bridge to talk to — the broker console has to be
+  mapped in the app that owns the broker connection.
+
+- [#108](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/108) [`5d7c967`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/5d7c9679cc932f66a337be76652d2f2c3f040fd3) Thanks [@bielu](https://github.com/bielu)! - The Wolverine integration now reads `[Message]` placed on message classes (title, summary, description, name, content type, headers type, bindings, correlation id, external docs, traits and tags). Explicit `WolverineAsyncApiOptions` calls such as `WithExternalDocs<T>` take precedence over the attribute, `IncludeCorrelationId()` does not override an attribute-declared correlation id, and the component key stays Wolverine's message type name (`Name` only changes the displayed `name`; `MessageId` is ignored). The attribute-to-message mapping is now shared with the core attribute pipeline.
+
+### Patch Changes
+
+- [#120](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/120) [`ce37962`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/ce37962c2a516d93ac10c5944f0b92cadc90b587) Thanks [@bielu](https://github.com/bielu)! - The broker console no longer offers a connection whose protocol doesn't match the selected channel. It used to fall back to every registered connection, so with only the Kafka driver installed, an `mqtt` or `amqp` channel was offered the Kafka connection, and publishing would write to a Kafka topic named after the MQTT topic or AMQP queue. Such a channel now shows that the server has no connection for its protocol. The README, docs and package readmes now say Kafka is the only driver that ships today.
+
+- [#116](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/116) [`02a4697`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/02a469792f9505b8cda06c50044444d8a82e8082) Thanks [@bielu](https://github.com/bielu)! - Every package now ships its `LICENSE` file, and the files it produces carry the MIT license and the copyright notice: an `AssemblyMetadata("License", "SPDX-License-Identifier: MIT")` attribute in each assembly, a comment in each XML documentation file, a header in the packed MSBuild and `rd.xml` files, and a copyright line in each `PACKAGE.md`. License scanners such as ClearlyDefined can now find the license in the package files as well as in the nuspec.
+
 ## [1.3.0] - 2026-10-16
 
 ### Minor Changes
