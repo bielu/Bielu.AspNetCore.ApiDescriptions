@@ -1,4 +1,4 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 
 namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka;
 

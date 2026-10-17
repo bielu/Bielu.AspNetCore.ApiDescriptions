@@ -1,4 +1,4 @@
-namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker;
+﻿namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker;
 
 /// <summary>
 /// Configuration for the interactive Scalar broker console. Describes which AsyncAPI documents the

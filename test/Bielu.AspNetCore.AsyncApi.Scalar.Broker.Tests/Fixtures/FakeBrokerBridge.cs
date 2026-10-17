@@ -1,4 +1,4 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 
 namespace Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
 

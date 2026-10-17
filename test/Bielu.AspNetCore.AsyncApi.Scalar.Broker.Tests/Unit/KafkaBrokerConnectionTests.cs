@@ -1,4 +1,4 @@
-using Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka;
+﻿using Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;

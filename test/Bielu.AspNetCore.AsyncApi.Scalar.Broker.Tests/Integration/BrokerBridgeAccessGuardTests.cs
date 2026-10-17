@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.Fixtures;
 using Microsoft.AspNetCore.TestHost;
