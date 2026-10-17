@@ -8,6 +8,10 @@ documentation.
 A browser cannot speak Kafka, MQTT or AMQP, so the console reaches your broker through an **opt-in
 server-side bridge** that this package mounts in your app.
 
+Kafka is the only driver that ships today, as `Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka`.
+`mqtt` and `amqp` channels are listed, but they are only offered a connection of the same protocol,
+so they stay inert until you register a driver for them by implementing `IBrokerBridge`.
+
 > **This bridge can publish to your broker.** Nothing is exposed until you call
 > `MapScalarBrokerAssets()`, and outside the Development environment the proxy endpoints refuse
 > unauthenticated callers unless you say otherwise. Read [Securing the bridge](#securing-the-bridge)

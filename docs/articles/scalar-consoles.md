@@ -62,14 +62,21 @@ app.MapScalarApiReference(options =>
 });
 ```
 
-## Broker Console (Kafka, MQTT, AMQP)
+## Broker Console (Kafka)
 
 The `Bielu.AspNetCore.AsyncApi.Scalar.Broker` package adds a console that publishes to and tails the
-message-broker channels your `kafka`, `mqtt` and `amqp` bindings describe.
+message-broker channels your AsyncAPI bindings describe.
 
 The SignalR and gRPC consoles talk to your app straight from the browser. This one cannot: no browser
-speaks Kafka, MQTT or AMQP. Instead the console drives an **opt-in server-side bridge** that this
+speaks a broker protocol. Instead the console drives an **opt-in server-side bridge** that this
 package mounts in your app, and a driver package supplies the client for the broker you use.
+
+> [!IMPORTANT]
+> **Kafka is the only driver that ships today**, as `Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka`.
+> The console already lists channels with `mqtt` and `amqp` bindings, but it only offers a connection
+> whose protocol matches the channel, so those channels stay inert until a driver for them is
+> registered. MQTT and AMQP drivers are planned; until then you can
+> [write your own](#writing-a-driver).
 
 ### Installation
 
