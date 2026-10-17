@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
+using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using Bielu.AspNetCore.AsyncApi.Helpers;
@@ -288,18 +289,37 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             var (schemaKey, schema) = await schemas.GetOrCreateComponentSchemaAsync(
                 document, messageType, services, context.SchemaTransformers, cancellationToken);
 
+            // A [Message] on the class supplies the descriptive fields. The component key (and so the
+            // channel and operation ids derived from it) stays Wolverine's wire name: Name only changes the
+            // displayed `name`, and MessageId, which AsyncAPI documents have no field for here, is ignored.
+            var attribute = messageType.GetCustomAttributes<MessageAttribute>(inherit: false)
+                .FirstOrDefault(a => a.PayloadType is null || a.PayloadType == messageType);
             var docs = xmlDocs.GetDocumentation(messageType);
             var message = new AsyncApiMessage
             {
-                Name = name,
-                Title = messageType.Name,
-                Summary = docs?.Summary,
-                Description = docs?.Remarks,
+                Name = attribute?.Name ?? name,
+                Title = attribute?.Title ?? messageType.Name,
+                Summary = attribute?.Summary ?? docs?.Summary,
+                Description = attribute?.Description ?? docs?.Remarks,
                 Payload = schemaKey is not null
                     ? new AsyncApiJsonSchemaReference($"#/components/schemas/{schemaKey}")
                     : new AsyncApiMultiFormatSchema { Schema = schema as AsyncApiJsonSchema },
             };
             document.Components.Messages[key] = message;
+
+            if (attribute is not null)
+            {
+                AttributeMetadataMapper.ApplyMessageAttribute(document, message, attribute);
+
+                if (attribute.HeadersType is { } headersType)
+                {
+                    var (headersKey, headersSchema) = await schemas.GetOrCreateComponentSchemaAsync(
+                        document, headersType, services, context.SchemaTransformers, cancellationToken);
+                    message.Headers = headersKey is not null
+                        ? new AsyncApiJsonSchemaReference($"#/components/schemas/{headersKey}")
+                        : new AsyncApiMultiFormatSchema { Schema = headersSchema as AsyncApiJsonSchema };
+                }
+            }
 
             ApplyMessageMetadata(message, messageType, supportsHeaderCorrelation);
             return key;
@@ -329,7 +349,8 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 return;
             }
 
-            if (!string.IsNullOrWhiteSpace(metadata.ExternalDocsUrl) && message.ExternalDocs is null)
+            // Options win over the class attribute, so this replaces whatever [Message] set.
+            if (!string.IsNullOrWhiteSpace(metadata.ExternalDocsUrl))
             {
                 message.ExternalDocs = new AsyncApiExternalDocumentation
                 {

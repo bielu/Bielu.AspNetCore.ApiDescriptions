@@ -127,6 +127,36 @@ Traits and security schemes are registered on the document's own options (`AddMe
 `AddOperationTrait`, `AddSecurityScheme`), exactly as for attribute-declared documents; the Wolverine
 methods only reference them by key.
 
+### `[Message]` on a message class
+
+A Wolverine message class can carry `[Message]` (the class is its own payload, so the type argument is
+optional) and the integration applies it to the message it builds:
+
+```csharp
+[MessageIdentity("billing.invoice-issued")]
+[Message(
+    Title = "Invoice issued",
+    Summary = "Raised when an invoice is issued.",
+    CorrelationIdLocation = "$message.payload#/invoiceId",
+    ExternalDocsUrl = "https://example.com/invoices",
+    Traits = ["traced"])]
+public sealed record InvoiceIssued(Guid InvoiceId);
+```
+
+Supported: `Name`, `Title`, `Summary`, `Description`, `ContentType`, `HeadersType`, `BindingsRef`,
+`CorrelationIdLocation`/`CorrelationIdDescription`, `ExternalDocsUrl`/`ExternalDocsDescription`,
+`Traits` and tags. Precedence, highest first:
+
+1. Calls on the Wolverine options. `WithExternalDocs<T>` replaces the attribute's `externalDocs`;
+   `WithMessageTraits<T>` adds to the attribute's traits (a trait named by both is referenced once).
+2. The `[Message]` on the class.
+3. XML documentation and Wolverine's defaults.
+
+`IncludeCorrelationId()` only fills in messages that have no `correlationId` yet, so an attribute-declared
+one is kept. The component key, and the channel and operation ids derived from it, always stay Wolverine's
+message type name (`[MessageIdentity]`), since that is what is on the wire. `Name` changes only the
+displayed `name`; `MessageId` is ignored.
+
 ## Combining with attributes
 
 `AddWolverine` runs as a document transformer, after attribute discovery. Integrations that don't go

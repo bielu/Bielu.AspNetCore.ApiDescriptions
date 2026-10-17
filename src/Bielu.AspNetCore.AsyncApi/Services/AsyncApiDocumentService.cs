@@ -26,6 +26,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using static Bielu.AspNetCore.AsyncApi.Helpers.AttributeMetadataMapper;
 using AttrOperationType = Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationType;
 
 namespace Bielu.AspNetCore.AsyncApi.Services;
@@ -284,24 +285,6 @@ internal sealed class AsyncApiDocumentService(
         }
     }
 
-    /// <summary>
-    /// Attaches a message bindings item registered in <c>components/messageBindings</c> (via
-    /// <see cref="AsyncApiOptions.AddMessageBinding"/>) to the message referenced by <paramref name="bindingsRef"/>.
-    /// </summary>
-    private static void AttachMessageBindings(AsyncApiDocument document, AsyncApiMessage message, string? bindingsRef)
-    {
-        if (string.IsNullOrWhiteSpace(bindingsRef))
-        {
-            return;
-        }
-
-        if (document.Components?.MessageBindings is { } registered &&
-            registered.TryGetValue(AsyncApiNamingHelper.SanitizeKey(bindingsRef), out var bindings))
-        {
-            message.Bindings = bindings;
-        }
-    }
-
     private void ApplyChannelParametersFromMetadata(AsyncApiChannel channel, AsyncApiMemberMetadata memberMetadata)
     {
         var paramAttrs = memberMetadata.Parameters;
@@ -467,10 +450,7 @@ internal sealed class AsyncApiDocumentService(
         IAsyncApiSchemaTransformer[] schemaTransformers,
         CancellationToken cancellationToken)
     {
-        if (messageAttr.ContentType is not null)
-        {
-            message.ContentType = messageAttr.ContentType;
-        }
+        ApplyMessageAttribute(document, message, messageAttr);
 
         if (messageAttr.HeadersType is { } headersType)
         {
@@ -480,32 +460,6 @@ internal sealed class AsyncApiDocumentService(
             message.Headers = headersSchemaKey is not null
                 ? new AsyncApiJsonSchemaReference($"#/components/schemas/{headersSchemaKey}")
                 : new AsyncApiMultiFormatSchema { Schema = headersSchema as AsyncApiJsonSchema };
-        }
-
-        AttachMessageBindings(document, message, messageAttr.BindingsRef);
-
-        message.ExternalDocs = CreateExternalDocs(messageAttr.ExternalDocsUrl, messageAttr.ExternalDocsDescription);
-
-        foreach (var traitKey in messageAttr.Traits)
-        {
-            message.Traits ??= new List<AsyncApiMessageTrait>();
-            message.Traits.Add(new AsyncApiMessageTraitReference(
-                $"#/components/messageTraits/{AsyncApiNamingHelper.SanitizeKey(traitKey)}"));
-        }
-
-        if (messageAttr.CorrelationIdLocation is { Length: > 0 } correlationIdLocation)
-        {
-            message.CorrelationId = new AsyncApiCorrelationId
-            {
-                Location = correlationIdLocation,
-                Description = messageAttr.CorrelationIdDescription
-            };
-        }
-
-        if (messageAttr.Tags is { Length: > 0 })
-        {
-            message.Tags ??= new List<AsyncApiTag>();
-            AddTags(document, message.Tags, messageAttr.Tags);
         }
     }
 
@@ -546,29 +500,6 @@ internal sealed class AsyncApiDocumentService(
         }
 
         return reply;
-    }
-
-    private static AsyncApiExternalDocumentation? CreateExternalDocs(string? url, string? description) =>
-        string.IsNullOrWhiteSpace(url)
-            ? null
-            : new AsyncApiExternalDocumentation { Url = new Uri(url, UriKind.RelativeOrAbsolute), Description = description };
-
-    /// <summary>
-    /// Adds each tag name to <paramref name="target"/> and registers it in <c>components/tags</c> when it is
-    /// not there yet.
-    /// </summary>
-    private static void AddTags(AsyncApiDocument document, IList<AsyncApiTag> target, string[] tagNames)
-    {
-        foreach (var tagName in tagNames)
-        {
-            target.Add(new AsyncApiTag { Name = tagName });
-
-            document.Components.Tags ??= new Dictionary<string, AsyncApiTag>();
-            if (!document.Components.Tags.ContainsKey(tagName))
-            {
-                document.Components.Tags[tagName] = new AsyncApiTag { Name = tagName };
-            }
-        }
     }
 
     private Task<(string? SchemaKey, IAsyncApiSchema Schema)> EnsureSchemaAsync(
