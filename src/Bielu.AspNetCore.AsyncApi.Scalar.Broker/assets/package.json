@@ -1,6 +1,6 @@
 {
   "name": "@bielu/scalar-broker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Interactive message-broker console plugin for the Scalar API Reference. Reads Kafka/MQTT/AMQP AsyncAPI bindings and publishes to and tails channels through an opt-in server-side bridge.",
   "license": "MIT",
   "author": "Arkadiusz Biel",
