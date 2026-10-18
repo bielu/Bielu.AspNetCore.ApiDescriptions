@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Shared code coverage settings, applied to every test project through RunSettingsFilePath in Directory.Build.props.
+  Declaring the collector here turns coverage on for every dotnet test run, so CI always produces reports.
+  Only hand-written library code is measured: generated sources, the example apps and test helper assemblies are excluded.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[Bielu.*]*</Include>
+          <Exclude>[*.Tests]*,[*.Tests.*]*</Exclude>
+          <ExcludeByFile>**/obj/**/*.cs</ExcludeByFile>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
