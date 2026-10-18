@@ -27,6 +27,28 @@
     </PropertyGroup>
 
     <!--
+      Package health as NuGet Package Explorer and nuget.org report it (Source Link, deterministic,
+      compiler flags). All three are read from the PDB, which ships as a .snupkg next to each .nupkg:
+      the release workflow's `dotnet nuget push "**/*.nupkg"` picks up the matching .snupkg by file
+      name and sends it to the nuget.org symbol server. The SDK's built-in Source Link
+      (Microsoft.SourceLink.GitHub) maps the PDB to the commit on GitHub, and the PDB carries the
+      compiler flags it is built with.
+
+      ContinuousIntegrationBuild normalizes the local build paths out of the PDB — without it a build
+      is reported non-deterministic — but it also breaks local debugging, so it is on only on CI.
+    -->
+    <PropertyGroup>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <Deterministic>true</Deterministic>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(TF_BUILD)' == 'true' or '$(CI)' == 'true'">
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+
+    <!--
       Each package ships its own PACKAGE.md as its nuget.org landing page. Packing the root README
       into all of them instead — as this did until the 1.0 prep — put the AsyncAPI pitch and
       quickstart on the Arazzo, Overlay and CLI packages, which is simply the wrong page for them.
