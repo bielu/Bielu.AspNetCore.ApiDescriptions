@@ -1,0 +1,103 @@
+<!doctype html>
+<!--
+  Source of assets/social-preview.png, the GitHub social preview (Settings → General → Social preview).
+  GitHub wants 1280×640; keep anything important 40px clear of the edges, where some sites crop.
+  Spec-neutral on purpose: add a chip when a new description format lands. Colours, chip dots
+  included, come from docs/images/logo.svg, not from each spec's own branding.
+
+  Render (Chrome or Edge):
+    chrome --headless=new --hide-scrollbars --window-size=1280,640 \
+      --screenshot=assets/social-preview.png assets/social-preview.html
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Social preview</title>
+<style>
+  :root {
+    --ink: #252b50;
+    --violet: #8b5cf6;
+    --blue: #5b7cfa;
+    --cyan: #16b8d4;
+    --spark: #ffd369;
+    --text: #f4f0ff;
+    --muted: #b7bde0;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    font-family: "Segoe UI Variable Display", "Segoe UI", Inter, system-ui, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(900px 520px at 88% 8%, rgba(22, 184, 212, .28), transparent 62%),
+      radial-gradient(760px 560px at 6% 100%, rgba(139, 92, 246, .34), transparent 60%),
+      linear-gradient(135deg, #171b38 0%, #1c2147 55%, #12253f 100%);
+    position: relative;
+  }
+  /* Faint description-tree grid, a nod to the documents this generates. */
+  body::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, .035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, .035) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: linear-gradient(90deg, transparent 0%, #000 45%, #000 100%);
+  }
+  .card {
+    position: absolute; inset: 64px 72px;
+    display: grid; grid-template-columns: 296px 1fr; gap: 56px; align-items: center;
+  }
+  .logo { width: 296px; height: 296px; filter: drop-shadow(0 24px 48px rgba(8, 10, 30, .55)); }
+  .eyebrow {
+    font-size: 22px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+    background: linear-gradient(90deg, var(--violet), var(--blue) 45%, var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  h1 {
+    margin-top: 14px;
+    font-size: 58px; font-weight: 700; line-height: 1.05; letter-spacing: -.01em;
+  }
+  h1 .ns { color: var(--muted); font-weight: 600; }
+  .tagline { margin-top: 22px; font-size: 27px; line-height: 1.4; color: var(--muted); max-width: 760px; }
+  .tagline b { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .specs { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .chip {
+    font-size: 20px; font-weight: 600; padding: 8px 17px; border-radius: 999px;
+    background: rgba(255, 255, 255, .07);
+    border: 2px solid rgba(255, 255, 255, .16);
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .chip::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--dot); }
+  .chip.more { border-style: dashed; color: var(--muted); background: transparent; }
+  .chip.more::before { display: none; }
+  footer {
+    position: absolute; left: 72px; right: 72px; bottom: 44px;
+    display: flex; justify-content: space-between;
+    font-size: 21px; color: var(--muted);
+  }
+  footer strong { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="../docs/images/logo.svg" alt="">
+    <div>
+      <div class="eyebrow">API descriptions for ASP.NET Core</div>
+      <h1><span class="ns">Bielu.AspNetCore.</span><br>ApiDescriptions</h1>
+      <p class="tagline">Generate, compose and transform API specs from your code, <b>at runtime and at build time</b>.</p>
+      <div class="specs">
+        <span class="chip" style="--dot: var(--violet)">AsyncAPI</span>
+        <span class="chip" style="--dot: var(--blue)">OpenAPI</span>
+        <span class="chip" style="--dot: var(--cyan)">Arazzo</span>
+        <span class="chip" style="--dot: var(--spark)">Overlay</span>
+        <span class="chip more">+ more coming</span>
+      </div>
+    </div>
+  </div>
+  <footer>
+    <span><strong>apidescriptions.bielu.pl</strong></span>
+    <span>.NET · NuGet · MIT</span>
+  </footer>
+</body>
+</html>
