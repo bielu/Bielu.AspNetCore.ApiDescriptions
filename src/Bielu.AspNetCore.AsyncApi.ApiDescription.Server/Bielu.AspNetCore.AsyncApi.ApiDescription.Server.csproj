@@ -13,6 +13,8 @@
 
         <!-- Don't produce a lib output that consumers reference at runtime -->
         <IncludeBuildOutput>false</IncludeBuildOutput>
+        <!-- No assembly, so no PDB: a .snupkg would be empty and fail pack with NU5017 -->
+        <IncludeSymbols>false</IncludeSymbols>
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
         <!-- Suppress warning about package having no assemblies -->
         <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>

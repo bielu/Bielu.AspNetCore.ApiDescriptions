@@ -28,16 +28,18 @@
 
     <!--
       Package health as NuGet Package Explorer and nuget.org report it (Source Link, deterministic,
-      compiler flags). All three are read from the PDB, and the release workflow pushes only the
-      .nupkg, so the PDB is embedded in each assembly rather than shipped as a .snupkg that would
-      never reach the symbol server. The SDK's built-in Source Link (Microsoft.SourceLink.GitHub)
-      then maps it to the commit on GitHub, and the PDB carries the compiler flags it is built with.
+      compiler flags). All three are read from the PDB, which ships as a .snupkg next to each .nupkg:
+      the release workflow's `dotnet nuget push "**/*.nupkg"` picks up the matching .snupkg by file
+      name and sends it to the nuget.org symbol server. The SDK's built-in Source Link
+      (Microsoft.SourceLink.GitHub) maps the PDB to the commit on GitHub, and the PDB carries the
+      compiler flags it is built with.
 
       ContinuousIntegrationBuild normalizes the local build paths out of the PDB — without it a build
       is reported non-deterministic — but it also breaks local debugging, so it is on only on CI.
     -->
     <PropertyGroup>
-        <DebugType>embedded</DebugType>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <Deterministic>true</Deterministic>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
