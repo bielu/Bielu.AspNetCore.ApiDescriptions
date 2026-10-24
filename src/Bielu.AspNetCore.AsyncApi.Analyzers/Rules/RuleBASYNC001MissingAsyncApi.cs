@@ -39,9 +39,7 @@ internal static class RuleBASYNC001MissingAsyncApi
 
         bool typeHasAsyncApi = typeAttributes.Any(ad => RuleUtils.IsAttribute(ad, RuleConstants.AsyncApiAttributeName));
         bool methodHasChannel = methodAttributes.Any(ad => RuleUtils.IsAttribute(ad, RuleConstants.ChannelAttributeName));
-        bool methodHasOperation = methodAttributes.Any(ad => RuleUtils.IsAttribute(ad, RuleConstants.PublishOperationAttributeName) ||
-                                                           RuleUtils.IsAttribute(ad, RuleConstants.SubscribeOperationAttributeName) ||
-                                                           RuleUtils.IsAttribute(ad, RuleConstants.OperationAttributeName));
+        bool methodHasOperation = methodAttributes.Any(ad => RuleUtils.IsAttribute(ad, RuleConstants.OperationAttributeName));
         bool methodHasMessage = methodAttributes.Any(ad => RuleUtils.IsAttribute(ad, RuleConstants.MessageAttributeName));
 
         if (!typeHasAsyncApi && (methodHasChannel || methodHasOperation || methodHasMessage))

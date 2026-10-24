@@ -74,7 +74,7 @@ public class SchemaJsonNamingPolicyTests
 [Channel("namingPolicyTestBus")]
 public class NamingPolicyTestBus
 {
-    [PublishOperation(typeof(NamingPolicyTestMessage))]
+    [ReceiveOperation(typeof(NamingPolicyTestMessage))]
     public void ProcessMessage(NamingPolicyTestMessage message) { }
 }
 

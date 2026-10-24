@@ -13,12 +13,12 @@ namespace GrpcGreeter.Services;
 public class GreeterService : Greeter.GreeterBase
 {
     /// <summary>Unary RPC: a client sends a name and receives a single greeting.</summary>
-    [PublishOperation(typeof(HelloRequest), "greet", Summary = "Send a greeting request.", BindingsRef = "sayHello")]
+    [ReceiveOperation(typeof(HelloRequest), "greet", Summary = "Send a greeting request.", BindingsRef = "sayHello")]
     public override Task<HelloReply> SayHello(HelloRequest request, ServerCallContext context)
         => Task.FromResult(new HelloReply { Message = $"Hello {request.Name}" });
 
     /// <summary>Server-streaming RPC: a client sends a name and receives a stream of greetings.</summary>
-    [PublishOperation(typeof(HelloRequest), "greet", Summary = "Stream greeting responses.", BindingsRef = "sayHellos")]
+    [ReceiveOperation(typeof(HelloRequest), "greet", Summary = "Stream greeting responses.", BindingsRef = "sayHellos")]
     public override async Task SayHellos(HelloRequest request, IServerStreamWriter<HelloReply> responseStream, ServerCallContext context)
     {
         for (var i = 0; i < 3; i++)

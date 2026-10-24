@@ -19,7 +19,7 @@ public static class AttributeChannels
     {
         [Channel("invoices/created")]
         [Message(typeof(Billing.Created), MessageId = "invoiceCreated")]
-        [SubscribeOperation(OperationId = "invoiceCreatedOperation")]
+        [SendOperation(OperationId = "invoiceCreatedOperation")]
         public void InvoiceCreated()
         {
         }
@@ -30,7 +30,7 @@ public static class AttributeChannels
     {
         [Channel("orders/created")]
         [Message(typeof(Fixtures.Orders.Created), MessageId = "orderCreated")]
-        [SubscribeOperation(OperationId = "orderCreatedOperation")]
+        [SendOperation(OperationId = "orderCreatedOperation")]
         public void OrderCreated()
         {
         }
@@ -41,7 +41,7 @@ public static class AttributeChannels
     {
         [Channel("orders/placed-legacy")]
         [Message(typeof(OrderPlaced), MessageId = "orders.order-placed")]
-        [SubscribeOperation(OperationId = "orderPlacedLegacyOperation")]
+        [SendOperation(OperationId = "orderPlacedLegacyOperation")]
         public void OrderPlacedLegacy()
         {
         }

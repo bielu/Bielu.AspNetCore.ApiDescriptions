@@ -91,7 +91,7 @@ public class AsyncApiXmlDocumentationTests
 
         // Check Operation Summary/Description
         var operations = root.GetProperty("operations");
-        operations.TryGetProperty("XmlDocTestBus_ProcessMessage_Publish", out var operation).ShouldBeTrue();
+        operations.TryGetProperty("XmlDocTestBus_ProcessMessage_Receive", out var operation).ShouldBeTrue();
         operation.GetProperty("summary").GetString().ShouldBe("Operation summary");
         operation.GetProperty("description").GetString().ShouldBe("Operation remarks");
 
@@ -113,7 +113,7 @@ public class AsyncApiXmlDocumentationTests
 [Channel("xmlDocTestBus")]
 public class XmlDocTestBus
 {
-    [PublishOperation(typeof(XmlDocTestMessage))]
+    [ReceiveOperation(typeof(XmlDocTestMessage))]
     public void ProcessMessage(XmlDocTestMessage message) { }
 }
 

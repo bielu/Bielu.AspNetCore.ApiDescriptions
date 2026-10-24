@@ -759,7 +759,7 @@ internal sealed class AsyncApiDocumentService(
                               _xmlDocumentationProvider.GetDocumentation(memberMetadata.Member)?.Remarks,
             };
 
-            op.Action = opAttr.OperationType == AttrOperationType.Subscribe
+            op.Action = opAttr.OperationType == AttrOperationType.Send
                 ? AsyncApiAction.Send
                 : AsyncApiAction.Receive;
 

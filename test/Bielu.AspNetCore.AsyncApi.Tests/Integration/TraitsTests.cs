@@ -24,14 +24,14 @@ public class TraitsTests
     {
         [Channel("traits/orders")]
         [Message(typeof(OrderPlaced), MessageId = "tracedOrder", Traits = ["traced"])]
-        [SubscribeOperation(typeof(OrderPlaced), OperationId = "tracedOperation", Traits = ["audited"])]
+        [SendOperation(typeof(OrderPlaced), OperationId = "tracedOperation", Traits = ["audited"])]
         public void TracedOrder()
         {
         }
 
         [Channel("traits/plain")]
         [Message(typeof(OrderPlaced), MessageId = "plainOrder")]
-        [SubscribeOperation(typeof(OrderPlaced), OperationId = "plainOperation")]
+        [SendOperation(typeof(OrderPlaced), OperationId = "plainOperation")]
         public void PlainOrder()
         {
         }

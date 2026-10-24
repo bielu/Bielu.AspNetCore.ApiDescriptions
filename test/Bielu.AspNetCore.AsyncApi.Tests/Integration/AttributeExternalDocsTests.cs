@@ -24,7 +24,7 @@ public class AttributeExternalDocsTests
     {
         [Channel("orders/placed", ExternalDocsUrl = "https://example.com/channel", ExternalDocsDescription = "Channel docs")]
         [Message(typeof(OrderPlaced), MessageId = "orderPlaced", ExternalDocsUrl = "https://example.com/message")]
-        [SubscribeOperation(typeof(OrderPlaced), OperationId = "orderPlacedOperation", ExternalDocsUrl = "https://example.com/operation", ExternalDocsDescription = "Operation docs")]
+        [SendOperation(typeof(OrderPlaced), OperationId = "orderPlacedOperation", ExternalDocsUrl = "https://example.com/operation", ExternalDocsDescription = "Operation docs")]
         public void OrderPlacedEvent()
         {
         }

@@ -91,7 +91,7 @@ public class NullablePropertySchemaTests
 [Channel("nullablePropertyTestBus")]
 public class NullablePropertyTestBus
 {
-    [PublishOperation(typeof(NullablePropertyTestMessage))]
+    [ReceiveOperation(typeof(NullablePropertyTestMessage))]
     public void ProcessMessage(NullablePropertyTestMessage message) { }
 }
 

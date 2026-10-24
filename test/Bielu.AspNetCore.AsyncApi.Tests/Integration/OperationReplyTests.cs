@@ -27,7 +27,7 @@ public class OperationReplyTests
     {
         [Channel("reply/ping")]
         [Message(typeof(PingRequest), MessageId = "pingRequest")]
-        [SubscribeOperation(typeof(PingRequest), OperationId = "pingOperation",
+        [SendOperation(typeof(PingRequest), OperationId = "pingOperation",
             ReplyChannel = "reply/pong",
             ReplyAddressLocation = "$message.header#/replyTo",
             ReplyAddressDescription = "Where the pong goes.",
@@ -38,7 +38,7 @@ public class OperationReplyTests
 
         [Channel("reply/pong")]
         [Message(typeof(PingReply), MessageId = "pongReply")]
-        [PublishOperation(typeof(PingReply), OperationId = "pongOperation")]
+        [ReceiveOperation(typeof(PingReply), OperationId = "pongOperation")]
         public void Pong()
         {
         }

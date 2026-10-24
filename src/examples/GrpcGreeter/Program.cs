@@ -36,7 +36,7 @@ builder.Services.AddAsyncApi("grpc", options =>
     });
 
     // Channel + operation bindings are attached to the service via [Channel(BindingsRef=...)] /
-    // [PublishOperation(BindingsRef=...)] on GreeterService.
+    // [ReceiveOperation(BindingsRef=...)] on GreeterService.
     options.AddGrpcChannelBinding("greeter", channel =>
     {
         channel.Service = "greet.Greeter";

@@ -47,27 +47,37 @@ public class GeneratedMetadataProviderTests
 
         public sealed record InvoiceDisputed(string InvoiceId);
 
+        public sealed record InvoiceRequested(string InvoiceId);
+
         [AsyncApi("__DOC__")]
         public sealed class Channels
         {
             [Channel("invoices/issued")]
             [Message(typeof(InvoiceIssued))]
-            [SubscribeOperation(OperationId = "invoiceIssuedOperation")]
+            [SendOperation(OperationId = "invoiceIssuedOperation")]
             public void Issued() { }
 
             [Channel("invoices/paid")]
             [Message(typeof(InvoicePaid), Title = "Overridden title", ContentType = "text/plain")]
-            [SubscribeOperation(OperationId = "invoicePaidOperation")]
+            [SendOperation(OperationId = "invoicePaidOperation")]
             public void Paid() { }
 
             [Channel("invoices/voided")]
-            [SubscribeOperation(typeof(InvoiceVoided), "invoices", OperationId = "invoiceVoidedOperation")]
+            [SendOperation(typeof(InvoiceVoided), "invoices", OperationId = "invoiceVoidedOperation")]
             public void Voided() { }
 
             [Channel("invoices/disputed")]
             [Message(typeof(InvoiceDisputed), MessageId = "invoiceDisputed")]
-            [SubscribeOperation(OperationId = "invoiceDisputedOperation")]
+            [SendOperation(OperationId = "invoiceDisputedOperation")]
             public void Disputed() { }
+
+            [Channel("invoices/requested")]
+            [ReceiveOperation(typeof(InvoiceRequested), OperationId = "invoiceRequestedOperation")]
+            public void Requested() { }
+
+            [Channel("invoices/legacy-requested")]
+            [PublishOperation(typeof(InvoiceRequested), OperationId = "invoiceLegacyRequestedOperation")]
+            public void LegacyRequested() { }
         }
         """;
 
@@ -152,6 +162,23 @@ public class GeneratedMetadataProviderTests
         // Assert
         generatedJson.ShouldBe(reflectionJson);
         generatedJson.ShouldContain("Invoice issued");
+    }
+
+    [Theory]
+    [InlineData("invoiceIssuedOperation", AsyncApiAction.Send)]
+    [InlineData("invoiceRequestedOperation", AsyncApiAction.Receive)]
+    [InlineData("invoiceLegacyRequestedOperation", AsyncApiAction.Receive)]
+    public async Task GetAsyncApiDocument_GeneratedProvider_SetsOperationAction(string operationId, AsyncApiAction expected)
+    {
+        // Arrange
+        var documentName = NewDocumentName();
+        var compiled = Compile(Source, documentName);
+
+        // Act
+        var document = await GetDocumentAsync(documentName, compiled.Provider);
+
+        // Assert
+        document.Operations[operationId].Action.ShouldBe(expected);
     }
 
     [Fact]

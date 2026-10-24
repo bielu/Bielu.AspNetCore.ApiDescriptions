@@ -6,7 +6,7 @@
 Wolverine already knows where every message goes: its routing rules decide which messages are
 published to Kafka topics, pushed to SignalR clients or read from listeners. This package builds the
 AsyncAPI document from that routing, so channels and operations follow the configuration instead of
-being repeated in `[Channel]`/`[PublishOperation]` attributes that can drift from it.
+being repeated in `[Channel]`/`[ReceiveOperation]` attributes that can drift from it.
 
 ## Installation
 

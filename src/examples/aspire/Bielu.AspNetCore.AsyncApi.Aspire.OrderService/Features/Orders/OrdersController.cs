@@ -44,7 +44,7 @@ public class OrdersController(IOrderService orderService) : ControllerBase
     /// Create a new order. Publishes an OrderCreatedEvent to Kafka.
     /// </summary>
     [Channel(OrderCreatedTopic, Servers = ["kafka"])]
-    [PublishOperation(typeof(OrderCreatedEvent), "OrderCreated", BindingsRef = "kafkaOrderChannel")]
+    [ReceiveOperation(typeof(OrderCreatedEvent), "OrderCreated", BindingsRef = "kafkaOrderChannel")]
     [HttpPost]
     public async Task<ActionResult<Order>> Create([FromBody] Order order)
     {
@@ -56,7 +56,7 @@ public class OrdersController(IOrderService orderService) : ControllerBase
     /// Update the status of an order. Publishes an OrderStatusChangedEvent to Kafka.
     /// </summary>
     [Channel(OrderStatusChangedTopic, Servers = ["kafka"])]
-    [PublishOperation(typeof(OrderStatusChangedEvent), "OrderStatusChanged", BindingsRef = "kafkaOrderChannel")]
+    [ReceiveOperation(typeof(OrderStatusChangedEvent), "OrderStatusChanged", BindingsRef = "kafkaOrderChannel")]
     [HttpPut("{id:guid}/status")]
     public async Task<ActionResult> UpdateStatus(Guid id, [FromBody] string newStatus)
     {

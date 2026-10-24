@@ -45,8 +45,8 @@ public class InventoryController(IInventoryManagementService inventoryService) :
     /// Publishes an InventoryReservedEvent to Kafka.
     /// </summary>
     [Channel(InventoryReservedTopic, Servers = ["kafka"])]
-    [SubscribeOperation(typeof(OrderCreatedEvent), "OrderCreated", BindingsRef = "kafkaInventoryChannel")]
-    [PublishOperation(typeof(InventoryReservedEvent), "InventoryReserved", BindingsRef = "kafkaInventoryChannel")]
+    [SendOperation(typeof(OrderCreatedEvent), "OrderCreated", BindingsRef = "kafkaInventoryChannel")]
+    [ReceiveOperation(typeof(InventoryReservedEvent), "InventoryReserved", BindingsRef = "kafkaInventoryChannel")]
     [HttpPost("reserve")]
     public async Task<ActionResult<InventoryReservedEvent>> ReserveInventory([FromBody] OrderCreatedEvent orderEvent)
     {
@@ -58,7 +58,7 @@ public class InventoryController(IInventoryManagementService inventoryService) :
     /// Restock a product. Publishes a StockLevelChangedEvent to Kafka.
     /// </summary>
     [Channel(StockLevelChangedTopic, Servers = ["kafka"])]
-    [PublishOperation(typeof(StockLevelChangedEvent), "StockLevelChanged", BindingsRef = "kafkaInventoryChannel")]
+    [ReceiveOperation(typeof(StockLevelChangedEvent), "StockLevelChanged", BindingsRef = "kafkaInventoryChannel")]
     [HttpPost("{productId}/restock")]
     public async Task<ActionResult> Restock(string productId, [FromBody] int additionalQuantity)
     {

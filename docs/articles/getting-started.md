@@ -71,7 +71,7 @@ public class StreetlightMessageBus
     private const string LightMeasuredTopic = "subscribe/light/measured";
 
     [Channel(LightMeasuredTopic, Servers = new[] { "mosquitto" })]
-    [SubscribeOperation(typeof(LightMeasuredEvent), "Light", 
+    [SendOperation(typeof(LightMeasuredEvent), "Light", 
         Summary = "Subscribe to environmental lighting conditions for a particular streetlight.")]
     public void PublishLightMeasurement(LightMeasuredEvent lightMeasuredEvent)
     {

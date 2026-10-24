@@ -20,7 +20,7 @@ dotnet add package Bielu.AspNetCore.AsyncApi.Attributes
 [Channel("light/measured")]
 public class StreetlightMessageBus
 {
-    [PublishOperation(typeof(LightMeasuredEvent), Summary = "Inform about environmental lighting conditions.")]
+    [ReceiveOperation(typeof(LightMeasuredEvent), Summary = "Inform about environmental lighting conditions.")]
     public void PublishLightMeasuredEvent(LightMeasuredEvent e) { }
 }
 ```

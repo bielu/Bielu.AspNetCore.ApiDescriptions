@@ -30,14 +30,14 @@ public class MessageAttributeCorrelationIdTests
         [Message(typeof(OrderPlaced), MessageId = "orderPlaced",
             CorrelationIdLocation = "$message.header#/correlationId",
             CorrelationIdDescription = "Links a reply to its request.")]
-        [SubscribeOperation(typeof(OrderPlaced), "orders", OperationId = "orderPlacedOperation")]
+        [SendOperation(typeof(OrderPlaced), "orders", OperationId = "orderPlacedOperation")]
         public void OrderPlacedEvent()
         {
         }
 
         [Channel("orders/cancelled")]
         [Message(typeof(OrderCancelled), MessageId = "orderCancelled")]
-        [SubscribeOperation(OperationId = "orderCancelledOperation")]
+        [SendOperation(OperationId = "orderCancelledOperation")]
         public void OrderCancelledEvent()
         {
         }
@@ -45,7 +45,7 @@ public class MessageAttributeCorrelationIdTests
         [Channel("orders/shipped")]
         [Message(typeof(OrderShipped), MessageId = "orderShipped",
             CorrelationIdDescription = "Ignored without a location.")]
-        [SubscribeOperation(OperationId = "orderShippedOperation")]
+        [SendOperation(OperationId = "orderShippedOperation")]
         public void OrderShippedEvent()
         {
         }

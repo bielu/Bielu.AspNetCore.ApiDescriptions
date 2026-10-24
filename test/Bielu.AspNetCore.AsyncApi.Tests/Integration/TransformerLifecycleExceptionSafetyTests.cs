@@ -84,7 +84,7 @@ public class TransformerLifecycleExceptionSafetyTests
     {
         [Channel("lifecycle-normal")]
         [Message(typeof(Payload), MessageId = "payload")]
-        [SubscribeOperation(OperationId = "lifecycleNormalOp")]
+        [SendOperation(OperationId = "lifecycleNormalOp")]
         public void Handle() { }
     }
     private const string NormalCompletionDocument = "lifecycle-normal-completion";
@@ -152,7 +152,7 @@ public class TransformerLifecycleExceptionSafetyTests
     {
         [Channel("lifecycle-caller-owned")]
         [Message(typeof(Payload), MessageId = "payload")]
-        [SubscribeOperation(OperationId = "lifecycleCallerOwnedOp")]
+        [SendOperation(OperationId = "lifecycleCallerOwnedOp")]
         public void Handle() { }
     }
     private const string CallerOwnedDocument = "lifecycle-caller-owned";
@@ -228,7 +228,7 @@ public class TransformerLifecycleExceptionSafetyTests
     {
         [Channel("lifecycle-schema-failure")]
         [Message(typeof(Payload), MessageId = "payload")]
-        [SubscribeOperation(OperationId = "lifecycleSchemaFailureOp")]
+        [SendOperation(OperationId = "lifecycleSchemaFailureOp")]
         public void Handle() { }
     }
     private const string SchemaFailureDocument = "lifecycle-schema-failure";
@@ -300,7 +300,7 @@ public class TransformerLifecycleExceptionSafetyTests
     {
         [Channel("lifecycle-cancellation")]
         [Message(typeof(Payload), MessageId = "payload")]
-        [SubscribeOperation(OperationId = "lifecycleCancellationOp")]
+        [SendOperation(OperationId = "lifecycleCancellationOp")]
         public void Handle() { }
     }
     private const string CancellationDocument = "lifecycle-cancellation";
@@ -350,7 +350,7 @@ public class TransformerLifecycleExceptionSafetyTests
     {
         [Channel("lifecycle-partial-activation")]
         [Message(typeof(Payload), MessageId = "payload")]
-        [SubscribeOperation(OperationId = "lifecyclePartialActivationOp")]
+        [SendOperation(OperationId = "lifecyclePartialActivationOp")]
         public void Handle() { }
     }
     private const string PartialActivationDocument = "lifecycle-partial-activation";
@@ -424,7 +424,7 @@ public class TransformerLifecycleExceptionSafetyTests
     {
         [Channel("lifecycle-disposal-failure")]
         [Message(typeof(Payload), MessageId = "payload")]
-        [SubscribeOperation(OperationId = "lifecycleDisposalFailureOp")]
+        [SendOperation(OperationId = "lifecycleDisposalFailureOp")]
         public void Handle() { }
     }
     private const string DisposalFailureDocument = "lifecycle-disposal-failure";
@@ -492,7 +492,7 @@ public class TransformerLifecycleExceptionSafetyTests
     {
         [Channel("lifecycle-combined-failure")]
         [Message(typeof(Payload), MessageId = "payload")]
-        [SubscribeOperation(OperationId = "lifecycleCombinedFailureOp")]
+        [SendOperation(OperationId = "lifecycleCombinedFailureOp")]
         public void Handle() { }
     }
     private const string CombinedFailureDocument = "lifecycle-combined-failure";

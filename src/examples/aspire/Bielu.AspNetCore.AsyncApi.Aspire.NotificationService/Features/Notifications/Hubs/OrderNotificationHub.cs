@@ -18,7 +18,7 @@ public class OrderNotificationHub(ILogger<OrderNotificationHub> logger) : Hub
     /// <summary>
     /// Sends an order status notification to all connected clients.
     /// </summary>
-    [PublishOperation(typeof(OrderStatusNotification), "OrderStatusNotification",
+    [ReceiveOperation(typeof(OrderStatusNotification), "OrderStatusNotification",
         BindingsRef = "wsNotificationChannel",
         Summary = "Receive real-time order status updates via WebSocket")]
     public async Task SendOrderStatusUpdate(OrderStatusNotification notification)
@@ -32,7 +32,7 @@ public class OrderNotificationHub(ILogger<OrderNotificationHub> logger) : Hub
     /// <summary>
     /// Subscribe to notifications for a specific order.
     /// </summary>
-    [SubscribeOperation(typeof(string), "SubscribeToOrder",
+    [SendOperation(typeof(string), "SubscribeToOrder",
         BindingsRef = "wsNotificationChannel",
         Summary = "Subscribe to updates for a specific order by ID")]
     public async Task SubscribeToOrder(string orderId)

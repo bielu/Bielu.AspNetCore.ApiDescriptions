@@ -7,7 +7,7 @@ namespace Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc;
 /// </summary>
 /// <remarks>
 /// Channel and operation bindings are keyed by name and resolved through
-/// <c>[Channel(BindingsRef=...)]</c> / <c>[PublishOperation(BindingsRef=...)]</c>, mirroring the
+/// <c>[Channel(BindingsRef=...)]</c> / <c>[ReceiveOperation(BindingsRef=...)]</c>, mirroring the
 /// SignalR extension. Server bindings are attached directly via <c>AddServer(...)</c> and message
 /// bindings via the binding classes, because the core options only key channel and operation bindings.
 /// </remarks>

@@ -12,7 +12,7 @@ public class ChatHub : Hub
     /// </summary>
     /// <param name="user">The name of the user sending the message.</param>
     /// <param name="message">The message content.</param>
-    [PublishOperation(typeof(ChatMessage), "SendMessage", Summary = "Send a message to the chat.")]
+    [ReceiveOperation(typeof(ChatMessage), "SendMessage", Summary = "Send a message to the chat.")]
     public async Task SendMessage(string user, string message)
     {
         await Clients.All.SendAsync("ReceiveMessage", user, message);
@@ -22,7 +22,7 @@ public class ChatHub : Hub
     /// Client-side handler for receiving chat messages.
     /// </summary>
     /// <param name="message">The received message.</param>
-    [SubscribeOperation(typeof(ChatMessage), "ReceiveMessage", Summary = "Receive a message from the chat.")]
+    [SendOperation(typeof(ChatMessage), "ReceiveMessage", Summary = "Receive a message from the chat.")]
     public void OnReceiveMessage(ChatMessage message) { }
 }
 

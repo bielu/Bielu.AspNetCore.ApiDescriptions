@@ -25,25 +25,25 @@ public class ChannelBindingsByNameTests
     public sealed class Channels
     {
         [Channel("stock/changed")]
-        [PublishOperation(typeof(StockChanged), OperationId = "stockChanged")]
+        [ReceiveOperation(typeof(StockChanged), OperationId = "stockChanged")]
         public void Named()
         {
         }
 
         [Channel("stock/audited", BindingsRef = "audit")]
-        [PublishOperation(typeof(StockChanged), OperationId = "stockAudited")]
+        [ReceiveOperation(typeof(StockChanged), OperationId = "stockAudited")]
         public void Referenced()
         {
         }
 
         [Channel("stock/archived", BindingsRef = "not-registered")]
-        [PublishOperation(typeof(StockChanged), OperationId = "stockArchived")]
+        [ReceiveOperation(typeof(StockChanged), OperationId = "stockArchived")]
         public void UnknownReference()
         {
         }
 
         [Channel("stock/plain")]
-        [PublishOperation(typeof(StockChanged), OperationId = "stockPlain")]
+        [ReceiveOperation(typeof(StockChanged), OperationId = "stockPlain")]
         public void Unbound()
         {
         }

@@ -181,36 +181,22 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                     foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString().EndsWith("OperationAttribute") == true))
                     {
                         var attrName = attr.AttributeClass?.ToDisplayString();
-                        string ctor;
-                        if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute")
+                        var generatedAttribute = GetGeneratedOperationAttribute(attrName);
+                        if (generatedAttribute == null)
                         {
-                            if (attr.ConstructorArguments.Length == 0)
-                            {
-                                ctor = "new PublishOperationAttribute()";
-                            }
-                            else
-                            {
-                                var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
-                                var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
-                                ctor = $"new PublishOperationAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})";
-                            }
+                            continue;
                         }
-                        else if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute")
+
+                        string ctor;
+                        if (attr.ConstructorArguments.Length == 0)
                         {
-                            if (attr.ConstructorArguments.Length == 0)
-                            {
-                                ctor = "new SubscribeOperationAttribute()";
-                            }
-                            else
-                            {
-                                var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
-                                var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
-                                ctor = $"new SubscribeOperationAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})";
-                            }
+                            ctor = $"new {generatedAttribute}()";
                         }
                         else
                         {
-                            continue;
+                            var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
+                            var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
+                            ctor = $"new {generatedAttribute}(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})";
                         }
 
                         var opId = attr.NamedArguments.FirstOrDefault(x => x.Key == "OperationId").Value.Value as string;
@@ -311,6 +297,17 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
 
             context.AddSource("GeneratedAsyncApiMetadataProvider.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
+
+        // The obsolete 2.x-named attributes are emitted as their Send/Receive equivalents, which build the same
+        // operation, so the generated code doesn't raise the obsolete warning in the consuming project.
+        private static string? GetGeneratedOperationAttribute(string? attributeName) => attributeName switch
+        {
+            "Bielu.AspNetCore.AsyncApi.Attributes.SendOperationAttribute" => "SendOperationAttribute",
+            "Bielu.AspNetCore.AsyncApi.Attributes.ReceiveOperationAttribute" => "ReceiveOperationAttribute",
+            "Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute" => "SendOperationAttribute",
+            "Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute" => "ReceiveOperationAttribute",
+            _ => null
+        };
 
         /// <summary>
         /// Emits a <c>MessageAttribute</c> construction: the given constructor call followed by an object
