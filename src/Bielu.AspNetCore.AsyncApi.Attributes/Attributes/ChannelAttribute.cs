@@ -1,4 +1,4 @@
-﻿namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿namespace Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Interface)]
 public class ChannelAttribute(string name) : Attribute

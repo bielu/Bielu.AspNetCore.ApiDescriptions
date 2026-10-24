@@ -533,7 +533,7 @@ public sealed class AsyncApiOptions
 
     /// <summary>
     /// Registers a message trait in <c>components/messageTraits</c>. Messages opt in with
-    /// <see cref="Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute.Traits"/>.
+    /// <see cref="Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute.Traits"/>.
     /// </summary>
     /// <param name="name">The key of the trait in <c>components/messageTraits</c>.</param>
     /// <param name="trait">The message trait.</param>

@@ -2,7 +2,7 @@
 
 internal static class RuleConstants
 {
-    public const string Namespace = "Bielu.AspNetCore.AsyncApi.Attributes.Attributes";
+    public const string Namespace = "Bielu.AspNetCore.AsyncApi.Attributes";
     public const string AsyncApiAttributeName = Namespace + ".AsyncApiAttribute";
     public const string ChannelAttributeName = Namespace + ".ChannelAttribute";
     public const string OperationAttributeName = Namespace + ".OperationAttribute";

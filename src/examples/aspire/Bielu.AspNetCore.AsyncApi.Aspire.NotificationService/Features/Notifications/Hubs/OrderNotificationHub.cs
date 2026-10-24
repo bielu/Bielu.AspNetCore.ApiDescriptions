@@ -3,7 +3,6 @@
 
 using Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications.Events;
 using Bielu.AspNetCore.AsyncApi.Attributes;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.NotificationService.Features.Notifications.Hubs;

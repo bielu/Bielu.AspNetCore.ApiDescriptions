@@ -193,12 +193,10 @@ internal sealed class AsyncApiJsonSchemaService
                         }
                     }
                 }
-                // Disabled: this stripped "null" from nullable componentized-object schemas on
-                // the assumption that the oneOf-wrapping restoration above (also disabled) would
-                // re-add nullability at the property reference site. Since that restoration never
-                // worked (it references a nonexistent Metadata property and the wrong constants
-                // class), pruning here silently and permanently dropped nullability instead.
-                // schema.PruneNullTypeForComponentizedTypes();
+                // Nullable componentized-object schemas deliberately keep "null" in their type. A former
+                // PruneNullTypeForComponentizedTypes step stripped it, assuming a oneOf-wrapping restoration
+                // would re-add nullability at the property reference site. That restoration never worked,
+                // so pruning silently dropped nullability; see NullablePropertySchemaTests.
                 return schema;
             }
         };
@@ -206,10 +204,12 @@ internal sealed class AsyncApiJsonSchemaService
 
     private static JsonObject CreateSchemaForJsonPatch()
     {
+        // "additionalProperties": false is written as the equivalent { "not": {} }: the boolean schema form
+        // cannot be deserialized into AsyncApiJsonSchema, which used to fail generation of the whole document.
         var addReplaceTest = new JsonObject()
         {
             [AsyncApiJsonSchemaKeywords.TypeKeyword] = "object",
-            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = false,
+            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = NoAdditionalProperties(),
             [AsyncApiJsonSchemaKeywords.RequiredKeyword] = JsonArray(["op", "path", "value"]),
             [AsyncApiJsonSchemaKeywords.PropertiesKeyword] = new JsonObject
             {
@@ -229,7 +229,7 @@ internal sealed class AsyncApiJsonSchemaService
         var moveCopy = new JsonObject()
         {
             [AsyncApiJsonSchemaKeywords.TypeKeyword] = "object",
-            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = false,
+            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = NoAdditionalProperties(),
             [AsyncApiJsonSchemaKeywords.RequiredKeyword] = JsonArray(["op", "path", "from"]),
             [AsyncApiJsonSchemaKeywords.PropertiesKeyword] = new JsonObject
             {
@@ -252,7 +252,7 @@ internal sealed class AsyncApiJsonSchemaService
         var remove = new JsonObject()
         {
             [AsyncApiJsonSchemaKeywords.TypeKeyword] = "object",
-            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = false,
+            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = NoAdditionalProperties(),
             [AsyncApiJsonSchemaKeywords.RequiredKeyword] = JsonArray(["op", "path"]),
             [AsyncApiJsonSchemaKeywords.PropertiesKeyword] = new JsonObject
             {
@@ -281,6 +281,8 @@ internal sealed class AsyncApiJsonSchemaService
         // Using JsonArray inline causes the compile to pick the generic Add<T>() overload
         // which then generates native AoT warnings without adding a cost. To Avoid that use
         // this helper method that uses JsonNode to pick the native AoT compatible overload instead.
+        static JsonObject NoAdditionalProperties() => new() { [AsyncApiJsonSchemaKeywords.NotKeyword] = new JsonObject() };
+
         static JsonArray JsonArray(ReadOnlySpan<JsonNode> values)
         {
             var array = new JsonArray();

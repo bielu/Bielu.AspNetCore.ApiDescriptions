@@ -1,5 +1,5 @@
 ﻿using System.Reflection;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 namespace Bielu.AspNetCore.AsyncApi.Models.Metadata;
 

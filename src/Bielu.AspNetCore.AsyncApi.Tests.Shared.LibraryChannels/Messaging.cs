@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 namespace Bielu.AspNetCore.AsyncApi.Tests.LibraryChannels
 {

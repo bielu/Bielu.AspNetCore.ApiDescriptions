@@ -362,30 +362,6 @@ internal static class JsonNodeSchemaExtensions
         }
     }
 
-    /// <summary>
-    /// Prunes the "null" type from the schema for types that are componentized. These
-    /// types should represent their nullability using oneOf with null instead.
-    /// </summary>
-    /// <param name="schema">The <see cref="JsonNode"/> produced by the underlying schema generator.</param>
-    internal static void PruneNullTypeForComponentizedTypes(this JsonNode schema)
-    {
-        if (schema.WillBeComponentized() &&
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] is JsonArray typeArray)
-        {
-            for (var i = typeArray.Count - 1; i >= 0; i--)
-            {
-                if (typeArray[i]?.GetValue<string>() == "null")
-                {
-                    typeArray.RemoveAt(i);
-                }
-            }
-            if (typeArray.Count == 1)
-            {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = typeArray[0]?.GetValue<string>();
-            }
-        }
-    }
-
     private static SchemaType? MapJsonNodeToSchemaType(JsonNode? jsonNode)
     {
         if (jsonNode is not JsonArray jsonArray)

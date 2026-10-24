@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Models.Metadata;
 using Bielu.AspNetCore.AsyncApi.Services;
@@ -27,7 +27,7 @@ public class GeneratedMetadataProviderTests
     private const string DocumentToken = "__DOC__";
 
     private const string Source = """
-        using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+        using Bielu.AspNetCore.AsyncApi.Attributes;
 
         namespace Sample;
 
@@ -73,7 +73,7 @@ public class GeneratedMetadataProviderTests
 
     // The payload classes carry [Message], but no class is annotated with [AsyncApi].
     private const string MessageClassOnlySource = """
-        using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+        using Bielu.AspNetCore.AsyncApi.Attributes;
 
         namespace Sample;
 

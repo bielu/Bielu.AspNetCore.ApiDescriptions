@@ -3,7 +3,6 @@
 
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.OrderTracking.Events;
 using Bielu.AspNetCore.AsyncApi.Attributes;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.OrderTracking.Hubs;

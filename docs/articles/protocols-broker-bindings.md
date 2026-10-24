@@ -78,7 +78,7 @@ builder.Services.AddAsyncApi(options =>
 | `AddMessageBinding` | `components/messageBindings` | Any `[Message(BindingsRef = "...")]` |
 
 ```csharp
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi]
 public class OrderEvents

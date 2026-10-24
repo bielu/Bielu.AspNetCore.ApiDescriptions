@@ -5,7 +5,6 @@ using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Events;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Models;
 using Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders.Services;
 using Bielu.AspNetCore.AsyncApi.Attributes;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.OrderService.Features.Orders;
