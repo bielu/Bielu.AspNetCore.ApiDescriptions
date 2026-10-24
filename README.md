@@ -31,6 +31,7 @@ API catalog and [CloudEvents](https://cloudevents.io/) messages.
 | API Catalog (RFC 9727) | RFC 9727, as an RFC 9264 Linkset | `Bielu.AspNetCore.ApiCatalog` | not read |
 | CloudEvents | 1.0 (binary and structured mode) | `Bielu.AspNetCore.AsyncApi.CloudEvents`, as AsyncAPI message headers or payload | not read |
 | Apache Avro | 1.9.0 declared (`schemaFormat`), configurable | `Bielu.AspNetCore.AsyncApi.Avro`, as AsyncAPI message payloads | not read |
+| Protocol Buffers | proto2, proto3, editions (`schemaFormat` version 2 or 3) | `Bielu.AspNetCore.AsyncApi.Protobuf`, as `.proto` payload sources | not read |
 
 The runtime libraries target **.NET 10**. See [Supported .NET versions](https://apidescriptions.bielu.pl/articles/supported-dotnet-versions.html)
 for the support matrix and the policy for adding and removing targets.
@@ -131,6 +132,7 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 | [`Bielu.AspNetCore.AsyncApi.Wolverine`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Wolverine/) | Builds channels and operations from Wolverine's message routing |
 | [`Bielu.AspNetCore.AsyncApi.CloudEvents`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.CloudEvents/) | Describes messages as CloudEvents 1.0 events |
 | [`Bielu.AspNetCore.AsyncApi.Avro`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Avro/) | `AddAvroPayloads()`: describes message payloads as Apache Avro schemas |
+| [`Bielu.AspNetCore.AsyncApi.Protobuf`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Protobuf/) | `AddProtobufPayloads()`: describes Protocol Buffers payloads by their `.proto` source |
 | [`Bielu.AspNetCore.AsyncApi.Overlay`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Overlay/) | `AddOverlay(...)` for AsyncAPI documents |
 | [`Bielu.AspNetCore.AsyncApi.Merger`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Merger/) | Merges several AsyncAPI documents, for example behind a gateway |
 | [`Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR/) | SignalR bindings |
@@ -218,6 +220,7 @@ dotnet run
 - [Scalar consoles](https://apidescriptions.bielu.pl/articles/scalar-consoles.html)
 - [CloudEvents](https://apidescriptions.bielu.pl/articles/cloudevents.html)
 - [Avro payloads](https://apidescriptions.bielu.pl/articles/avro.html)
+- [Protobuf payloads](https://apidescriptions.bielu.pl/articles/protobuf.html)
 - [Merger and API gateway](https://apidescriptions.bielu.pl/articles/merger-gateway.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)
 
