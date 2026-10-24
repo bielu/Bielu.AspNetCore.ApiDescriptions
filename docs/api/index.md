@@ -6,3 +6,5 @@ Bielu API Descriptions is split into two libraries, each with its own API refere
   AsyncAPI documents from ASP.NET Core APIs.
 - [Arazzo →](arazzo/index.md) — `Bielu.Arazzo.NET` and `Bielu.Arazzo.NET.Readers`, the object model and
   readers for the Arazzo Specification.
+- [API Catalog →](api-catalog/index.md) — `Bielu.AspNetCore.ApiCatalog`, the RFC 9727 API catalog served at
+  `/.well-known/api-catalog`.

@@ -23,7 +23,10 @@ internal sealed class ArazzoBuildTimeDocumentSource(
     IEnumerable<NamedArazzoDocument> documents,
     IOptionsMonitor<ArazzoOptions> optionsMonitor) : IBuildTimeDocumentSource
 {
-    public string Kind => "Arazzo";
+    /// <summary>The <see cref="Kind"/> of Arazzo documents, also stamped on the <c>MapArazzo()</c> endpoint.</summary>
+    internal const string DocumentKind = "Arazzo";
+
+    public string Kind => DocumentKind;
 
     public string NamePrefix => "arazzo-";
 

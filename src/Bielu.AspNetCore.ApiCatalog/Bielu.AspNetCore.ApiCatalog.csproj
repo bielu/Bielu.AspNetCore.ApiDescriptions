@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsAotCompatible>true</IsAotCompatible>
+        <RootNamespace>Bielu.AspNetCore.ApiCatalog</RootNamespace>
+        <Description>Serves an RFC 9727 API catalog at /.well-known/api-catalog: a Linkset listing every API description the app serves (AsyncAPI, OpenAPI, Arazzo), discovered from the app's own endpoints, so clients can find the documents without knowing their URLs.</Description>
+        <PackageTags>api-catalog;rfc9727;linkset;well-known;discovery;asyncapi;openapi;arazzo;aspnetcore</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.AspNetCore.ApiDescriptions\Bielu.AspNetCore.ApiDescriptions.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.ApiCatalog.Tests" />
+    </ItemGroup>
+
+</Project>

@@ -14,6 +14,14 @@
     - name: API Reference
       href: api/arazzo/
       homepage: api/arazzo/index.md
+- name: API Catalog
+  items:
+    - name: Articles
+      href: articles/api-catalog/
+      homepage: articles/api-catalog/overview.md
+    - name: API Reference
+      href: api/api-catalog/
+      homepage: api/api-catalog/index.md
 - name: Overlay
   items:
     - name: Articles

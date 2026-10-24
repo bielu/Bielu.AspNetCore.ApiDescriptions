@@ -24,8 +24,11 @@ internal sealed class AsyncApiBuildTimeDocumentSource(IServiceProvider servicePr
     /// </summary>
     internal const string BuildTimeDocumentNamePrefix = "asyncapi-";
 
+    /// <summary>The <see cref="Kind"/> of AsyncAPI documents, also stamped on the <c>MapAsyncApi()</c> endpoint.</summary>
+    internal const string DocumentKind = "AsyncAPI";
+
     /// <inheritdoc />
-    public string Kind => "AsyncAPI";
+    public string Kind => DocumentKind;
 
     /// <inheritdoc />
     public string NamePrefix => BuildTimeDocumentNamePrefix;

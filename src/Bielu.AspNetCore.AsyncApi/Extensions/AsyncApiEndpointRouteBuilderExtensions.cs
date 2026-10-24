@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Bielu.AspNetCore.ApiDescriptions;
 using Bielu.AspNetCore.AsyncApi.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Transformers;
@@ -158,7 +159,10 @@ public static class AsyncApiEndpointRouteBuilderExtensions
 
                     await context.Response.Body.WriteAsync(payload, context.RequestAborted);
                 }
-            })).ExcludeFromDescription();
+            }))
+            .WithMetadata(new ApiDescriptionDocumentMetadata(AsyncApiBuildTimeDocumentSource.DocumentKind,
+                UseYaml(pattern) ? "application/vnd.aai.asyncapi+yaml" : "application/vnd.aai.asyncapi+json"))
+            .ExcludeFromDescription();
     }
 
     /// <summary>

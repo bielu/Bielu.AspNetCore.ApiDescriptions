@@ -19,6 +19,7 @@
             "src/Bielu.AspNetCore.AsyncApi.Overlay/**",
             "src/Bielu.AspNetCore.Arazzo.Overlay/**",
             "src/Bielu.Spec.Shared/**",
+            "src/Bielu.AspNetCore.ApiCatalog/**",
             "src/Bielu.AspNetCore.AsyncApi.Templates/**",
             "src/Bielu.AspNetCore.AsyncApi.Analyzers/**",
             "src/Bielu.AspNetCore.Arazzo.Analyzers/**",
@@ -89,6 +90,29 @@
       "properties": {
         "TargetFramework": "net10.0"
       }
+    },
+    {
+      "src": [
+        {
+          "src": "..",
+          "files": [
+            "src/Bielu.AspNetCore.ApiCatalog/**/*.csproj"
+          ],
+          "exclude": [
+            "**/bin/**",
+            "**/obj/**",
+            "**/*.Tests/**",
+            "**/*.Tests.*/**",
+            "**/*.Test/**"
+          ]
+        }
+      ],
+      "dest": "api/api-catalog",
+      "disableGitFeatures": false,
+      "disableDefaultFilter": false,
+      "properties": {
+        "TargetFramework": "net10.0"
+      }
     }
   ],
   "build": {
@@ -101,7 +125,9 @@
           "api/arazzo/**.yml",
           "api/arazzo/index.md",
           "api/overlay/**.yml",
-          "api/overlay/index.md"
+          "api/overlay/index.md",
+          "api/api-catalog/**.yml",
+          "api/api-catalog/index.md"
         ]
       },
       {
