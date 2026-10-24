@@ -18,6 +18,7 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.CloudEvents.Tests" />
+        <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Wolverine" />
     </ItemGroup>
 
 </Project>

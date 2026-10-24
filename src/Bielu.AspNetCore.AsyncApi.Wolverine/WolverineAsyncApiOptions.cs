@@ -129,6 +129,41 @@ public sealed class WolverineAsyncApiOptions
         return this;
     }
 
+    /// <summary>
+    /// Describes the messages of every endpoint that sends CloudEvents as structured-mode CloudEvents, the
+    /// <c>application/cloudevents+json</c> envelope Wolverine writes: <c>type</c> is the message type name,
+    /// <c>source</c> the Wolverine service name, and the payload becomes <c>data</c>. Those endpoints are
+    /// Wolverine's SignalR transport, which always sends CloudEvents, broker endpoints configured with
+    /// <c>InteropWithCloudEvents()</c>, and <paramref name="endpointUris"/>.
+    /// </summary>
+    /// <remarks>
+    /// A message also routed to an endpoint that does not send CloudEvents keeps its plain description there, and
+    /// the CloudEvents endpoints get a copy of it under <c>{message}.cloudevent</c>. Use this rather than
+    /// <c>AddCloudEvents()</c> for Wolverine's messages: it describes only the endpoints that really send
+    /// CloudEvents, and <c>AddCloudEvents()</c> leaves the messages it described alone.
+    /// </remarks>
+    /// <param name="endpointUris">
+    /// Further endpoints that send CloudEvents, for when <c>InteropWithCloudEvents()</c> cannot be detected, for
+    /// example <c>new Uri("kafka://topic/orders")</c>.
+    /// </param>
+    /// <returns>The same options, for chaining.</returns>
+    public WolverineAsyncApiOptions DescribeCloudEvents(params Uri[] endpointUris)
+    {
+        ArgumentNullException.ThrowIfNull(endpointUris);
+        foreach (var endpointUri in endpointUris)
+        {
+            ArgumentNullException.ThrowIfNull(endpointUri);
+            CloudEventsEndpoints.Add(endpointUri);
+        }
+
+        CloudEventsDescribed = true;
+        return this;
+    }
+
+    internal bool CloudEventsDescribed { get; private set; }
+
+    internal HashSet<Uri> CloudEventsEndpoints { get; } = [];
+
     /// <summary>Adds an <c>externalDocs</c> link to the message for <typeparamref name="TMessage"/>.</summary>
     /// <typeparam name="TMessage">The message type.</typeparam>
     /// <param name="url">URL of the external documentation.</param>

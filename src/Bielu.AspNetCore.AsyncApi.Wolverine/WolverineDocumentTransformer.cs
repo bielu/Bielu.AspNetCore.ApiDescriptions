@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using Bielu.AspNetCore.AsyncApi.Attributes;
+using Bielu.AspNetCore.AsyncApi.CloudEvents;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using Bielu.AspNetCore.AsyncApi.Helpers;
@@ -16,6 +17,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
+using Wolverine.Configuration;
 using Wolverine.Runtime;
 using Wolverine.Runtime.Handlers;
 using Wolverine.Runtime.Routing;
@@ -33,6 +35,39 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
     private const string SignalRScheme = "signalr";
     private const string KafkaScheme = "kafka";
     private const string WolverineHubTypeName = "Wolverine.SignalR.WolverineHub";
+
+    /// <summary>The <c>datacontenttype</c> Wolverine's <c>CloudEventsMapper</c> writes on every event.</summary>
+    private const string CloudEventsDataContentType = "application/json; charset=utf-8";
+
+    /// <summary>The extension attributes Wolverine's <c>CloudEventsMapper</c> writes when the envelope has them.</summary>
+    private static readonly Dictionary<string, string> CloudEventsExtensions = new(StringComparer.Ordinal)
+    {
+        ["tenantid"] = "The Wolverine tenant id of the message, if any.",
+        ["topic"] = "The topic or group the message was sent to, if any.",
+        ["traceid"] = "The Wolverine correlation id of the message.",
+        ["traceparent"] = "The W3C trace context of the activity that sent the message.",
+    };
+
+    /// <summary>
+    /// Whether <c>InteropWithCloudEvents()</c> was called on the endpoint. Wolverine keeps that only as the
+    /// mapping callback it runs when it builds the endpoint's envelope mapper, which a stubbed or not yet started
+    /// endpoint never does, so the callback itself is recognized: the compiler names it after the method that
+    /// created it. Anything unexpected about the endpoint's shape means "not detected"; list such an endpoint in
+    /// <see cref="WolverineAsyncApiOptions.DescribeCloudEvents"/> instead.
+    /// </summary>
+    internal static bool InteropsWithCloudEvents(Endpoint endpoint)
+    {
+        for (var type = endpoint.GetType(); type is not null; type = type.BaseType)
+        {
+            if (type.GetField("_customizeMapping", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(endpoint) is Delegate mapping)
+            {
+                return mapping.GetInvocationList().Any(callback =>
+                    callback.Method.Name.Contains("InteropWithCloudEvents", StringComparison.Ordinal));
+            }
+        }
+
+        return false;
+    }
 
     public async Task TransformAsync(AsyncApiDocument document, AsyncApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
@@ -77,6 +112,11 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 await builder.AddReplyAsync(operation.Value.Id, operation.Value.Operation,
                     ReplyTypes(runtime, endpoint.MessageType!), cancellationToken);
             }
+        }
+
+        if (options.CloudEventsDescribed)
+        {
+            builder.DescribeCloudEvents(runtime);
         }
     }
 
@@ -137,7 +177,107 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
     {
         private readonly Dictionary<Uri, string> _channelKeys = [];
         private readonly HashSet<(AsyncApiAction Action, Uri EndpointUri, Type MessageType)> _operations = [];
+        private readonly Dictionary<string, string> _messageTypeNames = [];
         private string? _hubPath;
+
+        /// <summary>
+        /// Describes the messages of the endpoints that send CloudEvents as the structured-mode envelope Wolverine
+        /// writes. A message also used on another channel is copied first, so that channel keeps the plain message.
+        /// The channel keeps listing the message under the same key, so the operations referencing it are unchanged.
+        /// A message whose payload cannot be wrapped (one not in JSON Schema) is left as it is, on every channel.
+        /// </summary>
+        public void DescribeCloudEvents(IWolverineRuntime runtime)
+        {
+            var cloudEventsChannels = _channelKeys
+                .Where(entry => SendsCloudEvents(entry.Key, runtime))
+                .Select(entry => entry.Value)
+                .ToHashSet(StringComparer.Ordinal);
+            if (cloudEventsChannels.Count == 0)
+            {
+                return;
+            }
+
+            // Whether each component could be described, so a message shared by several channels is wrapped once.
+            var described = new Dictionary<string, bool>(StringComparer.Ordinal);
+            foreach (var channelKey in cloudEventsChannels.Order(StringComparer.Ordinal))
+            {
+                var channel = document.Channels[channelKey];
+                foreach (var messageKey in channel.Messages.Keys.ToList())
+                {
+                    if (!_messageTypeNames.TryGetValue(messageKey, out var messageTypeName)
+                        || !document.Components.Messages.TryGetValue(messageKey, out var message))
+                    {
+                        continue;
+                    }
+
+                    var sharedWithPlainChannel = document.Channels
+                        .Where(other => !cloudEventsChannels.Contains(other.Key))
+                        .Any(other => other.Value.Messages.Values.Any(entry => IsReferenceTo(entry, messageKey)));
+                    var componentKey = sharedWithPlainChannel ? $"{messageKey}.cloudevent" : messageKey;
+
+                    if (!described.TryGetValue(componentKey, out var applied))
+                    {
+                        var target = sharedWithPlainChannel ? Copy(message) : message;
+                        applied = CloudEventsDocumentTransformer.ApplyStructured(document, target, new CloudEventsDocumentTransformer.EventAttributes(
+                            Type: messageTypeName,
+                            Source: runtime.Options.ServiceName,
+                            DataSchema: null,
+                            DataContentType: CloudEventsDataContentType,
+                            Extensions: CloudEventsExtensions));
+                        if (applied && sharedWithPlainChannel)
+                        {
+                            document.Components.Messages[componentKey] = target;
+                        }
+
+                        described[componentKey] = applied;
+                    }
+
+                    if (!applied)
+                    {
+                        continue;
+                    }
+
+                    channel.Messages[messageKey] = new AsyncApiMessageReference($"#/components/messages/{componentKey}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether the endpoint sends CloudEvents: SignalR always does, a broker endpoint when it was listed in
+        /// <see cref="WolverineAsyncApiOptions.DescribeCloudEvents"/> or configured with <c>InteropWithCloudEvents()</c>.
+        /// </summary>
+        private bool SendsCloudEvents(Uri endpointUri, IWolverineRuntime runtime) =>
+            endpointUri.Scheme == SignalRScheme
+            || options.CloudEventsEndpoints.Contains(endpointUri)
+            || runtime.Options.Transports.AllEndpoints().FirstOrDefault(e => e.Uri == endpointUri) is { } endpoint
+            && InteropsWithCloudEvents(endpoint);
+
+        private static bool IsReferenceTo(AsyncApiMessage entry, string messageKey) =>
+            entry is AsyncApiMessageReference { Reference.Reference: { } reference }
+            && reference == $"#/components/messages/{messageKey}";
+
+        private static AsyncApiMessage Copy(AsyncApiMessage message) => new()
+        {
+            Name = message.Name,
+            Title = message.Title,
+            Summary = message.Summary,
+            Description = message.Description,
+            ContentType = message.ContentType,
+            Payload = message.Payload,
+            Headers = message.Headers,
+            CorrelationId = message.CorrelationId,
+            Tags = message.Tags,
+            ExternalDocs = message.ExternalDocs,
+            Bindings = message.Bindings,
+            Traits = message.Traits,
+            Examples = message.Examples?.Select(example => new AsyncApiMessageExample
+            {
+                Name = example.Name,
+                Summary = example.Summary,
+                Headers = example.Headers is null ? null : new Dictionary<string, AsyncApiAny>(example.Headers),
+                Payload = example.Payload?.GetNode() is { } node ? new AsyncApiAny(node.DeepClone()) : null,
+            }).ToList(),
+        };
 
         /// <summary>
         /// Adds the operation and returns it with its id, or <see langword="null"/> when the same route was
@@ -273,6 +413,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
         {
             var name = messageType.ToMessageTypeName();
             var key = AsyncApiNamingHelper.SanitizeKey(name);
+            _messageTypeNames[key] = name;
 
             document.Components ??= new AsyncApiComponents();
             document.Components.Messages ??= new Dictionary<string, AsyncApiMessage>();
