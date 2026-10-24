@@ -30,7 +30,7 @@ dotnet add package ByteBard.AsyncAPI.NET.Bindings
 | SQS | | `SqsChannelBinding` | `SqsOperationBinding` | |
 | WebSockets | | `WebSocketsChannelBinding` | | |
 
-¹ Added in `ByteBard.AsyncAPI.NET.Bindings` 3.1.0-beta.19; not available in the 3.0.1 stable release. The types
+¹ Added in `ByteBard.AsyncAPI.NET.Bindings` 3.1.0-beta.19, so available from 2.0 of this library, which depends on 4.0. The types
 live in a namespace per protocol, such as `ByteBard.AsyncAPI.Bindings.Solace` or
 `ByteBard.AsyncAPI.Bindings.GooglePubSub`. A cell left empty means the package has no binding at that level
 for the protocol.
@@ -101,18 +101,10 @@ Calling an `Add…Binding` method again with the same name adds a second binding
 channel documents more than one protocol. Two bindings of the *same* protocol under one name do not
 accumulate: the last one registered replaces the earlier one, and no exception is thrown.
 
-## Known upstream issues in 3.0.1
+## Fixed in ByteBard 4.0
 
-`ByteBard.AsyncAPI.NET.Bindings` 3.0.1 has three bugs, none in this library. Each one produces a document
-that the official AsyncAPI JSON Schema rejects. **They are fixed in 3.1.0-beta.19**, so upgrading to that
-version or later removes the need for a workaround:
-
-- **WebSockets:** the binding is written under the key `websockets`; the AsyncAPI bindings specification
-  uses `ws`.
-- **Kafka message binding:** `SchemaIdLocation` is written as `SchemaIdLocation` instead of
-  `schemaIdLocation`.
-- **SQS:** `fifoQueue` is required by the schema but is omitted when `Queue.FifoQueue` is `false`, so a
-  standard (non-FIFO) queue serializes without it.
-
-If you stay on 3.0.1, a transformer registered with `AsyncApiOptions.AddSerializedDocumentTransformer` can
-correct the serialized document before it is served.
+Version 1.x of this library depended on `ByteBard.AsyncAPI.NET.Bindings` 3.0.1. That version wrote three bindings in a
+form the official AsyncAPI JSON Schema rejects: WebSockets under the key `websockets` instead of `ws`, the Kafka message
+binding's `schemaIdLocation` as `SchemaIdLocation`, and an SQS standard queue without `fifoQueue`. These were fixed in
+3.1.0-beta.19, and 2.0 depends on 4.0, so they need no workaround. `ProtocolBindingsCoverageTests` serves all three
+and validates the document against the official schema.
