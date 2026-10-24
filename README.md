@@ -41,7 +41,7 @@ app.Run();
 ### 3. Define Channels
 
 ```csharp
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi]
 public class MyService
