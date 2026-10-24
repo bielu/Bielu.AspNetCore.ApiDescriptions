@@ -22,7 +22,6 @@ using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using AsyncApiJsonSchema = ByteBard.AsyncAPI.Models.AsyncApiJsonSchema;
@@ -297,7 +296,7 @@ internal sealed class AsyncApiJsonSchemaService
         }
     }
 
-    internal async Task<AsyncApiJsonSchema> GetOrCreateUnresolvedSchemaAsync(AsyncApiDocument? document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
+    internal async Task<AsyncApiJsonSchema> GetOrCreateUnresolvedSchemaAsync(AsyncApiDocument? document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, CancellationToken cancellationToken = default)
     {
         var schemaAsJsonObject = CreateSchema(type);
 
@@ -305,16 +304,11 @@ internal sealed class AsyncApiJsonSchemaService
         ConvertTypeStringsToEnumValues(schemaAsJsonObject);
         RemoveNullIds(schemaAsJsonObject);
 
-        if (parameterDescription is not null)
-        {
-            schemaAsJsonObject.ApplyParameterInfo(parameterDescription, _jsonSerializerOptions.GetTypeInfo(type));
-        }
-
         try
         {
             var deserializedSchema = JsonSerializer.Deserialize(schemaAsJsonObject, _jsonSchemaContext.AsyncApiJsonSchema);
             Debug.Assert(deserializedSchema != null, "The schema should have been deserialized successfully and materialize a non-null value.");
-            await ApplySchemaTransformersAsync(document, deserializedSchema, type, scopedServiceProvider, schemaTransformers, parameterDescription, cancellationToken);
+            await ApplySchemaTransformersAsync(document, deserializedSchema, type, scopedServiceProvider, schemaTransformers, cancellationToken);
             return deserializedSchema;
         }
         catch (JsonException ex)
@@ -389,9 +383,9 @@ internal sealed class AsyncApiJsonSchemaService
         }
     }
 
-    internal async Task<IAsyncApiSchema> GetOrCreateSchemaAsync(AsyncApiDocument document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
+    internal async Task<IAsyncApiSchema> GetOrCreateSchemaAsync(AsyncApiDocument document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, CancellationToken cancellationToken = default)
     {
-        var schema = await GetOrCreateUnresolvedSchemaAsync(document, type, scopedServiceProvider, schemaTransformers, parameterDescription, cancellationToken);
+        var schema = await GetOrCreateUnresolvedSchemaAsync(document, type, scopedServiceProvider, schemaTransformers, cancellationToken);
 
         var baseSchemaId = GetSchemaReferenceId(type);
 
@@ -457,7 +451,7 @@ internal sealed class AsyncApiJsonSchemaService
         CancellationToken cancellationToken)
     {
         var schema = await GetOrCreateSchemaAsync(
-            document, type, scopedServiceProvider, schemaTransformers, parameterDescription: null, cancellationToken);
+            document, type, scopedServiceProvider, schemaTransformers, cancellationToken);
 
         var key = GetSchemaComponentKey(type);
         if (key is null)
@@ -588,7 +582,7 @@ internal sealed class AsyncApiJsonSchemaService
         }
     }
 
-    internal async Task ApplySchemaTransformersAsync(AsyncApiDocument? document, AsyncApiJsonSchema schema, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
+    internal async Task ApplySchemaTransformersAsync(AsyncApiDocument? document, AsyncApiJsonSchema schema, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, CancellationToken cancellationToken = default)
     {
         if (schemaTransformers.Length == 0)
         {
@@ -600,7 +594,6 @@ internal sealed class AsyncApiJsonSchemaService
             DocumentName = _documentName,
             JsonTypeInfo = jsonTypeInfo,
             JsonPropertyInfo = null,
-            ParameterDescription = parameterDescription,
             ApplicationServices = scopedServiceProvider,
             Document = document,
             SchemaTransformers = schemaTransformers

@@ -21,7 +21,6 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -33,7 +32,6 @@ namespace Bielu.AspNetCore.AsyncApi.Services;
 
 internal sealed class AsyncApiDocumentService(
     [ServiceKey] string documentName,
-    IApiDescriptionGroupCollectionProvider apiDescriptionGroupCollectionProvider,
     IHostEnvironment hostEnvironment,
     IOptionsMonitor<AsyncApiOptions> optionsMonitor,
     IServiceProvider serviceProvider,
@@ -57,8 +55,6 @@ internal sealed class AsyncApiDocumentService(
 
     private readonly ConcurrentDictionary<string, AsyncApiOperationTransformerContext>
         _operationTransformerContextCache = new();
-
-    private static readonly ApiResponseType _defaultApiResponseType = new() { StatusCode = StatusCodes.Status200OK };
 
     private static readonly FrozenSet<string> _disallowedHeaderParameters =
         new[] { HeaderNames.Accept, HeaderNames.Authorization, HeaderNames.ContentType }.ToFrozenSet(StringComparer
@@ -813,7 +809,6 @@ internal sealed class AsyncApiDocumentService(
                 var operationTransformerContext = new AsyncApiOperationTransformerContext
                 {
                     DocumentName = documentName,
-                    Description = null,
                     ApplicationServices = scopedServiceProvider,
                     Document = document,
                     SchemaTransformers = schemaTransformers
@@ -1174,7 +1169,6 @@ internal sealed class AsyncApiDocumentService(
         {
             DocumentName = documentName,
             ApplicationServices = scopedServiceProvider,
-            DescriptionGroups = apiDescriptionGroupCollectionProvider.ApiDescriptionGroups.Items,
             Document = document,
             SchemaTransformers = schemaTransformers
         };

@@ -2,6 +2,7 @@
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI.Models;
+using ByteBard.AsyncAPI.Models.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -29,7 +30,7 @@ public class OperationTransformerExecutionTests
         {
             options.AddOperationTransformer((operation, context, cancellationToken) =>
             {
-                context.Description.ShouldBeNull();
+                context.DocumentName.ShouldBe(TestDocumentName);
                 callCount++;
                 operation.Summary = "transformed:" + operation.Summary;
                 return Task.CompletedTask;
@@ -108,6 +109,46 @@ public class OperationTransformerExecutionTests
         await Should.ThrowAsync<OperationCanceledException>(() =>
             documentService.GetAsyncApiDocumentAsync(scope.ServiceProvider, httpRequest: null, cts.Token));
     }
+
+    [Fact]
+    public async Task OperationTransformer_GetOrCreateSchemaAsync_ReturnsSchemaForType()
+    {
+        IAsyncApiSchema? schema = null;
+        using var host = await CreateTestHostAsync(options =>
+        {
+            options.AddOperationTransformer(async (operation, context, cancellationToken) =>
+                schema ??= await context.GetOrCreateSchemaAsync(typeof(SchemaProbe), cancellationToken));
+        });
+
+        await GenerateDocumentAsync(host);
+
+        schema.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task SchemaTransformer_GetOrCreateSchemaAsync_ReturnsSchemaWithProperties()
+    {
+        AsyncApiJsonSchema? schema = null;
+        // Set before awaiting: creating the probe's schema runs this transformer again.
+        var requested = false;
+        using var host = await CreateTestHostAsync(options =>
+        {
+            options.AddSchemaTransformer(async (target, context, cancellationToken) =>
+            {
+                if (!requested)
+                {
+                    requested = true;
+                    schema = await context.GetOrCreateSchemaAsync(typeof(SchemaProbe), cancellationToken);
+                }
+            });
+        });
+
+        await GenerateDocumentAsync(host);
+
+        schema.ShouldNotBeNull().Properties.ShouldContainKey("name");
+    }
+
+    private sealed record SchemaProbe(string Name);
 
     private sealed class RecordingOperationTransformer : IAsyncApiOperationTransformer
     {

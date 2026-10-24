@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
@@ -10,10 +9,6 @@ using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Schemas;
 using ByteBard.AsyncAPI.Models;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Routing.Constraints;
 using Shouldly;
 using Xunit;
 
@@ -21,7 +16,7 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Unit;
 
 /// <summary>
 /// Unit tests for the <see cref="JsonNodeSchemaExtensions"/> mappers that translate validation attributes,
-/// route constraints, parameter metadata, default values and polymorphism options into JSON Schema keywords.
+/// default values and polymorphism options into JSON Schema keywords.
 /// </summary>
 public class JsonNodeSchemaMappingTests
 {
@@ -198,89 +193,6 @@ public class JsonNodeSchemaMappingTests
     }
 
     [Fact]
-    public void ApplyRouteConstraints_NumericBounds_SetMinimumMaximumAndLengths()
-    {
-        // Arrange
-        var minMax = new JsonObject();
-        var range = new JsonObject();
-        var lengths = new JsonObject();
-        var length = new JsonObject();
-
-        // Act
-        minMax.ApplyRouteConstraints([new MinRouteConstraint(1), new MaxRouteConstraint(9)]);
-        range.ApplyRouteConstraints([new RangeRouteConstraint(2, 8)]);
-        lengths.ApplyRouteConstraints([new MinLengthRouteConstraint(3), new MaxLengthRouteConstraint(6)]);
-        length.ApplyRouteConstraints([new LengthRouteConstraint(4, 5)]);
-
-        // Assert
-        minMax[AsyncApiJsonSchemaKeywords.MinimumKeyword]!.GetValue<long>().ShouldBe(1);
-        minMax[AsyncApiJsonSchemaKeywords.MaximumKeyword]!.GetValue<long>().ShouldBe(9);
-        range[AsyncApiJsonSchemaKeywords.MinimumKeyword]!.GetValue<long>().ShouldBe(2);
-        range[AsyncApiJsonSchemaKeywords.MaximumKeyword]!.GetValue<long>().ShouldBe(8);
-        lengths[AsyncApiJsonSchemaKeywords.MinLengthKeyword]!.GetValue<int>().ShouldBe(3);
-        lengths[AsyncApiJsonSchemaKeywords.MaxLengthKeyword]!.GetValue<int>().ShouldBe(6);
-        length[AsyncApiJsonSchemaKeywords.MinLengthKeyword]!.GetValue<int>().ShouldBe(4);
-        length[AsyncApiJsonSchemaKeywords.MaxLengthKeyword]!.GetValue<int>().ShouldBe(5);
-    }
-
-    public static TheoryData<Microsoft.AspNetCore.Routing.IRouteConstraint, string, string?> TypeConstraints => new()
-    {
-        { new FloatRouteConstraint(), "Number", "float" },
-        { new DecimalRouteConstraint(), "Number", "double" },
-        { new DoubleRouteConstraint(), "Number", "double" },
-        { new LongRouteConstraint(), "Integer", "int64" },
-        { new IntRouteConstraint(), "Integer", "int32" },
-        { new GuidRouteConstraint(), "String", "uuid" },
-        { new StringRouteConstraint("fixed"), "String", null },
-        { new BoolRouteConstraint(), "Boolean", null },
-        { new AlphaRouteConstraint(), "String", null },
-        { new DateTimeRouteConstraint(), "String", "date-time" },
-    };
-
-    [Theory]
-    [MemberData(nameof(TypeConstraints))]
-    public void ApplyRouteConstraints_TypeConstraint_SetsTypeAndFormat(Microsoft.AspNetCore.Routing.IRouteConstraint constraint, string expectedType, string? expectedFormat)
-    {
-        // Arrange
-        var schema = new JsonObject { [AsyncApiJsonSchemaKeywords.FormatKeyword] = "stale" };
-
-        // Act
-        schema.ApplyRouteConstraints([constraint]);
-
-        // Assert
-        schema[AsyncApiJsonSchemaKeywords.TypeKeyword]!.GetValue<string>().ShouldBe(expectedType);
-        (schema[AsyncApiJsonSchemaKeywords.FormatKeyword]?.GetValue<string>()).ShouldBe(expectedFormat);
-    }
-
-    [Fact]
-    public void ApplyRouteConstraints_Regex_SetsStringPatternAndClearsFormat()
-    {
-        // Arrange
-        var schema = new JsonObject { [AsyncApiJsonSchemaKeywords.FormatKeyword] = "int32" };
-
-        // Act
-        schema.ApplyRouteConstraints([new RegexRouteConstraint("^\\d{3}$")]);
-
-        // Assert
-        schema[AsyncApiJsonSchemaKeywords.TypeKeyword]!.GetValue<string>().ShouldBe("String");
-        schema[AsyncApiJsonSchemaKeywords.FormatKeyword].ShouldBeNull();
-        schema[AsyncApiJsonSchemaKeywords.PatternKeyword]!.GetValue<string>().ShouldContain("\\d{3}");
-    }
-
-    [Fact]
-    public void ApplyRouteConstraints_MultipleConstraints_FirstDeclaredWins()
-    {
-        // Arrange
-        var schema = new JsonObject();
-
-        // Act: routing short-circuits on the first violated constraint, so it is applied last.
-        schema.ApplyRouteConstraints([new IntRouteConstraint(), new LongRouteConstraint()]);
-
-        // Assert
-        schema[AsyncApiJsonSchemaKeywords.FormatKeyword]!.GetValue<string>().ShouldBe("int32");
-    }
-
-    [Fact]
     public void ApplyDefaultValue_NullTypeInfo_DoesNothing()
     {
         // Arrange
@@ -351,107 +263,6 @@ public class JsonNodeSchemaMappingTests
         emptyId.WillBeComponentized().ShouldBeFalse();
         numericId.WillBeComponentized().ShouldBeFalse();
         new JsonObject().WillBeComponentized().ShouldBeFalse();
-    }
-
-    private static void ParameterWithDefault(int page = 3) { }
-
-    private static void ParameterWithDefaultValueAttribute([DefaultValue(7)][Range(1, 9)] int size) { }
-
-    private static ParameterInfo GetParameter(string methodName) =>
-        typeof(JsonNodeSchemaMappingTests)
-            .GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Static)!
-            .GetParameters()[0];
-
-    private static ApiParameterDescription DescribeParameter(ParameterInfo parameterInfo, BindingSource source) => new()
-    {
-        Name = parameterInfo.Name!,
-        Source = source,
-        ParameterDescriptor = new ControllerParameterDescriptor { Name = parameterInfo.Name!, ParameterInfo = parameterInfo },
-    };
-
-    [Fact]
-    public void ApplyParameterInfo_ParameterDefaultValue_SetsDefault()
-    {
-        // Arrange
-        var schema = new JsonObject { [AsyncApiJsonSchemaKeywords.TypeKeyword] = "integer" };
-        var description = DescribeParameter(GetParameter(nameof(ParameterWithDefault)), BindingSource.Query);
-
-        // Act
-        schema.ApplyParameterInfo(description, JsonSerializerOptions.Default.GetTypeInfo(typeof(int)));
-
-        // Assert
-        schema[AsyncApiJsonSchemaKeywords.DefaultKeyword]!.GetValue<int>().ShouldBe(3);
-    }
-
-    [Fact]
-    public void ApplyParameterInfo_DefaultValueAndValidationAttributes_AreApplied()
-    {
-        // Arrange
-        var schema = new JsonObject { [AsyncApiJsonSchemaKeywords.TypeKeyword] = "integer" };
-        var description = DescribeParameter(GetParameter(nameof(ParameterWithDefaultValueAttribute)), BindingSource.Query);
-
-        // Act
-        schema.ApplyParameterInfo(description, JsonSerializerOptions.Default.GetTypeInfo(typeof(int)));
-
-        // Assert
-        schema[AsyncApiJsonSchemaKeywords.DefaultKeyword]!.GetValue<int>().ShouldBe(7);
-        schema[AsyncApiJsonSchemaKeywords.MinimumKeyword]!.GetValue<decimal>().ShouldBe(1m);
-        schema[AsyncApiJsonSchemaKeywords.MaximumKeyword]!.GetValue<decimal>().ShouldBe(9m);
-    }
-
-    [Fact]
-    public void ApplyParameterInfo_RouteConstraints_AreApplied()
-    {
-        // Arrange
-        var schema = new JsonObject();
-        var description = new ApiParameterDescription
-        {
-            Name = "id",
-            Source = BindingSource.Path,
-            RouteInfo = new ApiParameterRouteInfo { Constraints = [new GuidRouteConstraint()] },
-        };
-
-        // Act
-        schema.ApplyParameterInfo(description, jsonTypeInfo: null);
-
-        // Assert
-        schema[AsyncApiJsonSchemaKeywords.FormatKeyword]!.GetValue<string>().ShouldBe("uuid");
-    }
-
-    [Theory]
-    [InlineData("Query", "String")]
-    [InlineData("Header", "String")]
-    [InlineData("Path", "String")]
-    [InlineData("Form", "String")]
-    [InlineData("FormFile", "String")]
-    [InlineData("Body", "String, Null")]
-    public void ApplyParameterInfo_NullableType_DropsNullOnlyForNonBodySources(string sourceName, string expectedType)
-    {
-        // Arrange
-        var source = (BindingSource)typeof(BindingSource).GetField(sourceName)!.GetValue(null)!;
-        var schema = new JsonObject { [AsyncApiJsonSchemaKeywords.TypeKeyword] = "String, Null" };
-        var description = new ApiParameterDescription { Name = "value", Source = source };
-
-        // Act
-        schema.ApplyParameterInfo(description, jsonTypeInfo: null);
-
-        // Assert
-        schema[AsyncApiJsonSchemaKeywords.TypeKeyword]!.GetValue<string>().ShouldBe(expectedType);
-    }
-
-    [Fact]
-    public void ApplyParameterInfo_ModelMetadataDefaultValue_SetsDefault()
-    {
-        // Arrange
-        var schema = new JsonObject();
-        var metadata = new EmptyModelMetadataProvider().GetMetadataForProperty(typeof(QueryArgs), nameof(QueryArgs.PageSize));
-        var description = new ApiParameterDescription { Name = "pageSize", ModelMetadata = metadata };
-
-        // Act
-        schema.ApplyParameterInfo(description, JsonSerializerOptions.Default.GetTypeInfo(typeof(int)));
-
-        // Assert
-        schema[AsyncApiJsonSchemaKeywords.DefaultKeyword]!.GetValue<int>().ShouldBe(25);
     }
 
     private sealed class QueryArgs

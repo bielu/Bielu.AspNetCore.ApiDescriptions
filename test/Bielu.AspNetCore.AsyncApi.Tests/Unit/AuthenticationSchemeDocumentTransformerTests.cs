@@ -211,7 +211,6 @@ public class AuthenticationSchemeDocumentTransformerTests
         IServiceProvider services, string documentName = "test") => new()
         {
             DocumentName = documentName,
-            DescriptionGroups = [],
             ApplicationServices = services,
         };
 
