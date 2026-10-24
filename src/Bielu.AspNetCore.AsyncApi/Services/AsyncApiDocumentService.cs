@@ -587,7 +587,7 @@ internal sealed class AsyncApiDocumentService(
         => JsonSerializer.SerializeToNode(value, _jsonSerializerOptions.GetTypeInfo(value.GetType()));
 
     private void ApplyMessageExamples(AsyncApiMessage message, AsyncApiJsonSchema? payloadSchema, Type payloadType,
-        List<MessageExampleAttribute> exampleAttrs, IServiceProvider scopedServiceProvider)
+        IReadOnlyList<MessageExampleAttribute> exampleAttrs, IServiceProvider scopedServiceProvider)
     {
         var examples = new List<AsyncApiMessageExample>();
 
