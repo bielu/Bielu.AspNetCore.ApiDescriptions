@@ -94,7 +94,7 @@ public class ApiVersioningTests
     }
 
     [Fact]
-    public async Task GetDocumentNames_MinimalApis_ReturnsAllVersionsWithoutEndpointsApiExplorer()
+    public async Task GetDocumentNames_MinimalApis_ReturnsAllVersions()
     {
         // Arrange
         var builder = WebApplication.CreateBuilder();

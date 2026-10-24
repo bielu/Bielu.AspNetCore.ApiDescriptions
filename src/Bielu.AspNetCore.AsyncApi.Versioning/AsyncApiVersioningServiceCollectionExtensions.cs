@@ -31,8 +31,7 @@ public static class AsyncApiVersioningServiceCollectionExtensions
     /// Each API version gets its own document, with that version's <c>info</c> and deprecation flag. The documents
     /// are not filtered by version: each one contains every channel. Use <paramref name="configure"/> to call
     /// <see cref="AsyncApiOptions.AddIncludedChannel(string)"/> per version if a document should only list some of them.
-    /// This method doesn't register the endpoint ApiExplorer; call <c>AddEndpointsApiExplorer()</c> yourself if
-    /// something else in the app needs it.
+    /// The API versions come from Asp.Versioning's <c>AddApiExplorer()</c>, which must be called too.
     /// </remarks>
     public static IServiceCollection AddAsyncApiForApiVersions(this IServiceCollection services, Action<AsyncApiOptions, ApiVersionDescription>? configure = null)
     {
