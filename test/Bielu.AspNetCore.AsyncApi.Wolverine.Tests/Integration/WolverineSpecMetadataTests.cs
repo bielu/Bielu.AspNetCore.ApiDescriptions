@@ -154,7 +154,7 @@ public class WolverineSpecMetadataTests
         document["operations"]![ReceiveOperation]!.AsObject().ContainsKey("security").ShouldBeFalse();
     }
 
-    [Fact(Skip = "ByteBard 4.0.0-beta.20 throws writing 2.x message traits; re-enable once ByteBardOrg/AsyncAPI.NET#57 and #58 ship.")]
+    [Fact]
     public async Task TransformAsync_AsyncApi2Document_WithMetadata_StillGeneratesDocument()
     {
         // Act
