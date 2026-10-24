@@ -14,7 +14,8 @@ namespace Bielu.AspNetCore.AsyncApi.Protobuf;
 /// <remarks>
 /// A document only names a payload's schema, not its .NET type, so this works in two steps. As a schema transformer it
 /// marks the JSON Schema of every <see cref="IMessage"/> type with the message's full name; as a document transformer
-/// it then replaces each payload whose schema carries the mark, and removes the marks.
+/// it then replaces each payload whose schema carries the mark, and removes the marks. A message the
+/// <see cref="ProtoSchemaWriter"/> can't render faithfully keeps its JSON Schema.
 /// </remarks>
 internal sealed class ProtobufPayloadTransformer(ProtobufPayloadOptions options)
     : IAsyncApiSchemaTransformer, IAsyncApiDocumentTransformer
@@ -48,12 +49,13 @@ internal sealed class ProtobufPayloadTransformer(ProtobufPayloadOptions options)
             if (options.MessageFilter?.Invoke(key) != false
                 && Resolve(document, message.Payload) is { } payload
                 && FullName(payload) is { } fullName
-                && _descriptors.TryGetValue(fullName, out var descriptor))
+                && _descriptors.TryGetValue(fullName, out var descriptor)
+                && ProtoSchemaWriter.TryWrite(descriptor, out var source))
             {
                 message.Payload = new AsyncApiMultiFormatSchema
                 {
                     SchemaFormat = SchemaFormatPrefix + ProtoSchemaWriter.SyntaxVersion(descriptor),
-                    Schema = new ProtobufSchema(ProtoSchemaWriter.Write(descriptor)),
+                    Schema = new ProtobufSchema(source),
                 };
             }
         }

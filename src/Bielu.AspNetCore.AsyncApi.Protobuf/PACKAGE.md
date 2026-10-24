@@ -5,7 +5,8 @@ classes `Grpc.Tools` generates, by their `.proto` source, declared with
 `schemaFormat: application/vnd.google.protobuf;version=3`.
 
 The source is rendered from the generated message descriptor, so field numbers, types, labels, maps,
-oneofs, nested types, enums and reserved ranges are the real wire contract, not a guess from JSON Schema.
+oneofs, nested types, enums, reserved ranges and proto2 defaults are the real wire contract, not a guess
+from JSON Schema. Messages from editions files keep their JSON Schema.
 
 ## Installation
 

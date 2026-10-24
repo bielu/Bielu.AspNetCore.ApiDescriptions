@@ -31,7 +31,7 @@ API catalog and [CloudEvents](https://cloudevents.io/) messages.
 | API Catalog (RFC 9727) | RFC 9727, as an RFC 9264 Linkset | `Bielu.AspNetCore.ApiCatalog` | not read |
 | CloudEvents | 1.0 (binary and structured mode) | `Bielu.AspNetCore.AsyncApi.CloudEvents`, as AsyncAPI message headers or payload | not read |
 | Apache Avro | 1.9.0 declared (`schemaFormat`), configurable | `Bielu.AspNetCore.AsyncApi.Avro`, as AsyncAPI message payloads | not read |
-| Protocol Buffers | proto2, proto3, editions (`schemaFormat` version 2 or 3) | `Bielu.AspNetCore.AsyncApi.Protobuf`, as `.proto` payload sources | not read |
+| Protocol Buffers | proto2, proto3 (`schemaFormat` version 2 or 3); editions files keep their JSON Schema | `Bielu.AspNetCore.AsyncApi.Protobuf`, as `.proto` payload sources | not read |
 
 The runtime libraries target **.NET 10**. See [Supported .NET versions](https://apidescriptions.bielu.pl/articles/supported-dotnet-versions.html)
 for the support matrix and the policy for adding and removing targets.

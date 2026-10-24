@@ -2,6 +2,7 @@
 using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Legacy;
+using Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Modern;
 using Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Orders;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Microsoft.AspNetCore.Builder;
@@ -26,6 +27,13 @@ public sealed class ProtobufFixtureChannels
     [Message(typeof(LegacyEvent), MessageId = "legacyEvent")]
     [SendOperation(typeof(LegacyEvent), OperationId = "legacyEventOperation")]
     public void LegacyEventEvent()
+    {
+    }
+
+    [Channel("modern")]
+    [Message(typeof(ModernEvent), MessageId = "modernEvent")]
+    [SendOperation(typeof(ModernEvent), OperationId = "modernEventOperation")]
+    public void ModernEventEvent()
     {
     }
 

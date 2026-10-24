@@ -39,6 +39,16 @@ public class ProtobufPayloadDocumentTests
     }
 
     [Fact]
+    public async Task AddProtobufPayloads_LeavesPayloadsItCannotRenderAsJsonSchema()
+    {
+        // Act
+        using var document = await ProtobufTestApp.GetDocumentAsync(options => options.AddProtobufPayloads());
+
+        // Assert
+        Message(document, "modernEvent").GetProperty("payload").TryGetProperty("$ref", out _).ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task AddProtobufPayloads_RemovesItsMarksFromTheJsonSchemas()
     {
         // Act

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package test.inventory;
+
+option csharp_namespace = "Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Inventory";
+
+message Item {
+  message Batch {
+    int32 number = 1;
+  }
+
+  int32 count = 1;
+}

@@ -27,13 +27,21 @@ A Protocol Buffers message travels by field number, and the generated class's JS
 source is rendered from the message's descriptor, which `Grpc.Tools` compiles into the generated code, so it is the
 same contract the code serializes:
 
-- field numbers, scalar types (`sint64`, `fixed32`, …), and the `repeated`, `optional` and (proto2) `required` labels;
+- field numbers, scalar types (`sint64`, `fixed32`, …), the `repeated`, `optional` and (proto2) `required` labels, and
+  (proto2) `[default = …]` values;
 - `map<K, V>` fields, `oneof`s, nested messages and enums;
 - `reserved` field numbers and names;
-- `proto2`, `proto3` or editions syntax, with the matching `version=2` or `version=3`.
+- `proto2` or `proto3` syntax, with the matching `version=2` or `version=3`.
 
 Payloads of other types keep their JSON Schema. JSON Schema can't be turned into a `.proto` safely, because the field
 numbers would have to be invented.
+
+Two kinds of Protocol Buffers message keep their JSON Schema too, since one file can't describe them faithfully:
+
+- a message from an editions file. AsyncAPI's Protobuf schema format has only `version=2` and `version=3`, and its
+  parser doesn't read editions;
+- a message that uses a type from a file of another syntax, such as a proto3 message with a proto2 field type. Inlined
+  into the payload's file, that type's labels and defaults would mean something else.
 
 ## The rendered file
 
@@ -49,7 +57,8 @@ single file:
 
 A type from another package is declared under the payload's package, so its references resolve within the file. The
 wire format doesn't change, since Protocol Buffers encodes fields by number, not by type name. If two used types from
-different packages share a name, only the first one is declared.
+different packages share a name, the first one found keeps it and the other is declared under its full name with
+underscores for dots, so `test.inventory.Item` becomes `test_inventory_Item`. Each keeps its own fields.
 
 ## Options
 
