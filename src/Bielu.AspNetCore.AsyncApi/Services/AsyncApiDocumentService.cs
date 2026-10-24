@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Helpers;
 using Bielu.AspNetCore.AsyncApi.Models.Metadata;
@@ -27,7 +27,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using static Bielu.AspNetCore.AsyncApi.Helpers.AttributeMetadataMapper;
-using AttrOperationType = Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationType;
+using AttrOperationType = Bielu.AspNetCore.AsyncApi.Attributes.OperationType;
 
 namespace Bielu.AspNetCore.AsyncApi.Services;
 

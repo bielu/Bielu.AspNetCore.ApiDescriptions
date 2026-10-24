@@ -17,7 +17,7 @@ public class AsyncApiAttributeAnalyzerTests
         var references = new[]
         {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Bielu.AspNetCore.AsyncApi.Attributes.AsyncApiAttribute).Assembly.Location),
             MetadataReference.CreateFromFile(System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new System.Reflection.AssemblyName("System.Runtime")).Location),
             MetadataReference.CreateFromFile(System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new System.Reflection.AssemblyName("netstandard")).Location),
         };
@@ -32,7 +32,7 @@ public class AsyncApiAttributeAnalyzerTests
     public async Task BASYNC001_MissingAsyncApiAttribute_OnType_ReportsWarning()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [Channel(""test"")]
 public class TestChannel
@@ -47,7 +47,7 @@ public class TestChannel
     public async Task BASYNC001_WithAsyncApiAttribute_NoWarning()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi]
 [Channel(""test"")]
@@ -63,7 +63,7 @@ public class TestChannel
     public async Task BASYNC002_MissingChannelAttribute_ReportsWarning()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi]
 public class TestHub
@@ -80,7 +80,7 @@ public class TestHub
     public async Task BASYNC003_DuplicateName_ReportsWarning()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi]
 public class TestHub
@@ -99,7 +99,7 @@ public class TestHub
     public async Task BASYNC005_InvalidPayloadType_ReportsWarning()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using System;
 
 [AsyncApi]
@@ -118,7 +118,7 @@ public class TestHub
     public async Task BASYNC004_UnusedDocumentName_ReportsInfo()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 
 [AsyncApi(""unused"")]
@@ -150,7 +150,7 @@ namespace Bielu.AspNetCore.AsyncApi.Extensions
     public async Task BASYNC006_InvalidJsonExample_ReportsError()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi]
 public class TestHub
@@ -168,7 +168,7 @@ public class TestHub
     public async Task BASYNC007_ProviderMissingConstructor_ReportsWarning()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using System;
 
 public class MyProvider : IAsyncApiMessageExampleProvider
@@ -192,7 +192,7 @@ public class TestHub
     public async Task BASYNC008_DiscouragedCharacters_ReportsWarning()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi]
 public class TestHub
@@ -211,7 +211,7 @@ public class TestHub
     public async Task BASYNC009_MissingDocumentation_ReportsInfo()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi]
 public class TestHub
@@ -231,7 +231,7 @@ public class TestHub
     public async Task BASYNC009_AsyncApiAttribute_NoWarning()
     {
         var testCode = @"
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi]
 public class TestHub

@@ -1,4 +1,4 @@
-﻿using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿using Bielu.AspNetCore.AsyncApi.Attributes;
 using ByteBard.AsyncAPI.Models;
 
 namespace Bielu.AspNetCore.AsyncApi.Helpers;

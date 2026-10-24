@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+namespace Bielu.AspNetCore.AsyncApi.Attributes;
 
 /// <summary>
 /// Adds an example to an AsyncAPI message.

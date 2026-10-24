@@ -1,4 +1,4 @@
-﻿namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿namespace Bielu.AspNetCore.AsyncApi.Attributes;
 
 /// <summary>
 /// Marks a class or interface as containing asyncapi channels.

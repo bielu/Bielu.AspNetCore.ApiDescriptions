@@ -5,7 +5,6 @@ using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Event
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Models;
 using Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory.Services;
 using Bielu.AspNetCore.AsyncApi.Attributes;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bielu.AspNetCore.AsyncApi.Aspire.InventoryService.Features.Inventory;
