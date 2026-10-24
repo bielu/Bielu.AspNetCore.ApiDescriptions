@@ -158,13 +158,25 @@ jobs:
       id-token: write
     with:
       generate-schema: false
+      # Pushed by publishNugetStable instead: nuget.org trusted publishing only accepts a token minted
+      # by a job declared in this repository's workflow, not inside the template's.
+      push-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
       artifact-name: npm-scalar-signalr
-    secrets:
-      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+
+  # Pushes the NuGet package releaseStable built. The nuget.org trusted publishing policy references
+  # this repo + this workflow file.
+  publishNugetStable:
+    needs: releaseStable
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: bielu/bielu.GithubActions.Templates/.github/actions/publish-nuget@main
 
   # Version PR merged: publish the second npm package (@bielu/scalar-grpc); NuGet is published by
-  # releaseStable above (publish-nuget: false avoids a double publish).
+  # publishNugetStable above (publish-nuget: false avoids a double publish).
   releaseStableGrpcNpm:
     needs: [version, releaseStable]
     if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
@@ -298,10 +310,20 @@ jobs:
       nuget-version-override: ${{ needs.betaVersions.outputs.nuget }}
       npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-signalr'] }}
       generate-schema: false
+      push-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
       artifact-name: npm-scalar-signalr
-    secrets:
-      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+
+  # Pushes the beta NuGet package releaseBeta built (see publishNugetStable).
+  publishNugetBeta:
+    needs: releaseBeta
+    if: always() && !cancelled() && needs.releaseBeta.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: bielu/bielu.GithubActions.Templates/.github/actions/publish-nuget@main
 
   # In-flight prereleases for the second npm package (@bielu/scalar-grpc).
   releaseBetaGrpcNpm:
@@ -349,8 +371,8 @@ jobs:
   # which echoes the betaVersions override) and the pending — not yet versioned — changesets as the
   # release notes.
   tagBeta:
-    needs: releaseBeta
-    if: always() && !cancelled() && needs.releaseBeta.result == 'success'
+    needs: [releaseBeta, publishNugetBeta]
+    if: always() && !cancelled() && needs.publishNugetBeta.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -386,9 +408,18 @@ jobs:
       id-token: write
     with:
       generate-schema: false
+      push-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
-    secrets:
-      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+
+  # Manual GitHub Release: push the NuGet package `release` built (see publishNugetStable).
+  publishNugetRelease:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: bielu/bielu.GithubActions.Templates/.github/actions/publish-nuget@main
 
   # Manual GitHub Release: the second npm package (@bielu/scalar-grpc).
   releaseGrpcNpm:
