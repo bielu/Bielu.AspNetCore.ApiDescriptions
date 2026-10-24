@@ -147,6 +147,42 @@ jobs:
   # prereleases; after `changeset pre exit` they become stable. Both publish steps are idempotent
   # (NuGet --skip-duplicate; npm skips already-published versions), so re-running on later
   # non-changeset pushes is a safe no-op.
+  #
+  # NuGet is built by the template but pushed by publishNugetStable below rather than by release.yml:
+  # nuget.org trusted publishing only accepts an OIDC token whose job_workflow_ref is a workflow in
+  # this repository, and inside release.yml it points at bielu.GithubActions.Templates.
+  buildNugetStable:
+    needs: version
+    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/buildNugetPackageNoSchema.yml@main
+
+  publishNugetStable:
+    needs: buildNugetStable
+    runs-on: ubuntu-latest
+    # The nuget.org trusted publishing policy references this repo + this workflow file.
+    permissions:
+      contents: read
+      id-token: write
+    steps: &publish-nuget-steps
+      - uses: actions/download-artifact@v4
+        with:
+          name: Nuget Build Output
+          path: nuget
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+      # Exchanges the GitHub OIDC token for a short-lived nuget.org API key.
+      - name: NuGet login (trusted publishing)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: bielu
+      # --skip-duplicate keeps re-runs and already-published versions a no-op.
+      - name: Publish NuGet packages
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: dotnet nuget push "nuget/**/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
   releaseStable:
     needs: version
     if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
@@ -157,14 +193,12 @@ jobs:
       contents: read
       id-token: write
     with:
-      generate-schema: false
+      publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
       artifact-name: npm-scalar-signalr
-    secrets:
-      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
 
   # Version PR merged: publish the second npm package (@bielu/scalar-grpc); NuGet is published by
-  # releaseStable above (publish-nuget: false avoids a double publish).
+  # publishNugetStable above.
   releaseStableGrpcNpm:
     needs: [version, releaseStable]
     if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
@@ -281,7 +315,27 @@ jobs:
 
   # In-flight prereleases: publish a beta of main while a release is still pending (changesets not yet
   # merged), and on manual dispatch. Skipped on the Version-PR-merge commit so it does not shadow the
-  # stable release.
+  # stable release. NuGet is pushed from this repository for the reason given above releaseStable.
+  buildNugetBeta:
+    needs: [version, betaVersions]
+    if: >-
+      always() && !cancelled() && needs.betaVersions.result == 'success'
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/buildNugetPackageNoSchema.yml@main
+    # No `suffix:` here on purpose — the override already carries the `-beta.<stamp>` part, and a
+    # suffix would take precedence over it in the build template.
+    with:
+      version: ${{ needs.betaVersions.outputs.nuget }}
+
+  publishNugetBeta:
+    needs: buildNugetBeta
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps: *publish-nuget-steps
+
   releaseBeta:
     needs: [version, betaVersions]
     if: >-
@@ -292,16 +346,11 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    # No `suffix:` here on purpose — the overrides below already carry the `-beta.<stamp>` part, and
-    # a suffix would take precedence over them in the build templates.
     with:
-      nuget-version-override: ${{ needs.betaVersions.outputs.nuget }}
       npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-signalr'] }}
-      generate-schema: false
+      publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
       artifact-name: npm-scalar-signalr
-    secrets:
-      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
 
   # In-flight prereleases for the second npm package (@bielu/scalar-grpc).
   releaseBetaGrpcNpm:
@@ -345,12 +394,12 @@ jobs:
       artifact-name: npm-scalar-broker
 
   # Record-keeping for interim betas: surface each published beta build as a GitHub prerelease,
-  # using the exact `-beta.<stamp>` version that was packed (release.yml's nuget-version output,
+  # using the exact `-beta.<stamp>` version that was packed (the build template's version output,
   # which echoes the betaVersions override) and the pending — not yet versioned — changesets as the
   # release notes.
   tagBeta:
-    needs: releaseBeta
-    if: always() && !cancelled() && needs.releaseBeta.result == 'success'
+    needs: [buildNugetBeta, publishNugetBeta]
+    if: always() && !cancelled() && needs.publishNugetBeta.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -362,7 +411,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ needs.releaseBeta.outputs.nuget-version }}"
+          VERSION="${{ needs.buildNugetBeta.outputs.version }}"
           if [ -z "$VERSION" ]; then
             echo "No NuGet version output from the beta build; skipping."
             exit 0
@@ -378,6 +427,18 @@ jobs:
 
   # Manual GitHub Release (escape hatch): build and publish stable packages. Independent of the
   # changeset-driven path above and idempotent, so the two cannot double-publish.
+  buildNugetRelease:
+    if: github.event_name == 'release'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/buildNugetPackageNoSchema.yml@main
+
+  publishNugetRelease:
+    needs: buildNugetRelease
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps: *publish-nuget-steps
+
   release:
     if: github.event_name == 'release'
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
@@ -385,10 +446,8 @@ jobs:
       contents: read
       id-token: write
     with:
-      generate-schema: false
+      publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
-    secrets:
-      NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
 
   # Manual GitHub Release: the second npm package (@bielu/scalar-grpc).
   releaseGrpcNpm:
