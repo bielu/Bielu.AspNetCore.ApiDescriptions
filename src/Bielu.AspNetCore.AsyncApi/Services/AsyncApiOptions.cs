@@ -420,7 +420,7 @@ public sealed class AsyncApiOptions
     /// 1.0.0 and is not any more — build the contents up instead, or call
     /// <see cref="AddOperationBinding"/>.
     /// </remarks>
-    public Dictionary<string, IList<IOperationBinding>> OperationBindings { get; } = new();
+    public IDictionary<string, IList<IOperationBinding>> OperationBindings { get; } = new Dictionary<string, IList<IOperationBinding>>();
 
     /// <summary>
     /// Channel bindings collection, keyed by channel name.
@@ -431,7 +431,7 @@ public sealed class AsyncApiOptions
     /// 1.0.0 and is not any more — build the contents up instead, or call
     /// <see cref="AddChannelBinding"/>.
     /// </remarks>
-    public Dictionary<string, IList<IChannelBinding>> ChannelBindings { get; } = new();
+    public IDictionary<string, IList<IChannelBinding>> ChannelBindings { get; } = new Dictionary<string, IList<IChannelBinding>>();
 
     /// <summary>
     /// Message bindings collection, keyed by the name a <c>[Message(BindingsRef = "...")]</c> refers to.
@@ -440,7 +440,7 @@ public sealed class AsyncApiOptions
     /// The dictionary's contents can be added to, replaced and cleared; the dictionary
     /// <em>instance</em> cannot be replaced. Build the contents up, or call <see cref="AddMessageBinding"/>.
     /// </remarks>
-    public Dictionary<string, IList<IMessageBinding>> MessageBindings { get; } = new();
+    public IDictionary<string, IList<IMessageBinding>> MessageBindings { get; } = new Dictionary<string, IList<IMessageBinding>>();
 
     /// <summary>
     /// Server bindings collection, keyed by server name.
@@ -449,7 +449,7 @@ public sealed class AsyncApiOptions
     /// The dictionary's contents can be added to, replaced and cleared; the dictionary
     /// <em>instance</em> cannot be replaced. Build the contents up, or call <see cref="AddServerBinding"/>.
     /// </remarks>
-    public Dictionary<string, IList<IServerBinding>> ServerBindings { get; } = new();
+    public IDictionary<string, IList<IServerBinding>> ServerBindings { get; } = new Dictionary<string, IList<IServerBinding>>();
 
     /// <summary>
     /// The route pattern the document is served from. Set by <c>MapAsyncApi(pattern)</c>; defaults to
@@ -463,7 +463,7 @@ public sealed class AsyncApiOptions
     /// generated document. Useful when multiple hubs share an assembly and you need each AsyncAPI
     /// document to expose only its own hub. Comparison is case-insensitive.
     /// </summary>
-    public HashSet<string> IncludeOnlyChannels { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public ISet<string> IncludeOnlyChannels { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Adds a channel name to <see cref="IncludeOnlyChannels"/>, sanitizing it the same way channel

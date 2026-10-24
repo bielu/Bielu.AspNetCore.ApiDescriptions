@@ -6,14 +6,14 @@ namespace Bielu.AspNetCore.AsyncApi.Models.Metadata;
 public record AsyncApiTypeMetadata(
     Type Type,
     AsyncApiAttribute AsyncApi,
-    List<AsyncApiMemberMetadata> Members
+    IReadOnlyList<AsyncApiMemberMetadata> Members
 );
 
 public record AsyncApiMemberMetadata(
     MemberInfo Member,
     ChannelAttribute? Channel,
-    List<ChannelParameterAttribute> Parameters,
-    List<MessageAttribute> Messages,
-    List<OperationAttribute> Operations,
-    List<MessageExampleAttribute> MessageExamples
+    IReadOnlyList<ChannelParameterAttribute> Parameters,
+    IReadOnlyList<MessageAttribute> Messages,
+    IReadOnlyList<OperationAttribute> Operations,
+    IReadOnlyList<MessageExampleAttribute> MessageExamples
 );
