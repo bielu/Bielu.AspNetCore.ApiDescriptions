@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry;
+namespace Bielu.AspNetCore.XRegistry;
 
 /// <summary>Registers the xRegistry's options.</summary>
 public static class XRegistryServiceCollectionExtensions

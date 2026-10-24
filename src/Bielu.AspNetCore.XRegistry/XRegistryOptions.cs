@@ -1,4 +1,4 @@
-﻿namespace Bielu.AspNetCore.AsyncApi.XRegistry;
+﻿namespace Bielu.AspNetCore.XRegistry;
 
 /// <summary>Options for the xRegistry served by <c>MapXRegistry()</c>.</summary>
 /// <example>

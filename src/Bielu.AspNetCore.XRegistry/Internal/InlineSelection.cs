@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Primitives;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry.Internal;
+namespace Bielu.AspNetCore.XRegistry.Internal;
 
 /// <summary>
 /// The <c>?inline</c> flag of a request: which nested collections and large attributes to include, as dot-separated

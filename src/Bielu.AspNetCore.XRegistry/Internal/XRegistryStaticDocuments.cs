@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry.Internal;
+namespace Bielu.AspNetCore.XRegistry.Internal;
 
 /// <summary>The registry's capabilities and model, which do not depend on its content.</summary>
 internal static class XRegistryStaticDocuments

@@ -1,4 +1,4 @@
-# Bielu.AspNetCore.AsyncApi.XRegistry
+# Bielu.AspNetCore.XRegistry
 
 Serves the messages and payload schemas of your app's AsyncAPI documents as a read-only
 [CNCF xRegistry](https://xregistry.io/) (1.0-rc4): a message definitions registry and a schema registry
@@ -7,7 +7,7 @@ with the standard HTTP API, so registry-aware tooling can discover them.
 ## Installation
 
 ```sh
-dotnet add package Bielu.AspNetCore.AsyncApi.XRegistry
+dotnet add package Bielu.AspNetCore.XRegistry
 ```
 
 ## Usage

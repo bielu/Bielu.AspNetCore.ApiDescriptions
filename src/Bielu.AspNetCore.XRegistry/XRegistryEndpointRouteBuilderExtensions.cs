@@ -1,11 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using Bielu.AspNetCore.AsyncApi.XRegistry.Internal;
+using Bielu.AspNetCore.XRegistry.Internal;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry;
+namespace Bielu.AspNetCore.XRegistry;
 
 /// <summary>xRegistry methods for <see cref="IEndpointRouteBuilder"/>.</summary>
 public static class XRegistryEndpointRouteBuilderExtensions

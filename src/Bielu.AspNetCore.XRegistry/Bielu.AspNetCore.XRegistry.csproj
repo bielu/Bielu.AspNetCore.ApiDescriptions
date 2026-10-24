@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
-        <RootNamespace>Bielu.AspNetCore.AsyncApi.XRegistry</RootNamespace>
+        <RootNamespace>Bielu.AspNetCore.XRegistry</RootNamespace>
         <IsAotCompatible>true</IsAotCompatible>
         <Description>Serves the messages and payload schemas of an app's AsyncAPI documents as a read-only CNCF xRegistry (1.0-rc4): a message definitions registry and a schema registry, with the standard HTTP API, so registry-aware tooling can discover them.</Description>
         <PackageTags>xregistry;cncf;cloudevents;schema-registry;message-registry;asyncapi;aspnetcore</PackageTags>
@@ -17,7 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.XRegistry.Tests" />
+        <InternalsVisibleTo Include="Bielu.AspNetCore.XRegistry.Tests" />
     </ItemGroup>
 
 </Project>

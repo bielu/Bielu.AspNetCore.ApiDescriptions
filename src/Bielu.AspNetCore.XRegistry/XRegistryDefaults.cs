@@ -1,4 +1,4 @@
-﻿namespace Bielu.AspNetCore.AsyncApi.XRegistry;
+﻿namespace Bielu.AspNetCore.XRegistry;
 
 /// <summary>Default values for the xRegistry.</summary>
 public static class XRegistryDefaults

@@ -1,12 +1,12 @@
 # xRegistry
 
-`Bielu.AspNetCore.AsyncApi.XRegistry` serves the messages and payload schemas of an app's AsyncAPI documents as a
+`Bielu.AspNetCore.XRegistry` serves the messages and payload schemas of an app's AsyncAPI documents as a
 read-only [CNCF xRegistry](https://xregistry.io/) (specification 1.0-rc4). xRegistry is the CloudEvents project's
 standard API for message definition registries and schema registries. Registry-aware tooling can browse an app's
 messages and fetch its schemas without knowing anything about AsyncAPI.
 
 ```sh
-dotnet add package Bielu.AspNetCore.AsyncApi.XRegistry
+dotnet add package Bielu.AspNetCore.XRegistry
 ```
 
 ```csharp

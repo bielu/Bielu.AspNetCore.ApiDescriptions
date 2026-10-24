@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.XRegistry\Bielu.AspNetCore.AsyncApi.XRegistry.csproj" />
+    <ProjectReference Include="..\..\src\Bielu.AspNetCore.XRegistry\Bielu.AspNetCore.XRegistry.csproj" />
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
   </ItemGroup>
 

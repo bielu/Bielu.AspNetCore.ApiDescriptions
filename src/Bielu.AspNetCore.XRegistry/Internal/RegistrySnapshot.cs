@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Nodes;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry.Internal;
+namespace Bielu.AspNetCore.XRegistry.Internal;
 
 /// <summary>The registry's content at one point in time: a message group and a schema group per AsyncAPI document.</summary>
 /// <param name="Groups">The groups, one per AsyncAPI document.</param>

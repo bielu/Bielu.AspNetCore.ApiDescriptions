@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
-using static Bielu.AspNetCore.AsyncApi.XRegistry.Internal.XRegistryEntityWriter;
+using static Bielu.AspNetCore.XRegistry.Internal.XRegistryEntityWriter;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry.Internal;
+namespace Bielu.AspNetCore.XRegistry.Internal;
 
 /// <summary>Answers the read-only xRegistry HTTP API: the entity, collection, meta and Version reads.</summary>
 internal static class XRegistryRequestHandler

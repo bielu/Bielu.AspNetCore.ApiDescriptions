@@ -32,7 +32,7 @@ API catalog and [CloudEvents](https://cloudevents.io/) messages.
 | CloudEvents | 1.0 (binary and structured mode) | `Bielu.AspNetCore.AsyncApi.CloudEvents`, as AsyncAPI message headers or payload | not read |
 | Apache Avro | 1.9.0 declared (`schemaFormat`), configurable | `Bielu.AspNetCore.AsyncApi.Avro`, as AsyncAPI message payloads | not read |
 | Protocol Buffers | proto2, proto3 (`schemaFormat` version 2 or 3); editions files keep their JSON Schema | `Bielu.AspNetCore.AsyncApi.Protobuf`, as `.proto` payload sources | not read |
-| xRegistry | 1.0-rc4 (message and schema registries; read-only) | `Bielu.AspNetCore.AsyncApi.XRegistry`, served from the AsyncAPI documents | not read |
+| xRegistry | 1.0-rc4 (message and schema registries; read-only) | `Bielu.AspNetCore.XRegistry`, served from the AsyncAPI documents | not read |
 
 The runtime libraries target **.NET 10**. See [Supported .NET versions](https://apidescriptions.bielu.pl/articles/supported-dotnet-versions.html)
 for the support matrix and the policy for adding and removing targets.
@@ -135,7 +135,7 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 | [`Bielu.AspNetCore.AsyncApi.CloudEvents`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.CloudEvents/) | Describes messages as CloudEvents 1.0 events |
 | [`Bielu.AspNetCore.AsyncApi.Avro`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Avro/) | `AddAvroPayloads()`: describes message payloads as Apache Avro schemas |
 | [`Bielu.AspNetCore.AsyncApi.Protobuf`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Protobuf/) | `AddProtobufPayloads()`: describes Protocol Buffers payloads by their `.proto` source |
-| [`Bielu.AspNetCore.AsyncApi.XRegistry`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.XRegistry/) | Serves the messages and payload schemas as a read-only CNCF xRegistry (`MapXRegistry`) |
+| [`Bielu.AspNetCore.XRegistry`](https://www.nuget.org/packages/Bielu.AspNetCore.XRegistry/) | Serves the messages and payload schemas as a read-only CNCF xRegistry (`MapXRegistry`) |
 | [`Bielu.AspNetCore.AsyncApi.Overlay`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Overlay/) | `AddOverlay(...)` for AsyncAPI documents |
 | [`Bielu.AspNetCore.AsyncApi.Merger`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Merger/) | Merges several AsyncAPI documents, for example behind a gateway |
 | [`Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR/) | SignalR bindings |

@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry.Tests.Integration;
+namespace Bielu.AspNetCore.XRegistry.Tests.Integration;
 
 public class XRegistryEndpointTests
 {

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry.Internal;
+namespace Bielu.AspNetCore.XRegistry.Internal;
 
 /// <summary>
 /// Serializes the registry's entities in the API view of xRegistry 1.0-rc4: absolute <c>self</c> URLs, collection URLs

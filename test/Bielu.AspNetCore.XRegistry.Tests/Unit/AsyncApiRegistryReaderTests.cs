@@ -1,11 +1,11 @@
 ﻿using System.Text;
 using System.Text.Json.Nodes;
-using Bielu.AspNetCore.AsyncApi.XRegistry.Internal;
+using Bielu.AspNetCore.XRegistry.Internal;
 using Microsoft.Extensions.Primitives;
 using Shouldly;
 using Xunit;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry.Tests.Unit;
+namespace Bielu.AspNetCore.XRegistry.Tests.Unit;
 
 public class AsyncApiRegistryReaderTests
 {

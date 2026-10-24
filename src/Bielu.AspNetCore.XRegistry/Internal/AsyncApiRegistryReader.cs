@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 using Bielu.AspNetCore.ApiDescriptions;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Bielu.AspNetCore.AsyncApi.XRegistry.Internal;
+namespace Bielu.AspNetCore.XRegistry.Internal;
 
 /// <summary>
 /// Reads the app's AsyncAPI documents into a <see cref="RegistrySnapshot"/>. It reads them as JSON, the way build-time
