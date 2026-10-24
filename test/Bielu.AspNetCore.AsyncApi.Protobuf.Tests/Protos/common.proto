@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package test.common;
+
+option csharp_namespace = "Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Common";
+
+message Address {
+  string city = 1;
+}

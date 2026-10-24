@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package test.legacy;
+
+option csharp_namespace = "Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Legacy";
+
+message LegacyEvent {
+  required string id = 1;
+  optional int32 count = 2;
+  repeated string tags = 3;
+}

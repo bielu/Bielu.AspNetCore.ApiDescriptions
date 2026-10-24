@@ -34,6 +34,7 @@
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.Tests/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.Tests/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Overlay.Tests/Bielu.AspNetCore.AsyncApi.Overlay.Tests.csproj" />
+    <Project Path="../test/Bielu.AspNetCore.AsyncApi.Protobuf.Tests/Bielu.AspNetCore.AsyncApi.Protobuf.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Scalar.Aspire.Tests/Bielu.AspNetCore.AsyncApi.Scalar.Aspire.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests/Bielu.AspNetCore.AsyncApi.Scalar.Broker.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Tests/Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Tests.csproj" />
@@ -81,6 +82,7 @@
   <Project Path="Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Merger/Bielu.AspNetCore.AsyncApi.Merger.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Overlay/Bielu.AspNetCore.AsyncApi.Overlay.csproj" />
+  <Project Path="Bielu.AspNetCore.AsyncApi.Protobuf/Bielu.AspNetCore.AsyncApi.Protobuf.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Scalar.Broker/Bielu.AspNetCore.AsyncApi.Scalar.Broker.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka/Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire/Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.csproj" />

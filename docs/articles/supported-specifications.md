@@ -8,6 +8,7 @@ numbers below are the ones the code and the test suites actually cover.
 | [AsyncAPI](https://www.asyncapi.com/docs/reference/specification/v3.1.0) | 3.1.0 (default), 2.6.0 | `Bielu.AspNetCore.AsyncApi` | `Bielu.AspNetCore.AsyncApi.Cli`, `Bielu.AspNetCore.AsyncApi.Merger` |
 | [Arazzo](https://spec.openapis.org/arazzo/latest.html) | 1.0.x, 1.1.x | `Bielu.AspNetCore.Arazzo` (1.1.0 by default, set with `ArazzoOptions.Version`; also written at [build time](build-time-generation.md#arazzo-documents)) | `Bielu.Arazzo`, `Bielu.Arazzo.Readers`, `Bielu.Arazzo.Cli` |
 | [Overlay](https://spec.openapis.org/overlay/latest.html) | 1.0.x, 1.1.x | not generated; applied by `Bielu.Overlay` | `Bielu.Overlay`, `Bielu.Overlay.Readers`, `Bielu.Overlay.Cli` |
+| [Protocol Buffers](https://protobuf.dev/) | proto2, proto3, editions (`schemaFormat` version 2 or 3) | `Bielu.AspNetCore.AsyncApi.Protobuf`, as `.proto` payload sources rendered from descriptors | not read |
 
 ## AsyncAPI
 
