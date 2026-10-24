@@ -24,13 +24,13 @@ public class IncludeOnlyChannelsTests
     public sealed class Channels
     {
         [Channel("light/measured")]
-        [SubscribeOperation(typeof(LightMeasured), OperationId = "lightMeasured")]
+        [SendOperation(typeof(LightMeasured), OperationId = "lightMeasured")]
         public void Measured()
         {
         }
 
         [Channel("light/dimmed")]
-        [SubscribeOperation(typeof(LightMeasured), OperationId = "lightDimmed")]
+        [SendOperation(typeof(LightMeasured), OperationId = "lightDimmed")]
         public void Dimmed()
         {
         }
