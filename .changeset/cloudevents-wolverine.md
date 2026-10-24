@@ -1,0 +1,5 @@
+---
+"bielu-aspnetcore-asyncapi": minor
+---
+
+`Bielu.AspNetCore.AsyncApi.Wolverine` now describes the CloudEvents Wolverine sends. `WolverineAsyncApiOptions.DescribeCloudEvents()` turns the messages of every endpoint that sends CloudEvents into the structured-mode envelope that Wolverine's `CloudEventsMapper` writes: `type` pinned to the message type name, `source` to `WolverineOptions.ServiceName`, `datacontenttype` to `application/json; charset=utf-8`, the payload as `data`, and Wolverine's `tenantid`, `topic`, `traceid` and `traceparent` extensions. Those endpoints are the SignalR transport, broker endpoints configured with `InteropWithCloudEvents()` (detected), and any endpoint passed to `DescribeCloudEvents(...)`. Other endpoints keep the plain message; a message routed both ways gets a `{message}.cloudevent` copy for its CloudEvents channels. The package now depends on `Bielu.AspNetCore.AsyncApi.CloudEvents`, and `AddCloudEvents()` skips messages that are already structured CloudEvents.

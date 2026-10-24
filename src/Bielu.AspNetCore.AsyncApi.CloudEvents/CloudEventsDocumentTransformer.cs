@@ -20,7 +20,9 @@ internal sealed class CloudEventsDocumentTransformer(CloudEventsOptions options)
     {
         foreach (var (key, message) in EnumerateMessages(document))
         {
-            if (options.MessageFilter?.Invoke(key) == false)
+            // A message that is already a structured CloudEvent, such as one the Wolverine integration described,
+            // is left as it is.
+            if (options.MessageFilter?.Invoke(key) == false || message.ContentType == StructuredContentType)
             {
                 continue;
             }
@@ -116,16 +118,25 @@ internal sealed class CloudEventsDocumentTransformer(CloudEventsOptions options)
         }
     }
 
-    private static void ApplyStructured(AsyncApiDocument document, AsyncApiMessage message, EventAttributes attributes)
+    /// <summary>
+    /// Wraps the payload of <paramref name="message"/> in the structured-mode envelope. Returns <see langword="false"/>, leaving
+    /// the message unchanged, when its payload is in a schema format other than JSON Schema.
+    /// </summary>
+    internal static bool ApplyStructured(AsyncApiDocument document, AsyncApiMessage message, EventAttributes attributes)
     {
         if (message.Payload is { } payload && (payload.Schema is not AsyncApiJsonSchema || !IsJsonSchema(payload.SchemaFormat)))
         {
             // The envelope is JSON Schema; a payload in another schema format cannot become its data member.
-            return;
+            return false;
         }
 
-        var dataContentType = message.ContentType ?? document.DefaultContentType ?? "application/json";
+        var dataContentType = attributes.DataContentType ?? message.ContentType ?? document.DefaultContentType ?? "application/json";
         var properties = CreateContextAttributes(attributes, includeDataContentType: true, dataContentType);
+        foreach (var (name, description) in attributes.Extensions ?? new Dictionary<string, string>())
+        {
+            properties[name] = String(description);
+        }
+
         properties["data"] = message.Payload?.Schema as AsyncApiJsonSchema ?? new AsyncApiJsonSchema
         {
             Description = "The event payload.",
@@ -159,6 +170,8 @@ internal sealed class CloudEventsDocumentTransformer(CloudEventsOptions options)
 
             example.Payload = new AsyncApiAny(envelope);
         }
+
+        return true;
     }
 
     private static readonly string[] RequiredAttributes = ["id", "source", "specversion", "type"];
@@ -252,5 +265,12 @@ internal sealed class CloudEventsDocumentTransformer(CloudEventsOptions options)
         || schemaFormat.Contains("schema+yaml", StringComparison.OrdinalIgnoreCase)
         || schemaFormat.Contains("vnd.aai.asyncapi", StringComparison.OrdinalIgnoreCase);
 
-    private sealed record EventAttributes(string Type, string? Source, string? DataSchema);
+    /// <summary>The attributes every event of a message carries.</summary>
+    /// <param name="Type">The event type, pinned with <c>const</c>.</param>
+    /// <param name="Source">The event source, pinned when set.</param>
+    /// <param name="DataSchema">The data schema URI, pinned when set.</param>
+    /// <param name="DataContentType">The structured-mode <c>datacontenttype</c>; defaults to the message's content type.</param>
+    /// <param name="Extensions">Extension attributes of the structured envelope, by name, with their descriptions.</param>
+    internal sealed record EventAttributes(string Type, string? Source, string? DataSchema,
+        string? DataContentType = null, IReadOnlyDictionary<string, string>? Extensions = null);
 }
