@@ -9,9 +9,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="1.0.0" />
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc" Version="1.0.0" />
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Scalar.Grpc" Version="1.0.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="2.0.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc" Version="2.0.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Scalar.Grpc" Version="2.0.0" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.16.15" />
   </ItemGroup>

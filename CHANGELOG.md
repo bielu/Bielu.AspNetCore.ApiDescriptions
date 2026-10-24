@@ -19,6 +19,53 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [2.0.0] - 2026-10-24
+
+### Major Changes
+
+- [#131](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/131) [`135457f`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/135457f7a6f34563e3ea96ab8681627d33a51280) Thanks [@bielu](https://github.com/bielu)! - The attribute types moved from `Bielu.AspNetCore.AsyncApi.Attributes.Attributes` to `Bielu.AspNetCore.AsyncApi.Attributes`, dropping the doubled `Attributes` segment. Replace `using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;` with `using Bielu.AspNetCore.AsyncApi.Attributes;`. The types and their members are unchanged.
+
+- [#130](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/130) [`dfc3304`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/dfc330424f77c7557a9c70357981901ed784c0e7) Thanks [@bielu](https://github.com/bielu)! - Update the ByteBard.AsyncAPI.NET dependencies (`ByteBard.AsyncAPI.NET`, `.Bindings`, `.Readers`) from 3.0.1 to 4.0.0-beta.20. ByteBard 4.0 contains breaking changes, and its object model is exposed through this package's public API, so code that uses ByteBard types directly may need updating.
+
+- [#134](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/134) [`13b3f6c`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/13b3f6c351551d4c5f5fbb7e0017575dde04f811) Thanks [@bielu](https://github.com/bielu)! - Public collections are now typed as interfaces, so their implementation can change later without another breaking release:
+
+  - `AsyncApiOptions.OperationBindings`, `ChannelBindings`, `MessageBindings` and `ServerBindings` are `IDictionary<string, IList<…>>` (were `Dictionary<…>`).
+  - `AsyncApiOptions.IncludeOnlyChannels` is `ISet<string>` (was `HashSet<string>`). It still compares case-insensitively.
+  - `AsyncApiTypeMetadata.Members` and `AsyncApiMemberMetadata.Parameters`, `Messages`, `Operations` and `MessageExamples` are `IReadOnlyList<…>` (were `List<…>`). A custom `IAsyncApiMetadataProvider` can keep passing `List<…>` instances; code that added to these lists after construction must build them up front instead.
+
+  Code that only reads these collections, or adds through the `Add…` methods, keeps compiling unless it names the concrete type, for example `Dictionary<…> bindings = options.ChannelBindings;`.
+
+- [#133](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/133) [`03fd585`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/03fd58554f764d73d839c36872aa2f6e63213783) Thanks [@bielu](https://github.com/bielu)! - `AsyncApiGeneratorConstants.DefaultAsyncApiVersion` is renamed to `DefaultInfoVersion`. Its value (`"1.0.0"`) is the default `info.version`, the version of the described API, and the old name read as the AsyncAPI specification version, which is `AsyncApiOptions.AsyncApiVersion`. The public constants on `AsyncApiGeneratorConstants` now have XML docs.
+
+- [#136](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/136) [`a60cb61`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/a60cb61c87546d38f40734a20d15ccb7d201ed48) Thanks [@bielu](https://github.com/bielu)! - `AsyncApiOptions.ShouldInclude` is removed. It was a `Func<ApiDescription, bool>` carried over from `Microsoft.AspNetCore.OpenApi`, but document generation never called it, so setting it had no effect. Channels come from attributes and integrations, not from ApiExplorer descriptions. Use `AddIncludedChannel(...)` / `IncludeOnlyChannels` to limit a document to specific channels, or a document transformer for anything more selective.
+
+  `Bielu.AspNetCore.AsyncApi.Versioning` set `ShouldInclude` to filter each version's document by its ApiExplorer group. Since nothing read it, versioned documents were never filtered, and that doesn't change: each still gets the version's `info` and deprecation flag.
+
+- [#132](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/132) [`072dd74`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/072dd74ccad4df17122dd8602b7ca4933d26b336) Thanks [@bielu](https://github.com/bielu)! - Operation attributes are now named from the application's point of view, as in AsyncAPI 3: `[SendOperation]` (`action: send`) and `[ReceiveOperation]` (`action: receive`). `OperationType` is now `Send`/`Receive` instead of `Publish`/`Subscribe`.
+
+  `[PublishOperation]` and `[SubscribeOperation]` still work, produce the same operations as before, and are marked `[Obsolete]`. They used the AsyncAPI 2.x names, which describe the operation from the client's side, so the mapping is inverted: replace `[PublishOperation]` with **`[ReceiveOperation]`** and `[SubscribeOperation]` with **`[SendOperation]`**. A plain find-and-replace of Publish→Send would reverse your operations.
+
+  Operations without an explicit `OperationId` get a default ID ending in the operation type, so those IDs change from `{Type}_{Method}_Publish`/`_Subscribe` to `{Type}_{Method}_Receive`/`_Send`. Set `OperationId` explicitly if something (an Arazzo workflow, a client generator) depends on the old ID.
+
+  The source generator now also emits custom attributes derived from `[SendOperation]` or `[ReceiveOperation]`, which it used to drop silently, so the generated document matches the reflection-based one. Such an attribute must be `internal` or `public`; otherwise the new **BASYNC011** warning reports that its operation is left out of the generated document.
+
+- [#135](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/135) [`c9a6589`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/c9a6589e7a617844a96133fd3dd28cc96805585a) Thanks [@bielu](https://github.com/bielu)! - The transformer contexts no longer expose MVC ApiExplorer types. These members came from `Microsoft.AspNetCore.OpenApi`, which builds operations from HTTP endpoints. AsyncAPI documents here are built from attributes and integrations, so the members were empty or never set:
+
+  - `AsyncApiOperationTransformerContext.Description` (`ApiDescription?`) is removed. It was always `null`.
+  - `AsyncApiJsonSchemaTransformerContext.ParameterDescription` (`ApiParameterDescription?`) is removed. It was always `null` unless a transformer passed one to `GetOrCreateSchemaAsync` itself.
+  - The `parameterDescription` parameter is removed from `GetOrCreateSchemaAsync` on all three contexts. It is now `GetOrCreateSchemaAsync(Type type, CancellationToken cancellationToken = default)`, so a call passing `cancellationToken:` by name keeps compiling.
+  - `AsyncApiDocumentTransformerContext.DescriptionGroups` is removed. It listed the app's HTTP ApiExplorer groups. Resolve `IApiDescriptionGroupCollectionProvider` from `context.ApplicationServices` if a document transformer needs them.
+
+### Patch Changes
+
+- [#121](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/121) [`b5e3085`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/b5e3085235cae9992314a8e31c32ac2c6b9265b2) Thanks [@bielu](https://github.com/bielu)! - Internal cleanup: remove an unreachable private helper from `AsyncApiEndpointConventionBuilderExtensions`. No public API or behavior change. The repository's test-coverage measurement now covers only library code.
+
+- [#148](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/148) [`bc25730`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/bc25730b719ead82764f10422b80df58b0504aad) Thanks [@bielu](https://github.com/bielu)! - Packages now carry their family's icon on nuget.org instead of all sharing the AsyncAPI logo: protocol bindings, Scalar consoles, Arazzo, Overlay, and CLI & build tooling each have their own, drawn in the same style. The AsyncAPI core packages keep the existing logo.
+
+- [#122](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/122) [`4837cb2`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/4837cb20d61c009e62dfd0caacc6c0cbc3f8dff8) Thanks [@bielu](https://github.com/bielu)! - Fix document generation failing for any message payload with a JSON Patch property (`JsonPatchDocument` or `JsonPatchDocument<T>`). The RFC 6902 operation schemas now close their objects with the equivalent `"additionalProperties": { "not": {} }` instead of the boolean `false`, which could not be read back into the schema model. Unused internal code left over from the `Microsoft.AspNetCore.OpenApi` port is also removed.
+
+- [#127](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/127) [`4462c91`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/4462c9181044f27fa5ee1044e80e5bb15a3fd46a) Thanks [@bielu](https://github.com/bielu)! - The NuGet packages now pass NuGet Package Explorer's health checks (Source Link, deterministic, compiler flags). Each package ships a `.snupkg` symbol package to the nuget.org symbol server, with Source Link pointing at the GitHub commit, and CI builds set `ContinuousIntegrationBuild` so the build is deterministic.
+
 ## [1.4.0] - 2026-10-17
 
 ### Minor Changes
