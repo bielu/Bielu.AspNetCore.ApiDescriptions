@@ -184,6 +184,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
         /// Describes the messages of the endpoints that send CloudEvents as the structured-mode envelope Wolverine
         /// writes. A message also used on another channel is copied first, so that channel keeps the plain message.
         /// The channel keeps listing the message under the same key, so the operations referencing it are unchanged.
+        /// A message whose payload cannot be wrapped (one not in JSON Schema) is left as it is, on every channel.
         /// </summary>
         public void DescribeCloudEvents(IWolverineRuntime runtime)
         {
@@ -196,7 +197,8 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                 return;
             }
 
-            var described = new HashSet<string>(StringComparer.Ordinal);
+            // Whether each component could be described, so a message shared by several channels is wrapped once.
+            var described = new Dictionary<string, bool>(StringComparer.Ordinal);
             foreach (var channelKey in cloudEventsChannels.Order(StringComparer.Ordinal))
             {
                 var channel = document.Channels[channelKey];
@@ -213,20 +215,26 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
                         .Any(other => other.Value.Messages.Values.Any(entry => IsReferenceTo(entry, messageKey)));
                     var componentKey = sharedWithPlainChannel ? $"{messageKey}.cloudevent" : messageKey;
 
-                    if (described.Add(componentKey))
+                    if (!described.TryGetValue(componentKey, out var applied))
                     {
-                        if (sharedWithPlainChannel)
-                        {
-                            message = Copy(message);
-                            document.Components.Messages[componentKey] = message;
-                        }
-
-                        CloudEventsDocumentTransformer.ApplyStructured(document, message, new CloudEventsDocumentTransformer.EventAttributes(
+                        var target = sharedWithPlainChannel ? Copy(message) : message;
+                        applied = CloudEventsDocumentTransformer.ApplyStructured(document, target, new CloudEventsDocumentTransformer.EventAttributes(
                             Type: messageTypeName,
                             Source: runtime.Options.ServiceName,
                             DataSchema: null,
                             DataContentType: CloudEventsDataContentType,
                             Extensions: CloudEventsExtensions));
+                        if (applied && sharedWithPlainChannel)
+                        {
+                            document.Components.Messages[componentKey] = target;
+                        }
+
+                        described[componentKey] = applied;
+                    }
+
+                    if (!applied)
+                    {
+                        continue;
                     }
 
                     channel.Messages[messageKey] = new AsyncApiMessageReference($"#/components/messages/{componentKey}");

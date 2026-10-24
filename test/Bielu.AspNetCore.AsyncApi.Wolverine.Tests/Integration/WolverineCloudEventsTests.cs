@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Nodes;
 using Bielu.AspNetCore.AsyncApi.CloudEvents;
 using Bielu.AspNetCore.AsyncApi.Wolverine.Tests.Fixtures;
+using ByteBard.AsyncAPI.Models;
 using Shouldly;
 using Wolverine.Kafka;
 using Xunit;
@@ -110,6 +111,43 @@ public class WolverineCloudEventsTests
             .SelectMany(operation => operation.Value!["messages"]!.AsArray())
             .Select(reference => reference!["$ref"]!.GetValue<string>())
             .ShouldContain("#/channels/hubstest/messages/orders.order-shipped");
+    }
+
+    [Fact]
+    public async Task DescribeCloudEvents_SharedMessageWithNonJsonSchemaPayload_KeepsTheChannelOnThePlainMessage()
+    {
+        // Act
+        var document = await WolverineTestApp.GetDocumentAsync("cloudevents-avro", options =>
+        {
+            options.AddServer("signalr", "localhost", "signalr");
+            options.AddServer("kafka", "localhost:9092", "kafka");
+            // An earlier transformer registered the message with an Avro payload, which the envelope cannot wrap.
+            options.AddDocumentTransformer((avroDocument, _, _) =>
+            {
+                avroDocument.Components ??= new AsyncApiComponents();
+                avroDocument.Components.Messages ??= new Dictionary<string, AsyncApiMessage>();
+                avroDocument.Components.Messages["orders.order-shipped"] = new AsyncApiMessage
+                {
+                    Payload = new AsyncApiMultiFormatSchema
+                    {
+                        SchemaFormat = "application/vnd.apache.avro;version=1.9.0",
+                        Schema = new AsyncApiJsonSchema { Type = SchemaType.Object },
+                    },
+                };
+                return Task.CompletedTask;
+            });
+            options.AddWolverine(wolverine => wolverine.DescribeCloudEvents());
+        }, configureWolverine: opts =>
+        {
+            opts.ServiceName = ServiceName;
+            opts.PublishMessage<OrderShipped>().ToKafkaTopic("shipments");
+        });
+
+        // Assert
+        document["components"]!["messages"]!.AsObject().ContainsKey("orders.order-shipped.cloudevent").ShouldBeFalse();
+        Message(document, "orders.order-shipped")["contentType"].ShouldBeNull();
+        document["channels"]!["hubstest"]!["messages"]!["orders.order-shipped"]!["$ref"]!.GetValue<string>()
+            .ShouldBe("#/components/messages/orders.order-shipped");
     }
 
     [Fact]
