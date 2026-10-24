@@ -89,6 +89,15 @@ so such a message is left unchanged.
 | `ConfigureMessage(key, m => …)` | Overrides `Type`, `Source`, `DataSchema` or `Mode` for one message, by its key under `components/messages`. |
 | `MessageFilter = key => …` | Keeps only the messages it returns `true` for. |
 
+## Wolverine
+
+For messages that the [Wolverine integration](wolverine.md) documents, call `DescribeCloudEvents()` on
+`AddWolverine(...)` instead of `AddCloudEvents()`. It applies the structured envelope only on the endpoints that
+actually send CloudEvents (SignalR and `InteropWithCloudEvents()` endpoints), with the `type`, `source` and
+`datacontenttype` that Wolverine writes. Elsewhere Wolverine sends its own headers, not CloudEvents attributes.
+`AddCloudEvents()` skips any message that is already a structured CloudEvent, so the two can be used in the same
+document.
+
 ## Examples
 
 Message examples gain the attributes too: header values in binary mode, and an envelope around the example payload in

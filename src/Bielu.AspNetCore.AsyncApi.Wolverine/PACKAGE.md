@@ -55,6 +55,7 @@ What it generates:
 | The message type name (`[MessageIdentity]`, or Wolverine's default) | The message name, the same one used on the wire |
 | The SignalR transport | A channel at the path the `WolverineHub` is mapped at, with `signalr` bindings targeting `ReceiveMessage` |
 | A Kafka topic | A channel at the topic, with a `kafka` channel binding |
+| SignalR, or `InteropWithCloudEvents()`, with `DescribeCloudEvents()` | Messages described as the structured CloudEvents envelope Wolverine writes (`type`, `source` = service name, `data`) |
 
 In-process routes (`local://`) are never documented. XML documentation comments on the message types
 become the message and schema descriptions; the package loads the XML files of the assemblies it scans.
