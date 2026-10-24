@@ -1,5 +1,5 @@
 ﻿using System.Text.Json.Serialization;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Scalar.AspNetCore;

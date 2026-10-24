@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI.Models;

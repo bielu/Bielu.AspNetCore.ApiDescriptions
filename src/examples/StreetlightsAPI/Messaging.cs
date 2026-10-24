@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Microsoft.Extensions.Logging;
 
 namespace StreetlightsAPI
