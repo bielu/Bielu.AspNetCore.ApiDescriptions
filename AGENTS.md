@@ -150,6 +150,7 @@ cd src/examples/StreetlightsAPI && dotnet run
 
 - **xUnit** + **Shouldly** assertions + **NSubstitute** for mocking. ASP.NET integration tests use `Microsoft.AspNetCore.Mvc.Testing`; UI tests use `Microsoft.Playwright`.
 - Tests are split into `Unit/` and `Integration/` folders; shared inputs live in `Fixtures/`.
+- Tests that need real infrastructure (e.g. a Kafka broker) start it with Aspire's `DistributedApplicationTestingBuilder` while the code under test runs in-process, so coverage still counts. Mark them `[DockerFact]` so they skip, rather than fail, without a running Docker daemon. See `test/Bielu.AspNetCore.AsyncApi.Scalar.Aspire.Tests`.
 - Follow the **Arrange / Act / Assert** comment structure used throughout existing tests.
 - Add or update tests for any behavior change. Match the naming pattern `Method_Scenario_ExpectedResult` (e.g. `AddServer_ThrowsForNullName`).
 

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The AppHost SDK brings Aspire's orchestrator (DCP), which DistributedApplicationTestingBuilder needs to
+       start real resources such as the Kafka broker. Library references opt out of becoming Aspire project
+       resources (IsAspireProjectResource="false") so they stay ordinary assembly references. -->
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.4.6" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Kafka" />
+    <PackageReference Include="Aspire.Hosting.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Scalar.Broker\Bielu.AspNetCore.AsyncApi.Scalar.Broker.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka\Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire\Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire\Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire.csproj" IsAspireProjectResource="false" />
+  </ItemGroup>
+
+</Project>

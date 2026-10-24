@@ -64,6 +64,8 @@
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <!-- Aspire Hosting -->
     <PackageVersion Include="Aspire.Hosting.Kafka" Version="13.4.6" />
+    <!-- Starts real brokers (as Aspire resources) for integration tests that run the code under test in-process. -->
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.4.6" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.6" />
     <PackageVersion Include="Aspire.Hosting.Valkey" Version="13.4.6" />
     <!-- YARP -->
