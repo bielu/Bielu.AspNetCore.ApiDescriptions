@@ -2,7 +2,7 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI.Models;
