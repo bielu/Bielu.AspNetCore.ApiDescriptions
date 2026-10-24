@@ -3,11 +3,28 @@
 
 namespace Bielu.AspNetCore.AsyncApi.Services;
 
+/// <summary>
+/// Defaults used when generating AsyncAPI documents.
+/// </summary>
 public static class AsyncApiGeneratorConstants
 {
+    /// <summary>
+    /// The name of the document registered by <c>AddAsyncApi()</c> when no name is given.
+    /// </summary>
     public const string DefaultDocumentName = "v1";
-    public const string DefaultAsyncApiVersion = "1.0.0";
+
+    /// <summary>
+    /// The <c>info.version</c> (the version of the described API, not of the AsyncAPI specification) of a
+    /// document whose options don't set an <see cref="AsyncApiOptions.Info"/> version. The specification version is
+    /// <see cref="AsyncApiOptions.AsyncApiVersion"/>.
+    /// </summary>
+    public const string DefaultInfoVersion = "1.0.0";
+
+    /// <summary>
+    /// The route pattern <c>MapAsyncApi()</c> serves documents on when none is configured.
+    /// </summary>
     public const string DefaultAsyncApiRoute = "/asyncapi/{documentName}.json";
+
     internal const string DescriptionId = "x-aspnetcore-id";
     internal const string SchemaId = "x-schema-id";
     internal const string RefDefaultAnnotation = "x-ref-default";

@@ -1,4 +1,6 @@
 #nullable enable
+*REMOVED*const Bielu.AspNetCore.AsyncApi.Services.AsyncApiGeneratorConstants.DefaultAsyncApiVersion = "1.0.0" -> string!
+const Bielu.AspNetCore.AsyncApi.Services.AsyncApiGeneratorConstants.DefaultInfoVersion = "1.0.0" -> string!
 *REMOVED*Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.DescriptionGroups.get -> System.Collections.Generic.IReadOnlyList<Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescriptionGroup!>!
 *REMOVED*Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.DescriptionGroups.init -> void
 *REMOVED*Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.GetOrCreateSchemaAsync(System.Type! type, Microsoft.AspNetCore.Mvc.ApiExplorer.ApiParameterDescription? parameterDescription = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ByteBard.AsyncAPI.Models.AsyncApiJsonSchema!>!
