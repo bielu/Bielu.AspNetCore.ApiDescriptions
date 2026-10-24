@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package test.orders;
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+option csharp_namespace = "Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Orders";
+
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_PLACED = 1;
+}
+
+message OrderLine {
+  string sku = 1;
+  int32 quantity = 2;
+}
+
+message OrderPlaced {
+  message Meta {
+    string trace = 1;
+  }
+
+  string id = 1;
+  google.protobuf.Timestamp placed_at = 2;
+  repeated OrderLine lines = 3;
+  map<string, string> attributes = 4;
+  Status status = 5;
+  optional string note = 6;
+  oneof payment {
+    string card = 7;
+    string voucher = 8;
+  }
+  test.common.Address address = 9;
+  Meta meta = 10;
+  sint64 balance = 11;
+  bytes signature = 12;
+  reserved 13, 15 to 20;
+  reserved "legacy";
+}
+
+message Unrelated {
+  string value = 1;
+}
