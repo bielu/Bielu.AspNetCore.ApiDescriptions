@@ -7,3 +7,5 @@ Operation attributes are now named from the application's point of view, as in A
 `[PublishOperation]` and `[SubscribeOperation]` still work, produce the same operations as before, and are marked `[Obsolete]`. They used the AsyncAPI 2.x names, which describe the operation from the client's side, so the mapping is inverted: replace `[PublishOperation]` with **`[ReceiveOperation]`** and `[SubscribeOperation]` with **`[SendOperation]`**. A plain find-and-replace of Publish→Send would reverse your operations.
 
 Operations without an explicit `OperationId` get a default ID ending in the operation type, so those IDs change from `{Type}_{Method}_Publish`/`_Subscribe` to `{Type}_{Method}_Receive`/`_Send`. Set `OperationId` explicitly if something (an Arazzo workflow, a client generator) depends on the old ID.
+
+The source generator now also emits custom attributes derived from `[SendOperation]` or `[ReceiveOperation]`, which it used to drop silently, so the generated document matches the reflection-based one. Such an attribute must be `internal` or `public`; otherwise the new **BASYNC011** warning reports that its operation is left out of the generated document.
