@@ -9,7 +9,7 @@
 3. Replace `[PublishOperation]` with **`[ReceiveOperation]`** and `[SubscribeOperation]` with **`[SendOperation]`**. Note the inversion, explained [below](#publishsubscribe-become-receivesend).
 4. If anything depends on generated operation IDs, set `OperationId` explicitly or update the references.
 5. Fix the compile errors from the [removed and changed members](#removed-and-changed-members).
-6. If your app needs the endpoint ApiExplorer for something other than `AddOpenApi()` or controllers, call `AddEndpointsApiExplorer()` yourself.
+6. If something other than `AddOpenApi()` describes your minimal APIs, such as Swashbuckle, call `AddEndpointsApiExplorer()` yourself.
 
 ## Attributes namespace
 
@@ -86,7 +86,7 @@ Code that reads these collections or adds through the `Add…` methods is unaffe
 
 ## The endpoint ApiExplorer isn't registered anymore
 
-`AddAsyncApi()` and `AddAsyncApiForApiVersions()` no longer call `AddEndpointsApiExplorer()`, since document generation doesn't use it. `AddOpenApi()` and `AddControllers()` register what they need, so most apps notice nothing. If something else relied on it, such as Swashbuckle's `AddSwaggerGen()` describing minimal APIs, register it yourself:
+`AddAsyncApi()` and `AddAsyncApiForApiVersions()` no longer call `AddEndpointsApiExplorer()`, since document generation doesn't use it. `AddOpenApi()` registers what it needs, and so does Asp.Versioning's `AddApiExplorer()`, which `AddAsyncApiForApiVersions()` requires, so most apps notice nothing. If something else relied on it, such as Swashbuckle's `AddSwaggerGen()` describing minimal APIs, register it yourself. This applies to apps that also use controllers too: `AddControllers()` registers the ApiExplorer for controllers only, so without the call their minimal APIs drop out of the Swagger document.
 
 ```csharp
 builder.Services.AddEndpointsApiExplorer();
