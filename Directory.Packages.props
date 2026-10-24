@@ -90,6 +90,12 @@
          packages use to register their plugin against the stock Scalar bundle. -->
     <PackageVersion Include="Scalar.AspNetCore" Version="2.16.17" />
     <PackageVersion Include="Scalar.Aspire" Version="0.11.12" />
+    <!-- Referenced directly by the projects that pull in Aspire.Hosting, to lift the MessagePack that
+         StreamJsonRpc drags in (2.5.301/2.5.302) past GHSA-qhrr-8q5h-9q3h, patched in 2.5.303. Even the
+         latest stable StreamJsonRpc (2.25.29) still depends on 2.5.302, and transitive pinning is
+         disabled repo-wide, so a PackageVersion alone would not move it. Held on 2.x, the major
+         StreamJsonRpc is built against. Drop once Aspire.Hosting ships a patched StreamJsonRpc. -->
+    <PackageVersion Include="MessagePack" Version="2.5.307" />
     <!-- API Versioning -->
     <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="10.0.0" />
     <PackageVersion Include="Asp.Versioning.Http" Version="10.0.0" />

@@ -10,6 +10,7 @@
 
     <ItemGroup>
         <PackageReference Include="Scalar.Aspire" />
+        <PackageReference Include="MessagePack" />
     </ItemGroup>
 
     <!-- Generates the ScalarPluginBundleVersion constant from the npm package's version, so
