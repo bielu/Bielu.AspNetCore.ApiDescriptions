@@ -14,7 +14,6 @@
     <PropertyGroup>
         <Authors>Arkadiusz Biel</Authors>
         <PackageOutputPath>$(MSBuildProjectDirectory)/../../dist</PackageOutputPath>
-        <PackageIcon>logo.png</PackageIcon>
         <!-- Inherited by every package. Package metadata is immutable once a version is published,
              so this has to be right before the first stable tag. -->
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -75,8 +74,25 @@
         </Otherwise>
     </Choose>
 
+    <!--
+      Package icon per family, the same families packages.bielu.pl groups them into. AsyncAPI keeps
+      the suite logo; the others use assets/icons/<family>.png (rendered at 512px from the .svg next
+      to it). A later match wins, so broad prefixes come before more specific ones: the Arazzo and
+      AsyncAPI Overlay packages are Overlay, Bielu.AspNetCore.AsyncApi.Scalar is a console, and so on.
+    -->
+    <PropertyGroup>
+        <_PackageIconPath>$(MSBuildThisFileDirectory)../assets/logo.png</_PackageIconPath>
+        <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.Arazzo')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.Arazzo'))">arazzo</_PackageIconFamily>
+        <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Extensions.Protocols'))">protocol-bindings</_PackageIconFamily>
+        <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Scalar'))">scalar-consoles</_PackageIconFamily>
+        <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.Overlay')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Overlay')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.Arazzo.Overlay'))">overlay</_PackageIconFamily>
+        <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Cli')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Templates')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.ApiDescription.Server')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.ApiDescriptions')) or $(MSBuildProjectName.StartsWith('Bielu.Spec.Shared')) or $(MSBuildProjectName.StartsWith('Bielu.Cli.Shared'))">api-tooling</_PackageIconFamily>
+        <_PackageIconPath Condition="'$(_PackageIconFamily)' != ''">$(MSBuildThisFileDirectory)../assets/icons/$(_PackageIconFamily).png</_PackageIconPath>
+        <PackageIcon>$([System.IO.Path]::GetFileName('$(_PackageIconPath)'))</PackageIcon>
+    </PropertyGroup>
+
     <ItemGroup>
-        <None Include="$(MSBuildThisFileDirectory)../assets/logo.png" Pack="true" PackagePath="/" />
+        <None Include="$(_PackageIconPath)" Pack="true" PackagePath="/" Visible="false" />
     </ItemGroup>
 
     <!--
