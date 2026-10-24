@@ -338,6 +338,8 @@ internal sealed class AsyncApiDocumentService(
             // Use correct reference format based on version to avoid ByteBard V2 serializer bug
             // V2 needs FragmentId to be the bare key, which we get with #key
             // V3 needs the full JSON pointer #/servers/key
+            // Still needed with ByteBard 4.0.0-beta.20: given a full pointer, its 2.x writer emits "/servers/key"
+            // where 2.x expects the bare server name.
             if (document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0))
             {
                 channel.Servers.Add(new AsyncApiServerReference($"#{sanitizedServerKey}"));
@@ -953,6 +955,7 @@ internal sealed class AsyncApiDocumentService(
             {
                 // ByteBard's AsyncAPI 2.x writer dereferences trait.Headers unconditionally and throws a
                 // NullReferenceException when a trait has none, so give it an empty headers schema.
+                // Still the case in ByteBard 4.0.0-beta.20.
                 if (document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0))
                 {
                     trait.Headers ??= new AsyncApiMultiFormatSchema { Schema = new AsyncApiJsonSchema() };
