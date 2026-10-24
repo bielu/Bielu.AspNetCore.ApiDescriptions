@@ -210,7 +210,7 @@ public class AsyncApiDocumentGenerationTests
         responseUpper.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
-    [Fact(Skip = "ByteBard.AsyncAPI.NET.Readers 4.0.0-beta.20 is built against an older JsonPointer.Net; re-enable once ByteBardOrg/AsyncAPI.NET#56 ships.")]
+    [Fact]
     public async Task GetAsyncApiDocument_V2GeneratesCorrectVersion()
     {
         // Arrange
