@@ -57,8 +57,9 @@ Messages are named with Wolverine's message type name, which is what goes on the
 ### SignalR messages
 
 Wolverine's SignalR transport delivers every message on the `ReceiveMessage` client method as a
-CloudEvents JSON document: `type` is the message name and `data` the payload. The document's message
-payloads describe `data`.
+CloudEvents JSON document: `type` is the message name and `data` the payload. By default the document's
+message payloads describe only `data`; call `DescribeCloudEvents()` to describe the whole envelope (see
+[CloudEvents](#cloudevents)).
 
 The transport serializes with its own `JsonSerializerOptions`, not ASP.NET Core's `JsonOptions`, while
 the document's schemas are generated from `JsonOptions`. If you customise JSON (enum naming, number
@@ -93,6 +94,54 @@ A `receive` operation with a reply gets:
 
 Only listeners with a default incoming message type have a `receive` operation, so only their handlers
 are covered. AsyncAPI 2.x has no reply object, so a 2.x document is left unchanged.
+
+## CloudEvents
+
+`DescribeCloudEvents()` describes the messages of every endpoint that sends CloudEvents as the
+structured-mode envelope Wolverine's `CloudEventsMapper` writes, using the
+[CloudEvents package](cloudevents.md), which `Bielu.AspNetCore.AsyncApi.Wolverine` depends on:
+
+```csharp
+builder.Host.UseWolverine(opts =>
+{
+    opts.ServiceName = "orders-service";
+    opts.UseSignalR<ChatHub>();
+    opts.UseKafka("broker:9092");
+    opts.PublishMessage<OrderPlaced>().ToKafkaTopic("orders").InteropWithCloudEvents();
+});
+
+builder.Services.AddAsyncApi(options => options
+    .AddServer("signalr", "localhost:5000", "signalr")
+    .AddServer("kafka", "broker:9092", "kafka")
+    .AddWolverine(wolverine => wolverine.DescribeCloudEvents()));
+```
+
+These endpoints send CloudEvents:
+
+- Wolverine's SignalR transport, always;
+- broker endpoints configured with `InteropWithCloudEvents()`, detected from the endpoint;
+- the endpoints you list: `DescribeCloudEvents(new Uri("kafka://topic/orders"))`. Use this when the
+  detection does not find one, for example after a Wolverine upgrade changes how it stores that setting.
+
+Each of their messages gets `contentType: application/cloudevents+json` and the envelope as its payload, matching
+what Wolverine writes:
+
+| Attribute | Value |
+| --- | --- |
+| `type` | `const` of Wolverine's message type name (`[MessageIdentity]`), the same as the message key |
+| `source` | `const` of `WolverineOptions.ServiceName` |
+| `specversion` | `const: "1.0"` |
+| `datacontenttype` | `const: "application/json; charset=utf-8"` |
+| `data` | the message payload |
+| `tenantid`, `topic`, `traceid`, `traceparent` | Wolverine's extension attributes, optional |
+
+Every other endpoint keeps the plain message, since Wolverine sends it with its own headers there. A message
+routed both ways is copied: the CloudEvents channels list a `{message}.cloudevent` component, while the other
+channels keep the original. The channel's message key doesn't change, so operations are unaffected.
+
+Use `DescribeCloudEvents()` rather than `AddCloudEvents()` for Wolverine's messages. If a document also calls
+`AddCloudEvents()`, for messages from attributes for example, it leaves the messages already described as
+CloudEvents alone.
 
 ## Spec metadata
 
