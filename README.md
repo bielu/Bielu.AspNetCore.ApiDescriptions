@@ -66,6 +66,7 @@ public class MyService
 - ✅ **API Versioning** integration for version-per-document support
 - ✅ **Wolverine** integration that documents channels and operations straight from Wolverine's message routing
 - ✅ **OpenAPI Overlays** applied in the generation pipeline, so the served document is already transformed
+- ✅ **Avro payloads** (`schemaFormat: application/vnd.apache.avro`) converted from the generated JSON Schemas
 
 ## Documentation Sections
 
@@ -75,6 +76,7 @@ public class MyService
 - [Configuration Guide](https://apidescriptions.bielu.pl/articles/configuration.html)
 - [Scalar & Live Consoles](https://apidescriptions.bielu.pl/articles/scalar-consoles.html)
 - [Native AOT Support](https://apidescriptions.bielu.pl/articles/native-aot.html)
+- [Avro payloads](https://apidescriptions.bielu.pl/articles/avro.html)
 - [CLI Tool usage](https://apidescriptions.bielu.pl/articles/cli.html)
 - [Project templates](https://apidescriptions.bielu.pl/articles/templates.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)
