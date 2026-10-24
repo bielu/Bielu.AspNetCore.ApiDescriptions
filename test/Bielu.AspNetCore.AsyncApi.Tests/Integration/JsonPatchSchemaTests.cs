@@ -66,7 +66,9 @@ public class JsonPatchSchemaTests
             // Operations are closed objects; "additionalProperties": false is emitted as { "not": {} }.
             foreach (var operation in operations)
             {
-                operation.GetProperty("additionalProperties").GetProperty("not").ValueKind.ShouldBe(JsonValueKind.Object);
+                var notSchema = operation.GetProperty("additionalProperties").GetProperty("not");
+                notSchema.ValueKind.ShouldBe(JsonValueKind.Object);
+                notSchema.EnumerateObject().ShouldBeEmpty();
             }
         }
     }

@@ -249,7 +249,7 @@ public class JsonNodeSchemaMappingTests
 
         // Assert
         schema[AsyncApiJsonSchemaKeywords.TypeKeyword]!.GetValue<string>().ShouldBe(expectedType);
-        schema[AsyncApiJsonSchemaKeywords.FormatKeyword]?.GetValue<string>().ShouldBe(expectedFormat);
+        (schema[AsyncApiJsonSchemaKeywords.FormatKeyword]?.GetValue<string>()).ShouldBe(expectedFormat);
     }
 
     [Fact]
