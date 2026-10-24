@@ -25,7 +25,9 @@ public class ScalarConsoleAspireExtensionsTests
         configure(scalar);
 
         await using var provider = builder.Services.BuildServiceProvider();
-        return provider.GetRequiredService<IOptionsMonitor<ScalarAspireOptions>>().Get(scalar.Resource.Name).PluginUrls;
+        var pluginUrls = provider.GetRequiredService<IOptionsMonitor<ScalarAspireOptions>>().Get(scalar.Resource.Name).PluginUrls;
+        pluginUrls.ShouldNotBeNull();
+        return pluginUrls;
     }
 
     private static JsonElement DecodeDocuments(string pluginUrl)
