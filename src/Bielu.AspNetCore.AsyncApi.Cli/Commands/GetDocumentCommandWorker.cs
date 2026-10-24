@@ -346,7 +346,7 @@ internal sealed class GetDocumentCommandWorker
         return filePath;
     }
 
-    private static string GetDocumentPath(string documentName, string fileName, string outputDirectory)
+    internal static string GetDocumentPath(string documentName, string fileName, string outputDirectory)
     {
         string path;
 
