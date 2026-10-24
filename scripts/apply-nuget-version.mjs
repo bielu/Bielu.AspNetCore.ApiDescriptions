@@ -1,9 +1,10 @@
 // Projects the changeset-computed version of the placeholder `bielu-aspnetcore-asyncapi` package
-// onto the shared NuGet version, and folds its generated changelog into the root CHANGELOG.md.
+// onto the shared NuGet version and the `dotnet new` templates' package references, and folds its
+// generated changelog into the root CHANGELOG.md.
 //
 // Run automatically by `npm run version` (i.e. right after `changeset version`). Idempotent:
 // re-running with no version change is a no-op.
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -11,6 +12,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const nugetPkgDir = join(repoRoot, "build", "changeset", "nuget-suite");
 const versionPropsPath = join(repoRoot, "version.props");
 const rootChangelogPath = join(repoRoot, "CHANGELOG.md");
+const templatesDir = join(repoRoot, "src", "Bielu.AspNetCore.AsyncApi.Templates", "templates");
 
 const newVersion = JSON.parse(
   readFileSync(join(nugetPkgDir, "package.json"), "utf8"),
@@ -40,7 +42,29 @@ console.log(
     (versionSuffix ? `, <VersionSuffix> -> ${versionSuffix}` : ", <VersionSuffix> cleared"),
 );
 
-// 2) Fold the changeset-generated section into the curated root CHANGELOG.md.
+// 2) Point the templates' references to this suite's packages at the version being released. The
+// template pack ships with that version, so a project created from it gets the API its code uses;
+// a fixed pin would fall behind (and stop compiling) as soon as an attribute or method is renamed.
+// Third-party references (Scalar.AspNetCore, Grpc.AspNetCore, ...) keep their own versions.
+const templateProjects = readdirSync(templatesDir, { recursive: true })
+  .filter((path) => path.endsWith(".csproj"))
+  .map((path) => join(templatesDir, path));
+if (templateProjects.length === 0) {
+  throw new Error(`Found no template projects under ${templatesDir} to update.`);
+}
+for (const projectPath of templateProjects) {
+  const project = readFileSync(projectPath, "utf8");
+  const updatedProject = project.replace(
+    /(<PackageReference\s+Include="Bielu\.[^"]+"\s+Version=")[^"]*(")/g,
+    `$1${newVersion}$2`,
+  );
+  if (updatedProject !== project) {
+    writeFileSync(projectPath, updatedProject);
+    console.log(`${projectPath.slice(repoRoot.length + 1)} Bielu.* references -> ${newVersion}`);
+  }
+}
+
+// 3) Fold the changeset-generated section into the curated root CHANGELOG.md.
 const nugetChangelogPath = join(nugetPkgDir, "CHANGELOG.md");
 if (!existsSync(nugetChangelogPath)) {
   console.log("No generated nuget-suite CHANGELOG.md yet; skipping changelog fold.");
