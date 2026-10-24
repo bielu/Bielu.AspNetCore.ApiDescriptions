@@ -29,6 +29,7 @@
     <Project Path="../test/Bielu.AspNetCore.Arazzo.Overlay.Tests/Bielu.AspNetCore.Arazzo.Overlay.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.Arazzo.Tests/Bielu.AspNetCore.Arazzo.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Analyzers.Tests/Bielu.AspNetCore.AsyncApi.Analyzers.Tests.csproj" />
+    <Project Path="../test/Bielu.AspNetCore.AsyncApi.Avro.Tests/Bielu.AspNetCore.AsyncApi.Avro.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Cli.Tests/Bielu.AspNetCore.AsyncApi.Cli.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.CloudEvents.Tests/Bielu.AspNetCore.AsyncApi.CloudEvents.Tests.csproj" />
     <Project Path="../test/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.Tests/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.Tests.csproj" />
@@ -78,6 +79,7 @@
   <Project Path="Bielu.AspNetCore.Arazzo.Overlay/Bielu.AspNetCore.Arazzo.Overlay.csproj" />
   <Project Path="Bielu.AspNetCore.Arazzo/Bielu.AspNetCore.Arazzo.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
+  <Project Path="Bielu.AspNetCore.AsyncApi.Avro/Bielu.AspNetCore.AsyncApi.Avro.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.CloudEvents/Bielu.AspNetCore.AsyncApi.CloudEvents.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.csproj" />

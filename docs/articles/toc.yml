@@ -36,6 +36,8 @@
   href: scalar-consoles.md
 - name: CloudEvents
   href: cloudevents.md
+- name: Avro Payloads
+  href: avro.md
 - name: Merger & Gateway
   href: merger-gateway.md
 - name: Migration from Saunter
