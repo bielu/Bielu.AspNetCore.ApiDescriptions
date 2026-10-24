@@ -110,7 +110,7 @@ public class ValidationAttributeSchemaTests
 [Channel("validatedOrders")]
 public class ValidatedOrderBus
 {
-    [PublishOperation(typeof(ValidatedOrderMessage))]
+    [ReceiveOperation(typeof(ValidatedOrderMessage))]
     public void Publish(ValidatedOrderMessage message) { }
 }
 

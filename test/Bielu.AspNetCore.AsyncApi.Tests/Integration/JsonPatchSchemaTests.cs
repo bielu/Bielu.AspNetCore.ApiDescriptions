@@ -94,7 +94,7 @@ public sealed class DerivedProfilePatch : JsonPatchDocument<ProfilePatchMessage>
 [Channel("profilePatches")]
 public class ProfilePatchBus
 {
-    [PublishOperation(typeof(ProfilePatchMessage))]
+    [ReceiveOperation(typeof(ProfilePatchMessage))]
     public void Publish(ProfilePatchMessage message) { }
 }
 
