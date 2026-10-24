@@ -8,6 +8,7 @@ numbers below are the ones the code and the test suites actually cover.
 | [AsyncAPI](https://www.asyncapi.com/docs/reference/specification/v3.1.0) | 3.1.0 (default), 2.6.0 | `Bielu.AspNetCore.AsyncApi` | `Bielu.AspNetCore.AsyncApi.Cli`, `Bielu.AspNetCore.AsyncApi.Merger` |
 | [Arazzo](https://spec.openapis.org/arazzo/latest.html) | 1.0.x, 1.1.x | `Bielu.AspNetCore.Arazzo` (1.1.0 by default, set with `ArazzoOptions.Version`; also written at [build time](build-time-generation.md#arazzo-documents)) | `Bielu.Arazzo`, `Bielu.Arazzo.Readers`, `Bielu.Arazzo.Cli` |
 | [Overlay](https://spec.openapis.org/overlay/latest.html) | 1.0.x, 1.1.x | not generated; applied by `Bielu.Overlay` | `Bielu.Overlay`, `Bielu.Overlay.Readers`, `Bielu.Overlay.Cli` |
+| [CloudEvents](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) | 1.0 (binary and structured mode; HTTP, Kafka, AMQP, MQTT bindings) | `Bielu.AspNetCore.AsyncApi.CloudEvents`, as AsyncAPI message headers or payload | not read |
 
 ## AsyncAPI
 
