@@ -92,6 +92,40 @@ public class ApiVersioningTests
         names.ShouldContain("v1");
         names.ShouldContain("v2");
     }
+
+    [Fact]
+    public async Task GetDocumentNames_MinimalApis_ReturnsAllVersionsWithoutEndpointsApiExplorer()
+    {
+        // Arrange
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddApiVersioning(options =>
+        {
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+        })
+        .AddApiExplorer(options =>
+        {
+            options.GroupNameFormat = "'v'V";
+        });
+
+        builder.Services.AddAsyncApiForApiVersions();
+
+        var app = builder.Build();
+        var api = app.NewVersionedApi();
+        api.MapGet("/minimal", () => "v1").HasApiVersion(1, 0);
+        api.MapGet("/minimal", () => "v2").HasApiVersion(2, 0);
+        await app.StartAsync();
+        var documentProvider = app.Services.GetRequiredService<Microsoft.Extensions.ApiDescriptions.IDocumentProvider>();
+
+        // Act
+        var names = documentProvider.GetDocumentNames();
+
+        // Assert
+        names.ShouldContain("v1");
+        names.ShouldContain("v2");
+
+        await app.StopAsync();
+    }
 }
 
 [ApiController]
