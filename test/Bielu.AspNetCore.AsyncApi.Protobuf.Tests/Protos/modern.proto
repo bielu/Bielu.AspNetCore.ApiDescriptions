@@ -1,0 +1,9 @@
+edition = "2023";
+
+package test.modern;
+
+option csharp_namespace = "Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Modern";
+
+message ModernEvent {
+  string id = 1;
+}

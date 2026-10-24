@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package test.catalog;
+
+import "inventory.proto";
+
+option csharp_namespace = "Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Catalog";
+
+message Item {
+  string name = 1;
+}
+
+message Listing {
+  Item item = 1;
+  test.inventory.Item stock = 2;
+  test.inventory.Item.Batch batch = 3;
+}

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.Protobuf</RootNamespace>
+        <IsAotCompatible>true</IsAotCompatible>
+        <Description>Describes AsyncAPI message payloads whose types are Protocol Buffers messages as .proto schemas (schemaFormat application/vnd.google.protobuf), rendered from the generated message descriptors, so field numbers and types are the real wire contract.</Description>
+        <PackageTags>asyncapi;protobuf;protocol-buffers;grpc;schemaformat;aspnetcore</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Google.Protobuf" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Protobuf.Tests" />
+    </ItemGroup>
+
+</Project>

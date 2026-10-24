@@ -38,6 +38,8 @@
   href: cloudevents.md
 - name: Avro Payloads
   href: avro.md
+- name: Protobuf Payloads
+  href: protobuf.md
 - name: Merger & Gateway
   href: merger-gateway.md
 - name: Migration from Saunter

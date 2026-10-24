@@ -1,0 +1,5 @@
+---
+"bielu-aspnetcore-asyncapi": minor
+---
+
+Add `Bielu.AspNetCore.AsyncApi.Protobuf`, a new package that describes payloads whose types are Protocol Buffers messages by their `.proto` source. `AsyncApiOptions.AddProtobufPayloads()` replaces the payload of every message whose type is a generated `IMessage` with `schemaFormat: application/vnd.google.protobuf;version=3` (or `2` for a proto2 file). The source is a string rendered from the message descriptor, so field numbers, scalar types, labels, proto2 defaults, maps, oneofs, nested types, enums and reserved ranges are the real wire contract. It is one self-contained file: the payload message is marked `@RootNode` and declared with every message and enum it uses, and the `google/protobuf` and `google/type` types stay imports. Other payloads keep their JSON Schema, as do messages from editions files and messages that use types from a file of another syntax, which one file can't describe faithfully. `ForMessages` limits which messages are converted.

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package test.mixed;
+
+import "legacy.proto";
+
+option csharp_namespace = "Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Mixed";
+
+message Wrapper {
+  test.legacy.LegacyEvent event = 1;
+}
