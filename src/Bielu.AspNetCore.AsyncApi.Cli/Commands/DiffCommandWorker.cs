@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Bielu.AspNetCore.AsyncApi.Merger.Merge;
 using Bielu.Cli.Shared;
 using Bielu.Cli.Shared.Diff;
 using ByteBard.AsyncAPI.Readers;
@@ -58,7 +59,7 @@ internal sealed class DiffCommandWorker
             return CliExitCode.Failure;
         }
 
-        var reader = new AsyncApiStringReader();
+        var reader = new AsyncApiStringReader(AsyncApiReaderSettingsFactory.Create());
         var baseDoc = reader.Read(baseContent, out _);
         var headDoc = reader.Read(headContent, out _);
 

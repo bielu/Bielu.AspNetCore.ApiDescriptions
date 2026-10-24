@@ -112,4 +112,68 @@ public class ArazzoStepBuilderTests
 
         await Should.ThrowAsync<ArazzoDocumentValidationException>(() => documentProvider.GetArazzoDocumentAsync());
     }
+
+    [Fact]
+    public void FluentMethods_PopulateEveryStepField()
+    {
+        // Arrange
+        var success = new ArazzoSuccessAction { Name = "done", Type = "end" };
+        var failure = new ArazzoFailureAction { Name = "retry", Type = "retry", RetryAfter = 1, RetryLimit = 3 };
+
+        // Act
+        var options = BuildOptionsWithStep(s => s
+            .Channel("events", "lightMeasured", ArazzoStepAction.Receive)
+            .WithDescription("Wait for the measurement")
+            .WithCorrelationId("measurementCorrelation")
+            .Parameter("tenant", "$inputs.tenant", "header")
+            .OnSuccess(success)
+            .OnFailure(failure)
+            .WithTimeout(5000));
+
+        // Assert
+        var step = options.Workflows[0].Steps[0];
+        step.Description.ShouldBe("Wait for the measurement");
+        step.CorrelationId.ShouldBe("measurementCorrelation");
+        var parameter = step.Parameters.ShouldNotBeNull().ShouldHaveSingleItem().Value.ShouldNotBeNull();
+        parameter.Name.ShouldBe("tenant");
+        parameter.In.ShouldBe("header");
+        parameter.Value.Expression.ShouldBe("$inputs.tenant");
+        step.OnSuccess.ShouldNotBeNull().ShouldHaveSingleItem().Value.ShouldBeSameAs(success);
+        step.OnFailure.ShouldNotBeNull().ShouldHaveSingleItem().Value.ShouldBeSameAs(failure);
+        step.Timeout.ShouldBe(5000);
+    }
+
+    [Fact]
+    public void Payload_LiteralAndExpression_SetTheRequestBody()
+    {
+        // Act
+        var literal = BuildOptionsWithStep(s => s.Operation("createOrder").Payload(System.Text.Json.Nodes.JsonNode.Parse("""{"sku":"A"}""")!, "application/json"));
+        var expression = BuildOptionsWithStep(s => s.Operation("createOrder").PayloadExpression("$inputs.order"));
+
+        // Assert
+        var literalBody = literal.Workflows[0].Steps[0].RequestBody.ShouldNotBeNull();
+        literalBody.ContentType.ShouldBe("application/json");
+        literalBody.Payload.ShouldNotBeNull().Literal!["sku"]!.GetValue<string>().ShouldBe("A");
+        var expressionBody = expression.Workflows[0].Steps[0].RequestBody.ShouldNotBeNull();
+        expressionBody.ContentType.ShouldBeNull();
+        expressionBody.Payload.ShouldNotBeNull().Expression.ShouldBe("$inputs.order");
+    }
+
+    [Fact]
+    public void FluentMethods_InvalidArguments_Throw()
+    {
+        // Act & Assert
+        BuildOptionsWithStep(s =>
+        {
+            Should.Throw<ArgumentException>(() => s.WithCorrelationId(""));
+            Should.Throw<ArgumentNullException>(() => s.Payload(null!));
+            Should.Throw<ArgumentException>(() => s.PayloadExpression(""));
+            Should.Throw<ArgumentException>(() => s.Parameter("", "$inputs.x"));
+            Should.Throw<ArgumentException>(() => s.Parameter("x", ""));
+            Should.Throw<ArgumentNullException>(() => s.OnSuccess(null!));
+            Should.Throw<ArgumentNullException>(() => s.OnFailure(null!));
+            Should.Throw<ArgumentOutOfRangeException>(() => s.WithTimeout(0));
+            s.Operation("createOrder");
+        });
+    }
 }

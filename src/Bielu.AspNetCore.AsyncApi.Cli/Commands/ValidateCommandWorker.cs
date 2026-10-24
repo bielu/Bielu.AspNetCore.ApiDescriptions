@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Bielu.AspNetCore.AsyncApi.Merger.Merge;
 using Bielu.Cli.Shared;
 using Bielu.Cli.Shared.Diagnostics;
 using ByteBard.AsyncAPI.Readers;
@@ -73,7 +74,7 @@ internal sealed class ValidateCommandWorker
                 continue;
             }
 
-            var reader = new AsyncApiStringReader();
+            var reader = new AsyncApiStringReader(AsyncApiReaderSettingsFactory.Create());
             reader.Read(content, out var diagnostic);
 
             reports.Add(new FileDiagnosticReport

@@ -100,4 +100,52 @@ public class ValidateCommandWorkerTests : IAsyncLifetime
         // Should find both valid and invalid, returning 1 due to invalid.
         result.ShouldBe(1);
     }
+
+    [Fact]
+    public void Process_GlobMatchingNothing_ReportsNoFilesAndFails()
+    {
+        // Arrange
+        var errors = new List<string>();
+        var context = new ValidateCommandContext();
+        context.Files.Add(Path.Combine(Path.GetTempPath(), $"no-such-{Guid.NewGuid():N}", "*.json"));
+        var worker = new ValidateCommandWorker(context, _ => { }, _ => { }, errors.Add);
+
+        // Act
+        var exitCode = worker.Process();
+
+        // Assert
+        exitCode.ShouldBe(1);
+        errors.ShouldContain("No files found to validate.");
+    }
+
+    [Fact]
+    public void Process_MissingFile_ReportsItAndFails()
+    {
+        // Arrange
+        var errors = new List<string>();
+        var missing = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.json");
+        var context = new ValidateCommandContext();
+        context.Files.Add(missing);
+        var worker = new ValidateCommandWorker(context, _ => { }, _ => { }, errors.Add);
+
+        // Act
+        var exitCode = worker.Process();
+
+        // Assert
+        exitCode.ShouldBe(1);
+        errors.ShouldContain(error => error.Contains("File not found"));
+    }
+
+    [Fact]
+    public void Constructor_NullArguments_Throw()
+    {
+        // Arrange
+        var context = new ValidateCommandContext();
+
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() => new ValidateCommandWorker(null!, _ => { }, _ => { }, _ => { }));
+        Should.Throw<ArgumentNullException>(() => new ValidateCommandWorker(context, null!, _ => { }, _ => { }));
+        Should.Throw<ArgumentNullException>(() => new ValidateCommandWorker(context, _ => { }, null!, _ => { }));
+        Should.Throw<ArgumentNullException>(() => new ValidateCommandWorker(context, _ => { }, _ => { }, null!));
+    }
 }

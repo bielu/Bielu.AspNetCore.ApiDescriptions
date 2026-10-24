@@ -3,26 +3,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 using ByteBard.AsyncAPI.Models;
-using ByteBard.AsyncAPI.Models.Interfaces;
 
 namespace Bielu.AspNetCore.AsyncApi.Extensions;
 
 internal static class AsyncApiJsonSchemaExtensions
 {
-    private static readonly AsyncApiJsonSchema _nullSchema = new() { Type = SchemaType.Null };
-
-    public static IAsyncApiSchema CreateOneOfNullableWrapper(this AsyncApiJsonSchema originalSchema)
-    {
-        return new AsyncApiJsonSchema
-        {
-            OneOf =
-            [
-                _nullSchema,
-                originalSchema
-            ]
-        };
-    }
-
     public static bool IsComponentizedSchema(this AsyncApiJsonSchema schema)
         => schema.IsComponentizedSchema(out _);
 

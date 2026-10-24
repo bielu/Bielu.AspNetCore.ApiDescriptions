@@ -46,25 +46,60 @@ for (var i = 1; i < args.Length; i++)
     switch (args[i])
     {
         case "--assembly":
-            context.AssemblyName = args[++i];
+            if (!CliArgumentReader.TryReadValue(args, ref i, "--assembly", logger, out var assembly))
+            {
+                return CliExitCode.Failure;
+            }
+
+            context.AssemblyName = assembly;
             break;
         case "--assembly-path":
-            context.AssemblyPath = args[++i];
+            if (!CliArgumentReader.TryReadValue(args, ref i, "--assembly-path", logger, out var assemblyPath))
+            {
+                return CliExitCode.Failure;
+            }
+
+            context.AssemblyPath = assemblyPath;
             break;
         case "--output":
-            context.OutputDirectory = args[++i];
+            if (!CliArgumentReader.TryReadValue(args, ref i, "--output", logger, out var output))
+            {
+                return CliExitCode.Failure;
+            }
+
+            context.OutputDirectory = output;
             break;
         case "--project":
-            context.ProjectName = args[++i];
+            if (!CliArgumentReader.TryReadValue(args, ref i, "--project", logger, out var project))
+            {
+                return CliExitCode.Failure;
+            }
+
+            context.ProjectName = project;
             break;
         case "--document":
-            context.DocumentName = args[++i];
+            if (!CliArgumentReader.TryReadValue(args, ref i, "--document", logger, out var document))
+            {
+                return CliExitCode.Failure;
+            }
+
+            context.DocumentName = document;
             break;
         case "--file-list":
-            context.FileListPath = args[++i];
+            if (!CliArgumentReader.TryReadValue(args, ref i, "--file-list", logger, out var fileList))
+            {
+                return CliExitCode.Failure;
+            }
+
+            context.FileListPath = fileList;
             break;
         case "--file-name":
-            context.FileName = args[++i];
+            if (!CliArgumentReader.TryReadValue(args, ref i, "--file-name", logger, out var fileName))
+            {
+                return CliExitCode.Failure;
+            }
+
+            context.FileName = fileName;
             break;
         default:
             logger.Error($"Unknown argument: {args[i]}");
