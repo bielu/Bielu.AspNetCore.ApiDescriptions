@@ -85,7 +85,7 @@ public class OrderEvents
 {
     [Channel("orders")]
     [Message(typeof(OrderPlaced), BindingsRef = "orderPlaced")]
-    [PublishOperation(typeof(OrderPlaced), BindingsRef = "publishOrder")]
+    [ReceiveOperation(typeof(OrderPlaced), BindingsRef = "publishOrder")]
     public void PublishOrder(OrderPlaced order) { }
 }
 ```

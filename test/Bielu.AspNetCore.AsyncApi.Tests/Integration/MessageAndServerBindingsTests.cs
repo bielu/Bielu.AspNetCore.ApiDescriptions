@@ -30,14 +30,14 @@ public class MessageAndServerBindingsTests
     {
         [Channel("orders/placed")]
         [Message(typeof(OrderPlaced), MessageId = "orderPlaced", BindingsRef = "order placed")]
-        [SubscribeOperation(OperationId = "orderPlacedOperation")]
+        [SendOperation(OperationId = "orderPlacedOperation")]
         public void OrderPlacedEvent()
         {
         }
 
         [Channel("orders/cancelled")]
         [Message(typeof(OrderCancelled), MessageId = "orderCancelled", BindingsRef = "not-registered")]
-        [SubscribeOperation(OperationId = "orderCancelledOperation")]
+        [SendOperation(OperationId = "orderCancelledOperation")]
         public void OrderCancelledEvent()
         {
         }

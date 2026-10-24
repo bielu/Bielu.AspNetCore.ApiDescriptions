@@ -26,14 +26,14 @@ public class MessageAttributeTagsTests
     {
         [Channel("orders/placed")]
         [Message(typeof(OrderPlaced), "orders", "billing", MessageId = "orderPlaced")]
-        [SubscribeOperation(typeof(OrderPlaced), "orders", OperationId = "orderPlacedOperation")]
+        [SendOperation(typeof(OrderPlaced), "orders", OperationId = "orderPlacedOperation")]
         public void OrderPlacedEvent()
         {
         }
 
         [Channel("orders/cancelled")]
         [Message(typeof(OrderCancelled), MessageId = "orderCancelled")]
-        [SubscribeOperation(OperationId = "orderCancelledOperation")]
+        [SendOperation(OperationId = "orderCancelledOperation")]
         public void OrderCancelledEvent()
         {
         }

@@ -10,7 +10,7 @@ public class NotificationService
     /// </summary>
     /// <param name="update">The notification update data.</param>
     [Channel("notifications/updates")]
-    [SubscribeOperation(typeof(NotificationUpdate), "Notify", Summary = "Subscribe to notification updates.")]
+    [SendOperation(typeof(NotificationUpdate), "Notify", Summary = "Subscribe to notification updates.")]
     public void Notify(NotificationUpdate update) { }
 }
 

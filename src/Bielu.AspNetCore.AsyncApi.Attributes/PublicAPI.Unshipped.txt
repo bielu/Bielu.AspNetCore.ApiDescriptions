@@ -183,8 +183,6 @@ Bielu.AspNetCore.AsyncApi.Attributes.OperationAttribute.Tags.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.OperationAttribute.Title.get -> string?
 Bielu.AspNetCore.AsyncApi.Attributes.OperationAttribute.Title.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.OperationType
-Bielu.AspNetCore.AsyncApi.Attributes.OperationType.Publish = 0 -> Bielu.AspNetCore.AsyncApi.Attributes.OperationType
-Bielu.AspNetCore.AsyncApi.Attributes.OperationType.Subscribe = 1 -> Bielu.AspNetCore.AsyncApi.Attributes.OperationType
 Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute
 Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute.PublishOperationAttribute() -> void
 Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute.PublishOperationAttribute(System.Type! messagePayloadType) -> void
@@ -229,3 +227,13 @@ Bielu.AspNetCore.AsyncApi.Attributes.OperationAttribute.Traits.get -> string![]!
 Bielu.AspNetCore.AsyncApi.Attributes.OperationAttribute.Traits.set -> void
 Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute.MessageAttribute() -> void
 Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute.PayloadType.get -> System.Type?
+Bielu.AspNetCore.AsyncApi.Attributes.OperationType.Receive = 1 -> Bielu.AspNetCore.AsyncApi.Attributes.OperationType
+Bielu.AspNetCore.AsyncApi.Attributes.OperationType.Send = 0 -> Bielu.AspNetCore.AsyncApi.Attributes.OperationType
+Bielu.AspNetCore.AsyncApi.Attributes.ReceiveOperationAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.ReceiveOperationAttribute.ReceiveOperationAttribute() -> void
+Bielu.AspNetCore.AsyncApi.Attributes.ReceiveOperationAttribute.ReceiveOperationAttribute(System.Type! messagePayloadType) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.ReceiveOperationAttribute.ReceiveOperationAttribute(System.Type! messagePayloadType, params string![]! tags) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.SendOperationAttribute
+Bielu.AspNetCore.AsyncApi.Attributes.SendOperationAttribute.SendOperationAttribute() -> void
+Bielu.AspNetCore.AsyncApi.Attributes.SendOperationAttribute.SendOperationAttribute(System.Type! messagePayloadType) -> void
+Bielu.AspNetCore.AsyncApi.Attributes.SendOperationAttribute.SendOperationAttribute(System.Type! messagePayloadType, params string![]! tags) -> void

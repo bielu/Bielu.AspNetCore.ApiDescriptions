@@ -68,7 +68,7 @@ using Bielu.AspNetCore.AsyncApi.Attributes;
 [AsyncApi]
 public class TestHub
 {
-    [PublishOperation]
+    [ReceiveOperation]
     public void SendMessage() {}
 }
 ";
@@ -198,7 +198,7 @@ using Bielu.AspNetCore.AsyncApi.Attributes;
 public class TestHub
 {
     [Channel(""test topic"")]
-    [PublishOperation(OperationId = ""my op"")]
+    [ReceiveOperation(OperationId = ""my op"")]
     [Message(typeof(string), MessageId = ""my msg"")]
     public void SendMessage() {}
 }
@@ -217,7 +217,7 @@ using Bielu.AspNetCore.AsyncApi.Attributes;
 public class TestHub
 {
     [Channel(""test"")]
-    [PublishOperation]
+    [ReceiveOperation]
     public void SendMessage() {}
 }
 ";
@@ -237,7 +237,7 @@ using Bielu.AspNetCore.AsyncApi.Attributes;
 public class TestHub
 {
     [Channel(""test"")]
-    [PublishOperation(Summary = ""does a thing"")]
+    [ReceiveOperation(Summary = ""does a thing"")]
     public void SendMessage() {}
 }
 ";

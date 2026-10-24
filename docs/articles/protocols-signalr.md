@@ -40,7 +40,7 @@ Annotate your hub class and its methods:
 [Channel("chatHub", BindingsRef = "chatHub")]
 public class ChatHub : Hub
 {
-    [PublishOperation(typeof(ChatMessage), BindingsRef = "sendMessage")]
+    [ReceiveOperation(typeof(ChatMessage), BindingsRef = "sendMessage")]
     public Task SendMessage(ChatMessage message) => Clients.All.SendAsync("ReceiveMessage", message);
 }
 ```

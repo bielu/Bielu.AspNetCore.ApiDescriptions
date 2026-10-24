@@ -29,19 +29,19 @@ public record TypingEvent(string User, bool IsTyping, string? Room);
 public interface IChatClient
 {
     /// <summary>Pushes a chat message to connected clients.</summary>
-    [SubscribeOperation(typeof(ChatMessage), "chat", Summary = "A chat message was broadcast to the client.", BindingsRef = "receiveMessage")]
+    [SendOperation(typeof(ChatMessage), "chat", Summary = "A chat message was broadcast to the client.", BindingsRef = "receiveMessage")]
     Task ReceiveMessage(ChatMessage message);
 
     /// <summary>Notifies clients that a user joined the hub.</summary>
-    [SubscribeOperation(typeof(PresenceEvent), "presence", Summary = "A user connected to the hub.", BindingsRef = "userJoined")]
+    [SendOperation(typeof(PresenceEvent), "presence", Summary = "A user connected to the hub.", BindingsRef = "userJoined")]
     Task UserJoined(PresenceEvent presence);
 
     /// <summary>Notifies clients that a user left the hub.</summary>
-    [SubscribeOperation(typeof(PresenceEvent), "presence", Summary = "A user disconnected from the hub.", BindingsRef = "userLeft")]
+    [SendOperation(typeof(PresenceEvent), "presence", Summary = "A user disconnected from the hub.", BindingsRef = "userLeft")]
     Task UserLeft(PresenceEvent presence);
 
     /// <summary>Relays another user's typing indicator.</summary>
-    [SubscribeOperation(typeof(TypingEvent), "presence", Summary = "Another user started or stopped typing.", BindingsRef = "typingChanged")]
+    [SendOperation(typeof(TypingEvent), "presence", Summary = "Another user started or stopped typing.", BindingsRef = "typingChanged")]
     Task TypingChanged(TypingEvent typing);
 }
 
@@ -100,7 +100,7 @@ public class ChatHub : Hub<IChatClient>
     }
 
     /// <summary>Client-to-server invocation: broadcast a message to everyone connected to the hub.</summary>
-    [PublishOperation(typeof(ChatMessage), "chat", Summary = "Broadcast a chat message to every connected client.", BindingsRef = "sendMessage")]
+    [ReceiveOperation(typeof(ChatMessage), "chat", Summary = "Broadcast a chat message to every connected client.", BindingsRef = "sendMessage")]
     public async Task SendMessage(ChatMessage message)
     {
         // Normalise once so the backlog and the live broadcast carry the identical (room-less) payload.
@@ -114,7 +114,7 @@ public class ChatHub : Hub<IChatClient>
     /// the message payload so the whole call is a single argument — which keeps the generated example
     /// directly invocable from the Scalar console.
     /// </summary>
-    [PublishOperation(typeof(ChatMessage), "chat", Summary = "Send a chat message to a single room.", BindingsRef = "sendToRoom")]
+    [ReceiveOperation(typeof(ChatMessage), "chat", Summary = "Send a chat message to a single room.", BindingsRef = "sendToRoom")]
     [Channel("chatHub")]
     public async Task SendToRoom(ChatMessage message)
     {
@@ -131,7 +131,7 @@ public class ChatHub : Hub<IChatClient>
     }
 
     /// <summary>Adds the caller to a named chat room.</summary>
-    [PublishOperation(typeof(string), Summary = "Join a named chat room.", BindingsRef = "joinRoom")]
+    [ReceiveOperation(typeof(string), Summary = "Join a named chat room.", BindingsRef = "joinRoom")]
     [Channel("chatHub")]
     public async Task JoinRoom(string room)
     {
@@ -149,7 +149,7 @@ public class ChatHub : Hub<IChatClient>
     }
 
     /// <summary>Removes the caller from a named chat room.</summary>
-    [PublishOperation(typeof(string), Summary = "Leave a named chat room.", BindingsRef = "leaveRoom")]
+    [ReceiveOperation(typeof(string), Summary = "Leave a named chat room.", BindingsRef = "leaveRoom")]
     [Channel("chatHub")]
     public Task LeaveRoom(string room)
     {
@@ -170,7 +170,7 @@ public class ChatHub : Hub<IChatClient>
     /// <see cref="TypingEvent"/> payload; the server stamps it with the caller's real name before
     /// relaying it so a client cannot spoof another user.
     /// </summary>
-    [PublishOperation(typeof(TypingEvent), "presence", Summary = "Broadcast a typing indicator to other clients.", BindingsRef = "notifyTyping")]
+    [ReceiveOperation(typeof(TypingEvent), "presence", Summary = "Broadcast a typing indicator to other clients.", BindingsRef = "notifyTyping")]
     [Channel("chatHub")]
     public Task NotifyTyping(TypingEvent typing)
         => Clients.Others.TypingChanged(typing with { User = UserName });
@@ -180,7 +180,7 @@ public class ChatHub : Hub<IChatClient>
     /// caller awaits a result this is a SignalR <c>invocation</c> (<c>connection.invoke</c>), in
     /// contrast to the fire-and-forget <c>send</c> methods above.
     /// </summary>
-    [PublishOperation(Summary = "Return the users currently connected to the hub.", BindingsRef = "getOnlineUsers")]
+    [ReceiveOperation(Summary = "Return the users currently connected to the hub.", BindingsRef = "getOnlineUsers")]
     [Channel("chatHub")]
     public Task<IReadOnlyCollection<string>> GetOnlineUsers()
         => Task.FromResult<IReadOnlyCollection<string>>(Connections.Values.Distinct().ToArray());
@@ -191,7 +191,7 @@ public class ChatHub : Hub<IChatClient>
     /// never leak room-scoped traffic. Showcases the <c>streamInvocation</c> call type; the single
     /// <c>int</c> argument is what the caller supplies, so the generated console example is invocable.
     /// </summary>
-    [PublishOperation(typeof(int), "chat", Summary = "Stream the recent message backlog to the caller.", BindingsRef = "streamHistory")]
+    [ReceiveOperation(typeof(int), "chat", Summary = "Stream the recent message backlog to the caller.", BindingsRef = "streamHistory")]
     [Channel("chatHub")]
     public async IAsyncEnumerable<ChatMessage> StreamHistory(
         int count,

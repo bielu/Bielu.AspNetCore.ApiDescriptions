@@ -71,13 +71,13 @@ public enum PaymentStatus
 public class OrderEventHandler
 {
     [Channel("orders/created", Description = "Channel for order creation events")]
-    [SubscribeOperation(typeof(OrderCreatedEvent), Summary = "Subscribe to order creation events")]
+    [SendOperation(typeof(OrderCreatedEvent), Summary = "Subscribe to order creation events")]
     public void HandleOrderCreated(OrderCreatedEvent orderEvent)
     {
     }
 
     [Channel("orders/cancelled", Description = "Channel for order cancellation events")]
-    [SubscribeOperation(typeof(OrderCancelledEvent), Summary = "Subscribe to order cancellation events")]
+    [SendOperation(typeof(OrderCancelledEvent), Summary = "Subscribe to order cancellation events")]
     public void HandleOrderCancelled(OrderCancelledEvent orderEvent)
     {
     }
@@ -87,7 +87,7 @@ public class OrderEventHandler
 public class OrderEventPublisher
 {
     [Channel("orders/created", Description = "Channel for order creation events")]
-    [PublishOperation(typeof(OrderCreatedEvent), Summary = "Publish order creation events")]
+    [ReceiveOperation(typeof(OrderCreatedEvent), Summary = "Publish order creation events")]
     public void PublishOrderCreated(OrderCreatedEvent orderEvent)
     {
     }
@@ -98,7 +98,7 @@ public class OrderEventPublisher
 public class PaymentEventHandler
 {
     [Message(typeof(PaymentProcessedEvent))]
-    [SubscribeOperation(OperationId = "handlePaymentProcessed", Summary = "Handle payment processed events")]
+    [SendOperation(OperationId = "handlePaymentProcessed", Summary = "Handle payment processed events")]
     public void HandlePaymentProcessed(PaymentProcessedEvent paymentEvent)
     {
     }
@@ -111,14 +111,14 @@ public class PaymentEventHandler
 public class MultiServerHandler
 {
     [Channel("notifications/email", Description = "Email notification channel", Servers = new[] { "smtp-server" })]
-    [PublishOperation(Summary = "Send email notifications")]
+    [ReceiveOperation(Summary = "Send email notifications")]
     [Message(typeof(EmailNotification))]
     public void SendEmailNotification(EmailNotification notification)
     {
     }
 
     [Channel("notifications/push", Description = "Push notification channel", Servers = new[] { "websocket-server" })]
-    [PublishOperation(Summary = "Send push notifications")]
+    [ReceiveOperation(Summary = "Send push notifications")]
     [Message(typeof(PushNotification))]
     public void SendPushNotification(PushNotification notification)
     {
@@ -148,7 +148,7 @@ public class PushNotification
 public class UserEventHandler
 {
     [Message(typeof(UserUpdatedEvent))]
-    [SubscribeOperation(OperationId = "handleUserEvent", Summary = "Handle user-specific events")]
+    [SendOperation(OperationId = "handleUserEvent", Summary = "Handle user-specific events")]
     public void HandleUserEvent(UserUpdatedEvent userEvent)
     {
     }
@@ -170,7 +170,7 @@ public class UserUpdatedEvent
 public interface IInventoryEventHandler
 {
     [Message(typeof(InventoryUpdatedEvent))]
-    [SubscribeOperation(Summary = "Handle inventory updates")]
+    [SendOperation(Summary = "Handle inventory updates")]
     void HandleInventoryUpdate(InventoryUpdatedEvent inventoryEvent);
 }
 
@@ -192,7 +192,7 @@ public class AuditEventHandler
     [Message(typeof(AuditLoginEvent))]
     [Message(typeof(AuditLogoutEvent))]
     [Message(typeof(AuditActionEvent))]
-    [SubscribeOperation(OperationId = "handleAuditEvents", Summary = "Handle all audit events")]
+    [SendOperation(OperationId = "handleAuditEvents", Summary = "Handle all audit events")]
     public void HandleAuditEvent(object auditEvent)
     {
     }

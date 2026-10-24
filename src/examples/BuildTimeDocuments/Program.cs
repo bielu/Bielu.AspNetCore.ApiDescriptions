@@ -46,7 +46,7 @@ internal sealed class OrderEvents
 {
     [Channel("orderPlaced")]
     [Message(typeof(OrderPlaced))]
-    [SubscribeOperation(typeof(OrderPlaced), OperationId = "onOrderPlaced")]
+    [SendOperation(typeof(OrderPlaced), OperationId = "onOrderPlaced")]
     public void OrderPlacedEvent()
     {
     }

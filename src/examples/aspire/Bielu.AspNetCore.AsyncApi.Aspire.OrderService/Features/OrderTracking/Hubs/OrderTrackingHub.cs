@@ -18,7 +18,7 @@ public class OrderTrackingHub(ILogger<OrderTrackingHub> logger) : Hub
     /// <summary>
     /// Publishes a real-time order tracking update to subscribed clients via WebSocket.
     /// </summary>
-    [PublishOperation(typeof(OrderTrackingUpdate), "OrderTrackingUpdate",
+    [ReceiveOperation(typeof(OrderTrackingUpdate), "OrderTrackingUpdate",
         BindingsRef = "wsOrderTrackingChannel",
         Summary = "Receive real-time order tracking updates via WebSocket")]
     public async Task SendTrackingUpdate(OrderTrackingUpdate update)
@@ -32,7 +32,7 @@ public class OrderTrackingHub(ILogger<OrderTrackingHub> logger) : Hub
     /// <summary>
     /// Subscribe to tracking updates for a specific order.
     /// </summary>
-    [SubscribeOperation(typeof(string), "SubscribeToOrderTracking",
+    [SendOperation(typeof(string), "SubscribeToOrderTracking",
         BindingsRef = "wsOrderTrackingChannel",
         Summary = "Subscribe to real-time tracking updates for a specific order")]
     public async Task TrackOrder(string orderId)

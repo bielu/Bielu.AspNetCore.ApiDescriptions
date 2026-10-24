@@ -18,7 +18,7 @@ public class InventoryNotificationHub(ILogger<InventoryNotificationHub> logger) 
     /// <summary>
     /// Sends an inventory alert notification to all connected clients.
     /// </summary>
-    [PublishOperation(typeof(InventoryAlertNotification), "InventoryAlertNotification",
+    [ReceiveOperation(typeof(InventoryAlertNotification), "InventoryAlertNotification",
         BindingsRef = "wsNotificationChannel",
         Summary = "Receive real-time inventory level alerts via WebSocket")]
     public async Task SendInventoryAlert(InventoryAlertNotification notification)
@@ -32,7 +32,7 @@ public class InventoryNotificationHub(ILogger<InventoryNotificationHub> logger) 
     /// <summary>
     /// Subscribe to notifications for a specific product.
     /// </summary>
-    [SubscribeOperation(typeof(string), "SubscribeToProduct",
+    [SendOperation(typeof(string), "SubscribeToProduct",
         BindingsRef = "wsNotificationChannel",
         Summary = "Subscribe to inventory alerts for a specific product by ID")]
     public async Task SubscribeToProduct(string productId)

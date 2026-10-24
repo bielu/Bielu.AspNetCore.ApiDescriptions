@@ -8,11 +8,13 @@ Bielu.AspNetCore.AsyncApi uses attributes to discover and describe your AsyncAPI
 |-----------|-------------|
 | `[AsyncApi]` | Marks a class for scanning by the generator. Without this, other attributes on the class or its methods will be ignored. |
 | `[Channel]` | Defines a channel. Can be applied to a class or a method. |
-| `[SubscribeOperation]` | Defines a subscribe operation (server publishes, client receives). |
-| `[PublishOperation]` | Defines a publish operation (client publishes, server receives). |
+| `[SendOperation]` | Defines an operation through which the application sends messages (AsyncAPI 3 `action: send`; a `subscribe` operation in 2.x). |
+| `[ReceiveOperation]` | Defines an operation through which the application receives messages (AsyncAPI 3 `action: receive`; a `publish` operation in 2.x). |
 | `[Message]` | Provides metadata for a message, such as its name, summary, or headers. |
 | `[MessageExample]` | Defines an example for a message. |
 | `[ChannelParameter]` | Defines a parameter in a channel path (e.g., `{id}`). |
+
+`[PublishOperation]` and `[SubscribeOperation]` still work but are obsolete. They were named the AsyncAPI 2.x way, from the client's point of view, so they read backwards next to AsyncAPI 3 output: `[PublishOperation]` is replaced by `[ReceiveOperation]`, and `[SubscribeOperation]` by `[SendOperation]`.
 
 ## Usage Examples
 
@@ -24,7 +26,7 @@ public class MyMessageBus
 {
     [Channel("users/{userId}/signed-up")]
     [ChannelParameter("userId", Description = "The unique user ID")]
-    [SubscribeOperation(typeof(UserSignedUp), "UserSignUp", Summary = "Emitted when a user signs up.")]
+    [SendOperation(typeof(UserSignedUp), "UserSignUp", Summary = "Emitted when a user signs up.")]
     public void HandleUserSignUp(UserSignedUp msg) { }
 }
 ```

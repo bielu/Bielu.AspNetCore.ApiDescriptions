@@ -47,27 +47,79 @@ public class GeneratedMetadataProviderTests
 
         public sealed record InvoiceDisputed(string InvoiceId);
 
+        public sealed record InvoiceRequested(string InvoiceId);
+
+        public sealed record InvoiceArchived(string InvoiceId);
+
+        public enum ArchiveReason { Expired = -1, Requested = 1 }
+
+        // A custom operation attribute: it sets the payload in its constructor and adds a property of its own.
+        public sealed class ArchivesInvoiceAttribute : SendOperationAttribute
+        {
+            public ArchivesInvoiceAttribute(ArchiveReason reason, double retentionYears, params string[] tags)
+                : base(typeof(InvoiceArchived), tags)
+            {
+                Description = $"Archived ({reason}) after {retentionYears} years.";
+            }
+
+            public string? Archive { get => Summary; set => Summary = $"Moved to {value}."; }
+        }
+
         [AsyncApi("__DOC__")]
         public sealed class Channels
         {
             [Channel("invoices/issued")]
             [Message(typeof(InvoiceIssued))]
-            [SubscribeOperation(OperationId = "invoiceIssuedOperation")]
+            [SendOperation(OperationId = "invoiceIssuedOperation")]
             public void Issued() { }
 
             [Channel("invoices/paid")]
             [Message(typeof(InvoicePaid), Title = "Overridden title", ContentType = "text/plain")]
-            [SubscribeOperation(OperationId = "invoicePaidOperation")]
+            [SendOperation(OperationId = "invoicePaidOperation")]
             public void Paid() { }
 
             [Channel("invoices/voided")]
-            [SubscribeOperation(typeof(InvoiceVoided), "invoices", OperationId = "invoiceVoidedOperation")]
+            [SendOperation(typeof(InvoiceVoided), "invoices", OperationId = "invoiceVoidedOperation")]
             public void Voided() { }
 
             [Channel("invoices/disputed")]
             [Message(typeof(InvoiceDisputed), MessageId = "invoiceDisputed")]
-            [SubscribeOperation(OperationId = "invoiceDisputedOperation")]
+            [SendOperation(OperationId = "invoiceDisputedOperation")]
             public void Disputed() { }
+
+            [Channel("invoices/requested")]
+            [ReceiveOperation(typeof(InvoiceRequested), OperationId = "invoiceRequestedOperation")]
+            public void Requested() { }
+
+            [Channel("invoices/legacy-requested")]
+            [PublishOperation(typeof(InvoiceRequested), OperationId = "invoiceLegacyRequestedOperation")]
+            public void LegacyRequested() { }
+
+            [Channel("invoices/archived")]
+            [ArchivesInvoice(ArchiveReason.Expired, 1.5, "invoices", OperationId = "invoiceArchivedOperation", Archive = "cold storage")]
+            public void Archived() { }
+        }
+        """;
+
+    // The custom operation attribute is private, so the generated provider cannot name it.
+    private const string InaccessibleOperationSource = """
+        using Bielu.AspNetCore.AsyncApi.Attributes;
+
+        namespace Sample;
+
+        public sealed record InvoiceArchived(string InvoiceId);
+
+        [AsyncApi("__DOC__")]
+        public sealed class Channels
+        {
+            [Channel("invoices/archived")]
+            [ArchivesInvoice]
+            public void Archived() { }
+
+            private sealed class ArchivesInvoiceAttribute : SendOperationAttribute
+            {
+                public ArchivesInvoiceAttribute() : base(typeof(InvoiceArchived)) { }
+            }
         }
         """;
 
@@ -152,6 +204,62 @@ public class GeneratedMetadataProviderTests
         // Assert
         generatedJson.ShouldBe(reflectionJson);
         generatedJson.ShouldContain("Invoice issued");
+    }
+
+    [Theory]
+    [InlineData("invoiceIssuedOperation", AsyncApiAction.Send)]
+    [InlineData("invoiceRequestedOperation", AsyncApiAction.Receive)]
+    [InlineData("invoiceLegacyRequestedOperation", AsyncApiAction.Receive)]
+    [InlineData("invoiceArchivedOperation", AsyncApiAction.Send)]
+    public async Task GetAsyncApiDocument_GeneratedProvider_SetsOperationAction(string operationId, AsyncApiAction expected)
+    {
+        // Arrange
+        var documentName = NewDocumentName();
+        var compiled = Compile(Source, documentName);
+
+        // Act
+        var document = await GetDocumentAsync(documentName, compiled.Provider);
+
+        // Assert
+        document.Operations[operationId].Action.ShouldBe(expected);
+    }
+
+    [Fact]
+    public async Task GetAsyncApiDocument_DerivedOperationAttribute_RebuildsItWithItsOwnArguments()
+    {
+        // Arrange
+        var documentName = NewDocumentName();
+        var compiled = Compile(Source, documentName);
+
+        // Act
+        var document = await GetDocumentAsync(documentName, compiled.Provider);
+
+        // Assert
+        var archived = document.Operations["invoiceArchivedOperation"];
+        archived.Description.ShouldBe($"Archived (Expired) after {1.5} years.");
+        archived.Summary.ShouldBe("Moved to cold storage.");
+        archived.Tags.ShouldHaveSingleItem().Name.ShouldBe("invoices");
+        archived.Messages.ShouldHaveSingleItem();
+        compiled.Diagnostics.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAsyncApiDocument_InaccessibleOperationAttribute_ReportsDiagnosticAndSkipsOperation()
+    {
+        // Arrange
+        var documentName = NewDocumentName();
+        var compiled = Compile(InaccessibleOperationSource, documentName);
+
+        // Act
+        var document = await GetDocumentAsync(documentName, compiled.Provider);
+
+        // Assert
+        var diagnostic = compiled.Diagnostics.ShouldHaveSingleItem();
+        diagnostic.Id.ShouldBe("BASYNC011");
+        diagnostic.Severity.ShouldBe(DiagnosticSeverity.Warning);
+        diagnostic.GetMessage().ShouldContain("Sample.Channels.ArchivesInvoiceAttribute");
+        diagnostic.Location.IsInSource.ShouldBeTrue();
+        document.Operations.ShouldBeEmpty();
     }
 
     [Fact]
@@ -270,10 +378,10 @@ public class GeneratedMetadataProviderTests
         var providerType = assembly.GetType("Bielu.AspNetCore.AsyncApi.Generated.GeneratedAsyncApiMetadataProvider")!;
         var provider = (IAsyncApiMetadataProvider)Activator.CreateInstance(providerType)!;
 
-        return new Compiled(assembly, provider);
+        return new Compiled(assembly, provider, generatorDiagnostics);
     }
 
-    private sealed record Compiled(Assembly Assembly, IAsyncApiMetadataProvider Provider);
+    private sealed record Compiled(Assembly Assembly, IAsyncApiMetadataProvider Provider, IReadOnlyList<Diagnostic> Diagnostics);
 
     private sealed class OverridingProvider(
         IAsyncApiMetadataProvider inner,

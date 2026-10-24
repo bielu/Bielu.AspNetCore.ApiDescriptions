@@ -4,6 +4,8 @@
 ; Empty since the 1.0.0 baseline. Rules added, changed, or removed after 1.0.0 go here first;
 ; the release commit moves them under a new "## Release x.y.z" heading in
 ; AnalyzerReleases.Shipped.md.
+;
+; BASYNC011 is reported by the source generator, so it is tracked in that project's release files.
 
 ### New Rules
 

@@ -29,14 +29,14 @@ public class MessageAttributeHeadersTests
     {
         [Channel("orders/placed")]
         [Message(typeof(OrderPlaced), MessageId = "orderPlaced", HeadersType = typeof(OrderPlacedHeaders), ContentType = "application/cloudevents+json")]
-        [SubscribeOperation(OperationId = "orderPlacedOperation")]
+        [SendOperation(OperationId = "orderPlacedOperation")]
         public void OrderPlacedEvent()
         {
         }
 
         [Channel("orders/cancelled")]
         [Message(typeof(OrderCancelled), MessageId = "orderCancelled")]
-        [SubscribeOperation(OperationId = "orderCancelledOperation")]
+        [SendOperation(OperationId = "orderCancelledOperation")]
         public void OrderCancelledEvent()
         {
         }

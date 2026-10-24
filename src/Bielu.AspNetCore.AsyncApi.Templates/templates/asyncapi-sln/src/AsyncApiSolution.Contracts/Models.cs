@@ -16,13 +16,13 @@ public interface IMessageContract
     /// Channel for system notifications.
     /// </summary>
     [Channel("system/notifications")]
-    [SubscribeOperation(typeof(SystemMessage), "OnNotification", Summary = "Receive system notifications.")]
+    [SendOperation(typeof(SystemMessage), "OnNotification", Summary = "Receive system notifications.")]
     void OnNotification(SystemMessage message);
 
     /// <summary>
     /// Channel for system commands.
     /// </summary>
     [Channel("system/commands")]
-    [PublishOperation(typeof(SystemMessage), "SendCommand", Summary = "Send a system command.")]
+    [ReceiveOperation(typeof(SystemMessage), "SendCommand", Summary = "Send a system command.")]
     void SendCommand(SystemMessage message);
 }

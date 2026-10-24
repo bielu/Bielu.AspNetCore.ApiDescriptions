@@ -35,7 +35,7 @@ public class Worker : BackgroundService
     /// </summary>
     /// <param name="message">The task message to process.</param>
     [Channel("tasks/incoming")]
-    [PublishOperation(typeof(TaskMessage), "ProcessTask", Summary = "Process an incoming task.")]
+    [ReceiveOperation(typeof(TaskMessage), "ProcessTask", Summary = "Process an incoming task.")]
     public void ProcessMessage(TaskMessage message)
     {
         _logger.LogInformation("Processing task: {Description}", message.Description);

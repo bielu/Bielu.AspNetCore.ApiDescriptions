@@ -8,8 +8,6 @@ internal static class RuleConstants
     public const string OperationAttributeName = Namespace + ".OperationAttribute";
     public const string MessageAttributeName = Namespace + ".MessageAttribute";
     public const string ChannelParameterAttributeName = Namespace + ".ChannelParameterAttribute";
-    public const string PublishOperationAttributeName = Namespace + ".PublishOperationAttribute";
-    public const string SubscribeOperationAttributeName = Namespace + ".SubscribeOperationAttribute";
     public const string MessageExampleAttributeName = Namespace + ".MessageExampleAttribute";
     public const string IMessageExampleProviderName = Namespace + ".IAsyncApiMessageExampleProvider";
 }

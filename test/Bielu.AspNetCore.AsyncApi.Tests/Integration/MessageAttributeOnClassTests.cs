@@ -36,27 +36,27 @@ public class MessageAttributeOnClassTests
     {
         [Channel("invoices/issued")]
         [Message(typeof(InvoiceIssued))]
-        [SubscribeOperation(OperationId = "invoiceIssuedOperation")]
+        [SendOperation(OperationId = "invoiceIssuedOperation")]
         public void Issued()
         {
         }
 
         [Channel("invoices/paid")]
         [Message(typeof(InvoicePaid), Title = "Overridden title")]
-        [SubscribeOperation(OperationId = "invoicePaidOperation")]
+        [SendOperation(OperationId = "invoicePaidOperation")]
         public void Paid()
         {
         }
 
         [Channel("invoices/voided")]
-        [SubscribeOperation(typeof(InvoiceVoided), "invoices", OperationId = "invoiceVoidedOperation")]
+        [SendOperation(typeof(InvoiceVoided), "invoices", OperationId = "invoiceVoidedOperation")]
         public void Voided()
         {
         }
 
         [Channel("invoices/disputed")]
         [Message(typeof(InvoiceDisputed), MessageId = "invoiceDisputed")]
-        [SubscribeOperation(OperationId = "invoiceDisputedOperation")]
+        [SendOperation(OperationId = "invoiceDisputedOperation")]
         public void Disputed()
         {
         }

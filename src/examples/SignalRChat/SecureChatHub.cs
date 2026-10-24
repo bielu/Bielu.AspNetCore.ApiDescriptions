@@ -14,15 +14,15 @@ namespace SignalRChat;
 public interface ISecureChatClient
 {
     /// <summary>Pushes a chat message to connected clients.</summary>
-    [SubscribeOperation(typeof(ChatMessage), "chat", Summary = "A chat message was broadcast.", BindingsRef = "secureReceiveMessage")]
+    [SendOperation(typeof(ChatMessage), "chat", Summary = "A chat message was broadcast.", BindingsRef = "secureReceiveMessage")]
     Task ReceiveMessage(ChatMessage message);
 
     /// <summary>Notifies clients that a user joined the hub.</summary>
-    [SubscribeOperation(typeof(PresenceEvent), "presence", Summary = "A user connected to the hub.", BindingsRef = "secureUserJoined")]
+    [SendOperation(typeof(PresenceEvent), "presence", Summary = "A user connected to the hub.", BindingsRef = "secureUserJoined")]
     Task UserJoined(PresenceEvent presence);
 
     /// <summary>Notifies clients that a user left the hub.</summary>
-    [SubscribeOperation(typeof(PresenceEvent), "presence", Summary = "A user disconnected from the hub.", BindingsRef = "secureUserLeft")]
+    [SendOperation(typeof(PresenceEvent), "presence", Summary = "A user disconnected from the hub.", BindingsRef = "secureUserLeft")]
     Task UserLeft(PresenceEvent presence);
 }
 
@@ -63,12 +63,12 @@ public class SecureChatHub : Hub<ISecureChatClient>
     }
 
     /// <summary>Broadcasts a message to everyone connected to the hub.</summary>
-    [PublishOperation(typeof(ChatMessage), "chat", Summary = "Broadcast a chat message to every connected client.", BindingsRef = "secureSendMessage")]
+    [ReceiveOperation(typeof(ChatMessage), "chat", Summary = "Broadcast a chat message to every connected client.", BindingsRef = "secureSendMessage")]
     public Task SendMessage(ChatMessage message)
         => Clients.All.ReceiveMessage(message with { Room = null });
 
     /// <summary>Returns the display names of all currently connected clients.</summary>
-    [PublishOperation(Summary = "Return the users currently connected to the hub.", BindingsRef = "secureGetOnlineUsers")]
+    [ReceiveOperation(Summary = "Return the users currently connected to the hub.", BindingsRef = "secureGetOnlineUsers")]
     [Channel("secureChatHub")]
     public Task<IReadOnlyCollection<string>> GetOnlineUsers()
         => Task.FromResult<IReadOnlyCollection<string>>(Connections.Values.Distinct().ToArray());

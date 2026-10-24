@@ -47,7 +47,7 @@ using Bielu.AspNetCore.AsyncApi.Attributes;
 public class MyService
 {
     [Channel("my/topic")]
-    [PublishOperation(typeof(MyMessage), "MyOperation")]
+    [ReceiveOperation(typeof(MyMessage), "MyOperation")]
     public void SendMessage(MyMessage msg) { }
 }
 ```

@@ -48,14 +48,14 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
     {
         [Channel("schema-identity/first")]
         [Message(typeof(First.Event), MessageId = "firstEvent")]
-        [SubscribeOperation(OperationId = "firstEventOperation")]
+        [SendOperation(OperationId = "firstEventOperation")]
         public void FirstEvent()
         {
         }
 
         [Channel("schema-identity/second")]
         [Message(typeof(Second.Event), MessageId = "secondEvent")]
-        [SubscribeOperation(OperationId = "secondEventOperation")]
+        [SendOperation(OperationId = "secondEventOperation")]
         public void SecondEvent()
         {
         }
@@ -71,14 +71,14 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
     {
         [Channel("schema-identity-resolved/first")]
         [Message(typeof(First.Event), MessageId = "firstEvent")]
-        [SubscribeOperation(OperationId = "firstEventOperation")]
+        [SendOperation(OperationId = "firstEventOperation")]
         public void FirstEvent()
         {
         }
 
         [Channel("schema-identity-resolved/second")]
         [Message(typeof(Second.Event), MessageId = "secondEvent")]
-        [SubscribeOperation(OperationId = "secondEventOperation")]
+        [SendOperation(OperationId = "secondEventOperation")]
         public void SecondEvent()
         {
         }
@@ -95,14 +95,14 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
     {
         [Channel("schema-identity/reuse-a")]
         [Message(typeof(SharedNotification))]
-        [SubscribeOperation(OperationId = "deliberateReuseOperationA")]
+        [SendOperation(OperationId = "deliberateReuseOperationA")]
         public void NotifyA()
         {
         }
 
         [Channel("schema-identity/reuse-b")]
         [Message(typeof(SharedNotification))]
-        [SubscribeOperation(OperationId = "deliberateReuseOperationB")]
+        [SendOperation(OperationId = "deliberateReuseOperationB")]
         public void NotifyB()
         {
         }
@@ -131,14 +131,14 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
     {
         [Channel("schema-identity/generic-first")]
         [Message(typeof(Envelope<FirstEnvelopePayload>))]
-        [SubscribeOperation(OperationId = "genericFirstOperation")]
+        [SendOperation(OperationId = "genericFirstOperation")]
         public void First()
         {
         }
 
         [Channel("schema-identity/generic-second")]
         [Message(typeof(Envelope<SecondEnvelopePayload>))]
-        [SubscribeOperation(OperationId = "genericSecondOperation")]
+        [SendOperation(OperationId = "genericSecondOperation")]
         public void Second()
         {
         }
@@ -160,14 +160,14 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
     {
         [Channel("schema-identity/sanitize-a")]
         [Message(typeof(SanitizeCollisionTypeA))]
-        [SubscribeOperation(OperationId = "sanitizeCollisionOperationA")]
+        [SendOperation(OperationId = "sanitizeCollisionOperationA")]
         public void OperationA()
         {
         }
 
         [Channel("schema-identity/sanitize-b")]
         [Message(typeof(SanitizeCollisionTypeB))]
-        [SubscribeOperation(OperationId = "sanitizeCollisionOperationB")]
+        [SendOperation(OperationId = "sanitizeCollisionOperationB")]
         public void OperationB()
         {
         }
@@ -183,7 +183,7 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
     {
         [Channel("schema-identity/custom-id")]
         [Message(typeof(CustomIdPayload))]
-        [SubscribeOperation(OperationId = "customReferenceIdOperation")]
+        [SendOperation(OperationId = "customReferenceIdOperation")]
         public void Operation()
         {
         }
@@ -199,7 +199,7 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
     {
         [Channel("schema-identity/inline")]
         [Message(typeof(InlinePayload))]
-        [SubscribeOperation(OperationId = "inlineSchemaOperation")]
+        [SendOperation(OperationId = "inlineSchemaOperation")]
         public void Operation()
         {
         }
@@ -221,14 +221,14 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
     {
         [Channel("schema-identity/op-a")]
         [Message(typeof(OperationIdPayloadA))]
-        [SubscribeOperation(OperationId = "duplicateOperationId")]
+        [SendOperation(OperationId = "duplicateOperationId")]
         public void OperationA()
         {
         }
 
         [Channel("schema-identity/op-b")]
         [Message(typeof(OperationIdPayloadB))]
-        [SubscribeOperation(OperationId = "duplicateOperationId")]
+        [SendOperation(OperationId = "duplicateOperationId")]
         public void OperationB()
         {
         }
@@ -250,14 +250,14 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
     {
         [Channel("schema-identity/msg-a")]
         [Message(typeof(MessageIdPayloadA), MessageId = "duplicateMessageId")]
-        [SubscribeOperation(OperationId = "messageIdCollisionOperationA")]
+        [SendOperation(OperationId = "messageIdCollisionOperationA")]
         public void MessageA()
         {
         }
 
         [Channel("schema-identity/msg-b")]
         [Message(typeof(MessageIdPayloadB), MessageId = "duplicateMessageId")]
-        [SubscribeOperation(OperationId = "messageIdCollisionOperationB")]
+        [SendOperation(OperationId = "messageIdCollisionOperationB")]
         public void MessageB()
         {
         }

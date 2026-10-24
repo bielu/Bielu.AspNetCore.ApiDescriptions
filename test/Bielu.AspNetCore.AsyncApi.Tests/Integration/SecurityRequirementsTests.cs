@@ -24,14 +24,14 @@ public class SecurityRequirementsTests
     {
         [Channel("secure/orders")]
         [Message(typeof(OrderPlaced), MessageId = "securedOrder")]
-        [SubscribeOperation(typeof(OrderPlaced), OperationId = "securedOperation", SecuritySchemes = ["apiKey"])]
+        [SendOperation(typeof(OrderPlaced), OperationId = "securedOperation", SecuritySchemes = ["apiKey"])]
         public void SecuredOrder()
         {
         }
 
         [Channel("open/orders")]
         [Message(typeof(OrderPlaced), MessageId = "openOrder")]
-        [SubscribeOperation(typeof(OrderPlaced), OperationId = "openOperation")]
+        [SendOperation(typeof(OrderPlaced), OperationId = "openOperation")]
         public void OpenOrder()
         {
         }

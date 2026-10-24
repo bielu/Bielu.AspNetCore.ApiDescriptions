@@ -24,7 +24,7 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.LibraryChannels
         /// </summary>
         /// <param name="lightMeasuredEvent">The external event containing the light measurement data to publish.</param>
         [Channel(SubscribeLightMeasuredTopic, Servers = new[] { "test-server" }, BindingsRef = "amqpDev")]
-        [SubscribeOperation(typeof(ExternalEvent), "External", Summary = "Subscribe to external events.")]
+        [SendOperation(typeof(ExternalEvent), "External", Summary = "Subscribe to external events.")]
         public void PublishLightMeasurement(ExternalEvent lightMeasuredEvent)
         {
             var payload = JsonSerializer.Serialize(lightMeasuredEvent);

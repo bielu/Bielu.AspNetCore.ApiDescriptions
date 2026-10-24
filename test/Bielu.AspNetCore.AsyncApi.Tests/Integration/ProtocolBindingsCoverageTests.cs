@@ -34,7 +34,7 @@ public class ProtocolBindingsCoverageTests
     public sealed class WebSocketsChannels
     {
         [Channel("prices/ws", BindingsRef = "prices-ws")]
-        [PublishOperation(typeof(PriceChanged), OperationId = "pricesOverWebSockets")]
+        [ReceiveOperation(typeof(PriceChanged), OperationId = "pricesOverWebSockets")]
         public void WebSockets()
         {
         }
@@ -44,19 +44,19 @@ public class ProtocolBindingsCoverageTests
     public sealed class Channels
     {
         [Channel("prices/pulsar", BindingsRef = "prices-pulsar")]
-        [PublishOperation(typeof(PriceChanged), OperationId = "pricesOverPulsar")]
+        [ReceiveOperation(typeof(PriceChanged), OperationId = "pricesOverPulsar")]
         public void Pulsar()
         {
         }
 
         [Channel("prices/sns", BindingsRef = "prices-sns")]
-        [PublishOperation(typeof(PriceChanged), OperationId = "pricesOverSns", BindingsRef = "prices-sns-publish")]
+        [ReceiveOperation(typeof(PriceChanged), OperationId = "pricesOverSns", BindingsRef = "prices-sns-publish")]
         public void Sns()
         {
         }
 
         [Channel("prices/sqs", BindingsRef = "prices-sqs")]
-        [PublishOperation(typeof(PriceChanged), OperationId = "pricesOverSqs", BindingsRef = "prices-sqs-publish")]
+        [ReceiveOperation(typeof(PriceChanged), OperationId = "pricesOverSqs", BindingsRef = "prices-sqs-publish")]
         public void Sqs()
         {
         }

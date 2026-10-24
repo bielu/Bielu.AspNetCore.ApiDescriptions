@@ -178,39 +178,37 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
 
                     sb.AppendLine("                        new List<OperationAttribute>");
                     sb.AppendLine("                        {");
-                    foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString().EndsWith("OperationAttribute") == true))
+                    foreach (var attr in attrs.Where(a => IsOperationAttribute(a.AttributeClass)))
                     {
-                        var attrName = attr.AttributeClass?.ToDisplayString();
-                        string ctor;
-                        if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute")
+                        var attributeClass = attr.AttributeClass!;
+                        var generatedAttribute = GetGeneratedOperationAttribute(attributeClass.ToDisplayString());
+                        if (generatedAttribute == null)
                         {
-                            if (attr.ConstructorArguments.Length == 0)
+                            // A custom attribute derived from a built-in one sets its direction and payload in its own
+                            // constructor, so it is rebuilt as itself, which needs the generated code to be able to name it.
+                            if (compilation.IsSymbolAccessibleWithin(attributeClass, compilation.Assembly))
                             {
-                                ctor = "new PublishOperationAttribute()";
+                                sb.AppendLine($"                            {BuildCustomAttribute(attr)},");
                             }
                             else
                             {
-                                var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
-                                var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
-                                ctor = $"new PublishOperationAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})";
+                                var location = attr.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation() ?? Location.None;
+                                context.ReportDiagnostic(Diagnostic.Create(InaccessibleOperationAttribute, location, attributeClass.ToDisplayString(), member.Name));
                             }
+
+                            continue;
                         }
-                        else if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute")
+
+                        string ctor;
+                        if (attr.ConstructorArguments.Length == 0)
                         {
-                            if (attr.ConstructorArguments.Length == 0)
-                            {
-                                ctor = "new SubscribeOperationAttribute()";
-                            }
-                            else
-                            {
-                                var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
-                                var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
-                                ctor = $"new SubscribeOperationAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})";
-                            }
+                            ctor = $"new {generatedAttribute}()";
                         }
                         else
                         {
-                            continue;
+                            var payloadType = attr.ConstructorArguments[0].Value as ITypeSymbol;
+                            var tags = attr.ConstructorArguments.Length > 1 ? GetArrayInitialization(attr.ConstructorArguments[1]) : "Array.Empty<string>()";
+                            ctor = $"new {generatedAttribute}(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})";
                         }
 
                         var opId = attr.NamedArguments.FirstOrDefault(x => x.Key == "OperationId").Value.Value as string;
@@ -311,6 +309,75 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
 
             context.AddSource("GeneratedAsyncApiMetadataProvider.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
+
+        private const string OperationAttributeName = "Bielu.AspNetCore.AsyncApi.Attributes.OperationAttribute";
+
+        private static readonly DiagnosticDescriptor InaccessibleOperationAttribute = new DiagnosticDescriptor(
+            id: "BASYNC011",
+            title: "Operation attribute cannot be source-generated",
+            messageFormat: "The operation attribute '{0}' on '{1}' is not accessible from the generated metadata provider, so its operation is left out of the source-generated document",
+            category: "Usage",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true,
+            description: "The source-generated metadata provider rebuilds a custom operation attribute by calling its constructor, which needs the attribute type to be accessible from the rest of the assembly. Make the attribute type internal or public.");
+
+        // Matches every attribute the reflection provider reads with GetCustomAttributes<OperationAttribute>(),
+        // including custom ones derived from the built-in attributes.
+        private static bool IsOperationAttribute(INamedTypeSymbol? attributeClass)
+        {
+            for (var type = attributeClass; type != null; type = type.BaseType)
+            {
+                if (type.ToDisplayString() == OperationAttributeName) return true;
+            }
+
+            return false;
+        }
+
+        // Emits a construction of the attribute's own type with the constructor and named arguments it was applied
+        // with, for custom attributes that the built-in mapping below does not cover.
+        private static string BuildCustomAttribute(AttributeData attr)
+        {
+            var typeName = attr.AttributeClass!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var arguments = string.Join(", ", attr.ConstructorArguments.Select(ToCSharpExpression));
+            var initializers = string.Join(", ", attr.NamedArguments.Select(a => $"{a.Key} = {ToCSharpExpression(a.Value)}"));
+            return initializers.Length == 0
+                ? $"new {typeName}({arguments})"
+                : $"new {typeName}({arguments}) {{ {initializers} }}";
+        }
+
+        // Emits a C# expression for an attribute argument. Values are cast to their declared type, so the expression
+        // binds to the same constructor overload and a literal such as 1.5 still converts to a float parameter.
+        private static string ToCSharpExpression(TypedConstant constant)
+        {
+            var typeName = constant.Type?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "object";
+            if (constant.IsNull)
+            {
+                return $"({typeName})null";
+            }
+
+            switch (constant.Kind)
+            {
+                case TypedConstantKind.Array:
+                    return $"new {typeName} {{ {string.Join(", ", constant.Values.Select(ToCSharpExpression))} }}";
+                case TypedConstantKind.Type:
+                    return $"typeof({((ITypeSymbol)constant.Value!).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})";
+                case TypedConstantKind.Enum:
+                    return $"({typeName})({SymbolDisplay.FormatPrimitive(constant.Value!, quoteStrings: false, useHexadecimalNumbers: false)})";
+                default:
+                    return $"({typeName})({SymbolDisplay.FormatPrimitive(constant.Value!, quoteStrings: true, useHexadecimalNumbers: false)})";
+            }
+        }
+
+        // The obsolete 2.x-named attributes are emitted as their Send/Receive equivalents, which build the same
+        // operation, so the generated code doesn't raise the obsolete warning in the consuming project.
+        private static string? GetGeneratedOperationAttribute(string? attributeName) => attributeName switch
+        {
+            "Bielu.AspNetCore.AsyncApi.Attributes.SendOperationAttribute" => "SendOperationAttribute",
+            "Bielu.AspNetCore.AsyncApi.Attributes.ReceiveOperationAttribute" => "ReceiveOperationAttribute",
+            "Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute" => "SendOperationAttribute",
+            "Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute" => "ReceiveOperationAttribute",
+            _ => null
+        };
 
         /// <summary>
         /// Emits a <c>MessageAttribute</c> construction: the given constructor call followed by an object

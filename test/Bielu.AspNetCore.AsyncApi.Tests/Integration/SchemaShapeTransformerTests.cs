@@ -156,13 +156,13 @@ public sealed class SyncDisposableDocumentTransformer : IAsyncApiDocumentTransfo
 [Channel("shapes")]
 public class ShapeBus
 {
-    [PublishOperation(typeof(ShapeTreeNode))]
+    [ReceiveOperation(typeof(ShapeTreeNode))]
     public void PublishTree(ShapeTreeNode tree) { }
 
-    [PublishOperation(typeof(ShapeVehicle))]
+    [ReceiveOperation(typeof(ShapeVehicle))]
     public void PublishVehicle(ShapeVehicle vehicle) { }
 
-    [PublishOperation(typeof(ShapeSensorReport))]
+    [ReceiveOperation(typeof(ShapeSensorReport))]
     public void PublishReport(ShapeSensorReport report) { }
 }
 

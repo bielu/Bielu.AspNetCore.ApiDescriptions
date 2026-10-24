@@ -24,9 +24,7 @@ internal static class RuleBASYNC002MissingChannel
 
         bool typeHasChannel = typeAttributes.Any(ad => RuleUtils.IsAttribute(ad, RuleConstants.ChannelAttributeName));
         bool methodHasChannel = methodAttributes.Any(ad => RuleUtils.IsAttribute(ad, RuleConstants.ChannelAttributeName));
-        bool methodHasOperation = methodAttributes.Any(ad => RuleUtils.IsAttribute(ad, RuleConstants.PublishOperationAttributeName) ||
-                                                           RuleUtils.IsAttribute(ad, RuleConstants.SubscribeOperationAttributeName) ||
-                                                           RuleUtils.IsAttribute(ad, RuleConstants.OperationAttributeName));
+        bool methodHasOperation = methodAttributes.Any(ad => RuleUtils.IsAttribute(ad, RuleConstants.OperationAttributeName));
 
         if (methodHasOperation && !methodHasChannel && !typeHasChannel)
         {

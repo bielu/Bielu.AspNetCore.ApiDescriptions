@@ -35,7 +35,7 @@ public class AsyncApiMessageExampleTests
     {
         [MessageExample(Name = "json-example", Json = "{\"text\": \"json-example\"}")]
         [MessageExample(Name = "provider-example", ProviderType = typeof(ExampleProvider))]
-        [SubscribeOperation(typeof(TestMessage), OperationId = "test")]
+        [SendOperation(typeof(TestMessage), OperationId = "test")]
         public void ProcessMessage(TestMessage message) { }
     }
 
