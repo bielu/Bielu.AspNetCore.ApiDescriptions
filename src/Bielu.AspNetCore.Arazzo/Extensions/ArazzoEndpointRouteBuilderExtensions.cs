@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Bielu.Arazzo.Writers;
+using Bielu.AspNetCore.ApiDescriptions;
 using Bielu.AspNetCore.Arazzo.Schemas;
 using Bielu.AspNetCore.Arazzo.Services;
 using Microsoft.AspNetCore.Builder;
@@ -36,6 +37,8 @@ public static class ArazzoEndpointRouteBuilderExtensions
         return endpoints.MapGet(pattern,
                 (HttpContext context, string documentName = ArazzoDefaults.DefaultDocumentName) =>
                     HandleAsync(context, documentName, pattern))
+            .WithMetadata(new ApiDescriptionDocumentMetadata(ArazzoBuildTimeDocumentSource.DocumentKind,
+                UseYaml(pattern) ? "application/vnd.oai.workflows+yaml" : "application/vnd.oai.workflows+json"))
             .ExcludeFromDescription();
     }
 

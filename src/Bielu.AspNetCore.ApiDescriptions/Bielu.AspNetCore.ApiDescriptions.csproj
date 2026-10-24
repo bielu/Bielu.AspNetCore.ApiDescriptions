@@ -13,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.ApiCatalog" />
         <InternalsVisibleTo Include="Bielu.AspNetCore.ApiDescriptions.Tests" />
         <InternalsVisibleTo Include="Bielu.AspNetCore.Arazzo.Tests" />
         <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Tests" />

@@ -1,1 +1,5 @@
 #nullable enable
+Bielu.AspNetCore.ApiDescriptions.ApiDescriptionDocumentMetadata
+Bielu.AspNetCore.ApiDescriptions.ApiDescriptionDocumentMetadata.ApiDescriptionDocumentMetadata(string! kind, string! mediaType) -> void
+Bielu.AspNetCore.ApiDescriptions.ApiDescriptionDocumentMetadata.Kind.get -> string!
+Bielu.AspNetCore.ApiDescriptions.ApiDescriptionDocumentMetadata.MediaType.get -> string!
