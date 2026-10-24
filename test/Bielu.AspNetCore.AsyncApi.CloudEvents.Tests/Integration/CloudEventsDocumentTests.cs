@@ -27,14 +27,14 @@ public class CloudEventsDocumentTests
     {
         [Channel("orders/placed")]
         [Message(typeof(OrderPlaced), MessageId = "orderPlaced")]
-        [SubscribeOperation(typeof(OrderPlaced), OperationId = "orderPlacedOperation")]
+        [SendOperation(typeof(OrderPlaced), OperationId = "orderPlacedOperation")]
         public void OrderPlacedEvent()
         {
         }
 
         [Channel("orders/audited")]
         [Message(typeof(OrderAudited), MessageId = "orderAudited", HeadersType = typeof(AuditHeaders))]
-        [SubscribeOperation(typeof(OrderAudited), OperationId = "orderAuditedOperation")]
+        [SendOperation(typeof(OrderAudited), OperationId = "orderAuditedOperation")]
         public void OrderAuditedEvent()
         {
         }
@@ -231,7 +231,7 @@ public class CloudEventsDocumentTests
         var schemaPath = Path.Combine(AppContext.BaseDirectory, "Conformance", "asyncapi", $"{declaredVersion}.json");
         var result = JsonSchema.FromText(File.ReadAllText(schemaPath))
             .Evaluate(document.RootElement, new EvaluationOptions { OutputFormat = OutputFormat.List });
-        result.IsValid.ShouldBeTrue(string.Join(Environment.NewLine, result.Details
+        result.IsValid.ShouldBeTrue(string.Join(Environment.NewLine, (result.Details ?? [])
             .Where(detail => detail.Errors is { Count: > 0 })
             .SelectMany(detail => detail.Errors!.Select(error => $"{detail.InstanceLocation} {error.Value}"))));
     }
