@@ -18,7 +18,7 @@ internal static class ApiCatalogWriter
     public static byte[] Write(string catalogUrl, string baseUrl, IReadOnlyList<ApiCatalogLink> serviceDescriptions,
         ApiCatalogOptions options)
     {
-        var apiUrl = baseUrl + "/";
+        var apiUrl = Resolve(options.ApiUrl, baseUrl);
         var describesApi = serviceDescriptions.Count > 0 || options.ServiceDocs.Count > 0;
         List<ApiCatalogLink> items = describesApi
             ? [new ApiCatalogLink(apiUrl, Type: null, Title: null), .. options.Items]

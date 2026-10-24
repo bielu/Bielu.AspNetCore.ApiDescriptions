@@ -76,7 +76,7 @@ public class MyService
 - [Configuration Guide](https://apidescriptions.bielu.pl/articles/configuration.html)
 - [Scalar & Live Consoles](https://apidescriptions.bielu.pl/articles/scalar-consoles.html)
 - [Native AOT Support](https://apidescriptions.bielu.pl/articles/native-aot.html)
-- [API catalog](https://apidescriptions.bielu.pl/articles/api-catalog.html)
+- [API catalog](https://apidescriptions.bielu.pl/articles/api-catalog/overview.html)
 - [CLI Tool usage](https://apidescriptions.bielu.pl/articles/cli.html)
 - [Project templates](https://apidescriptions.bielu.pl/articles/templates.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)

@@ -63,6 +63,23 @@ public class ApiCatalogOptionsTests
     }
 
     [Fact]
+    public void ApiUrl_DefaultsToAppRoot()
+    {
+        // Act & Assert
+        new ApiCatalogOptions().ApiUrl.ShouldBe("/");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void ApiUrl_ThrowsForMissingValue(string? apiUrl)
+    {
+        // Act & Assert
+        Should.Throw<ArgumentException>(() => new ApiCatalogOptions { ApiUrl = apiUrl! });
+    }
+
+    [Fact]
     public void AddApiCatalog_AppliesConfiguration()
     {
         // Arrange

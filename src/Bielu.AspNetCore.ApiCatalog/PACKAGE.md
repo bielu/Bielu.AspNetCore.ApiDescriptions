@@ -56,7 +56,7 @@ route.
 
 ## Documentation
 
-- [API catalog](https://apidescriptions.bielu.pl/articles/api-catalog.html)
+- [API catalog](https://apidescriptions.bielu.pl/articles/api-catalog/overview.html)
 - [Full documentation](https://apidescriptions.bielu.pl/)
 
 ## Feedback & Contributing

@@ -25,6 +25,25 @@ public sealed class ApiCatalogOptions
     /// </remarks>
     public string? OpenApiRoutePattern { get; set; } = ApiCatalogDefaults.DefaultOpenApiRoute;
 
+    /// <summary>
+    /// The URL of this app's API: the catalog's <c>item</c> link for it, and the anchor its <c>service-desc</c> and
+    /// <c>service-doc</c> links hang off. Defaults to <c>/</c>, the app's base URL.
+    /// </summary>
+    /// <remarks>
+    /// Set it when the API is mapped under its own path, such as <c>/api</c>, so the catalog does not point clients
+    /// at a root that serves nothing. A path is resolved against the app's base URL.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The value is <see langword="null"/>, empty or whitespace.</exception>
+    public string ApiUrl
+    {
+        get;
+        set
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(value);
+            field = value;
+        }
+    } = "/";
+
     internal List<ApiCatalogLink> Items { get; } = [];
 
     internal List<ApiCatalogLink> ServiceDocs { get; } = [];

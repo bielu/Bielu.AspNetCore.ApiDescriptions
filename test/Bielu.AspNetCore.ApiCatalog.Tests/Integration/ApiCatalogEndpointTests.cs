@@ -206,6 +206,33 @@ public class ApiCatalogEndpointTests
         serviceDoc.GetProperty("title").GetString().ShouldBe("API reference");
     }
 
+    [Theory]
+    [InlineData("/api", $"{BaseUrl}/gateway/api")]
+    [InlineData("https://api.example.com/", "https://api.example.com/")]
+    public async Task Get_WithApiUrl_PointsItemAndAnchorAtIt(string apiUrl, string expected)
+    {
+        // Arrange
+        using var host = await CreateHostAsync(
+            services =>
+            {
+                services.AddAsyncApi();
+                services.AddApiCatalog(options => options.ApiUrl = apiUrl);
+            },
+            endpoints => endpoints.MapAsyncApi(),
+            pathBase: "/gateway");
+
+        // Act
+        var json = await host.GetTestClient().GetStringAsync($"/gateway{ApiCatalogDefaults.DefaultRoute}");
+
+        // Assert
+        using var document = JsonDocument.Parse(json);
+        var linkset = document.RootElement.GetProperty("linkset");
+        linkset[0].GetProperty("item").EnumerateArray().Single().GetProperty("href").GetString().ShouldBe(expected);
+        linkset[1].GetProperty("anchor").GetString().ShouldBe(expected);
+        linkset[1].GetProperty("service-desc")[0].GetProperty("href").GetString()
+            .ShouldBe($"{BaseUrl}/gateway/asyncapi/v1.json");
+    }
+
     [Fact]
     public void MapApiCatalog_ThrowsForNullEndpoints()
     {

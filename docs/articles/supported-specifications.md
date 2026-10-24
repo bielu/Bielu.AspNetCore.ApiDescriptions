@@ -8,7 +8,7 @@ numbers below are the ones the code and the test suites actually cover.
 | [AsyncAPI](https://www.asyncapi.com/docs/reference/specification/v3.1.0) | 3.1.0 (default), 2.6.0 | `Bielu.AspNetCore.AsyncApi` | `Bielu.AspNetCore.AsyncApi.Cli`, `Bielu.AspNetCore.AsyncApi.Merger` |
 | [Arazzo](https://spec.openapis.org/arazzo/latest.html) | 1.0.x, 1.1.x | `Bielu.AspNetCore.Arazzo` (1.1.0 by default, set with `ArazzoOptions.Version`; also written at [build time](build-time-generation.md#arazzo-documents)) | `Bielu.Arazzo`, `Bielu.Arazzo.Readers`, `Bielu.Arazzo.Cli` |
 | [Overlay](https://spec.openapis.org/overlay/latest.html) | 1.0.x, 1.1.x | not generated; applied by `Bielu.Overlay` | `Bielu.Overlay`, `Bielu.Overlay.Readers`, `Bielu.Overlay.Cli` |
-| [API Catalog (RFC 9727)](https://www.rfc-editor.org/rfc/rfc9727) | RFC 9727, as an RFC 9264 Linkset | `Bielu.AspNetCore.ApiCatalog` | not read |
+| [API Catalog (RFC 9727)](https://www.rfc-editor.org/rfc/rfc9727) | RFC 9727, as an RFC 9264 Linkset | `Bielu.AspNetCore.ApiCatalog` (see [API catalog](api-catalog/overview.md)) | not read |
 
 ## AsyncAPI
 

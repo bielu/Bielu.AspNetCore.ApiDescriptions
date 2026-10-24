@@ -25,7 +25,8 @@ app.MapApiCatalog();
 The catalog is an [RFC 9264](https://www.rfc-editor.org/rfc/rfc9264) Linkset, served as
 `application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"`. It has two link contexts:
 
-- the catalog itself, whose `item` links are the APIs: this app, then every `AddItem(...)` entry;
+- the catalog itself, whose `item` links are the APIs: this app (its `ApiUrl`, the base URL by default), then every
+  `AddItem(...)` entry;
 - this app's API, with one `service-desc` link per document and one `service-doc` link per `AddServiceDoc(...)` entry.
 
 ```json
@@ -80,6 +81,7 @@ builder.Services.AddApiCatalog(options => options
 | `AddServiceDoc(href, title)` | Adds a `service-doc` link (RFC 8631) to human-readable documentation such as the Scalar page. |
 | `AddItem(href, title)` | Adds an `item` link: another API, or another catalog to nest. |
 | `OpenApiRoutePattern` | The route `MapOpenApi()` was given. `null` leaves OpenAPI documents out. |
+| `ApiUrl` | Where this app's API lives: its `item` link, and the anchor of its `service-desc`/`service-doc` links. Defaults to `/`; set it (for example to `/api`) when the app root serves nothing. |
 
 `AddApiCatalog()` is optional; `MapApiCatalog()` works with the defaults.
 

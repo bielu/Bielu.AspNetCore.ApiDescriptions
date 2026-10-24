@@ -34,11 +34,11 @@
       href: protocols-webrtc.md
 - name: Scalar Consoles
   href: scalar-consoles.md
-- name: API Catalog
-  href: api-catalog.md
 - name: Merger & Gateway
   href: merger-gateway.md
 - name: Migration from Saunter
   href: migration-from-saunter.md
 - name: Arazzo docs →
   href: arazzo/overview.md
+- name: API Catalog docs →
+  href: api-catalog/overview.md
