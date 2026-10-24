@@ -15,7 +15,9 @@ namespace Bielu.AspNetCore.AsyncApi.Avro;
 internal sealed class JsonSchemaToAvroConverter(AsyncApiDocument document, string? avroNamespace)
 {
     private const string SchemaReferencePrefix = "#/components/schemas/";
-    private readonly HashSet<string> _namedTypes = new(StringComparer.Ordinal);
+    // Each named type with the schema that defined it, so that another schema whose hint gives the same name gets a
+    // name of its own rather than a reference to a type of a different shape.
+    private readonly Dictionary<string, AsyncApiJsonSchema> _namedTypes = new(StringComparer.Ordinal);
 
     /// <summary>Converts a payload schema, naming its top-level record after <paramref name="name"/>.</summary>
     public AsyncApiAvroSchema Convert(AsyncApiJsonSchema schema, string name) => ConvertSchema(schema, name);
@@ -25,17 +27,18 @@ internal sealed class JsonSchemaToAvroConverter(AsyncApiDocument document, strin
         if (schema is AsyncApiJsonSchemaReference { Reference.Reference: { } reference }
             && reference.StartsWith(SchemaReferencePrefix, StringComparison.Ordinal))
         {
+            // Every reference to a component resolves to the same schema, so the type it defined the first time is
+            // found again by that schema, not by name.
             var key = reference[SchemaReferencePrefix.Length..];
-            var name = TypeName(key);
-            if (_namedTypes.Contains(name))
-            {
-                return new AvroNamedType(QualifiedName(name), null!);
-            }
-
             return document.Components?.Schemas?.TryGetValue(key, out var target) == true
                    && target.Schema is AsyncApiJsonSchema targetSchema
                 ? ConvertSchema(targetSchema, key)
                 : String();
+        }
+
+        if (schema.Type == SchemaType.Null)
+        {
+            return new AvroPrimitive(AvroPrimitiveType.Null);
         }
 
         var nonNullTypes = (schema.Type ?? 0) & ~SchemaType.Null;
@@ -116,8 +119,7 @@ internal sealed class JsonSchemaToAvroConverter(AsyncApiDocument document, strin
             };
         }
 
-        var name = TypeName(nameHint);
-        if (!_namedTypes.Add(name))
+        if (!TryDefineName(schema, nameHint, out var name))
         {
             return new AvroNamedType(QualifiedName(name), null!);
         }
@@ -164,8 +166,7 @@ internal sealed class JsonSchemaToAvroConverter(AsyncApiDocument document, strin
             return null;
         }
 
-        var name = TypeName(nameHint);
-        if (!_namedTypes.Add(name))
+        if (!TryDefineName(schema, nameHint, out var name))
         {
             return new AvroNamedType(QualifiedName(name), null!);
         }
@@ -177,6 +178,29 @@ internal sealed class JsonSchemaToAvroConverter(AsyncApiDocument document, strin
             Doc = schema.Description,
             Symbols = symbols.Distinct(StringComparer.Ordinal).ToList()!,
         };
+    }
+
+    /// <summary>
+    /// Names the type <paramref name="schema"/> defines after <paramref name="nameHint"/>, numbering the name when another
+    /// schema already has it. Returns <see langword="false"/> when <paramref name="schema"/> is already defined, with
+    /// <paramref name="name"/> set to the name to refer to it by.
+    /// </summary>
+    private bool TryDefineName(AsyncApiJsonSchema schema, string nameHint, out string name)
+    {
+        var baseName = TypeName(nameHint);
+        name = baseName;
+        for (var suffix = 2; _namedTypes.TryGetValue(name, out var owner); suffix++)
+        {
+            if (ReferenceEquals(owner, schema))
+            {
+                return false;
+            }
+
+            name = $"{baseName}{suffix}";
+        }
+
+        _namedTypes.Add(name, schema);
+        return true;
     }
 
     /// <summary>
@@ -196,8 +220,9 @@ internal sealed class JsonSchemaToAvroConverter(AsyncApiDocument document, strin
             flattened.Add(branch);
         }
 
-        flattened.Sort((left, right) => IsNull(right).CompareTo(IsNull(left)));
-        return flattened is [var only] ? only : new AvroUnion { Types = flattened };
+        // OrderBy is stable, so the other branches keep the order the schema gave them.
+        var ordered = flattened.OrderBy(branch => !IsNull(branch)).ToList();
+        return ordered is [var only] ? only : new AvroUnion { Types = ordered };
     }
 
     private static bool IsNull(AsyncApiAvroSchema schema) =>

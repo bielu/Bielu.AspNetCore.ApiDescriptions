@@ -204,6 +204,85 @@ public class JsonSchemaToAvroConverterTests
             .ShouldBeOfType<AvroPrimitive>().Type.ShouldBe("string");
     }
 
+    [Fact]
+    public void Convert_OneOfNullAndReference_MakesANullBranch()
+    {
+        // Arrange
+        var document = DocumentWithAddress();
+        var schema = new AsyncApiJsonSchema
+        {
+            OneOf = [new AsyncApiJsonSchema { Type = SchemaType.Null }, new AsyncApiJsonSchemaReference("#/components/schemas/address")],
+        };
+
+        // Act
+        var union = new JsonSchemaToAvroConverter(document, null).Convert(schema, "value").ShouldBeOfType<AvroUnion>();
+
+        // Assert
+        union.Types.Count.ShouldBe(2);
+        union.Types[0].ShouldBeOfType<AvroPrimitive>().Type.ShouldBe("null");
+        union.Types[1].ShouldBeOfType<AvroRecord>().Name.ShouldBe("Address");
+    }
+
+    [Fact]
+    public void Convert_UnionWithNullLast_MovesNullFirstAndKeepsTheOtherBranchesInOrder()
+    {
+        // Arrange
+        var schema = new AsyncApiJsonSchema
+        {
+            OneOf = [String(), new AsyncApiJsonSchema { Type = SchemaType.Boolean }, new AsyncApiJsonSchema { Type = SchemaType.Null }],
+        };
+
+        // Act
+        var union = Convert(schema, "value").ShouldBeOfType<AvroUnion>();
+
+        // Assert
+        union.Types.Select(type => type.Type).ShouldBe(["null", "string", "boolean"]);
+    }
+
+    [Fact]
+    public void Convert_NestedRecordsWhoseHintsCollide_GivesEachItsOwnName()
+    {
+        // Arrange: customer.addressLine and customerAddress.line both hint MessageCustomerAddressLine.
+        var schema = Object(new()
+        {
+            ["customer"] = Object(new() { ["addressLine"] = Object(new() { ["street"] = String() }, ["street"]) }, ["addressLine"]),
+            ["customerAddress"] = Object(new() { ["line"] = Object(new() { ["number"] = String() }, ["number"]) }, ["line"]),
+        }, required: ["customer", "customerAddress"]);
+
+        // Act
+        var record = Convert(schema, "message").ShouldBeOfType<AvroRecord>();
+
+        // Assert
+        var first = record.Fields[0].Type.ShouldBeOfType<AvroRecord>().Fields[0].Type.ShouldBeOfType<AvroRecord>();
+        var second = record.Fields[1].Type.ShouldBeOfType<AvroRecord>().Fields[0].Type.ShouldBeOfType<AvroRecord>();
+        first.Name.ShouldBe("MessageCustomerAddressLine");
+        first.Fields[0].Name.ShouldBe("street");
+        second.Name.ShouldBe("MessageCustomerAddressLine2");
+        second.Fields[0].Name.ShouldBe("number");
+    }
+
+    [Fact]
+    public void Convert_ComponentWhoseNameIsTaken_IsDefinedOnceUnderItsOwnNameAndThenReferenced()
+    {
+        // Arrange: the payload record claims Address before the address component is reached.
+        var payload = Object(new()
+        {
+            ["home"] = new AsyncApiJsonSchemaReference("#/components/schemas/address"),
+            ["work"] = new AsyncApiJsonSchemaReference("#/components/schemas/address"),
+        }, required: ["home", "work"]);
+
+        // Act
+        var record = new JsonSchemaToAvroConverter(DocumentWithAddress(), null).Convert(payload, "address")
+            .ShouldBeOfType<AvroRecord>();
+
+        // Assert
+        record.Name.ShouldBe("Address");
+        var home = record.Fields[0].Type.ShouldBeOfType<AvroRecord>();
+        home.Name.ShouldBe("Address2");
+        home.Fields[0].Name.ShouldBe("city");
+        record.Fields[1].Type.ShouldBeOfType<AvroNamedType>().Name.ShouldBe("Address2");
+    }
+
     [Theory]
     [InlineData("orders.order-placed", "orders_order_placed")]
     [InlineData("1st", "_1st")]
@@ -217,6 +296,17 @@ public class JsonSchemaToAvroConverterTests
 
     private static AsyncApiAvroSchema Convert(AsyncApiJsonSchema schema, string name, string? avroNamespace = null) =>
         new JsonSchemaToAvroConverter(new AsyncApiDocument(), avroNamespace).Convert(schema, name);
+
+    private static AsyncApiDocument DocumentWithAddress() => new()
+    {
+        Components = new AsyncApiComponents
+        {
+            Schemas = new Dictionary<string, AsyncApiMultiFormatSchema>
+            {
+                ["address"] = new() { Schema = Object(new() { ["city"] = String() }, required: ["city"]) },
+            },
+        },
+    };
 
     private static AsyncApiJsonSchema String() => new() { Type = SchemaType.String };
 
