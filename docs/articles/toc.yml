@@ -36,6 +36,8 @@
   href: scalar-consoles.md
 - name: CloudEvents
   href: cloudevents.md
+- name: MCP Server (experimental)
+  href: mcp.md
 - name: Merger & Gateway
   href: merger-gateway.md
 - name: Migration from Saunter

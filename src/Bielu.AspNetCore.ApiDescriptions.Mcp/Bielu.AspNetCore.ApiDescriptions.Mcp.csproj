@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>Bielu.AspNetCore.ApiDescriptions.Mcp</RootNamespace>
+        <Description>Experimental. Exposes an app's own API descriptions (AsyncAPI, OpenAPI and Arazzo documents) to AI agents through a Model Context Protocol server: the documents as resources, plus read-only tools to list them and look up AsyncAPI operations and message schemas.</Description>
+        <PackageTags>mcp;model-context-protocol;ai;agents;asyncapi;openapi;arazzo;aspnetcore</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ModelContextProtocol" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.AspNetCore.ApiDescriptions\Bielu.AspNetCore.ApiDescriptions.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.ApiDescriptions.Mcp.Tests" />
+    </ItemGroup>
+
+</Project>
