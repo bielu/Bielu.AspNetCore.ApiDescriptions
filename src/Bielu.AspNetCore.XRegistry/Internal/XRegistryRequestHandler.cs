@@ -41,11 +41,17 @@ internal static class XRegistryRequestHandler
             return;
         }
 
+        // Parsed first, so a path the registry can never serve does not pay for generating the documents.
+        var route = Route.Parse(segments);
+        if (route is null)
+        {
+            await WriteNotFoundAsync(context, "/" + string.Join('/', segments));
+            return;
+        }
+
         var options = context.RequestServices.GetRequiredService<IOptions<XRegistryOptions>>().Value;
         var snapshot = await AsyncApiRegistryReader.ReadAsync(context.RequestServices, options);
-
-        var route = Route.Parse(segments);
-        if (route is null || !Resolve(route, snapshot, out var group))
+        if (!Resolve(route, snapshot, out var group))
         {
             await WriteNotFoundAsync(context, "/" + string.Join('/', segments));
             return;

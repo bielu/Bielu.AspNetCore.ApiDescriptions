@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using Bielu.AspNetCore.ApiDescriptions;
 using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -243,6 +244,23 @@ public class XRegistryEndpointTests
     }
 
     [Fact]
+    public async Task GetUnknownRoute_IsNotFoundWithoutGeneratingDocuments()
+    {
+        // Arrange
+        var source = new CountingDocumentSource();
+        using var client = await CreateClientAsync(configureServices: services => services.AddSingleton<IBuildTimeDocumentSource>(source));
+
+        // Act
+        var unknown = await client.GetAsync("/registry/endpoints");
+        var known = await client.GetAsync("/registry");
+
+        // Assert
+        unknown.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        known.StatusCode.ShouldBe(HttpStatusCode.OK);
+        source.Generated.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task GetWellKnown_ListsTheRegistry()
     {
         // Act
@@ -287,7 +305,8 @@ public class XRegistryEndpointTests
         return (response.StatusCode, JsonDocument.Parse(await response.Content.ReadAsStringAsync()));
     }
 
-    private static async Task<HttpClient> CreateClientAsync(Action<XRegistryOptions>? configure = null)
+    private static async Task<HttpClient> CreateClientAsync(
+        Action<XRegistryOptions>? configure = null, Action<IServiceCollection>? configureServices = null)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -297,10 +316,31 @@ public class XRegistryEndpointTests
             options.WithRegistry("orders", "Orders");
             configure?.Invoke(options);
         });
+        configureServices?.Invoke(builder.Services);
 
         var app = builder.Build();
         app.MapXRegistry();
         await app.StartAsync();
         return app.GetTestClient();
+    }
+
+    /// <summary>An AsyncAPI document source that counts how often a document is generated.</summary>
+    private sealed class CountingDocumentSource : IBuildTimeDocumentSource
+    {
+        public int Generated { get; private set; }
+
+        public string Kind => "AsyncAPI";
+
+        public string NamePrefix => string.Empty;
+
+        public int Order => 100;
+
+        public IEnumerable<BuildTimeDocument> GetDocuments() => [new BuildTimeDocument("counted")];
+
+        public Task GenerateAsync(string documentName, TextWriter writer)
+        {
+            Generated++;
+            return writer.WriteAsync("""{"asyncapi":"3.0.0","info":{"title":"Counted","version":"1.0.0"}}""");
+        }
     }
 }
