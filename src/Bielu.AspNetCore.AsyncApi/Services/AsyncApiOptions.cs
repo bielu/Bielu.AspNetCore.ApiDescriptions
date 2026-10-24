@@ -11,7 +11,6 @@ using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 
 namespace Bielu.AspNetCore.AsyncApi.Services;
 
@@ -33,17 +32,6 @@ public sealed class AsyncApiOptions
     /// <returns>The reference ID to use for the schema or <see langword="null"/> if the schema should always be inlined.</returns>
     public static string? CreateDefaultSchemaReferenceId(JsonTypeInfo jsonTypeInfo) =>
         jsonTypeInfo.GetSchemaReferenceId();
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="AsyncApiOptions"/> class
-    /// with the default <see cref="ShouldInclude"/> predicate.
-    /// </summary>
-    public AsyncApiOptions()
-    {
-        ShouldInclude = (description) => description.GroupName == null ||
-                                         string.Equals(description.GroupName, DocumentName,
-                                             StringComparison.OrdinalIgnoreCase);
-    }
 
     /// <summary>
     /// The version of the AsyncAPI specification to use. Defaults to <see cref="AsyncApiVersion.AsyncApi3_0"/>,
@@ -71,11 +59,6 @@ public sealed class AsyncApiOptions
     /// </code>
     /// </example>
     public string? BuildTimeDocumentName { get; set; }
-
-    /// <summary>
-    /// A delegate to determine whether a given <see cref="ApiDescription"/> should be included in the given AsyncApi document.
-    /// </summary>
-    public Func<ApiDescription, bool> ShouldInclude { get; set; }
 
     /// <summary>
     /// A delegate to determine how reference IDs should be created for schemas associated with types in the given AsyncApi document.

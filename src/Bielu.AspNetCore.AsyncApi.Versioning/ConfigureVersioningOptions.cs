@@ -30,7 +30,6 @@ internal sealed class ConfigureVersioningOptions(IApiVersionDescriptionProvider 
                     info.Description = (info.Description ?? "") + " (deprecated)";
                 }
             });
-            options.ShouldInclude = (apiDesc) => apiDesc.GroupName == description.GroupName;
             configure?.Invoke(options, description);
         }
     }

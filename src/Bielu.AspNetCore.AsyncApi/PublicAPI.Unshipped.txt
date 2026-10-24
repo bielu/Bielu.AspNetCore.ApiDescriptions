@@ -21,3 +21,5 @@ Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.AsyncApi.get -> B
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.AsyncApiTypeMetadata(System.Type! Type, Bielu.AspNetCore.AsyncApi.Attributes.AsyncApiAttribute! AsyncApi, System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata!>! Members) -> void
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Deconstruct(out System.Type! Type, out Bielu.AspNetCore.AsyncApi.Attributes.AsyncApiAttribute! AsyncApi, out System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata!>! Members) -> void
 Bielu.AspNetCore.AsyncApi.Services.IAsyncApiMetadataProvider.GetPayloadMessageAttributes() -> System.Collections.Generic.IReadOnlyDictionary<System.Type!, Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute!>?
+*REMOVED*Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ShouldInclude.get -> System.Func<Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription!, bool>!
+*REMOVED*Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ShouldInclude.set -> void
