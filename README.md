@@ -226,6 +226,7 @@ dotnet run
 - [Protobuf payloads](https://apidescriptions.bielu.pl/articles/protobuf.html)
 - [xRegistry](https://apidescriptions.bielu.pl/articles/xregistry.html)
 - [Merger and API gateway](https://apidescriptions.bielu.pl/articles/merger-gateway.html)
+- [Migrating to 2.0](https://apidescriptions.bielu.pl/articles/migration-to-2.0.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)
 
 **Arazzo, Overlay and API catalog**

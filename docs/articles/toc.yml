@@ -44,6 +44,8 @@
   href: xregistry.md
 - name: Merger & Gateway
   href: merger-gateway.md
+- name: Migrating to 2.0
+  href: migration-to-2.0.md
 - name: Migration from Saunter
   href: migration-from-saunter.md
 - name: Arazzo docs →
