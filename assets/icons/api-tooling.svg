@@ -1,0 +1,17 @@
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="api-tooling-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f2ff"/><stop offset="1" stop-color="#e2f4ff"/></linearGradient>
+      <linearGradient id="api-tooling-primary" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8f6bff"/><stop offset="1" stop-color="#4d7cfe"/></linearGradient>
+      <linearGradient id="api-tooling-cyan" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5fd8ec"/><stop offset="1" stop-color="#1fa5c4"/></linearGradient>
+    </defs>
+    <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#api-tooling-bg)" stroke="#262a50" stroke-width="5"/>
+    <circle cx="28" cy="27" r="5" fill="#fff" opacity=".9"/>
+    <path d="M24 102c18 8 62 8 80 0" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+      <rect x="18" y="26" width="76" height="64" rx="11" fill="#262a50" stroke="#262a50" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M18 43v-6a11 11 0 0 1 11-11h54a11 11 0 0 1 11 11v6z" fill="url(#api-tooling-primary)" stroke="#262a50" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="28" cy="34.5" r="2.4" fill="#ffcf4d" stroke="#262a50" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/> <circle cx="36" cy="34.5" r="2.4" fill="#5fd8ec" stroke="#262a50" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/> <circle cx="44" cy="34.5" r="2.4" fill="#fff" stroke="#262a50" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M30 54l10 8-10 8" fill="none" stroke="#5fd8ec" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M46 76h20" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="92" cy="88" r="16" fill="url(#api-tooling-primary)" stroke="#262a50" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M95 76l-10 14h8l-3 10 11-15h-8l3-9z" fill="#ffcf4d" stroke="#262a50" stroke-width="2.5" stroke-linejoin="round"/>
+  </svg>

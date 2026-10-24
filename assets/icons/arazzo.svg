@@ -1,0 +1,17 @@
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="arazzo-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f2ff"/><stop offset="1" stop-color="#e2f4ff"/></linearGradient>
+      <linearGradient id="arazzo-primary" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8f6bff"/><stop offset="1" stop-color="#4d7cfe"/></linearGradient>
+      <linearGradient id="arazzo-cyan" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5fd8ec"/><stop offset="1" stop-color="#1fa5c4"/></linearGradient>
+    </defs>
+    <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#arazzo-bg)" stroke="#262a50" stroke-width="5"/>
+    <circle cx="28" cy="27" r="5" fill="#fff" opacity=".9"/>
+    <path d="M24 102c18 8 62 8 80 0" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+      <path d="M26 30h76" stroke="#262a50" stroke-width="5" stroke-linecap="round"/>
+      <path d="M32 30v58l8-6 8 6 8-6 8 6 8-6 8 6 8-6 8 6V30z" fill="url(#arazzo-primary)" stroke="#262a50" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M44 34v44M56 34v44M68 34v44M80 34v44" stroke="#fff" stroke-width="2" opacity=".3"/>
+      <path d="M44 47v9.5h6M58 61v9.5h6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="38" y="38" width="24" height="9" rx="3" fill="#ffffff" stroke="#262a50" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <rect x="52" y="52" width="24" height="9" rx="3" fill="url(#arazzo-cyan)" stroke="#262a50" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <rect x="66" y="66" width="24" height="9" rx="3" fill="#ffcf4d" stroke="#262a50" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>

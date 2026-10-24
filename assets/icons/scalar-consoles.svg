@@ -1,0 +1,21 @@
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="scalar-consoles-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f2ff"/><stop offset="1" stop-color="#e2f4ff"/></linearGradient>
+      <linearGradient id="scalar-consoles-primary" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8f6bff"/><stop offset="1" stop-color="#4d7cfe"/></linearGradient>
+      <linearGradient id="scalar-consoles-cyan" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5fd8ec"/><stop offset="1" stop-color="#1fa5c4"/></linearGradient>
+    </defs>
+    <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#scalar-consoles-bg)" stroke="#262a50" stroke-width="5"/>
+    <circle cx="28" cy="27" r="5" fill="#fff" opacity=".9"/>
+    <path d="M24 102c18 8 62 8 80 0" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+      <rect x="16" y="26" width="96" height="74" rx="11" fill="#262a50" stroke="#262a50" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M16 43v-6a11 11 0 0 1 11-11h74a11 11 0 0 1 11 11v6z" fill="url(#scalar-consoles-primary)" stroke="#262a50" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="26" cy="34.5" r="2.4" fill="#ffcf4d" stroke="#262a50" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/> <circle cx="34" cy="34.5" r="2.4" fill="#5fd8ec" stroke="#262a50" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/> <circle cx="42" cy="34.5" r="2.4" fill="#fff" stroke="#262a50" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M92 31.5c2.5 2 2.5 5 0 7M98 29c4.5 3.5 4.5 8.5 0 12" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M26 56l6 4-6 4" fill="none" stroke="#5fd8ec" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="38" y="54.4" width="16" height="11.2" rx="2.5" fill="#5fd8ec" stroke="#262a50" stroke-width="2.5" stroke-linejoin="round"/><path d="M40 56.4L46 61L52 56.4" fill="none" stroke="#262a50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M60 60h26" stroke="#5fd8ec" stroke-width="3.5" stroke-linecap="round" opacity=".7"/>
+      <path d="M102 76l-6 4 6 4" fill="none" stroke="#b9a8ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="74" y="74.4" width="16" height="11.2" rx="2.5" fill="#b9a8ff" stroke="#262a50" stroke-width="2.5" stroke-linejoin="round"/><path d="M76 76.4L82 81L88 76.4" fill="none" stroke="#262a50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M42 80h26" stroke="#b9a8ff" stroke-width="3.5" stroke-linecap="round" opacity=".7"/>
+      <path d="M26 92h40" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".35"/>
+  </svg>
