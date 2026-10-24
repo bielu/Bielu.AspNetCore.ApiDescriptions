@@ -1,0 +1,3 @@
+#nullable enable
+*REMOVED*const Bielu.AspNetCore.AsyncApi.Services.AsyncApiGeneratorConstants.DefaultAsyncApiVersion = "1.0.0" -> string!
+const Bielu.AspNetCore.AsyncApi.Services.AsyncApiGeneratorConstants.DefaultInfoVersion = "1.0.0" -> string!

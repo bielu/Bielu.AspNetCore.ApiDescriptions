@@ -924,7 +924,7 @@ internal sealed class AsyncApiDocumentService(
         var info = new AsyncApiInfo
         {
             Title = $"{hostEnvironment.ApplicationName} | {documentName}",
-            Version = AsyncApiGeneratorConstants.DefaultAsyncApiVersion
+            Version = AsyncApiGeneratorConstants.DefaultInfoVersion
         };
 
         // Apply configured info from options if available
