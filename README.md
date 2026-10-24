@@ -67,6 +67,7 @@ public class MyService
 - ✅ **Wolverine** integration that documents channels and operations straight from Wolverine's message routing
 - ✅ **OpenAPI Overlays** applied in the generation pipeline, so the served document is already transformed
 - ✅ **API catalog** (RFC 9727) at `/.well-known/api-catalog`, listing every AsyncAPI, OpenAPI and Arazzo document the app serves
+- ✅ **CloudEvents 1.0** messages: binary-mode headers per protocol binding or the structured envelope
 
 ## Documentation Sections
 
@@ -77,6 +78,7 @@ public class MyService
 - [Scalar & Live Consoles](https://apidescriptions.bielu.pl/articles/scalar-consoles.html)
 - [Native AOT Support](https://apidescriptions.bielu.pl/articles/native-aot.html)
 - [API catalog](https://apidescriptions.bielu.pl/articles/api-catalog/overview.html)
+- [CloudEvents](https://apidescriptions.bielu.pl/articles/cloudevents.html)
 - [CLI Tool usage](https://apidescriptions.bielu.pl/articles/cli.html)
 - [Project templates](https://apidescriptions.bielu.pl/articles/templates.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)
