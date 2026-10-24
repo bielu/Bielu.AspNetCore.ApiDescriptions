@@ -363,14 +363,4 @@ public class AsyncApiOptionsTests
         // Assert
         options.AsyncApiVersion.ShouldBe(ByteBard.AsyncAPI.AsyncApiVersion.AsyncApi3_0);
     }
-
-    [Fact]
-    public void ShouldInclude_DefaultPredicateExists()
-    {
-        // Arrange
-        var options = new AsyncApiOptions();
-
-        // Assert - ShouldInclude delegate should be set by default
-        options.ShouldInclude.ShouldNotBeNull();
-    }
 }

@@ -4,7 +4,6 @@
 using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Services.Schemas;
 using ByteBard.AsyncAPI.Models;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bielu.AspNetCore.AsyncApi.Transformers;
@@ -21,12 +20,6 @@ public sealed class AsyncApiJsonSchemaTransformerContext
     /// Gets the name of the associated AsyncApi document.
     /// </summary>
     public required string DocumentName { get; init; }
-
-    /// <summary>
-    /// Gets the <see cref="ApiParameterDescription"/> associated with the target schema.
-    /// Null when processing an AsyncApi schema for a response type.
-    /// </summary>
-    public required ApiParameterDescription? ParameterDescription { get; init; }
 
     /// <summary>
     /// Gets the <see cref="JsonTypeInfo"/> associated with the target schema.
@@ -62,20 +55,17 @@ public sealed class AsyncApiJsonSchemaTransformerContext
     /// <summary>
     /// Gets or creates an <see cref="AsyncApiJsonSchema"/> for the specified type. Augments
     /// the schema with any <see cref="IAsyncApiSchemaTransformer"/>s that are registered
-    /// on the document. If <paramref name="parameterDescription"/> is not null, the schema will be
-    /// augmented with the <see cref="ApiParameterDescription"/> information.
+    /// on the document.
     /// </summary>
     /// <param name="type">The type for which the schema is being created.</param>
-    /// <param name="parameterDescription">An optional parameter description to augment the schema.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation, with a value of type <see cref="AsyncApiJsonSchema"/>.</returns>
-    public Task<AsyncApiJsonSchema> GetOrCreateSchemaAsync(Type type, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
+    public Task<AsyncApiJsonSchema> GetOrCreateSchemaAsync(Type type, CancellationToken cancellationToken = default)
     {
         var schemaService = ApplicationServices.GetRequiredKeyedService<AsyncApiJsonSchemaService>(DocumentName);
         return schemaService.GetOrCreateUnresolvedSchemaAsync(
             document: Document,
             type: type,
-            parameterDescription: parameterDescription,
             scopedServiceProvider: ApplicationServices,
             schemaTransformers: SchemaTransformers,
             cancellationToken: cancellationToken);

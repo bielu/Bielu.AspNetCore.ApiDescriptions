@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Helpers;
 using Bielu.AspNetCore.AsyncApi.Models.Metadata;
@@ -21,19 +21,17 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using static Bielu.AspNetCore.AsyncApi.Helpers.AttributeMetadataMapper;
-using AttrOperationType = Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationType;
+using AttrOperationType = Bielu.AspNetCore.AsyncApi.Attributes.OperationType;
 
 namespace Bielu.AspNetCore.AsyncApi.Services;
 
 internal sealed class AsyncApiDocumentService(
     [ServiceKey] string documentName,
-    IApiDescriptionGroupCollectionProvider apiDescriptionGroupCollectionProvider,
     IHostEnvironment hostEnvironment,
     IOptionsMonitor<AsyncApiOptions> optionsMonitor,
     IServiceProvider serviceProvider,
@@ -57,8 +55,6 @@ internal sealed class AsyncApiDocumentService(
 
     private readonly ConcurrentDictionary<string, AsyncApiOperationTransformerContext>
         _operationTransformerContextCache = new();
-
-    private static readonly ApiResponseType _defaultApiResponseType = new() { StatusCode = StatusCodes.Status200OK };
 
     private static readonly FrozenSet<string> _disallowedHeaderParameters =
         new[] { HeaderNames.Accept, HeaderNames.Authorization, HeaderNames.ContentType }.ToFrozenSet(StringComparer
@@ -813,7 +809,6 @@ internal sealed class AsyncApiDocumentService(
                 var operationTransformerContext = new AsyncApiOperationTransformerContext
                 {
                     DocumentName = documentName,
-                    Description = null,
                     ApplicationServices = scopedServiceProvider,
                     Document = document,
                     SchemaTransformers = schemaTransformers
@@ -1174,7 +1169,6 @@ internal sealed class AsyncApiDocumentService(
         {
             DocumentName = documentName,
             ApplicationServices = scopedServiceProvider,
-            DescriptionGroups = apiDescriptionGroupCollectionProvider.ApiDescriptionGroups.Items,
             Document = document,
             SchemaTransformers = schemaTransformers
         };

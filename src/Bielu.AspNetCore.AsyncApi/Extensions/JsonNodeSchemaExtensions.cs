@@ -13,12 +13,6 @@ using System.Text.Json.Serialization.Metadata;
 using Bielu.AspNetCore.AsyncApi.Schemas;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI.Models;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.AspNetCore.Routing.Constraints;
 using AsyncApiConstants = ByteBard.AsyncAPI.Models.AsyncApiConstants;
 using AsyncApiJsonSchema = ByteBard.AsyncAPI.Models.AsyncApiJsonSchema;
 
@@ -241,162 +235,6 @@ internal static class JsonNodeSchemaExtensions
         }
     }
 
-    // IRouteConstraint is referred to below as plain <c> text rather than a cref: two assemblies in the
-    // shared framework declare Microsoft.AspNetCore.Routing.IRouteConstraint, so even the fully
-    // qualified name is ambiguous to the doc-comment binder (CS0419) and there is no syntax to pick
-    // one. This member is internal, so nothing is lost from the published API reference.
-    /// <summary>
-    /// Applies route constraints to the target schema.
-    /// </summary>
-    /// <param name="schema">The <see cref="JsonNode"/> produced by the underlying schema generator.</param>
-    /// <param name="constraints">The list of <c>IRouteConstraint</c>s associated with the route parameter.</param>
-    internal static void ApplyRouteConstraints(this JsonNode schema, IEnumerable<IRouteConstraint> constraints)
-    {
-        // Apply constraints in reverse order because when it comes to the routing
-        // layer the first constraint that is violated causes routing to short circuit.
-        foreach (var constraint in Enumerable.Reverse(constraints))
-        {
-            if (constraint is MinRouteConstraint minRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.MinimumKeyword] = minRouteConstraint.Min;
-            }
-            else if (constraint is MaxRouteConstraint maxRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.MaximumKeyword] = maxRouteConstraint.Max;
-            }
-            else if (constraint is MinLengthRouteConstraint minLengthRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.MinLengthKeyword] = minLengthRouteConstraint.MinLength;
-            }
-            else if (constraint is MaxLengthRouteConstraint maxLengthRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.MaxLengthKeyword] = maxLengthRouteConstraint.MaxLength;
-            }
-            else if (constraint is RangeRouteConstraint rangeRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.MinimumKeyword] = rangeRouteConstraint.Min;
-                schema[AsyncApiJsonSchemaKeywords.MaximumKeyword] = rangeRouteConstraint.Max;
-            }
-            else if (constraint is RegexRouteConstraint regexRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = SchemaType.String.ToString();
-                schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = null;
-                schema[AsyncApiJsonSchemaKeywords.PatternKeyword] = regexRouteConstraint.Constraint.ToString();
-            }
-            else if (constraint is LengthRouteConstraint lengthRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.MinLengthKeyword] = lengthRouteConstraint.MinLength;
-                schema[AsyncApiJsonSchemaKeywords.MaxLengthKeyword] = lengthRouteConstraint.MaxLength;
-            }
-            else if (constraint is FloatRouteConstraint or DecimalRouteConstraint or DoubleRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = SchemaType.Number.ToString();
-                schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = constraint is FloatRouteConstraint ? "float" : "double";
-            }
-            else if (constraint is LongRouteConstraint or IntRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = SchemaType.Integer.ToString();
-                schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = constraint is LongRouteConstraint ? "int64" : "int32";
-            }
-            else if (constraint is GuidRouteConstraint or StringRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = SchemaType.String.ToString();
-                schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = constraint is GuidRouteConstraint ? "uuid" : null;
-            }
-            else if (constraint is BoolRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = SchemaType.Boolean.ToString();
-                schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = null;
-            }
-            else if (constraint is AlphaRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = SchemaType.String.ToString();
-                schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = null;
-            }
-            else if (constraint is DateTimeRouteConstraint)
-            {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = SchemaType.String.ToString();
-                schema[AsyncApiJsonSchemaKeywords.FormatKeyword] = "date-time";
-            }
-        }
-    }
-
-    /// <summary>
-    /// Applies parameter-specific customizations to the target schema.
-    /// </summary>
-    /// <param name="schema">The <see cref="JsonNode"/> produced by the underlying schema generator.</param>
-    /// <param name="parameterDescription">The <see cref="ApiParameterDescription"/> associated with the <see paramref="schema"/>.</param>
-    /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> associated with the <see paramref="schema"/>.</param>
-    internal static void ApplyParameterInfo(this JsonNode schema, ApiParameterDescription parameterDescription, JsonTypeInfo? jsonTypeInfo)
-    {
-        // This is special handling for parameters that are not bound from the body but represented in a complex type.
-        // For example:
-        //
-        // public class MyArgs
-        // {
-        //     [Required]
-        //     [Range(1, 10)]
-        //     [FromQuery]
-        //     public string Name { get; set; }
-        // }
-        //
-        // public IActionResult(MyArgs myArgs) { }
-        //
-        // In this case, the `ApiParameterDescription` object that we received will represent the `Name` property
-        // based on our model binding heuristics. In that case, to access the validation attributes that the
-        // model binder will respect we will need to get the property from the container type and map the
-        // attributes on it to the schema.
-        if (parameterDescription.ModelMetadata is { PropertyName: { }, ContainerType: { }, HasValidators: true, ValidatorMetadata: { } validations })
-        {
-            var attributes = validations.OfType<ValidationAttribute>();
-            schema.ApplyValidationAttributes(attributes);
-        }
-        if (parameterDescription.ModelMetadata is DefaultModelMetadata { Attributes.PropertyAttributes.Count: > 0 } metadata &&
-            metadata.Attributes.PropertyAttributes.OfType<DefaultValueAttribute>().LastOrDefault() is { } metadataDefaultValueAttribute)
-        {
-            schema.ApplyDefaultValue(metadataDefaultValueAttribute.Value, jsonTypeInfo);
-        }
-        if (parameterDescription.ParameterDescriptor is IParameterInfoParameterDescriptor { ParameterInfo: { } parameterInfo })
-        {
-            if (parameterInfo.HasDefaultValue)
-            {
-                schema.ApplyDefaultValue(parameterInfo.DefaultValue, jsonTypeInfo);
-            }
-            else if (parameterInfo.GetCustomAttributes<DefaultValueAttribute>().LastOrDefault() is { } defaultValueAttribute)
-            {
-                schema.ApplyDefaultValue(defaultValueAttribute.Value, jsonTypeInfo);
-            }
-
-            if (parameterInfo.GetCustomAttributes<ValidationAttribute>() is { } validationAttributes)
-            {
-                schema.ApplyValidationAttributes(validationAttributes);
-            }
-        }
-        // Route constraints are only defined on parameters that are sourced from the path. Since
-        // they are encoded in the route template, and not in the type information based to the underlying
-        // schema generator we have to handle them separately here.
-        if (parameterDescription.RouteInfo?.Constraints is { } constraints)
-        {
-            schema.ApplyRouteConstraints(constraints);
-        }
-
-        if (parameterDescription.Source is { } bindingSource
-            && SupportsNullableProperty(bindingSource)
-            && MapJsonNodeToSchemaType(schema[AsyncApiJsonSchemaKeywords.TypeKeyword]) is { } schemaTypes &&
-            schemaTypes.HasFlag(SchemaType.Null))
-        {
-            schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = (schemaTypes & ~SchemaType.Null).ToString();
-        }
-
-        // Parameters sourced from the header, query, route, and/or form cannot be nullable based on our binding
-        // rules but can be optional.
-        static bool SupportsNullableProperty(BindingSource bindingSource) => bindingSource == BindingSource.Header
-            || bindingSource == BindingSource.Query
-            || bindingSource == BindingSource.Path
-            || bindingSource == BindingSource.Form
-            || bindingSource == BindingSource.FormFile;
-    }
-
     /// <summary>
     /// Applies the polymorphism options defined by System.Text.Json to the target schema following AsyncApi v3's
     /// conventions for the discriminator property.
@@ -521,30 +359,6 @@ internal static class JsonNodeSchemaExtensions
             propertyInfo.PropertyType != typeof(object) && propertyInfo.ShouldApplyNullablePropertySchema())
         {
             schema[AsyncApiGeneratorConstants.NullableProperty] = true;
-        }
-    }
-
-    /// <summary>
-    /// Prunes the "null" type from the schema for types that are componentized. These
-    /// types should represent their nullability using oneOf with null instead.
-    /// </summary>
-    /// <param name="schema">The <see cref="JsonNode"/> produced by the underlying schema generator.</param>
-    internal static void PruneNullTypeForComponentizedTypes(this JsonNode schema)
-    {
-        if (schema.WillBeComponentized() &&
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] is JsonArray typeArray)
-        {
-            for (var i = typeArray.Count - 1; i >= 0; i--)
-            {
-                if (typeArray[i]?.GetValue<string>() == "null")
-                {
-                    typeArray.RemoveAt(i);
-                }
-            }
-            if (typeArray.Count == 1)
-            {
-                schema[AsyncApiJsonSchemaKeywords.TypeKeyword] = typeArray[0]?.GetValue<string>();
-            }
         }
     }
 

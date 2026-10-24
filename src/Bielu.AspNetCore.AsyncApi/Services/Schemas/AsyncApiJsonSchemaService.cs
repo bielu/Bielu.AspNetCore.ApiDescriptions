@@ -22,7 +22,6 @@ using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using AsyncApiJsonSchema = ByteBard.AsyncAPI.Models.AsyncApiJsonSchema;
@@ -194,12 +193,10 @@ internal sealed class AsyncApiJsonSchemaService
                         }
                     }
                 }
-                // Disabled: this stripped "null" from nullable componentized-object schemas on
-                // the assumption that the oneOf-wrapping restoration above (also disabled) would
-                // re-add nullability at the property reference site. Since that restoration never
-                // worked (it references a nonexistent Metadata property and the wrong constants
-                // class), pruning here silently and permanently dropped nullability instead.
-                // schema.PruneNullTypeForComponentizedTypes();
+                // Nullable componentized-object schemas deliberately keep "null" in their type. A former
+                // PruneNullTypeForComponentizedTypes step stripped it, assuming a oneOf-wrapping restoration
+                // would re-add nullability at the property reference site. That restoration never worked,
+                // so pruning silently dropped nullability; see NullablePropertySchemaTests.
                 return schema;
             }
         };
@@ -207,10 +204,12 @@ internal sealed class AsyncApiJsonSchemaService
 
     private static JsonObject CreateSchemaForJsonPatch()
     {
+        // "additionalProperties": false is written as the equivalent { "not": {} }: the boolean schema form
+        // cannot be deserialized into AsyncApiJsonSchema, which used to fail generation of the whole document.
         var addReplaceTest = new JsonObject()
         {
             [AsyncApiJsonSchemaKeywords.TypeKeyword] = "object",
-            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = false,
+            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = NoAdditionalProperties(),
             [AsyncApiJsonSchemaKeywords.RequiredKeyword] = JsonArray(["op", "path", "value"]),
             [AsyncApiJsonSchemaKeywords.PropertiesKeyword] = new JsonObject
             {
@@ -230,7 +229,7 @@ internal sealed class AsyncApiJsonSchemaService
         var moveCopy = new JsonObject()
         {
             [AsyncApiJsonSchemaKeywords.TypeKeyword] = "object",
-            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = false,
+            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = NoAdditionalProperties(),
             [AsyncApiJsonSchemaKeywords.RequiredKeyword] = JsonArray(["op", "path", "from"]),
             [AsyncApiJsonSchemaKeywords.PropertiesKeyword] = new JsonObject
             {
@@ -253,7 +252,7 @@ internal sealed class AsyncApiJsonSchemaService
         var remove = new JsonObject()
         {
             [AsyncApiJsonSchemaKeywords.TypeKeyword] = "object",
-            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = false,
+            [AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword] = NoAdditionalProperties(),
             [AsyncApiJsonSchemaKeywords.RequiredKeyword] = JsonArray(["op", "path"]),
             [AsyncApiJsonSchemaKeywords.PropertiesKeyword] = new JsonObject
             {
@@ -282,6 +281,8 @@ internal sealed class AsyncApiJsonSchemaService
         // Using JsonArray inline causes the compile to pick the generic Add<T>() overload
         // which then generates native AoT warnings without adding a cost. To Avoid that use
         // this helper method that uses JsonNode to pick the native AoT compatible overload instead.
+        static JsonObject NoAdditionalProperties() => new() { [AsyncApiJsonSchemaKeywords.NotKeyword] = new JsonObject() };
+
         static JsonArray JsonArray(ReadOnlySpan<JsonNode> values)
         {
             var array = new JsonArray();
@@ -295,7 +296,7 @@ internal sealed class AsyncApiJsonSchemaService
         }
     }
 
-    internal async Task<AsyncApiJsonSchema> GetOrCreateUnresolvedSchemaAsync(AsyncApiDocument? document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
+    internal async Task<AsyncApiJsonSchema> GetOrCreateUnresolvedSchemaAsync(AsyncApiDocument? document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, CancellationToken cancellationToken = default)
     {
         var schemaAsJsonObject = CreateSchema(type);
 
@@ -303,16 +304,11 @@ internal sealed class AsyncApiJsonSchemaService
         ConvertTypeStringsToEnumValues(schemaAsJsonObject);
         RemoveNullIds(schemaAsJsonObject);
 
-        if (parameterDescription is not null)
-        {
-            schemaAsJsonObject.ApplyParameterInfo(parameterDescription, _jsonSerializerOptions.GetTypeInfo(type));
-        }
-
         try
         {
             var deserializedSchema = JsonSerializer.Deserialize(schemaAsJsonObject, _jsonSchemaContext.AsyncApiJsonSchema);
             Debug.Assert(deserializedSchema != null, "The schema should have been deserialized successfully and materialize a non-null value.");
-            await ApplySchemaTransformersAsync(document, deserializedSchema, type, scopedServiceProvider, schemaTransformers, parameterDescription, cancellationToken);
+            await ApplySchemaTransformersAsync(document, deserializedSchema, type, scopedServiceProvider, schemaTransformers, cancellationToken);
             return deserializedSchema;
         }
         catch (JsonException ex)
@@ -387,9 +383,9 @@ internal sealed class AsyncApiJsonSchemaService
         }
     }
 
-    internal async Task<IAsyncApiSchema> GetOrCreateSchemaAsync(AsyncApiDocument document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
+    internal async Task<IAsyncApiSchema> GetOrCreateSchemaAsync(AsyncApiDocument document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, CancellationToken cancellationToken = default)
     {
-        var schema = await GetOrCreateUnresolvedSchemaAsync(document, type, scopedServiceProvider, schemaTransformers, parameterDescription, cancellationToken);
+        var schema = await GetOrCreateUnresolvedSchemaAsync(document, type, scopedServiceProvider, schemaTransformers, cancellationToken);
 
         var baseSchemaId = GetSchemaReferenceId(type);
 
@@ -455,7 +451,7 @@ internal sealed class AsyncApiJsonSchemaService
         CancellationToken cancellationToken)
     {
         var schema = await GetOrCreateSchemaAsync(
-            document, type, scopedServiceProvider, schemaTransformers, parameterDescription: null, cancellationToken);
+            document, type, scopedServiceProvider, schemaTransformers, cancellationToken);
 
         var key = GetSchemaComponentKey(type);
         if (key is null)
@@ -586,7 +582,7 @@ internal sealed class AsyncApiJsonSchemaService
         }
     }
 
-    internal async Task ApplySchemaTransformersAsync(AsyncApiDocument? document, AsyncApiJsonSchema schema, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, ApiParameterDescription? parameterDescription = null, CancellationToken cancellationToken = default)
+    internal async Task ApplySchemaTransformersAsync(AsyncApiDocument? document, AsyncApiJsonSchema schema, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, CancellationToken cancellationToken = default)
     {
         if (schemaTransformers.Length == 0)
         {
@@ -598,7 +594,6 @@ internal sealed class AsyncApiJsonSchemaService
             DocumentName = _documentName,
             JsonTypeInfo = jsonTypeInfo,
             JsonPropertyInfo = null,
-            ParameterDescription = parameterDescription,
             ApplicationServices = scopedServiceProvider,
             Document = document,
             SchemaTransformers = schemaTransformers

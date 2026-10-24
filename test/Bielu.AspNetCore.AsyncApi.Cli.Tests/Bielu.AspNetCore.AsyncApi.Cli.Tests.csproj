@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Cli\Bielu.AspNetCore.AsyncApi.Cli.csproj" />
+    <!-- A real CreateHostBuilder app for GetDocumentCommandWorker to boot and generate documents from. -->
+    <ProjectReference Include="..\..\src\examples\StreetlightsAPI\StreetlightsAPI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

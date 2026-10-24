@@ -13,8 +13,8 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
     [Generator]
     public class AsyncApiMetadataGenerator : IIncrementalGenerator
     {
-        private const string AsyncApiAttributeName = "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute";
-        private const string MessageAttributeName = "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute";
+        private const string AsyncApiAttributeName = "Bielu.AspNetCore.AsyncApi.Attributes.AsyncApiAttribute";
+        private const string MessageAttributeName = "Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute";
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -65,7 +65,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
             sb.AppendLine("using System.Collections.Generic;");
             sb.AppendLine("using System.Linq;");
             sb.AppendLine("using System.Reflection;");
-            sb.AppendLine("using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;");
+            sb.AppendLine("using Bielu.AspNetCore.AsyncApi.Attributes;");
             sb.AppendLine("using Bielu.AspNetCore.AsyncApi.Models.Metadata;");
             sb.AppendLine("using Bielu.AspNetCore.AsyncApi.Services;");
             sb.AppendLine("using Microsoft.Extensions.DependencyInjection;");
@@ -85,7 +85,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                 var symbol = model.GetDeclaredSymbol(typeDecl) as INamedTypeSymbol;
                 if (symbol == null) continue;
 
-                var asyncApiAttr = symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute");
+                var asyncApiAttr = symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.AsyncApiAttribute");
                 if (asyncApiAttr == null) continue;
 
                 var docName = asyncApiAttr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? "";
@@ -105,10 +105,10 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                 foreach (var member in members)
                 {
                     var attrs = member.GetAttributes();
-                    var channelAttr = attrs.FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute");
+                    var channelAttr = attrs.FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.ChannelAttribute");
                     if (channelAttr == null && member is IMethodSymbol)
                     {
-                        channelAttr = symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute");
+                        channelAttr = symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.ChannelAttribute");
                     }
 
                     if (channelAttr == null && !SymbolEqualityComparer.Default.Equals(member, symbol)) continue;
@@ -151,7 +151,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
 
                     sb.AppendLine("                        new List<ChannelParameterAttribute>");
                     sb.AppendLine("                        {");
-                    foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute"))
+                    foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.ChannelParameterAttribute"))
                     {
                         var name = attr.ConstructorArguments[0].Value;
                         var type = attr.ConstructorArguments[1].Value as ITypeSymbol;
@@ -165,7 +165,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
 
                     sb.AppendLine("                        new List<MessageAttribute>");
                     sb.AppendLine("                        {");
-                    foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute"))
+                    foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute"))
                     {
                         if (attr.ConstructorArguments.Length == 0) continue; // Should not happen for MessageAttribute
 
@@ -182,7 +182,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                     {
                         var attrName = attr.AttributeClass?.ToDisplayString();
                         string ctor;
-                        if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.PublishOperationAttribute")
+                        if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute")
                         {
                             if (attr.ConstructorArguments.Length == 0)
                             {
@@ -195,7 +195,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
                                 ctor = $"new PublishOperationAttribute(typeof({payloadType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), {tags})";
                             }
                         }
-                        else if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.SubscribeOperationAttribute")
+                        else if (attrName == "Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute")
                         {
                             if (attr.ConstructorArguments.Length == 0)
                             {
@@ -230,7 +230,7 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
 
                     sb.AppendLine("                        new List<MessageExampleAttribute>");
                     sb.AppendLine("                        {");
-                    foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute"))
+                    foreach (var attr in attrs.Where(a => a.AttributeClass?.ToDisplayString() == "Bielu.AspNetCore.AsyncApi.Attributes.MessageExampleAttribute"))
                     {
                         var name = attr.NamedArguments.FirstOrDefault(x => x.Key == "Name").Value.Value as string;
                         var nameValue = name != null ? $"\"{name}\"" : "null";

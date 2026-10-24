@@ -7,7 +7,7 @@ If you're migrating from the original [Saunter](https://github.com/asyncapi/saun
 | Old | New |
 |-----|-----|
 | `Saunter.AsyncApiSchema.v2` | `ByteBard.AsyncAPI.Models` |
-| `Saunter.Attributes` | `Bielu.AspNetCore.AsyncApi.Attributes.Attributes` |
+| `Saunter.Attributes` | `Bielu.AspNetCore.AsyncApi.Attributes` |
 
 ## API Changes
 

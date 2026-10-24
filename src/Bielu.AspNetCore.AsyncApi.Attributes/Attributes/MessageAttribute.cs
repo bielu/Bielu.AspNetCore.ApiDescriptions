@@ -1,4 +1,4 @@
-﻿namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿namespace Bielu.AspNetCore.AsyncApi.Attributes;
 
 /// <summary>
 /// Describes a message. On a method it declares a message of the channel, naming the payload type.

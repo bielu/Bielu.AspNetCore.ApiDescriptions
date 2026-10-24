@@ -63,7 +63,7 @@ app.Run();
 Use attributes to define channels and operations on your message bus or hub classes.
 
 ```csharp
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 
 [AsyncApi] // Tells the library to scan this class
 public class StreetlightMessageBus

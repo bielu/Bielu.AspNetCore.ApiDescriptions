@@ -1,4 +1,4 @@
-﻿namespace Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+﻿namespace Bielu.AspNetCore.AsyncApi.Attributes;
 
 public enum OperationType
 {

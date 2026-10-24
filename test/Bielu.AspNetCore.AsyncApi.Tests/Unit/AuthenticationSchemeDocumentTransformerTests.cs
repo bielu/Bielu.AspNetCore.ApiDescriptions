@@ -1,5 +1,5 @@
 ﻿using System.Text.Encodings.Web;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Services;
 using Bielu.AspNetCore.AsyncApi.Transformers;
 using ByteBard.AsyncAPI.Models;
@@ -211,7 +211,6 @@ public class AuthenticationSchemeDocumentTransformerTests
         IServiceProvider services, string documentName = "test") => new()
         {
             DocumentName = documentName,
-            DescriptionGroups = [],
             ApplicationServices = services,
         };
 

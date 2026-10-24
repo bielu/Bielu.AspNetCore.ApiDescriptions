@@ -1,5 +1,5 @@
 ﻿using Bielu.AspNetCore.Arazzo.Extensions;
-using Bielu.AspNetCore.AsyncApi.Attributes.Attributes;
+using Bielu.AspNetCore.AsyncApi.Attributes;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
