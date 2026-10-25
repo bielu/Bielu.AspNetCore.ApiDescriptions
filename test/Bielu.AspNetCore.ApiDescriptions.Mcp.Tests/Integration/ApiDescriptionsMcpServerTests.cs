@@ -91,25 +91,142 @@ public sealed class ApiDescriptionsMcpServerTests : IAsyncLifetime
 
         // Assert
         tools.Select(tool => tool.Name).ShouldBe(
-            ["list_api_descriptions", "get_api_description", "list_asyncapi_operations", "get_asyncapi_message"],
+            ["list_api_descriptions", "get_api_description", "find_api_operations", "get_api_operation", "list_asyncapi_operations", "get_asyncapi_message"],
             ignoreOrder: true);
         tools.ShouldAllBe(tool => tool.ProtocolTool.Annotations!.ReadOnlyHint == true);
+    }
+
+    [Theory]
+    [InlineData("list_api_descriptions")]
+    [InlineData("find_api_operations")]
+    [InlineData("get_api_operation")]
+    public async Task ListTools_StructuredToolsDeclareAnOutputSchema(string name)
+    {
+        // Act
+        var tool = (await Client.ListToolsAsync()).Single(tool => tool.Name == name);
+
+        // Assert
+        tool.ProtocolTool.OutputSchema.ShouldNotBeNull();
+        tool.ProtocolTool.OutputSchema.Value.GetProperty("type").GetString().ShouldBe("object");
     }
 
     [Fact]
     public async Task ListApiDescriptions_ListsEveryDocumentFamily()
     {
         // Act
-        using var documents = await CallJsonAsync("list_api_descriptions", new Dictionary<string, object?>());
+        using var result = await CallJsonAsync("list_api_descriptions", new Dictionary<string, object?>());
 
         // Assert
-        var uris = documents.RootElement.EnumerateArray().Select(d => d.GetProperty("uri").GetString()).ToList();
+        var documents = result.RootElement.GetProperty("documents").EnumerateArray().ToList();
+        var uris = documents.Select(d => d.GetProperty("uri").GetString()).ToList();
         uris.ShouldContain("apidescription://openapi/v1");
         uris.ShouldContain($"apidescription://asyncapi/{DocumentName}");
         uris.ShouldContain("apidescription://arazzo/v1");
-        documents.RootElement.EnumerateArray()
-            .Single(d => d.GetProperty("kind").GetString() == "AsyncAPI")
-            .GetProperty("mimeType").GetString().ShouldBe("application/vnd.aai.asyncapi+json");
+        var asyncApi = documents.Single(d => d.GetProperty("kind").GetString() == "AsyncAPI");
+        asyncApi.GetProperty("mimeType").GetString().ShouldBe("application/vnd.aai.asyncapi+json");
+        asyncApi.GetProperty("title").GetString().ShouldBe("Orders");
+        asyncApi.GetProperty("specificationVersion").GetString().ShouldStartWith("3.");
+        asyncApi.GetProperty("fingerprint").GetString().ShouldStartWith("sha256:");
+        asyncApi.GetProperty("capabilities").EnumerateArray().Select(c => c.GetString()).ShouldContain("get_api_operation");
+        documents.Single(d => d.GetProperty("kind").GetString() == "OpenAPI")
+            .GetProperty("capabilities").EnumerateArray().Select(c => c.GetString()).ShouldBe(["get_api_description"]);
+    }
+
+    [Fact]
+    public async Task ListApiDescriptions_DocumentThatFailsToGenerate_IsListedWithItsError()
+    {
+        // Act
+        using var result = await CallJsonAsync("list_api_descriptions", new Dictionary<string, object?>());
+
+        // Assert
+        var broken = result.RootElement.GetProperty("documents").EnumerateArray().Single(d => d.GetProperty("name").GetString() == "broken");
+        broken.GetProperty("error").GetString()!.ShouldContain("has no Info");
+    }
+
+    [Fact]
+    public async Task FindApiOperations_FindsTheOperationAndReportsDocumentsItCannotSearch()
+    {
+        // Act
+        using var result = await CallJsonAsync("find_api_operations", new() { ["query"] = "order placed" });
+
+        // Assert
+        var match = result.RootElement.GetProperty("matches").EnumerateArray().ShouldHaveSingleItem();
+        match.GetProperty("handle").GetProperty("operation").GetString().ShouldBe("publishOrderPlaced");
+        match.GetProperty("handle").GetProperty("document").GetString().ShouldBe(DocumentName);
+        match.GetProperty("matchedTerms").GetInt32().ShouldBe(2);
+        result.RootElement.GetProperty("notSearched").EnumerateArray().Select(d => d.GetProperty("kind").GetString())
+            .ShouldBe(["OpenAPI", "Arazzo", "Arazzo"], ignoreOrder: true);
+    }
+
+    [Theory]
+    [InlineData("action", "sideways", "'action'")]
+    [InlineData("cursor", "not-a-cursor", "'cursor'")]
+    [InlineData("document", "nope", "No document matches")]
+    public async Task FindApiOperations_BadArgument_IsAnError(string argument, string value, string expected)
+    {
+        // Act
+        var result = await Client.CallToolAsync("find_api_operations", new Dictionary<string, object?> { [argument] = value });
+
+        // Assert
+        result.IsError.ShouldBe(true);
+        Text(result).ShouldContain(expected);
+    }
+
+    [Fact]
+    public async Task GetApiOperation_ReturnsTheContractWithItsReferences()
+    {
+        // Act
+        using var result = await CallJsonAsync("get_api_operation",
+            new() { ["kind"] = "asyncapi", ["document"] = DocumentName, ["operation"] = "publishOrderPlaced" });
+
+        // Assert
+        var root = result.RootElement;
+        root.GetProperty("handle").GetProperty("kind").GetString().ShouldBe("AsyncAPI");
+        root.GetProperty("action").GetString().ShouldBe("send");
+        root.GetProperty("channel").GetProperty("address").GetString().ShouldBe("orders/placed");
+        var schema = root.GetProperty("messages")[0].GetProperty("payload");
+        var references = root.GetProperty("references");
+        if (schema.TryGetProperty("$ref", out var reference))
+        {
+            schema = references.GetProperty(reference.GetString()!);
+        }
+
+        schema.GetProperty("properties").TryGetProperty("orderId", out _).ShouldBeTrue();
+        root.GetProperty("notSpecified").EnumerateArray().Select(entry => entry.GetProperty("field").GetString())
+            .ShouldContain("servers");
+    }
+
+    [Theory]
+    [InlineData("OpenAPI", "v1", "op", "cannot be inspected yet")]
+    [InlineData("AsyncAPI", "nope", "op", "No AsyncAPI document")]
+    [InlineData("AsyncAPI", DocumentName, "nope", "find_api_operations")]
+    [InlineData("AsyncAPI", DocumentName, null, "'operation' are required")]
+    public async Task GetApiOperation_UnknownTarget_IsAnError(string kind, string document, string? operation, string expected)
+    {
+        // Act
+        var result = await Client.CallToolAsync("get_api_operation",
+            new Dictionary<string, object?> { ["kind"] = kind, ["document"] = document, ["operation"] = operation });
+
+        // Assert
+        result.IsError.ShouldBe(true);
+        Text(result).ShouldContain(expected);
+    }
+
+    [Fact]
+    public async Task GetApiOperation_CursorForAnotherVersionOfTheDocument_IsAnError()
+    {
+        // Act
+        var result = await Client.CallToolAsync("get_api_operation", new Dictionary<string, object?>
+        {
+            ["kind"] = "AsyncAPI",
+            ["document"] = DocumentName,
+            ["operation"] = "publishOrderPlaced",
+            ["cursor"] = Convert.ToBase64String("references|sha256:old|1"u8.ToArray()),
+        });
+
+        // Assert
+        result.IsError.ShouldBe(true);
+        Text(result).ShouldContain("changed");
     }
 
     [Theory]
@@ -169,7 +286,8 @@ public sealed class ApiDescriptionsMcpServerTests : IAsyncLifetime
         operation.GetProperty("action").GetString().ShouldBe("send");
         operation.GetProperty("address").GetString().ShouldBe("orders/placed");
         operation.GetProperty("summary").GetString().ShouldBe("Tells others an order was placed.");
-        operation.GetProperty("messages")[0].GetString().ShouldBe("orderPlaced");
+        operation.GetProperty("messages")[0].GetProperty("name").GetString().ShouldBe("orderPlaced");
+        operation.GetProperty("messages")[0].GetProperty("ref").GetString().ShouldBe("#/components/messages/orderPlaced");
     }
 
     [Fact]
@@ -180,10 +298,11 @@ public sealed class ApiDescriptionsMcpServerTests : IAsyncLifetime
 
         // Assert
         var root = message.RootElement;
-        root.GetProperty("key").GetString().ShouldBe("orderPlaced");
-        var reference = root.GetProperty("payload").GetProperty("$ref").GetString()!;
-        reference.ShouldStartWith("#/definitions/");
-        root.GetProperty("definitions").GetProperty(reference["#/definitions/".Length..])
+        root.GetProperty("name").GetString().ShouldBe("orderPlaced");
+        root.GetProperty("pointer").GetString().ShouldBe("#/components/messages/orderPlaced");
+        var reference = root.GetProperty("message").GetProperty("payload").GetProperty("$ref").GetString()!;
+        reference.ShouldStartWith("#/components/schemas/");
+        root.GetProperty("references").GetProperty(reference)
             .GetProperty("properties").TryGetProperty("orderId", out _).ShouldBeTrue();
     }
 

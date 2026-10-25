@@ -25,8 +25,8 @@ app.MapApiCatalog();
 The catalog is an [RFC 9264](https://www.rfc-editor.org/rfc/rfc9264) Linkset, served as
 `application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"`. It has two link contexts:
 
-- the catalog itself, whose `item` links are the APIs: this app (its `ApiUrl`, the base URL by default), then every
-  `AddItem(...)` entry;
+- the catalog itself, whose `item` links are the APIs: this app (its `ApiUrl`, the base URL by default), every
+  `AddItem(...)` entry, then every endpoint marked with `WithApiCatalogItem()`, such as an MCP server;
 - this app's API, with one `service-desc` link per document and one `service-doc` link per `AddServiceDoc(...)` entry.
 
 ```json
@@ -67,6 +67,27 @@ To list documents from an endpoint of your own, add the same metadata to it. The
 app.MapGet("/workflows/{documentName}.json", handler)
     .WithMetadata(new ApiDescriptionDocumentMetadata("Workflow", "application/json"));
 ```
+
+## Endpoint APIs
+
+An API served from an endpoint rather than described by a document, such as the app's
+[MCP server](../mcp.md), is listed as an `item` of its own with `WithApiCatalogItem()`:
+
+```csharp
+app.MapMcp("/mcp").WithApiCatalogItem("MCP server");
+app.MapApiCatalog();
+```
+
+```json
+"item": [
+  { "href": "https://localhost:5001/" },
+  { "href": "https://localhost:5001/mcp", "title": "MCP server" }
+]
+```
+
+Endpoints sharing a route, such as the `POST`, `GET` and `DELETE` endpoints `MapMcp()` maps, are listed once. A route
+with parameters cannot be linked to, so it is left out. The MCP SDK leaves no marker of its own on its endpoints, which
+is why the catalog does not find an MCP server unless it is marked.
 
 ## Options
 

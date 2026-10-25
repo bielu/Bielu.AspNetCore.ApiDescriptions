@@ -234,6 +234,60 @@ public class ApiCatalogEndpointTests
     }
 
     [Fact]
+    public async Task Get_WithEndpointsMarkedAsItems_ListsEachRouteOnce()
+    {
+        // Arrange: a group like MapMcp()'s, with several methods on one route, and a route that cannot be linked to.
+        using var host = await CreateHostAsync(
+            services => services.AddAsyncApi(),
+            endpoints =>
+            {
+                endpoints.MapAsyncApi();
+                var mcp = endpoints.MapGroup("/mcp");
+                mcp.MapPost("", () => Results.Ok());
+                mcp.MapGet("", () => Results.Ok());
+                mcp.MapDelete("", () => Results.Ok());
+                mcp.WithApiCatalogItem("MCP server");
+                endpoints.MapGet("/graphql", () => Results.Ok()).WithApiCatalogItem();
+                endpoints.MapGet("/items/{id}", (string id) => Results.Ok()).WithApiCatalogItem("Unlinkable");
+            });
+
+        // Act
+        var json = await host.GetTestClient().GetStringAsync(ApiCatalogDefaults.DefaultRoute);
+
+        // Assert
+        using var document = JsonDocument.Parse(json);
+        var items = document.RootElement.GetProperty("linkset")[0].GetProperty("item").EnumerateArray()
+            .Select(item => (item.GetProperty("href").GetString(), item.TryGetProperty("title", out var title) ? title.GetString() : null))
+            .ToList();
+        items.ShouldBe([($"{BaseUrl}/", null), ($"{BaseUrl}/mcp", "MCP server"), ($"{BaseUrl}/graphql", null)], ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task Get_WithOnlyEndpointItems_ListsThemWithoutTheAppsApi()
+    {
+        // Arrange
+        using var host = await CreateHostAsync(_ => { },
+            endpoints => endpoints.MapPost("/mcp", () => Results.Ok()).WithApiCatalogItem("MCP server"));
+
+        // Act
+        var json = await host.GetTestClient().GetStringAsync(ApiCatalogDefaults.DefaultRoute);
+
+        // Assert
+        using var document = JsonDocument.Parse(json);
+        var linkset = document.RootElement.GetProperty("linkset");
+        linkset.GetArrayLength().ShouldBe(1);
+        linkset[0].GetProperty("item").EnumerateArray().Single().GetProperty("href").GetString().ShouldBe($"{BaseUrl}/mcp");
+    }
+
+    [Fact]
+    public void WithApiCatalogItem_ThrowsForNullBuilder()
+    {
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() =>
+            ApiCatalogEndpointConventionBuilderExtensions.WithApiCatalogItem<IEndpointConventionBuilder>(null!));
+    }
+
+    [Fact]
     public void MapApiCatalog_ThrowsForNullEndpoints()
     {
         // Act & Assert

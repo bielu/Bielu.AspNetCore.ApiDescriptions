@@ -1,4 +1,5 @@
-﻿using Bielu.AspNetCore.AsyncApi.Extensions;
+﻿using Bielu.AspNetCore.ApiCatalog;
+using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using Bielu.AspNetCore.AsyncApi.Scalar.SignalR;
 using Bielu.AspNetCore.AsyncApi.Services;
@@ -131,6 +132,14 @@ builder.Services.AddAsyncApi("signalr-secure", options =>
     });
 });
 
+// 2d. Let AI agents read both documents through an MCP server (experimental): they can find the hub methods to call
+// and the messages to expect, with the hub path, call type and payload schemas, without the app's source.
+#pragma warning disable BIELUMCP001
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithApiDescriptions();
+#pragma warning restore BIELUMCP001
+
 var app = builder.Build();
 
 app.UseRouting();
@@ -146,6 +155,9 @@ app.MapHub<ChatHub>(HubPath);
 app.MapHub<SecureChatHub>(SecureHubPath).RequireAuthorization();
 
 app.MapAsyncApi();      // GET /asyncapi/signalr.json  +  /asyncapi/signalr-secure.json
+// MCP server (streamable HTTP) over the same documents, listed in the API catalog alongside them.
+app.MapMcp("/mcp").WithApiCatalogItem("MCP server");
+app.MapApiCatalog();    // GET /.well-known/api-catalog: the AsyncAPI documents and the MCP server
 
 // Serve the SignalR-enabled Scalar bundle (GET /scalar/signalr/plugin.js).
 app.MapScalarSignalRAssets();

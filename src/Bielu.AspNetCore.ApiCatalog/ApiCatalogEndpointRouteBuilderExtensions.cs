@@ -13,8 +13,9 @@ public static class ApiCatalogEndpointRouteBuilderExtensions
 {
     /// <summary>
     /// Serves an RFC 9727 API catalog listing the API description documents this app serves: every document of
-    /// <c>MapAsyncApi()</c> and <c>MapArazzo()</c>, those of <c>MapOpenApi()</c>, and whatever
-    /// <see cref="ApiCatalogOptions"/> adds.
+    /// <c>MapAsyncApi()</c> and <c>MapArazzo()</c>, those of <c>MapOpenApi()</c>, the endpoints marked with
+    /// <see cref="ApiCatalogEndpointConventionBuilderExtensions.WithApiCatalogItem{TBuilder}"/> (such as an MCP
+    /// server), and whatever <see cref="ApiCatalogOptions"/> adds.
     /// </summary>
     /// <remarks>
     /// <c>GET</c> returns the catalog as <see cref="ApiCatalogDefaults.MediaType"/>; <c>HEAD</c> returns only the headers.
@@ -51,7 +52,8 @@ public static class ApiCatalogEndpointRouteBuilderExtensions
 
         var options = context.RequestServices.GetRequiredService<IOptions<ApiCatalogOptions>>().Value;
         var payload = ApiCatalogWriter.Write(catalogUrl, baseUrl,
-            ApiCatalogDocumentCollector.CollectServiceDescriptions(context.RequestServices, options), options);
+            ApiCatalogDocumentCollector.CollectServiceDescriptions(context.RequestServices, options), options,
+            ApiCatalogDocumentCollector.CollectItems(context.RequestServices));
 
         context.Response.Headers[HeaderNames.Link] = $"<{catalogUrl}>; rel=\"api-catalog\"";
         context.Response.ContentType = ApiCatalogDefaults.MediaType;

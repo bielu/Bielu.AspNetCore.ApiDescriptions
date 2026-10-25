@@ -60,6 +60,31 @@ internal static class ApiCatalogDocumentCollector
         return links;
     }
 
+    /// <summary>
+    /// Lists one <c>item</c> link per route marked with <c>WithApiCatalogItem()</c>, in the order routing lists the
+    /// endpoints (a route group's come after the endpoints mapped directly), with a path relative to the base URL.
+    /// </summary>
+    public static IReadOnlyList<ApiCatalogLink> CollectItems(IServiceProvider services)
+    {
+        var binderFactory = services.GetRequiredService<TemplateBinderFactory>();
+        var links = new List<ApiCatalogLink>();
+
+        foreach (var endpoint in services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>())
+        {
+            if (endpoint.Metadata.GetMetadata<ApiCatalogItemMetadata>() is not { } metadata
+                || endpoint.RoutePattern.Parameters.Count > 0
+                || binderFactory.Create(endpoint.RoutePattern).BindValues(new RouteValueDictionary()) is not { } path
+                || links.Any(link => string.Equals(link.Href, path, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            links.Add(new ApiCatalogLink(path, Type: null, metadata.Title));
+        }
+
+        return links;
+    }
+
     private static (string Kind, string MediaType)? Describe(RouteEndpoint endpoint, ApiCatalogOptions options)
     {
         if (endpoint.Metadata.GetMetadata<ApiDescriptionDocumentMetadata>() is { } metadata)

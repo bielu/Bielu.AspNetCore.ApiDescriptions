@@ -1,4 +1,8 @@
-﻿using Bielu.AspNetCore.ApiDescriptions;
+﻿using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Bielu.AspNetCore.ApiDescriptions;
 using Microsoft.Extensions.ApiDescriptions;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,6 +24,34 @@ internal sealed record ApiDescriptionDocument(string Kind, string Name)
         "openapi" => "application/vnd.oai.openapi+json",
         "arazzo" => "application/vnd.oai.workflows+json",
         _ => "application/json",
+    };
+}
+
+/// <summary>A document as generated, with what agents need to know about it before reading it whole.</summary>
+/// <param name="Source">The document.</param>
+/// <param name="Text">The document, serialized.</param>
+/// <param name="Json">The document parsed, or <see langword="null"/> when it is not a JSON object.</param>
+internal sealed record GeneratedApiDescription(ApiDescriptionDocument Source, string Text, JsonObject? Json)
+{
+    /// <summary>
+    /// Identifies this exact content (<c>sha256:…</c>), so an agent can tell whether what it read before still holds.
+    /// </summary>
+    public string Fingerprint { get; } = "sha256:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(Text)));
+
+    /// <summary>The version of the specification the document follows: its <c>asyncapi</c>, <c>openapi</c> or <c>arazzo</c> field.</summary>
+    public string? SpecificationVersion =>
+        new[] { "asyncapi", "openapi", "arazzo", "swagger" }
+            .Select(property => AsyncApiDocumentInspector.String(Json?[property]))
+            .FirstOrDefault(version => version is not null);
+
+    /// <summary>Which document this is and which version of it, for results that quote parts of it.</summary>
+    public JsonObject Describe() => new()
+    {
+        ["kind"] = Source.Kind,
+        ["name"] = Source.Name,
+        ["uri"] = Source.Uri,
+        ["specificationVersion"] = SpecificationVersion,
+        ["fingerprint"] = Fingerprint,
     };
 }
 
@@ -78,6 +110,23 @@ internal sealed class ApiDescriptionCatalog(IServiceProvider services)
         }
 
         return writer.ToString();
+    }
+
+    /// <summary>Generates a document and parses it.</summary>
+    public async Task<GeneratedApiDescription> LoadAsync(ApiDescriptionDocument document)
+    {
+        var text = await GenerateAsync(document);
+        JsonObject? json;
+        try
+        {
+            json = JsonNode.Parse(text) as JsonObject;
+        }
+        catch (JsonException)
+        {
+            json = null;
+        }
+
+        return new GeneratedApiDescription(document, text, json);
     }
 
     private IEnumerable<IBuildTimeDocumentSource> Sources() => services.GetServices<IBuildTimeDocumentSource>();

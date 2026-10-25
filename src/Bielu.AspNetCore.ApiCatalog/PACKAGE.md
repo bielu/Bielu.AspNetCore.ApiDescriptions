@@ -54,6 +54,9 @@ app.MapApiCatalog(); // GET and HEAD /.well-known/api-catalog
 non-default route, set `OpenApiRoutePattern` to it, because OpenAPI's endpoint is recognized by its
 route.
 
+An API served from an endpoint rather than a document, such as an MCP server, is listed as an `item`
+with `WithApiCatalogItem()`: `app.MapMcp("/mcp").WithApiCatalogItem("MCP server");`.
+
 ## Documentation
 
 - [API catalog](https://apidescriptions.bielu.pl/articles/api-catalog/overview.html)

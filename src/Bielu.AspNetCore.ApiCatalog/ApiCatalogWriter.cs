@@ -15,14 +15,15 @@ internal static class ApiCatalogWriter
     /// <param name="baseUrl">The app's absolute base URL, without a trailing slash.</param>
     /// <param name="serviceDescriptions">The documents describing the app's API.</param>
     /// <param name="options">The configured items and documentation pages.</param>
+    /// <param name="endpointItems">The endpoints marked with <c>WithApiCatalogItem()</c>.</param>
     public static byte[] Write(string catalogUrl, string baseUrl, IReadOnlyList<ApiCatalogLink> serviceDescriptions,
-        ApiCatalogOptions options)
+        ApiCatalogOptions options, IReadOnlyList<ApiCatalogLink>? endpointItems = null)
     {
         var apiUrl = Resolve(options.ApiUrl, baseUrl);
         var describesApi = serviceDescriptions.Count > 0 || options.ServiceDocs.Count > 0;
         List<ApiCatalogLink> items = describesApi
-            ? [new ApiCatalogLink(apiUrl, Type: null, Title: null), .. options.Items]
-            : options.Items;
+            ? [new ApiCatalogLink(apiUrl, Type: null, Title: null), .. options.Items, .. endpointItems ?? []]
+            : [.. options.Items, .. endpointItems ?? []];
 
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))

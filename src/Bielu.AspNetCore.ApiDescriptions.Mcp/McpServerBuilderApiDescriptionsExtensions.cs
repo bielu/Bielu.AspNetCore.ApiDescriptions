@@ -13,12 +13,17 @@ public static class McpServerBuilderApiDescriptionsExtensions
 
     /// <summary>
     /// Lets AI agents connected to this MCP server read the app's own API descriptions: every AsyncAPI, OpenAPI and
-    /// Arazzo document it serves, as the resource <c>apidescription://{kind}/{name}</c>, and four read-only tools:
+    /// Arazzo document it serves, as the resource <c>apidescription://{kind}/{name}</c>, and six read-only tools:
     /// <list type="bullet">
-    /// <item><c>list_api_descriptions</c> lists the documents and their URIs;</item>
+    /// <item><c>list_api_descriptions</c> lists the documents, their URIs, titles, specification versions and the tools
+    /// that can inspect them;</item>
     /// <item><c>get_api_description</c> returns one document;</item>
+    /// <item><c>find_api_operations</c> searches the operations of every AsyncAPI document and returns a handle for
+    /// each match;</item>
+    /// <item><c>get_api_operation</c> returns the complete documented contract of one operation: channel, servers,
+    /// security, messages and schemas, bindings, reply and examples, with what the document does not specify listed;</item>
     /// <item><c>list_asyncapi_operations</c> summarizes what an AsyncAPI document says the app sends and receives;</item>
-    /// <item><c>get_asyncapi_message</c> returns one message with the schemas it references resolved.</item>
+    /// <item><c>get_asyncapi_message</c> returns one message with every part of the document it references.</item>
     /// </list>
     /// </summary>
     /// <remarks>
@@ -50,6 +55,8 @@ public static class McpServerBuilderApiDescriptionsExtensions
             [
                 new ListApiDescriptionsTool(),
                 new GetApiDescriptionTool(),
+                new FindApiOperationsTool(),
+                new GetApiOperationTool(),
                 new ListAsyncApiOperationsTool(),
                 new GetAsyncApiMessageTool(),
             ]);
