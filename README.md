@@ -30,7 +30,10 @@ API catalog and [CloudEvents](https://cloudevents.io/) messages.
 | Overlay | 1.0.x, 1.1.x | not generated; applied by `Bielu.Overlay.NET` | `Bielu.Overlay.NET`, `Bielu.Overlay.NET.Readers`, `Bielu.Overlay.Cli` |
 | API Catalog (RFC 9727) | RFC 9727, as an RFC 9264 Linkset | `Bielu.AspNetCore.ApiCatalog` | not read |
 | CloudEvents | 1.0 (binary and structured mode) | `Bielu.AspNetCore.AsyncApi.CloudEvents`, as AsyncAPI message headers or payload | not read |
-| Model Context Protocol | as negotiated by the `ModelContextProtocol` C# SDK 2.2 | `Bielu.AspNetCore.ApiDescriptions.Mcp` (experimental), as tools and resources over the served documents | not read |
+| Apache Avro | 1.9.0 declared (`schemaFormat`), configurable | `Bielu.AspNetCore.AsyncApi.Avro`, as AsyncAPI message payloads | not read |
+| Protocol Buffers | proto2, proto3 (`schemaFormat` version 2 or 3); editions files keep their JSON Schema | `Bielu.AspNetCore.AsyncApi.Protobuf`, as `.proto` payload sources | not read |
+| xRegistry | 1.0-rc4 (message and schema registries; read-only) | `Bielu.AspNetCore.XRegistry`, served from the AsyncAPI documents | not read |
+| Model Context Protocol | as negotiated by the `ModelContextProtocol` C# SDK 2.3 | `Bielu.AspNetCore.ApiDescriptions.Mcp` (experimental), as tools and resources over the served documents | not read |
 
 The runtime libraries target **.NET 10**. See [Supported .NET versions](https://apidescriptions.bielu.pl/articles/supported-dotnet-versions.html)
 for the support matrix and the policy for adding and removing targets.
@@ -108,8 +111,10 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
   tail Kafka channels through an opt-in server-side bridge (MQTT and AMQP drivers planned)
 - ✅ **Wolverine** integration that documents channels and operations from Wolverine's message routing
 - ✅ **CloudEvents 1.0** messages: binary-mode headers per protocol binding, or the structured envelope
+- ✅ **Avro payloads** (`schemaFormat: application/vnd.apache.avro`) converted from the generated JSON Schemas
 - ✅ **Overlays** applied in the generation pipeline, so the served and build-time documents are already transformed
 - ✅ **API catalog** (RFC 9727) at `/.well-known/api-catalog`, listing every AsyncAPI, OpenAPI and Arazzo document the app serves
+- ✅ **CNCF xRegistry** (read-only message and schema registry) served from the app's AsyncAPI documents
 - ✅ **MCP server** (experimental) that lets AI agents read the app's AsyncAPI, OpenAPI and Arazzo documents, operations and message schemas
 - ✅ **Arazzo workflows** that reference the app's own AsyncAPI and OpenAPI documents, validated at startup
 - ✅ **Document merging** for API gateways, in code or from the CLI
@@ -130,6 +135,9 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 | [`Bielu.AspNetCore.AsyncApi.Versioning`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Versioning/) | `Asp.Versioning` integration (`AddAsyncApiForApiVersions`) |
 | [`Bielu.AspNetCore.AsyncApi.Wolverine`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Wolverine/) | Builds channels and operations from Wolverine's message routing |
 | [`Bielu.AspNetCore.AsyncApi.CloudEvents`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.CloudEvents/) | Describes messages as CloudEvents 1.0 events |
+| [`Bielu.AspNetCore.AsyncApi.Avro`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Avro/) | `AddAvroPayloads()`: describes message payloads as Apache Avro schemas |
+| [`Bielu.AspNetCore.AsyncApi.Protobuf`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Protobuf/) | `AddProtobufPayloads()`: describes Protocol Buffers payloads by their `.proto` source |
+| [`Bielu.AspNetCore.XRegistry`](https://www.nuget.org/packages/Bielu.AspNetCore.XRegistry/) | Serves the messages and payload schemas as a read-only CNCF xRegistry (`MapXRegistry`) |
 | [`Bielu.AspNetCore.AsyncApi.Overlay`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Overlay/) | `AddOverlay(...)` for AsyncAPI documents |
 | [`Bielu.AspNetCore.AsyncApi.Merger`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Merger/) | Merges several AsyncAPI documents, for example behind a gateway |
 | [`Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR/) | SignalR bindings |
@@ -217,8 +225,12 @@ dotnet run
   [WebRTC](https://apidescriptions.bielu.pl/articles/protocols-webrtc.html)
 - [Scalar consoles](https://apidescriptions.bielu.pl/articles/scalar-consoles.html)
 - [CloudEvents](https://apidescriptions.bielu.pl/articles/cloudevents.html)
+- [Avro payloads](https://apidescriptions.bielu.pl/articles/avro.html)
+- [Protobuf payloads](https://apidescriptions.bielu.pl/articles/protobuf.html)
+- [xRegistry](https://apidescriptions.bielu.pl/articles/xregistry.html)
 - [MCP server for API descriptions](https://apidescriptions.bielu.pl/articles/mcp.html) (experimental)
 - [Merger and API gateway](https://apidescriptions.bielu.pl/articles/merger-gateway.html)
+- [Migrating to 2.0](https://apidescriptions.bielu.pl/articles/migration-to-2.0.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)
 
 **Arazzo, Overlay and API catalog**

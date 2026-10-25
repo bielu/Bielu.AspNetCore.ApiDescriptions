@@ -27,6 +27,12 @@ public static class AsyncApiVersioningServiceCollectionExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to register services onto.</param>
     /// <param name="configure">Optional callback to configure version-specific options.</param>
     /// <returns>The specified <see cref="IServiceCollection"/>.</returns>
+    /// <remarks>
+    /// Each API version gets its own document, with that version's <c>info</c> and deprecation flag. The documents
+    /// are not filtered by version: each one contains every channel. Use <paramref name="configure"/> to call
+    /// <see cref="AsyncApiOptions.AddIncludedChannel(string)"/> per version if a document should only list some of them.
+    /// The API versions come from Asp.Versioning's <c>AddApiExplorer()</c>, which must be called too.
+    /// </remarks>
     public static IServiceCollection AddAsyncApiForApiVersions(this IServiceCollection services, Action<AsyncApiOptions, ApiVersionDescription>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -50,8 +56,6 @@ public static class AsyncApiVersioningServiceCollectionExtensions
     private static IServiceCollection AddAsyncApiVersioningCore(this IServiceCollection services)
     {
         // We use KeyedService.AnyKey to match any version name requested at runtime
-        services.AddEndpointsApiExplorer();
-
         services.TryAddKeyedSingleton<IAsyncApiMetadataProvider, ReflectionAsyncApiMetadataProvider>(KeyedService.AnyKey);
         services.TryAddKeyedSingleton<XmlDocumentationProvider>(KeyedService.AnyKey, (sp, key) => ActivatorUtilities.CreateInstance<XmlDocumentationProvider>(sp));
         services.TryAddKeyedSingleton<AsyncApiJsonSchemaService>(KeyedService.AnyKey, (sp, key) =>

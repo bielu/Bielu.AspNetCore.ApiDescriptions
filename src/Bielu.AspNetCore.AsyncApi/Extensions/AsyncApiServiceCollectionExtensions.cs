@@ -116,7 +116,6 @@ public static class AsyncApiServiceCollectionExtensions
                         "JsonSerializerContext configured on JsonOptions.")]
     private static IServiceCollection AddAsyncApiCore(this IServiceCollection services, string documentName)
     {
-        services.AddEndpointsApiExplorer();
         services.TryAddKeyedSingleton<IAsyncApiMetadataProvider, ReflectionAsyncApiMetadataProvider>(documentName);
         services.AddKeyedSingleton<XmlDocumentationProvider>(documentName);
         services.AddKeyedSingleton<AsyncApiJsonSchemaService>(documentName);

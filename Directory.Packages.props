@@ -5,11 +5,11 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- ByteBard AsyncAPI -->
-    <PackageVersion Include="ByteBard.AsyncAPI.NET" Version="4.0.0-beta.20" />
-    <PackageVersion Include="ByteBard.AsyncAPI.NET.Bindings" Version="4.0.0-beta.20" />
-    <PackageVersion Include="ByteBard.AsyncAPI.NET.Readers" Version="4.0.0-beta.20" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET" Version="4.0.0-beta.21" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET.Bindings" Version="4.0.0-beta.21" />
+    <PackageVersion Include="ByteBard.AsyncAPI.NET.Readers" Version="4.0.0-beta.21" />
     <!-- Model Context Protocol (Bielu.AspNetCore.ApiDescriptions.Mcp) -->
-    <PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
+    <PackageVersion Include="ModelContextProtocol" Version="2.3.0" />
     <!-- Wolverine (Bielu.AspNetCore.AsyncApi.Wolverine) -->
     <PackageVersion Include="WolverineFx" Version="6.41.0" />
     <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.41.0" />

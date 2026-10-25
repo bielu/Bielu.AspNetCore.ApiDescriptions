@@ -389,9 +389,7 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             var serverKey = AsyncApiNamingHelper.SanitizeKey(options.ServerNameFor(endpointUri.Scheme));
             if (document.Servers?.ContainsKey(serverKey) == true)
             {
-                channel.Servers.Add(new AsyncApiServerReference(document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0)
-                    ? $"#{serverKey}"
-                    : $"#/servers/{serverKey}"));
+                channel.Servers.Add(new AsyncApiServerReference($"#/servers/{serverKey}"));
             }
 
             document.Channels[channelKey] = channel;

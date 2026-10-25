@@ -1,5 +1,6 @@
 ﻿using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Shouldly;
@@ -26,6 +27,20 @@ public class AsyncApiServiceCollectionExtensionsTests
         // Assert - Check that options are registered
         var optionsMonitor = provider.GetService<IOptionsMonitor<AsyncApiOptions>>();
         optionsMonitor.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void AddAsyncApi_DoesNotRegisterApiExplorer()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddAsyncApi();
+
+        // Assert
+        services.ShouldNotContain(d => d.ServiceType == typeof(IApiDescriptionGroupCollectionProvider));
+        services.ShouldNotContain(d => d.ServiceType == typeof(IApiDescriptionProvider));
     }
 
     [Fact]

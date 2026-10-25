@@ -36,10 +36,18 @@
   href: scalar-consoles.md
 - name: CloudEvents
   href: cloudevents.md
+- name: Avro Payloads
+  href: avro.md
+- name: Protobuf Payloads
+  href: protobuf.md
+- name: xRegistry
+  href: xregistry.md
 - name: MCP Server (experimental)
   href: mcp.md
 - name: Merger & Gateway
   href: merger-gateway.md
+- name: Migrating to 2.0
+  href: migration-to-2.0.md
 - name: Migration from Saunter
   href: migration-from-saunter.md
 - name: Arazzo docs →

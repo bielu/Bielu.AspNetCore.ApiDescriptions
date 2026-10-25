@@ -12,7 +12,10 @@
 // Package ids come from the packable projects directly under src/ (<PackageId>, else the project
 // name), so a new package is covered without touching this file. Prereleases are skipped by
 // default: every push to main publishes a beta of all packages, and nobody audits those.
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+//
+// When GITHUB_STEP_SUMMARY is set (GitHub Actions), the run also writes a package x version matrix
+// to the job summary, showing which versions were already indexed and which were sent for harvest.
+import { readFileSync, readdirSync, existsSync, appendFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -112,15 +115,63 @@ async function fetchDefinitions(batch) {
   return null;
 }
 
-const published = [];
+// Orders versions by their numeric release parts, a release after its own prereleases.
+function compareVersions(a, b) {
+  const [releaseA, preA] = a.split(/-(.*)/s);
+  const [releaseB, preB] = b.split(/-(.*)/s);
+  const partsA = releaseA.split(".").map(Number);
+  const partsB = releaseB.split(".").map(Number);
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const diff = (partsA[i] ?? 0) - (partsB[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  if (!preA || !preB) return (preA ? -1 : 0) - (preB ? -1 : 0);
+  return preA.localeCompare(preB, "en", { numeric: true });
+}
+
+// Markdown matrix of packages (rows) by versions (columns) for the GitHub Actions job summary.
+function summary(versionsById, missing, unpublished) {
+  const pendingMark = dryRun ? "❌" : "⏳";
+  const pendingText = dryRun ? "not indexed (dry run, nothing requested)" : "harvest requested this run";
+  const all = Object.values(versionsById).flat();
+  const versions = [...new Set(all)].sort(compareVersions);
+  const lines = [
+    "## ClearlyDefined harvest",
+    "",
+    `${all.length - missing.size}/${all.length} published versions indexed.`,
+    "",
+    `✅ indexed · ${pendingMark} ${pendingText} · — not published`,
+    "",
+    `| Package | ${versions.join(" | ")} |`,
+    `| --- | ${versions.map(() => ":---:").join(" | ")} |`,
+  ];
+  for (const [id, published] of Object.entries(versionsById)) {
+    const cells = versions.map((v) => {
+      if (!published.includes(v)) return "—";
+      return missing.has(`nuget/nuget/-/${id}/${v}`) ? pendingMark : "✅";
+    });
+    lines.push(`| [${id}](https://clearlydefined.io/?type=nuget&q=${encodeURIComponent(id)}) | ${cells.join(" | ")} |`);
+  }
+  if (unpublished.length > 0) {
+    const kind = includePrerelease ? "No" : "No stable";
+    lines.push("", `${kind} version on nuget.org yet: ${unpublished.map((id) => `\`${id}\``).join(", ")}.`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+const versionsById = {};
+const unpublished = [];
 for (const id of packageIds()) {
   const versions = await publishedVersions(id);
-  if (!versions) {
-    console.log(`${id}: not on nuget.org, skipped`);
+  if (!versions?.length) {
+    console.log(`${id}: ${versions ? "no stable version" : "not"} on nuget.org, skipped`);
+    unpublished.push(id);
     continue;
   }
-  published.push(...versions.map((v) => `nuget/nuget/-/${id}/${v}`));
+  versionsById[id] = versions;
 }
+const published = Object.entries(versionsById)
+  .flatMap(([id, versions]) => versions.map((v) => `nuget/nuget/-/${id}/${v}`));
 
 const missing = await unindexed(published);
 console.log(`${published.length - missing.length}/${published.length} published versions indexed.`);
@@ -143,4 +194,8 @@ if (missing.length === 0) {
     }
   }
   console.log(`Requested ${missing.length} harvest(s).`);
+}
+
+if (process.env.GITHUB_STEP_SUMMARY) {
+  appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary(versionsById, new Set(missing), unpublished));
 }

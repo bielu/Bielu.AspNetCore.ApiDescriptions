@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+package test.legacy;
+
+option csharp_namespace = "Bielu.AspNetCore.AsyncApi.Protobuf.Tests.Legacy";
+
+enum Level {
+  LOW = 0;
+  HIGH = 1;
+}
+
+message LegacyEvent {
+  required string id = 1;
+  optional int32 count = 2;
+  repeated string tags = 3;
+  optional int32 retries = 4 [default = 3];
+  optional string label = 5 [default = "say \"hi\"\n"];
+  optional bytes magic = 6 [default = "\001\x02"];
+  optional Level level = 7 [default = HIGH];
+}

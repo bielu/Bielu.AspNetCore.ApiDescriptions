@@ -8,9 +8,12 @@ numbers below are the ones the code and the test suites actually cover.
 | [AsyncAPI](https://www.asyncapi.com/docs/reference/specification/v3.1.0) | 3.1.0 (default), 2.6.0 | `Bielu.AspNetCore.AsyncApi` | `Bielu.AspNetCore.AsyncApi.Cli`, `Bielu.AspNetCore.AsyncApi.Merger` |
 | [Arazzo](https://spec.openapis.org/arazzo/latest.html) | 1.0.x, 1.1.x | `Bielu.AspNetCore.Arazzo` (1.1.0 by default, set with `ArazzoOptions.Version`; also written at [build time](build-time-generation.md#arazzo-documents)) | `Bielu.Arazzo`, `Bielu.Arazzo.Readers`, `Bielu.Arazzo.Cli` |
 | [Overlay](https://spec.openapis.org/overlay/latest.html) | 1.0.x, 1.1.x | not generated; applied by `Bielu.Overlay` | `Bielu.Overlay`, `Bielu.Overlay.Readers`, `Bielu.Overlay.Cli` |
-| [Model Context Protocol](https://modelcontextprotocol.io/) | as negotiated by the `ModelContextProtocol` C# SDK 2.2 | `Bielu.AspNetCore.ApiDescriptions.Mcp` (experimental), as tools and resources over the served documents | not read |
+| [Protocol Buffers](https://protobuf.dev/) | proto2, proto3 (`schemaFormat` version 2 or 3); editions files keep their JSON Schema | `Bielu.AspNetCore.AsyncApi.Protobuf`, as `.proto` payload sources rendered from descriptors | not read |
+| [xRegistry](https://xregistry.io/) | 1.0-rc4 (core, HTTP binding, message and schema registries; read-only) | `Bielu.AspNetCore.XRegistry`, served from the AsyncAPI documents | not read |
+| [Model Context Protocol](https://modelcontextprotocol.io/) | as negotiated by the `ModelContextProtocol` C# SDK 2.3 | `Bielu.AspNetCore.ApiDescriptions.Mcp` (experimental), as tools and resources over the served documents | not read |
 | [API Catalog (RFC 9727)](https://www.rfc-editor.org/rfc/rfc9727) | RFC 9727, as an RFC 9264 Linkset | `Bielu.AspNetCore.ApiCatalog` (see [API catalog](api-catalog/overview.md)) | not read |
 | [CloudEvents](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) | 1.0 (binary and structured mode; HTTP, Kafka, AMQP, MQTT bindings) | `Bielu.AspNetCore.AsyncApi.CloudEvents`, as AsyncAPI message headers or payload | not read |
+| [Apache Avro](https://avro.apache.org/docs/1.11.1/specification/) | 1.9.0 declared (`schemaFormat`), configurable | `Bielu.AspNetCore.AsyncApi.Avro`, as AsyncAPI message payloads | not read |
 
 ## AsyncAPI
 
@@ -27,8 +30,8 @@ Generated documents for both versions are validated against the official AsyncAP
 Some features only exist in one version of the specification. `reply` on operations, for example, is an AsyncAPI 3.x
 concept and has no equivalent in 2.6.0.
 
-Protocol bindings come from `ByteBard.AsyncAPI.NET.Bindings`. In 3.0.1 a few of its bindings produce output that fails
-the official 3.1.0 schema. 3.1.0-beta.19 fixes them; see [Broker bindings](protocols-broker-bindings.md).
+Protocol bindings come from `ByteBard.AsyncAPI.NET.Bindings` 4.0. The bindings that 3.0.1 serialized in a form the
+official 3.1.0 schema rejects are fixed there; see [Broker bindings](protocols-broker-bindings.md#fixed-in-bytebard-40).
 
 ## Arazzo
 
