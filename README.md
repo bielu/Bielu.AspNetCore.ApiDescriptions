@@ -33,6 +33,7 @@ API catalog and [CloudEvents](https://cloudevents.io/) messages.
 | Apache Avro | 1.9.0 declared (`schemaFormat`), configurable | `Bielu.AspNetCore.AsyncApi.Avro`, as AsyncAPI message payloads | not read |
 | Protocol Buffers | proto2, proto3 (`schemaFormat` version 2 or 3); editions files keep their JSON Schema | `Bielu.AspNetCore.AsyncApi.Protobuf`, as `.proto` payload sources | not read |
 | xRegistry | 1.0-rc4 (message and schema registries; read-only) | `Bielu.AspNetCore.XRegistry`, served from the AsyncAPI documents | not read |
+| Model Context Protocol | as negotiated by the `ModelContextProtocol` C# SDK 2.3 | `Bielu.AspNetCore.ApiDescriptions.Mcp` (experimental), as tools and resources over the served documents | not read |
 
 The runtime libraries target **.NET 10**. See [Supported .NET versions](https://apidescriptions.bielu.pl/articles/supported-dotnet-versions.html)
 for the support matrix and the policy for adding and removing targets.
@@ -114,6 +115,7 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 - ✅ **Overlays** applied in the generation pipeline, so the served and build-time documents are already transformed
 - ✅ **API catalog** (RFC 9727) at `/.well-known/api-catalog`, listing every AsyncAPI, OpenAPI and Arazzo document the app serves
 - ✅ **CNCF xRegistry** (read-only message and schema registry) served from the app's AsyncAPI documents
+- ✅ **MCP server** (experimental) that lets AI agents find the app's operations and read their complete contracts (servers, security, bindings, messages and schemas) from its AsyncAPI, OpenAPI and Arazzo documents
 - ✅ **Arazzo workflows** that reference the app's own AsyncAPI and OpenAPI documents, validated at startup
 - ✅ **Document merging** for API gateways, in code or from the CLI
 - ✅ **CLI tools** to generate, merge, validate and diff AsyncAPI documents, and to validate Arazzo and apply Overlay documents
@@ -175,6 +177,7 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 | [`Bielu.AspNetCore.AsyncApi.Templates`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Templates/) | `dotnet new` templates: `asyncapi-webapi`, `-signalr`, `-grpc`, `-console`, `-sln` |
 | [`Bielu.AspNetCore.AsyncApi.ApiDescription.Server`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.ApiDescription.Server/) | MSBuild targets that run `dotnet asyncapi` after each build |
 | [`Bielu.AspNetCore.ApiDescriptions`](https://www.nuget.org/packages/Bielu.AspNetCore.ApiDescriptions/) | Build-time generation shared by every document family; comes in with `Bielu.AspNetCore.AsyncApi` and `Bielu.AspNetCore.ApiCatalog` |
+| [`Bielu.AspNetCore.ApiDescriptions.Mcp`](https://www.nuget.org/packages/Bielu.AspNetCore.ApiDescriptions.Mcp/) | Experimental: the app's API descriptions as Model Context Protocol tools and resources (`WithApiDescriptions`) |
 
 `Bielu.Spec.Shared` and `Bielu.Cli.Shared` hold internals shared by the packages above and are not meant to be referenced
 directly.
@@ -225,6 +228,7 @@ dotnet run
 - [Avro payloads](https://apidescriptions.bielu.pl/articles/avro.html)
 - [Protobuf payloads](https://apidescriptions.bielu.pl/articles/protobuf.html)
 - [xRegistry](https://apidescriptions.bielu.pl/articles/xregistry.html)
+- [MCP server for API descriptions](https://apidescriptions.bielu.pl/articles/mcp.html) (experimental)
 - [Merger and API gateway](https://apidescriptions.bielu.pl/articles/merger-gateway.html)
 - [Migrating to 2.0](https://apidescriptions.bielu.pl/articles/migration-to-2.0.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)

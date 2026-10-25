@@ -42,6 +42,8 @@
   href: protobuf.md
 - name: xRegistry
   href: xregistry.md
+- name: MCP Server (experimental)
+  href: mcp.md
 - name: Merger & Gateway
   href: merger-gateway.md
 - name: Migrating to 2.0
