@@ -17,3 +17,4 @@ Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.RequireSecurity<TMe
 Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.WithExternalDocs<TMessage>(string! url, string? description = null) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.WithMessageTraits<TMessage>(params string![]! traitKeys) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.WithOperationTraits<TMessage>(params string![]! traitKeys) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
+Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.DescribeCloudEvents(params System.Uri![]! endpointUris) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!

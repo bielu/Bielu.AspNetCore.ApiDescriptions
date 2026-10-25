@@ -1,2 +1,1 @@
 #nullable enable
-Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions.DescribeCloudEvents(params System.Uri![]! endpointUris) -> Bielu.AspNetCore.AsyncApi.Wolverine.WolverineAsyncApiOptions!
