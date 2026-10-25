@@ -4,27 +4,16 @@ Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiEndpointRouteBuilderExtensions
 Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiServiceCollectionExtensions
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.AsyncApiMemberMetadata(Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata! original) -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.AsyncApiMemberMetadata(System.Reflection.MemberInfo! Member, Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute? Channel, System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute!>! Parameters, System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute!>! Messages, System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute!>! Operations, System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute!>! MessageExamples) -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Channel.get -> Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute?
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Channel.init -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Deconstruct(out System.Reflection.MemberInfo! Member, out Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelAttribute? Channel, out System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute!>! Parameters, out System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute!>! Messages, out System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute!>! Operations, out System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute!>! MessageExamples) -> void
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Member.get -> System.Reflection.MemberInfo!
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Member.init -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.MessageExamples.get -> System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageExampleAttribute!>!
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.MessageExamples.init -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Messages.get -> System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute!>!
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Messages.init -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Operations.get -> System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.OperationAttribute!>!
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Operations.init -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Parameters.get -> System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Attributes.Attributes.ChannelParameterAttribute!>!
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Parameters.init -> void
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.AsyncApi.get -> Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute!
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.AsyncApi.init -> void
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.AsyncApiTypeMetadata(Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata! original) -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.AsyncApiTypeMetadata(System.Type! Type, Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute! AsyncApi, System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata!>! Members) -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Deconstruct(out System.Type! Type, out Bielu.AspNetCore.AsyncApi.Attributes.Attributes.AsyncApiAttribute! AsyncApi, out System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata!>! Members) -> void
-Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Members.get -> System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata!>!
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Members.init -> void
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Type.get -> System.Type!
 Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Type.init -> void
@@ -51,7 +40,6 @@ Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServer(string! name, strin
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiOptions() -> void
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiVersion.get -> ByteBard.AsyncAPI.AsyncApiVersion
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiVersion.set -> void
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ChannelBindings.get -> System.Collections.Generic.Dictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IChannelBinding!>!>!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.CreateSchemaReferenceId.get -> System.Func<System.Text.Json.Serialization.Metadata.JsonTypeInfo!, string?>!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.CreateSchemaReferenceId.set -> void
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DefaultContentType.get -> string?
@@ -60,16 +48,12 @@ Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DetectAuthenticationSchemes(S
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DocumentName.get -> string!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DocumentRoutePattern.get -> string!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DocumentRoutePattern.set -> void
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeOnlyChannels.get -> System.Collections.Generic.HashSet<string!>!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(string! filePath) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(System.Reflection.Assembly! assembly) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.Info.get -> ByteBard.AsyncAPI.Models.AsyncApiInfo?
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.Info.set -> void
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.OperationBindings.get -> System.Collections.Generic.Dictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IOperationBinding!>!>!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.SetSchemaExampleFromMessageExample.get -> bool
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.SetSchemaExampleFromMessageExample.set -> void
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ShouldInclude.get -> System.Func<Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription!, bool>!
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ShouldInclude.set -> void
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.WithDefaultContentType(string! contentType) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.WithDescription(string! description) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.WithInfo(string! title, string! version) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
@@ -106,11 +90,8 @@ Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.ApplicationServices.get -> System.IServiceProvider!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.ApplicationServices.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.AsyncApiDocumentTransformerContext() -> void
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.DescriptionGroups.get -> System.Collections.Generic.IReadOnlyList<Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescriptionGroup!>!
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.DescriptionGroups.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.DocumentName.get -> string!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.DocumentName.init -> void
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.GetOrCreateSchemaAsync(System.Type! type, Microsoft.AspNetCore.Mvc.ApiExplorer.ApiParameterDescription? parameterDescription = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ByteBard.AsyncAPI.Models.AsyncApiJsonSchema!>!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.ApplicationServices.get -> System.IServiceProvider!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.ApplicationServices.init -> void
@@ -119,23 +100,18 @@ Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.Docu
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.Document.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.DocumentName.get -> string!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.DocumentName.init -> void
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.GetOrCreateSchemaAsync(System.Type! type, Microsoft.AspNetCore.Mvc.ApiExplorer.ApiParameterDescription? parameterDescription = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ByteBard.AsyncAPI.Models.AsyncApiJsonSchema!>!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.JsonPropertyInfo.get -> System.Text.Json.Serialization.Metadata.JsonPropertyInfo?
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.JsonPropertyInfo.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.JsonTypeInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.JsonTypeInfo.init -> void
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.ParameterDescription.get -> Microsoft.AspNetCore.Mvc.ApiExplorer.ApiParameterDescription?
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.ParameterDescription.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.ApplicationServices.get -> System.IServiceProvider!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.ApplicationServices.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.AsyncApiOperationTransformerContext() -> void
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Description.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Document.get -> ByteBard.AsyncAPI.Models.AsyncApiDocument?
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Document.init -> void
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.DocumentName.get -> string!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.DocumentName.init -> void
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.GetOrCreateSchemaAsync(System.Type! type, Microsoft.AspNetCore.Mvc.ApiExplorer.ApiParameterDescription? parameterDescription = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ByteBard.AsyncAPI.Models.Interfaces.IAsyncApiSchema!>!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext.ApplicationServices.get -> System.IServiceProvider!
 Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext.ApplicationServices.init -> void
@@ -153,7 +129,6 @@ Bielu.AspNetCore.AsyncApi.Transformers.IAsyncApiSchemaTransformer.TransformAsync
 Bielu.AspNetCore.AsyncApi.Transformers.IAsyncApiSerializedDocumentTransformer
 Bielu.AspNetCore.AsyncApi.Transformers.IAsyncApiSerializedDocumentTransformer.TransformAsync(string! document, Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiSerializedDocumentContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string!>
 const Bielu.AspNetCore.AsyncApi.Services.AsyncApiGeneratorConstants.DefaultAsyncApiRoute = "/asyncapi/{documentName}.json" -> string!
-const Bielu.AspNetCore.AsyncApi.Services.AsyncApiGeneratorConstants.DefaultAsyncApiVersion = "1.0.0" -> string!
 const Bielu.AspNetCore.AsyncApi.Services.AsyncApiGeneratorConstants.DefaultDocumentName = "v1" -> string!
 override Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Equals(object? obj) -> bool
 override Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.GetHashCode() -> int
@@ -183,7 +158,6 @@ virtual Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Equals(Bi
 virtual Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.PrintMembers(System.Text.StringBuilder! builder) -> bool
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiJsonSchemaJsonOptions.get -> System.Text.Json.JsonSerializerOptions?
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AsyncApiJsonSchemaJsonOptions.set -> void
-Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.Description.get -> Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription?
 Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiDocumentVersionExtensions
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddMessageBinding(string! name, ByteBard.AsyncAPI.Models.Interfaces.IMessageBinding! binding) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddMessageTrait(string! name, ByteBard.AsyncAPI.Models.AsyncApiMessageTrait! trait) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
@@ -191,9 +165,27 @@ Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddOperationTrait(string! nam
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddSecurityScheme(string! name, ByteBard.AsyncAPI.Models.AsyncApiSecurityScheme! scheme) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServerBinding(string! name, ByteBard.AsyncAPI.Models.Interfaces.IServerBinding! binding) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.AddServerSecurity(string! serverName, params string![]! schemeNames) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.MessageBindings.get -> System.Collections.Generic.Dictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IMessageBinding!>!>!
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ServerBindings.get -> System.Collections.Generic.Dictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IServerBinding!>!>!
 static Bielu.AspNetCore.AsyncApi.Extensions.AsyncApiDocumentVersionExtensions.IsAsyncApiVersion(this ByteBard.AsyncAPI.Models.AsyncApiDocument! document, ByteBard.AsyncAPI.AsyncApiVersion version) -> bool
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.BuildTimeDocumentName.get -> string?
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.BuildTimeDocumentName.set -> void
-Bielu.AspNetCore.AsyncApi.Services.IAsyncApiMetadataProvider.GetPayloadMessageAttributes() -> System.Collections.Generic.IReadOnlyDictionary<System.Type!, Bielu.AspNetCore.AsyncApi.Attributes.Attributes.MessageAttribute!>?
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.AsyncApiMemberMetadata(System.Reflection.MemberInfo! Member, Bielu.AspNetCore.AsyncApi.Attributes.ChannelAttribute? Channel, System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.ChannelParameterAttribute!>! Parameters, System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute!>! Messages, System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.OperationAttribute!>! Operations, System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.MessageExampleAttribute!>! MessageExamples) -> void
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Channel.get -> Bielu.AspNetCore.AsyncApi.Attributes.ChannelAttribute?
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Deconstruct(out System.Reflection.MemberInfo! Member, out Bielu.AspNetCore.AsyncApi.Attributes.ChannelAttribute? Channel, out System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.ChannelParameterAttribute!>! Parameters, out System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute!>! Messages, out System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.OperationAttribute!>! Operations, out System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.MessageExampleAttribute!>! MessageExamples) -> void
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.MessageExamples.get -> System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.MessageExampleAttribute!>!
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Messages.get -> System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute!>!
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Operations.get -> System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.OperationAttribute!>!
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata.Parameters.get -> System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Attributes.ChannelParameterAttribute!>!
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.AsyncApi.get -> Bielu.AspNetCore.AsyncApi.Attributes.AsyncApiAttribute!
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.AsyncApiTypeMetadata(System.Type! Type, Bielu.AspNetCore.AsyncApi.Attributes.AsyncApiAttribute! AsyncApi, System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata!>! Members) -> void
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Deconstruct(out System.Type! Type, out Bielu.AspNetCore.AsyncApi.Attributes.AsyncApiAttribute! AsyncApi, out System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata!>! Members) -> void
+Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiTypeMetadata.Members.get -> System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Models.Metadata.AsyncApiMemberMetadata!>!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ChannelBindings.get -> System.Collections.Generic.IDictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IChannelBinding!>!>!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeOnlyChannels.get -> System.Collections.Generic.ISet<string!>!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.MessageBindings.get -> System.Collections.Generic.IDictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IMessageBinding!>!>!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.OperationBindings.get -> System.Collections.Generic.IDictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IOperationBinding!>!>!
+Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.ServerBindings.get -> System.Collections.Generic.IDictionary<string!, System.Collections.Generic.IList<ByteBard.AsyncAPI.Models.Interfaces.IServerBinding!>!>!
+Bielu.AspNetCore.AsyncApi.Services.IAsyncApiMetadataProvider.GetPayloadMessageAttributes() -> System.Collections.Generic.IReadOnlyDictionary<System.Type!, Bielu.AspNetCore.AsyncApi.Attributes.MessageAttribute!>?
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiDocumentTransformerContext.GetOrCreateSchemaAsync(System.Type! type, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ByteBard.AsyncAPI.Models.AsyncApiJsonSchema!>!
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiJsonSchemaTransformerContext.GetOrCreateSchemaAsync(System.Type! type, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ByteBard.AsyncAPI.Models.AsyncApiJsonSchema!>!
+Bielu.AspNetCore.AsyncApi.Transformers.AsyncApiOperationTransformerContext.GetOrCreateSchemaAsync(System.Type! type, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ByteBard.AsyncAPI.Models.Interfaces.IAsyncApiSchema!>!
+const Bielu.AspNetCore.AsyncApi.Services.AsyncApiGeneratorConstants.DefaultInfoVersion = "1.0.0" -> string!

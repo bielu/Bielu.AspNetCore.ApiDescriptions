@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="1.0.0" />
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Attributes" Version="1.0.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="2.0.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Attributes" Version="2.0.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.16.15" />
   </ItemGroup>
 
