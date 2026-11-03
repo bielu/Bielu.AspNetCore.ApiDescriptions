@@ -27,8 +27,6 @@ public static class AsyncApiGeneratorConstants
 
     internal const string DescriptionId = "x-aspnetcore-id";
     internal const string SchemaId = "x-schema-id";
-    internal const string RefDefaultAnnotation = "x-ref-default";
-    internal const string RefDescriptionAnnotation = "x-ref-description";
     internal const string RefExampleAnnotation = "x-ref-example";
     internal const string RefPrefix = "#";
     internal const string NullableProperty = "x-is-nullable-property";

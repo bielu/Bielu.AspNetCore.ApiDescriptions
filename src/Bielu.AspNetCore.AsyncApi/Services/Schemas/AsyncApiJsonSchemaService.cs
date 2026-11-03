@@ -172,7 +172,6 @@ internal sealed class AsyncApiJsonSchemaService
                     {
                         schema.ApplyDefaultValue(defaultValueAttribute.Value, context.TypeInfo);
                     }
-                    var isInlinedSchema = !schema.WillBeComponentized();
                     var descriptionAttribute = propertyAttributes.OfType<DescriptionAttribute>().LastOrDefault();
                     var description = descriptionAttribute?.Description;
 
@@ -181,16 +180,12 @@ internal sealed class AsyncApiJsonSchemaService
                         description = _xmlDocumentationProvider.GetDocumentation(member)?.Summary;
                     }
 
+                    // Every property schema stays inline (nothing is componentized into a $ref), so the
+                    // description goes on the schema itself, also for enums and named complex types. It
+                    // replaces the type's own summary set above, which describes the type, not the property.
                     if (description != null)
                     {
-                        if (isInlinedSchema)
-                        {
-                            schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = description;
-                        }
-                        else
-                        {
-                            schema[AsyncApiGeneratorConstants.RefDescriptionAnnotation] = description;
-                        }
+                        schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = description;
                     }
                 }
                 // Nullable componentized-object schemas deliberately keep "null" in their type. A former

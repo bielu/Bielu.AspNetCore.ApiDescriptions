@@ -235,9 +235,9 @@ public class JsonNodeSchemaMappingTests
     }
 
     [Fact]
-    public void ApplyDefaultValue_ComponentizedSchema_WritesToReferenceSlot()
+    public void ApplyDefaultValue_SchemaWithReferenceId_WritesDefaultNotRef()
     {
-        // Arrange
+        // Arrange: a schema reference id doesn't make the schema a $ref; property schemas stay inline.
         var schema = new JsonObject { [AsyncApiConstants.Id] = "Widget" };
         var typeInfo = JsonSerializerOptions.Default.GetTypeInfo(typeof(int));
 
@@ -245,8 +245,8 @@ public class JsonNodeSchemaMappingTests
         schema.ApplyDefaultValue(7, typeInfo);
 
         // Assert
-        schema.ContainsKey(AsyncApiJsonSchemaKeywords.DefaultKeyword).ShouldBeFalse();
-        schema[AsyncApiConstants.DollarRef]!.GetValue<int>().ShouldBe(7);
+        schema.ContainsKey(AsyncApiConstants.DollarRef).ShouldBeFalse();
+        schema[AsyncApiJsonSchemaKeywords.DefaultKeyword]!.GetValue<int>().ShouldBe(7);
     }
 
     [Fact]
