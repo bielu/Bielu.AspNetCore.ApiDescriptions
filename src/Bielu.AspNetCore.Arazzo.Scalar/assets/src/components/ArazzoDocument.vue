@@ -31,6 +31,31 @@ const description = computed(() => renderMarkdown(info.value.description))
 const workflows = computed(() => (props.document ? toWorkflowViews(props.document, props.navigation ?? []) : []))
 
 /**
+ * The workspace documents, re-read whenever one is added. Scalar loads the sibling documents after
+ * this one renders and adds them to the same object in place; that object is reactive in Scalar's
+ * Vue, not in this element's own Vue, so nothing re-renders on its own. Comparing the document names
+ * once a second is cheap and catches documents added at any time (e.g. after a config change).
+ */
+const loadedDocuments = ref<Record<string, unknown>>({ ...props.documents })
+const documentNames = () => Object.keys(props.documents ?? {}).join('\n')
+let lastDocumentNames = documentNames()
+const refreshDocuments = () => {
+  const names = documentNames()
+  if (names !== lastDocumentNames) {
+    lastDocumentNames = names
+    loadedDocuments.value = { ...props.documents }
+  }
+}
+watch(
+  () => props.documents,
+  () => {
+    lastDocumentNames = documentNames()
+    loadedDocuments.value = { ...props.documents }
+  },
+)
+let documentsTimer: ReturnType<typeof setInterval> | undefined
+
+/**
  * Keeps the sidebar and URL in sync while scrolling, which Scalar leaves to the plugin: the active
  * entry is the last section (in document order) inside the top band of the viewport. Steps come
  * after their workflow's heading, so a visible step wins over the workflow that contains it.
@@ -64,9 +89,15 @@ const observeSections = () => {
   sections.forEach((section) => observer!.observe(section))
 }
 
-onMounted(observeSections)
+onMounted(() => {
+  observeSections()
+  documentsTimer = setInterval(refreshDocuments, 1000)
+})
 watch(workflows, () => nextTick(observeSections))
-onBeforeUnmount(() => observer?.disconnect())
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  clearInterval(documentsTimer)
+})
 </script>
 
 <template>
@@ -118,7 +149,7 @@ onBeforeUnmount(() => observer?.disconnect())
       v-for="view in workflows"
       :key="view.id"
       :document="document!"
-      :documents="documents ?? {}"
+      :documents="loadedDocuments"
       :view="view" />
 
     <p
