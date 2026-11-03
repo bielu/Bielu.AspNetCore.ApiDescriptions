@@ -1,0 +1,32 @@
+# Toolchain and task definitions for https://mise.jdx.dev.
+# `mise install` provisions the SDKs below; `mise run <task>` runs the common workflows from AGENTS.md.
+
+[tools]
+# The solution targets net10.0 and needs the .NET 10 SDK.
+dotnet = "10"
+# Builds the Scalar console plugin bundles (npm workspaces at the repository root).
+node = "lts"
+
+[tasks.restore]
+description = "Restore NuGet packages and the npm workspace"
+run = ["dotnet restore src/Bielu.AspNetCore.AsyncApi.slnx", "npm ci"]
+
+[tasks.build]
+description = "Build the whole solution"
+run = "dotnet build src/Bielu.AspNetCore.AsyncApi.slnx"
+
+[tasks.test]
+description = "Run all tests (collects coverage via coverlet.runsettings)"
+run = "dotnet test src/Bielu.AspNetCore.AsyncApi.slnx"
+
+[tasks.format]
+description = "Apply formatting"
+run = "dotnet format src/Bielu.AspNetCore.AsyncApi.slnx"
+
+[tasks.format-check]
+description = "Verify formatting, as CI does"
+run = "dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx --exclude-diagnostics IL2026 IL3050"
+
+[tasks.changeset]
+description = "Add a changeset for the current change"
+run = "npx changeset"

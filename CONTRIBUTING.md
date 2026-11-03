@@ -41,6 +41,8 @@ Before you begin, ensure you have the following installed:
 - **Git**
 - An IDE such as Visual Studio, Visual Studio Code, or JetBrains Rider
 
+The repository ships a [`mise.toml`](./mise.toml), so with [mise](https://mise.jdx.dev) installed, `mise install` provisions the .NET SDK and Node.js for you. It also defines tasks for the common workflows: `mise run build`, `mise run test`, `mise run format`, `mise run format-check` and `mise run changeset` (`mise tasks` lists them).
+
 ## Development Setup
 
 ### 1. Restore NuGet Packages
