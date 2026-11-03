@@ -19,6 +19,12 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [2.0.1] - 2026-11-03
+
+### Patch Changes
+
+- [#174](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/174) [`9c5a2be`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/9c5a2be4b7cca49ff74eb27fea30f512dc19cabd) Thanks [@bielu](https://github.com/bielu)! - Keep the description and default of enum and complex-typed properties. A property whose type gets a schema reference id (an enum, or a named class or record, nullable or not) had its `[Description]` or XML-doc text written to an `x-ref-description` annotation that was never read back, and its `[DefaultValue]` written to `$ref`. Property schemas are always inline, so both now go on the schema's own `description` and `default`, as they already did for primitive properties.
+
 ## [2.0.0] - 2026-10-25
 
 ### Major Changes
