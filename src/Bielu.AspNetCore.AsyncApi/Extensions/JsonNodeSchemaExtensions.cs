@@ -175,18 +175,11 @@ internal static class JsonNodeSchemaExtensions
             return;
         }
 
-        var schemaAttribute = schema.WillBeComponentized()
-            ? AsyncApiConstants.DollarRef
-            : AsyncApiJsonSchemaKeywords.DefaultKeyword;
-
-        if (defaultValue is null)
-        {
-            schema[schemaAttribute] = null;
-        }
-        else
-        {
-            schema[schemaAttribute] = JsonSerializer.SerializeToNode(defaultValue, jsonTypeInfo);
-        }
+        // Property schemas stay inline, so the default belongs on the schema itself, also for enums and
+        // named complex types (writing it to $ref, as for a reference site, corrupted the schema).
+        schema[AsyncApiJsonSchemaKeywords.DefaultKeyword] = defaultValue is null
+            ? null
+            : JsonSerializer.SerializeToNode(defaultValue, jsonTypeInfo);
     }
 
     /// <summary>
