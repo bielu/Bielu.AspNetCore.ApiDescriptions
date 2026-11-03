@@ -121,6 +121,8 @@ This writes Cobertura reports under each test project's `TestResults/`. A plain 
 
 ## Build, test, format
 
+The toolchain is pinned in [`mise.toml`](./mise.toml): `mise install` provisions the .NET SDK and Node.js, and `mise run build|test|format|format-check` wrap the commands below.
+
 ```bash
 # Restore + build the whole solution
 dotnet build src/Bielu.AspNetCore.AsyncApi.slnx
