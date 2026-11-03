@@ -165,6 +165,7 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 | [`Bielu.Arazzo.NET.Readers`](https://www.nuget.org/packages/Bielu.Arazzo.NET.Readers/) | JSON and YAML readers for Arazzo documents |
 | [`Bielu.AspNetCore.Arazzo`](https://www.nuget.org/packages/Bielu.AspNetCore.Arazzo/) | `AddArazzo`/`MapArazzo`, fluent workflow builder, startup validation against the app's own documents |
 | [`Bielu.AspNetCore.Arazzo.Overlay`](https://www.nuget.org/packages/Bielu.AspNetCore.Arazzo.Overlay/) | `AddOverlay(...)` for Arazzo documents |
+| [`Bielu.AspNetCore.Arazzo.Scalar`](https://www.nuget.org/packages/Bielu.AspNetCore.Arazzo.Scalar/) | Renders Arazzo workflows in the Scalar API Reference, next to the OpenAPI/AsyncAPI documents their steps call (needs Scalar with [plugin document types](https://github.com/scalar/scalar/pull/10816)) |
 | [`Bielu.Overlay.NET`](https://www.nuget.org/packages/Bielu.Overlay.NET/) | Framework-free Overlay 1.0/1.1 object model, validator and apply engine for any JSON/YAML description |
 | [`Bielu.Overlay.NET.Readers`](https://www.nuget.org/packages/Bielu.Overlay.NET.Readers/) | JSON and YAML readers for Overlay documents |
 | [`Bielu.AspNetCore.ApiCatalog`](https://www.nuget.org/packages/Bielu.AspNetCore.ApiCatalog/) | RFC 9727 API catalog endpoint (`MapApiCatalog`) |

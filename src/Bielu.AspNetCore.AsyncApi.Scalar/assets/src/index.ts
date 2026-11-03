@@ -1,6 +1,7 @@
 export { getAuthState, resolveSelectedSchemes, setAuthState } from './auth'
 export type { AuthSecrets, PluginAuthState, SelectedScheme } from './auth'
-export { bootstrapConsole, installScalarHook, registerConsoleElement } from './bootstrap'
+export { bootstrapConsole, installScalarHook, installScalarPluginHook, registerConsoleElement } from './bootstrap'
+export type { ScalarPluginFactory, ScalarPluginHookSpec } from './bootstrap'
 export { documentsFromScalarConfig, isDocumentRefArray, resolveDocuments } from './discovery'
 export {
   deref,

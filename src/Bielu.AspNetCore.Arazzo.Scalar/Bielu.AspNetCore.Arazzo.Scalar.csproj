@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>Bielu.AspNetCore.Arazzo.Scalar</RootNamespace>
+        <Description>Arazzo workflows in the Scalar API Reference for ASP.NET Core. Serves a Scalar plugin that renders Arazzo documents next to the OpenAPI and AsyncAPI documents their steps call.</Description>
+        <PackageTags>scalar;arazzo;workflows;openapi;asyncapi;aspnetcore;api-reference</PackageTags>
+        <DefaultItemExcludes>$(DefaultItemExcludes);assets/node_modules/**;assets/dist/**</DefaultItemExcludes>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="Scalar.AspNetCore" />
+        <ProjectReference Include="..\Bielu.AspNetCore.Arazzo\Bielu.AspNetCore.Arazzo.csproj" />
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Scalar\Bielu.AspNetCore.AsyncApi.Scalar.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.Arazzo.Scalar.Tests" />
+    </ItemGroup>
+
+    <!-- The document view lives in the assets/ npm package (@bielu/scalar-arazzo). The shared
+         targets rebuild and embed the IIFE bundle incrementally; see ScalarPluginBundle.targets. -->
+    <Import Project="..\Bielu.AspNetCore.AsyncApi.Scalar\build\ScalarPluginBundle.targets" />
+
+</Project>
