@@ -2,5 +2,7 @@
   href: overview.md
 - name: CLI Tool
   href: cli.md
+- name: Scalar
+  href: scalar.md
 - name: AsyncAPI docs →
   href: ../getting-started.md
