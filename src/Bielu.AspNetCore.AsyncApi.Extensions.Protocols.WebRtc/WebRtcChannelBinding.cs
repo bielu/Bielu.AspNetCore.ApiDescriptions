@@ -35,7 +35,7 @@ public class WebRtcChannelBinding : ChannelBinding<WebRtcChannelBinding>
     public int? Id { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => WebRtcProtocol.ProtocolName;
+    public override string BindingKey => WebRtcProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<WebRtcChannelBinding> FixedFieldMap => new()

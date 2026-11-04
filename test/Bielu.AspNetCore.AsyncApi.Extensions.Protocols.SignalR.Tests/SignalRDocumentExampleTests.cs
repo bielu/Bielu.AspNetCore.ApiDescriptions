@@ -101,16 +101,16 @@ public class SignalRDocumentExampleTests
         stringWriter.Flush();
         var json = JsonNode.Parse(stringWriter.ToString())!;
 
-        json["servers"]!["signalr"]!["bindings"]!["signalr"]!["transports"]!
+        json["servers"]!["signalr"]!["bindings"]!["x-signalr"]!["transports"]!
             .AsArray().Select(n => n!.GetValue<string>()).ShouldContain("webSockets");
 
-        json["channels"]!["chatHub"]!["bindings"]!["signalr"]!["hub"]!
+        json["channels"]!["chatHub"]!["bindings"]!["x-signalr"]!["hub"]!
             .GetValue<string>().ShouldBe("/chatHub");
 
-        json["operations"]!["sendMessage"]!["bindings"]!["signalr"]!["target"]!
+        json["operations"]!["sendMessage"]!["bindings"]!["x-signalr"]!["target"]!
             .GetValue<string>().ShouldBe("SendMessage");
 
-        json["channels"]!["chatHub"]!["messages"]!["chatMessage"]!["bindings"]!["signalr"]!["hubProtocol"]!
+        json["channels"]!["chatHub"]!["messages"]!["chatMessage"]!["bindings"]!["x-signalr"]!["hubProtocol"]!
             .GetValue<string>().ShouldBe("json");
     }
 }

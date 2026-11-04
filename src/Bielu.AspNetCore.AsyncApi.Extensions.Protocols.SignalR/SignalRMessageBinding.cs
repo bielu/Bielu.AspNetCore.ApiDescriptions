@@ -22,7 +22,7 @@ public class SignalRMessageBinding : MessageBinding<SignalRMessageBinding>
     public AsyncApiJsonSchema? Headers { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => SignalRProtocol.ProtocolName;
+    public override string BindingKey => SignalRProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<SignalRMessageBinding> FixedFieldMap => new()

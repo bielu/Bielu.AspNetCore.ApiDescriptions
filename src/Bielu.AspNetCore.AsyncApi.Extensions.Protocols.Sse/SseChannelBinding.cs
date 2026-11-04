@@ -28,7 +28,7 @@ public class SseChannelBinding : ChannelBinding<SseChannelBinding>
     public AsyncApiJsonSchema? Headers { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => SseProtocol.ProtocolName;
+    public override string BindingKey => SseProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<SseChannelBinding> FixedFieldMap => new()

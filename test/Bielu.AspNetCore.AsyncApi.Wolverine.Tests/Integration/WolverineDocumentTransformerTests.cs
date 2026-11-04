@@ -32,7 +32,7 @@ public class WolverineDocumentTransformerTests
         // Assert
         var channel = document["channels"]!["hubstest"]!;
         channel["address"]!.GetValue<string>().ShouldBe(WolverineTestApp.HubPath);
-        channel["bindings"]!["signalr"]!["hub"]!.GetValue<string>().ShouldBe(WolverineTestApp.HubPath);
+        channel["bindings"]!["x-signalr"]!["hub"]!.GetValue<string>().ShouldBe(WolverineTestApp.HubPath);
         channel["servers"]!.AsArray().Single()!["$ref"]!.GetValue<string>().ShouldBe("#/servers/signalr");
     }
 
@@ -71,7 +71,7 @@ public class WolverineDocumentTransformerTests
         operation["messages"]!.AsArray().Single()!["$ref"]!.GetValue<string>()
             .ShouldBe("#/channels/hubstest/messages/orders.order-shipped");
 
-        var binding = operation["bindings"]!["signalr"]!;
+        var binding = operation["bindings"]!["x-signalr"]!;
         binding["target"]!.GetValue<string>().ShouldBe("ReceiveMessage");
         binding["direction"]!.GetValue<string>().ShouldBe("serverToClient");
     }

@@ -31,10 +31,10 @@ public class GrpcBindingSerializationTests
     [Fact]
     public void AllBindings_UseGrpcBindingKey()
     {
-        new GrpcChannelBinding().BindingKey.ShouldBe("grpc");
-        new GrpcOperationBinding().BindingKey.ShouldBe("grpc");
-        new GrpcMessageBinding().BindingKey.ShouldBe("grpc");
-        new GrpcServerBinding().BindingKey.ShouldBe("grpc");
+        new GrpcChannelBinding().BindingKey.ShouldBe("x-grpc");
+        new GrpcOperationBinding().BindingKey.ShouldBe("x-grpc");
+        new GrpcMessageBinding().BindingKey.ShouldBe("x-grpc");
+        new GrpcServerBinding().BindingKey.ShouldBe("x-grpc");
     }
 
     [Fact]

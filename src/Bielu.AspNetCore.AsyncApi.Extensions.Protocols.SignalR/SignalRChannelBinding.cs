@@ -27,7 +27,7 @@ public class SignalRChannelBinding : ChannelBinding<SignalRChannelBinding>
     public AsyncApiJsonSchema? Headers { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => SignalRProtocol.ProtocolName;
+    public override string BindingKey => SignalRProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<SignalRChannelBinding> FixedFieldMap => new()

@@ -75,11 +75,11 @@ public class SseDocumentExampleTests
         stringWriter.Flush();
         var json = JsonNode.Parse(stringWriter.ToString())!;
 
-        json["servers"]!["sse"]!["bindings"]!["sse"]!["retry"]!.GetValue<int>().ShouldBe(5000);
-        json["channels"]!["events"]!["bindings"]!["sse"]!["path"]!.GetValue<string>().ShouldBe("/events");
-        json["operations"]!["onPriceUpdate"]!["bindings"]!["sse"]!["direction"]!.GetValue<string>()
+        json["servers"]!["sse"]!["bindings"]!["x-sse"]!["retry"]!.GetValue<int>().ShouldBe(5000);
+        json["channels"]!["events"]!["bindings"]!["x-sse"]!["path"]!.GetValue<string>().ShouldBe("/events");
+        json["operations"]!["onPriceUpdate"]!["bindings"]!["x-sse"]!["direction"]!.GetValue<string>()
             .ShouldBe("serverToClient");
-        json["channels"]!["events"]!["messages"]!["priceUpdate"]!["bindings"]!["sse"]!["event"]!
+        json["channels"]!["events"]!["messages"]!["priceUpdate"]!["bindings"]!["x-sse"]!["event"]!
             .GetValue<string>().ShouldBe("price-update");
     }
 }

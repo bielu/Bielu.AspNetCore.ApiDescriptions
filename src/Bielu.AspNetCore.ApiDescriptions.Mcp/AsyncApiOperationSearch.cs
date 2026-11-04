@@ -99,8 +99,13 @@ internal static class AsyncApiOperationSearch
     private static IEnumerable<JsonObject> Bindings(JsonObject document, JsonNode? bindings) =>
         (Resolve(document, bindings) ?? []).Select(entry => Resolve(document, entry.Value)).OfType<JsonObject>();
 
+    /// <summary>
+    /// The protocols a bindings object names. AsyncAPI 3 writes a custom protocol's binding as an extension
+    /// (<c>x-signalr</c>), so the <c>x-</c> prefix is dropped.
+    /// </summary>
     private static IEnumerable<string> BindingKeys(JsonObject document, JsonNode? bindings) =>
-        (Resolve(document, bindings) ?? []).Select(entry => entry.Key);
+        (Resolve(document, bindings) ?? []).Select(entry =>
+            entry.Key.StartsWith("x-", StringComparison.Ordinal) ? entry.Key[2..] : entry.Key);
 
     /// <summary>The object itself, or the one it refers to when it is a Reference Object.</summary>
     private static JsonObject? Resolve(JsonObject document, JsonNode? node) =>

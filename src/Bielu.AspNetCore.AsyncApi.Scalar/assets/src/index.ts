@@ -8,6 +8,7 @@ export {
   firstServerHost,
   loadAsyncApiDocuments,
   pointer,
+  protocolBinding,
   refName,
   resolveServerBaseUrl,
 } from './documents'

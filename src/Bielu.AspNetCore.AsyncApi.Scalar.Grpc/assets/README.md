@@ -2,7 +2,7 @@
 
 An interactive **gRPC console** plugin for the [Scalar](https://scalar.com) API Reference.
 
-It reads the `grpc` bindings from your AsyncAPI document(s) and renders a panel where you can pick
+It reads the `grpc` (or `x-grpc`) bindings from your AsyncAPI document(s) and renders a panel where you can pick
 a service, edit a JSON request prefilled from the payload schema, and invoke unary and
 server-streaming methods live — over **gRPC-Web** (browsers cannot speak native gRPC). Client- and
 bidirectional-streaming methods are rendered as documentation with a "not invokable from the

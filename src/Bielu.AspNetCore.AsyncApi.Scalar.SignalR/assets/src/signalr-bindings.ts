@@ -4,6 +4,7 @@ import {
   extractSecuritySchemes,
   firstServerHost,
   loadAsyncApiDocuments,
+  protocolBinding,
   refName,
   resolveServerBaseUrl,
 } from '@bielu/scalar-core'
@@ -64,7 +65,7 @@ export function parseSignalRHubs(documentName: string, doc: AnyRecord): SignalRH
 
   for (const channelName of Object.keys(channels)) {
     const channel: AnyRecord = channels[channelName] ?? {}
-    const binding: AnyRecord | undefined = channel.bindings?.[SIGNALR]
+    const binding: AnyRecord | undefined = protocolBinding(channel.bindings, SIGNALR)
     if (!binding) {
       continue
     }
@@ -88,7 +89,7 @@ export function parseSignalRHubs(documentName: string, doc: AnyRecord): SignalRH
     if (!hub) {
       continue
     }
-    const binding: AnyRecord | undefined = op.bindings?.[SIGNALR]
+    const binding: AnyRecord | undefined = protocolBinding(op.bindings, SIGNALR)
     const model: SignalROperationModel = {
       id: opName,
       target: binding?.target ?? opName,
