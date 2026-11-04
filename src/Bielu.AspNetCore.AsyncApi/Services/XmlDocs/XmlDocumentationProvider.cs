@@ -26,18 +26,18 @@ internal class XmlDocumentationProvider(ILogger<XmlDocumentationProvider> logger
 
         try
         {
-            var document = XDocument.Load(filePath);
+            var document = XDocument.Load(filePath, LoadOptions.PreserveWhitespace);
             foreach (var element in document.XPathSelectElements("/doc/members/member"))
             {
                 var name = element.Attribute("name")?.Value;
                 if (string.IsNullOrEmpty(name)) continue;
 
-                var summary = element.Element("summary")?.Value.Trim();
-                var remarks = element.Element("remarks")?.Value.Trim();
+                var summary = XmlDocumentationText.Render(element.Element("summary"));
+                var remarks = XmlDocumentationText.Render(element.Element("remarks"));
                 var parameters = element.Elements("param")
                     .ToDictionary(
                         x => x.Attribute("name")?.Value ?? string.Empty,
-                        x => x.Value.Trim());
+                        x => XmlDocumentationText.Render(x) ?? string.Empty);
 
                 _cache[name] = new XmlDocumentation(summary, remarks, parameters.Count > 0 ? parameters : null);
             }
