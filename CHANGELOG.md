@@ -19,6 +19,12 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [2.0.2] - 2026-11-04
+
+### Patch Changes
+
+- [#177](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/177) [`c21cf14`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/c21cf1419fa6a76883da6e526c93e1a4cd4933d6) Thanks [@bielu](https://github.com/bielu)! - Render XML documentation comments as readable text. `<see cref>`, `<see langword>`, `<see href>`, `<paramref>` and `<typeparamref>` were dropped from summaries, remarks and parameter descriptions (a summary ending "arrives as <see cref="CaseUpdated"/>." became "arrives as ."); they now render as the referenced name, keyword, link or parameter. The line breaks and indentation of multi-line comments no longer leak into descriptions: lines join with single spaces, a blank line or `<para>` starts a new paragraph, `<br/>` a new line, each list `<item>` a "- " line, and `<code>` is kept verbatim.
+
 ## [2.0.1] - 2026-11-03
 
 ### Patch Changes
