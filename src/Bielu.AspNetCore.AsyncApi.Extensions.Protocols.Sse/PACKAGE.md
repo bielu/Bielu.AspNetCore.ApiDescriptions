@@ -5,7 +5,7 @@ Server-Sent Events protocol bindings for
 
 AsyncAPI has no built-in `sse` protocol, so this package adds one: channel, operation,
 message and server binding types that describe event streams, their event names and the payloads pushed over them, serialized into the generated document
-under the `sse` binding key.
+under the `x-sse` binding key (AsyncAPI 3 bindings objects only allow the specification's binding names and `x-` extensions).
 
 ## Installation
 

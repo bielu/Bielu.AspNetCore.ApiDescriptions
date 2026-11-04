@@ -31,10 +31,10 @@ public class SseBindingSerializationTests
     [Fact]
     public void AllBindings_UseSseBindingKey()
     {
-        new SseChannelBinding().BindingKey.ShouldBe("sse");
-        new SseOperationBinding().BindingKey.ShouldBe("sse");
-        new SseMessageBinding().BindingKey.ShouldBe("sse");
-        new SseServerBinding().BindingKey.ShouldBe("sse");
+        new SseChannelBinding().BindingKey.ShouldBe("x-sse");
+        new SseOperationBinding().BindingKey.ShouldBe("x-sse");
+        new SseMessageBinding().BindingKey.ShouldBe("x-sse");
+        new SseServerBinding().BindingKey.ShouldBe("x-sse");
     }
 
     [Fact]

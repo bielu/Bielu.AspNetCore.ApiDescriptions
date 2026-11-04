@@ -17,7 +17,7 @@ public class SignalRServerBinding : ServerBinding<SignalRServerBinding>
     public IList<string> Protocols { get; set; } = new List<string>();
 
     /// <inheritdoc />
-    public override string BindingKey => SignalRProtocol.ProtocolName;
+    public override string BindingKey => SignalRProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<SignalRServerBinding> FixedFieldMap => new()

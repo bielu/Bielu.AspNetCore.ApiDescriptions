@@ -86,13 +86,13 @@ public sealed class SignalRChatAgentWorkflowTests : IClassFixture<WebApplication
 
         // The hub, transport and method names, as the bindings document them.
         var channel = Reference(sendContract, sendContract["channel"]!["pointer"]!.GetValue<string>());
-        var hub = channel["bindings"]!["signalr"]!["hub"]!.GetValue<string>();
-        channel["bindings"]!["signalr"]!["transports"]!.AsArray().Select(t => t!.GetValue<string>()).ShouldContain("longPolling");
-        var invoke = sendContract["operation"]!["bindings"]!["signalr"]!;
+        var hub = channel["bindings"]!["x-signalr"]!["hub"]!.GetValue<string>();
+        channel["bindings"]!["x-signalr"]!["transports"]!.AsArray().Select(t => t!.GetValue<string>()).ShouldContain("longPolling");
+        var invoke = sendContract["operation"]!["bindings"]!["x-signalr"]!;
         invoke["direction"]!.GetValue<string>().ShouldBe("clientToServer");
         invoke["callType"]!.GetValue<string>().ShouldBe("send");
         var target = invoke["target"]!.GetValue<string>();
-        var push = receiveContract["operation"]!["bindings"]!["signalr"]!;
+        var push = receiveContract["operation"]!["bindings"]!["x-signalr"]!;
         push["direction"]!.GetValue<string>().ShouldBe("serverToClient");
         var handler = push["target"]!.GetValue<string>();
 
@@ -138,7 +138,7 @@ public sealed class SignalRChatAgentWorkflowTests : IClassFixture<WebApplication
         var fields = contract["notSpecified"]!.AsArray().Select(entry => entry!["field"]!.GetValue<string>()).ToList();
         fields.ShouldContain("reply");
         fields.ShouldContain("messages");
-        contract["operation"]!["bindings"]!["signalr"]!["callType"]!.GetValue<string>().ShouldBe("invocation");
+        contract["operation"]!["bindings"]!["x-signalr"]!["callType"]!.GetValue<string>().ShouldBe("invocation");
     }
 
     [Fact]

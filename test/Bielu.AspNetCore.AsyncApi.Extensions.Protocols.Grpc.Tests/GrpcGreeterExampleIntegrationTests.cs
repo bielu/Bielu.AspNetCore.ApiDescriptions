@@ -27,16 +27,16 @@ public class GrpcGreeterExampleIntegrationTests : IClassFixture<WebApplicationFa
         var json = JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
 
         // Server binding.
-        json["servers"]!["grpc"]!["bindings"]!["grpc"]!["services"]!
+        json["servers"]!["grpc"]!["bindings"]!["x-grpc"]!["services"]!
             .AsArray().Select(n => n!.GetValue<string>()).ShouldContain("greet.Greeter");
 
         // Channel binding: the service name.
-        json["channels"]!["greeter"]!["bindings"]!["grpc"]!["service"]!
+        json["channels"]!["greeter"]!["bindings"]!["x-grpc"]!["service"]!
             .GetValue<string>().ShouldBe("greet.Greeter");
 
         // Operation binding: at least one operation declares a gRPC method.
         var operations = json["operations"]!.AsObject();
-        operations.Select(kvp => kvp.Value!["bindings"]?["grpc"]?["method"]?.GetValue<string>())
+        operations.Select(kvp => kvp.Value!["bindings"]?["x-grpc"]?["method"]?.GetValue<string>())
             .Where(m => m is not null)
             .ShouldNotBeEmpty();
     }

@@ -32,10 +32,10 @@ public class SignalRBindingSerializationTests
     [Fact]
     public void AllBindings_UseSignalRBindingKey()
     {
-        new SignalRChannelBinding().BindingKey.ShouldBe("signalr");
-        new SignalROperationBinding().BindingKey.ShouldBe("signalr");
-        new SignalRMessageBinding().BindingKey.ShouldBe("signalr");
-        new SignalRServerBinding().BindingKey.ShouldBe("signalr");
+        new SignalRChannelBinding().BindingKey.ShouldBe("x-signalr");
+        new SignalROperationBinding().BindingKey.ShouldBe("x-signalr");
+        new SignalRMessageBinding().BindingKey.ShouldBe("x-signalr");
+        new SignalRServerBinding().BindingKey.ShouldBe("x-signalr");
     }
 
     [Fact]

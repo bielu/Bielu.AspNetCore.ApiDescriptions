@@ -90,12 +90,12 @@ public class WebRtcDocumentExampleTests
         stringWriter.Flush();
         var json = JsonNode.Parse(stringWriter.ToString())!;
 
-        json["servers"]!["webrtc"]!["bindings"]!["webrtc"]!["signalingUrl"]!.GetValue<string>()
+        json["servers"]!["webrtc"]!["bindings"]!["x-webrtc"]!["signalingUrl"]!.GetValue<string>()
             .ShouldBe("wss://signal.example.com");
-        json["channels"]!["chat"]!["bindings"]!["webrtc"]!["label"]!.GetValue<string>().ShouldBe("chat");
-        json["operations"]!["sendOffer"]!["bindings"]!["webrtc"]!["signalingType"]!.GetValue<string>()
+        json["channels"]!["chat"]!["bindings"]!["x-webrtc"]!["label"]!.GetValue<string>().ShouldBe("chat");
+        json["operations"]!["sendOffer"]!["bindings"]!["x-webrtc"]!["signalingType"]!.GetValue<string>()
             .ShouldBe("offer");
-        json["channels"]!["chat"]!["messages"]!["offer"]!["bindings"]!["webrtc"]!["signalingType"]!
+        json["channels"]!["chat"]!["messages"]!["offer"]!["bindings"]!["x-webrtc"]!["signalingType"]!
             .GetValue<string>().ShouldBe("offer");
     }
 }

@@ -25,7 +25,7 @@ public class SseMessageBinding : MessageBinding<SseMessageBinding>
     public AsyncApiJsonSchema? Headers { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => SseProtocol.ProtocolName;
+    public override string BindingKey => SseProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<SseMessageBinding> FixedFieldMap => new()

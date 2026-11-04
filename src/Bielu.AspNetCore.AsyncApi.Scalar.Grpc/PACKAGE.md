@@ -1,7 +1,7 @@
 # Bielu.AspNetCore.AsyncApi.Scalar.Grpc
 
 An interactive **gRPC console** for the [Scalar](https://scalar.com/) API Reference in ASP.NET
-Core. It reads the `grpc` bindings in your AsyncAPI document and lets you invoke unary and server-streaming methods over gRPC-Web — from the
+Core. It reads the `grpc` bindings (`x-grpc` in AsyncAPI 3 documents, which only allow the specification's binding names) in your AsyncAPI document and lets you invoke unary and server-streaming methods over gRPC-Web — from the
 same page that documents them.
 
 ## Installation

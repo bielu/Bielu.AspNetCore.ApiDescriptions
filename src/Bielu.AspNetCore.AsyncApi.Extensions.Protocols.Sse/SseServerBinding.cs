@@ -17,7 +17,7 @@ public class SseServerBinding : ServerBinding<SseServerBinding>
     public bool? Heartbeat { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => SseProtocol.ProtocolName;
+    public override string BindingKey => SseProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<SseServerBinding> FixedFieldMap => new()

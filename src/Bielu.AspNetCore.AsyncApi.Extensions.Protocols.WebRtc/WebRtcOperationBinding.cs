@@ -17,7 +17,7 @@ public class WebRtcOperationBinding : OperationBinding<WebRtcOperationBinding>
     public string? Direction { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => WebRtcProtocol.ProtocolName;
+    public override string BindingKey => WebRtcProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<WebRtcOperationBinding> FixedFieldMap => new()

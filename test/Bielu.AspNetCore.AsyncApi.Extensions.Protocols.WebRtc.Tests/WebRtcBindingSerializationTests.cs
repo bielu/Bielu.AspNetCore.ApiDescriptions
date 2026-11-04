@@ -30,10 +30,10 @@ public class WebRtcBindingSerializationTests
     [Fact]
     public void AllBindings_UseWebRtcBindingKey()
     {
-        new WebRtcChannelBinding().BindingKey.ShouldBe("webrtc");
-        new WebRtcOperationBinding().BindingKey.ShouldBe("webrtc");
-        new WebRtcMessageBinding().BindingKey.ShouldBe("webrtc");
-        new WebRtcServerBinding().BindingKey.ShouldBe("webrtc");
+        new WebRtcChannelBinding().BindingKey.ShouldBe("x-webrtc");
+        new WebRtcOperationBinding().BindingKey.ShouldBe("x-webrtc");
+        new WebRtcMessageBinding().BindingKey.ShouldBe("x-webrtc");
+        new WebRtcServerBinding().BindingKey.ShouldBe("x-webrtc");
     }
 
     [Fact]

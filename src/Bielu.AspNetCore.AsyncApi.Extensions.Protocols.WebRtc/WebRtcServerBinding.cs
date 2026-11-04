@@ -20,7 +20,7 @@ public class WebRtcServerBinding : ServerBinding<WebRtcServerBinding>
     public string? BundlePolicy { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => WebRtcProtocol.ProtocolName;
+    public override string BindingKey => WebRtcProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<WebRtcServerBinding> FixedFieldMap => new()

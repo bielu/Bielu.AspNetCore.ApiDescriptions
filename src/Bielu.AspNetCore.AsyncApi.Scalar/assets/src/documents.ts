@@ -76,12 +76,21 @@ export function resolveServerBaseUrl(host: string | undefined): string {
   }
 }
 
+/**
+ * The binding for a protocol in a bindings object. AsyncAPI 3 only allows the specification's binding
+ * names there, so a custom protocol's binding (SignalR, gRPC, ...) is written as an extension,
+ * `x-<protocol>`; earlier documents use the bare name. Both are read, the bare name first.
+ */
+export function protocolBinding(bindings: AnyRecord | undefined, protocol: string): AnyRecord | undefined {
+  return bindings?.[protocol] ?? bindings?.[`x-${protocol}`]
+}
+
 /** The host of the first AsyncAPI server that speaks the given protocol (or carries its binding). */
 export function firstServerHost(doc: AnyRecord, protocol: string): string | undefined {
   const servers: AnyRecord = doc.servers ?? {}
   for (const key of Object.keys(servers)) {
     const server: AnyRecord = servers[key] ?? {}
-    if (server.protocol === protocol || server.bindings?.[protocol]) {
+    if (server.protocol === protocol || protocolBinding(server.bindings, protocol)) {
       return server.host ?? server.url
     }
   }

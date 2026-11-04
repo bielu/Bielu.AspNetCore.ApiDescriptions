@@ -2,7 +2,7 @@
 
 An interactive **SignalR console** plugin for the [Scalar](https://scalar.com) API Reference.
 
-It reads the SignalR bindings from your AsyncAPI document(s) and renders a panel where you can
+It reads the SignalR bindings (`signalr` or `x-signalr`) from your AsyncAPI document(s) and renders a panel where you can
 connect to a hub, invoke client-to-server methods, and watch server-to-client events live. It is
 built as a drop-in replacement for the default `scalar.js` bundle: loading it re-exposes
 `window.Scalar.createApiReference` with the SignalR plugin already registered.

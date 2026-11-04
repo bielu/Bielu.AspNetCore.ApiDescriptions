@@ -1,7 +1,7 @@
 # Bielu.AspNetCore.AsyncApi.Scalar.SignalR
 
 An interactive **SignalR console** for the [Scalar](https://scalar.com/) API Reference in ASP.NET
-Core. It reads the `signalr` bindings in your AsyncAPI document and lets you connect to hubs, invoke methods and subscribe to server events — from the
+Core. It reads the `signalr` bindings (`x-signalr` in AsyncAPI 3 documents, which only allow the specification's binding names) in your AsyncAPI document and lets you connect to hubs, invoke methods and subscribe to server events — from the
 same page that documents them.
 
 ## Installation

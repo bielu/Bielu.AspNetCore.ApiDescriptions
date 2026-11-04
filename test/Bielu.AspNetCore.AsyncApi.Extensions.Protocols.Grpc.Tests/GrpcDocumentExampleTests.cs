@@ -100,16 +100,16 @@ public class GrpcDocumentExampleTests
         stringWriter.Flush();
         var json = JsonNode.Parse(stringWriter.ToString())!;
 
-        json["servers"]!["grpc"]!["bindings"]!["grpc"]!["services"]!
+        json["servers"]!["grpc"]!["bindings"]!["x-grpc"]!["services"]!
             .AsArray().Select(n => n!.GetValue<string>()).ShouldContain("greet.Greeter");
 
-        json["channels"]!["greeter"]!["bindings"]!["grpc"]!["service"]!
+        json["channels"]!["greeter"]!["bindings"]!["x-grpc"]!["service"]!
             .GetValue<string>().ShouldBe("greet.Greeter");
 
-        json["operations"]!["sayHello"]!["bindings"]!["grpc"]!["method"]!
+        json["operations"]!["sayHello"]!["bindings"]!["x-grpc"]!["method"]!
             .GetValue<string>().ShouldBe("SayHello");
 
-        json["channels"]!["greeter"]!["messages"]!["helloRequest"]!["bindings"]!["grpc"]!["messageType"]!
+        json["channels"]!["greeter"]!["messages"]!["helloRequest"]!["bindings"]!["x-grpc"]!["messageType"]!
             .GetValue<string>().ShouldBe("greet.HelloRequest");
     }
 }

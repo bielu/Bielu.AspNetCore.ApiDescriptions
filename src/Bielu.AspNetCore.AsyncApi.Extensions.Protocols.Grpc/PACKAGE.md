@@ -5,7 +5,7 @@ gRPC protocol bindings for
 
 AsyncAPI has no built-in `grpc` protocol, so this package adds one: channel, operation,
 message and server binding types that describe services, unary and streaming methods, and their request/response messages, serialized into the generated document
-under the `grpc` binding key.
+under the `x-grpc` binding key (AsyncAPI 3 bindings objects only allow the specification's binding names and `x-` extensions).
 
 ## Installation
 

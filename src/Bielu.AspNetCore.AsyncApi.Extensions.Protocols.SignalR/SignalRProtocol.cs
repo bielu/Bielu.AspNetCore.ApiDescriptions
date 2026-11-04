@@ -10,8 +10,14 @@
 /// </remarks>
 public static class SignalRProtocol
 {
-    /// <summary>The protocol identifier used in server and binding keys.</summary>
+    /// <summary>The protocol identifier, used as a server's <c>protocol</c>.</summary>
     public const string ProtocolName = "signalr";
+
+    /// <summary>
+    /// The key this protocol's bindings are written under. AsyncAPI 3 bindings objects only allow the
+    /// specification's binding names and <c>x-</c> extensions, so a custom protocol's binding is an extension.
+    /// </summary>
+    public const string BindingKey = "x-" + ProtocolName;
 
     /// <summary>The default binding version emitted when none is set explicitly.</summary>
     public const string DefaultBindingVersion = "0.1.0";

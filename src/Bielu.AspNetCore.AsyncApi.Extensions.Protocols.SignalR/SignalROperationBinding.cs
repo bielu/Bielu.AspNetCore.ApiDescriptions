@@ -23,7 +23,7 @@ public class SignalROperationBinding : OperationBinding<SignalROperationBinding>
     public bool? Streaming { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => SignalRProtocol.ProtocolName;
+    public override string BindingKey => SignalRProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<SignalROperationBinding> FixedFieldMap => new()

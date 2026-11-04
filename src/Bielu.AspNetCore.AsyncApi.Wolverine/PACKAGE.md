@@ -53,7 +53,7 @@ What it generates:
 | A listener with `DefaultIncomingMessage<T>()` | A `receive` operation on the listener's channel |
 | A handler that returns a message with no route (or any message, with `IncludeReplies()`) | The `reply` of that `receive` operation, addressed by the `reply-uri` header |
 | The message type name (`[MessageIdentity]`, or Wolverine's default) | The message name, the same one used on the wire |
-| The SignalR transport | A channel at the path the `WolverineHub` is mapped at, with `signalr` bindings targeting `ReceiveMessage` |
+| The SignalR transport | A channel at the path the `WolverineHub` is mapped at, with `x-signalr` bindings targeting `ReceiveMessage` |
 | A Kafka topic | A channel at the topic, with a `kafka` channel binding |
 | SignalR, or `InteropWithCloudEvents()`, with `DescribeCloudEvents()` | Messages described as the structured CloudEvents envelope Wolverine writes (`type`, `source` = service name, `data`) |
 

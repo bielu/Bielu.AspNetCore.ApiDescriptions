@@ -5,7 +5,7 @@ WebRTC protocol bindings for
 
 AsyncAPI has no built-in `webrtc` protocol, so this package adds one: channel, operation,
 message and server binding types that describe data channels, their negotiation parameters and the signaling exchange, serialized into the generated document
-under the `webrtc` binding key.
+under the `x-webrtc` binding key (AsyncAPI 3 bindings objects only allow the specification's binding names and `x-` extensions).
 
 ## Installation
 

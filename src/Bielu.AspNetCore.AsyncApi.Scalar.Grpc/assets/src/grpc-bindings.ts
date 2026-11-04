@@ -4,6 +4,7 @@ import {
   extractSecuritySchemes,
   firstServerHost,
   loadAsyncApiDocuments,
+  protocolBinding,
   refName,
   resolveServerBaseUrl,
 } from '@bielu/scalar-core'
@@ -66,7 +67,7 @@ export function parseGrpcServices(documentName: string, doc: AnyRecord): GrpcSer
 
   for (const channelName of Object.keys(channels)) {
     const channel: AnyRecord = channels[channelName] ?? {}
-    const binding: AnyRecord | undefined = channel.bindings?.[GRPC]
+    const binding: AnyRecord | undefined = protocolBinding(channel.bindings, GRPC)
     if (!binding) {
       continue
     }
@@ -90,7 +91,7 @@ export function parseGrpcServices(documentName: string, doc: AnyRecord): GrpcSer
     if (!service) {
       continue
     }
-    const binding: AnyRecord | undefined = op.bindings?.[GRPC]
+    const binding: AnyRecord | undefined = protocolBinding(op.bindings, GRPC)
     const model: GrpcMethodModel = {
       id: opName,
       method: binding?.method ?? opName,

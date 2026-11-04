@@ -23,7 +23,7 @@ public class GrpcServerBinding : ServerBinding<GrpcServerBinding>
     public IList<string> Compressions { get; set; } = new List<string>();
 
     /// <inheritdoc />
-    public override string BindingKey => GrpcProtocol.ProtocolName;
+    public override string BindingKey => GrpcProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<GrpcServerBinding> FixedFieldMap => new()

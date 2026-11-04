@@ -17,7 +17,7 @@ public class SseOperationBinding : OperationBinding<SseOperationBinding>
     public string? Direction { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => SseProtocol.ProtocolName;
+    public override string BindingKey => SseProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<SseOperationBinding> FixedFieldMap => new()

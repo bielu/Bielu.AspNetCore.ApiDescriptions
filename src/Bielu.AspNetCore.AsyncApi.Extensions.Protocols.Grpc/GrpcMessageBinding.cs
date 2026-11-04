@@ -22,7 +22,7 @@ public class GrpcMessageBinding : MessageBinding<GrpcMessageBinding>
     public AsyncApiJsonSchema? Headers { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => GrpcProtocol.ProtocolName;
+    public override string BindingKey => GrpcProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<GrpcMessageBinding> FixedFieldMap => new()

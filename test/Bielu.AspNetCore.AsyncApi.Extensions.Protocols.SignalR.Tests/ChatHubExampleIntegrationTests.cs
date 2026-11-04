@@ -40,16 +40,16 @@ public class ChatHubExampleIntegrationTests : IClassFixture<WebApplicationFactor
         var json = JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
 
         // Server binding.
-        json["servers"]!["signalr"]!["bindings"]!["signalr"]!["transports"]!
+        json["servers"]!["signalr"]!["bindings"]!["x-signalr"]!["transports"]!
             .AsArray().Select(n => n!.GetValue<string>()).ShouldContain("webSockets");
 
         // Channel binding: the hub path.
-        json["channels"]!["chatHub"]!["bindings"]!["signalr"]!["hub"]!
+        json["channels"]!["chatHub"]!["bindings"]!["x-signalr"]!["hub"]!
             .GetValue<string>().ShouldBe("/chatHub");
 
         // Operation binding: at least one operation targets the chat hub.
         var operations = json["operations"]!.AsObject();
-        operations.Select(kvp => kvp.Value!["bindings"]?["signalr"]?["target"]?.GetValue<string>())
+        operations.Select(kvp => kvp.Value!["bindings"]?["x-signalr"]?["target"]?.GetValue<string>())
             .Where(t => t is not null)
             .ShouldNotBeEmpty();
     }

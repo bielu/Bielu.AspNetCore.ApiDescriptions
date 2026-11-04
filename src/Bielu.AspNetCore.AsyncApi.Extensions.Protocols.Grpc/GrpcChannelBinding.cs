@@ -20,7 +20,7 @@ public class GrpcChannelBinding : ChannelBinding<GrpcChannelBinding>
     public string? ProtoFile { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => GrpcProtocol.ProtocolName;
+    public override string BindingKey => GrpcProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<GrpcChannelBinding> FixedFieldMap => new()

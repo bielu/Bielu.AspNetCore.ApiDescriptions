@@ -83,4 +83,27 @@ public class AsyncApiOperationSearchTests
         // Act & Assert
         AsyncApiOperationSearch.Protocols(Document, send).ShouldBe(["signalr", "ws"]);
     }
+
+    [Fact]
+    public void Protocols_ExtensionBindingKey_ReturnsProtocolWithoutPrefix()
+    {
+        // Arrange: AsyncAPI 3 writes a custom protocol's binding as an x- extension.
+        var document = JsonNode.Parse("""
+            {
+              "asyncapi": "3.1.0",
+              "channels": { "hub": { "address": "/hubs/chat", "bindings": { "x-signalr": { "hub": "/hubs/chat" } } } },
+              "operations": {
+                "push": {
+                  "action": "send",
+                  "channel": { "$ref": "#/channels/hub" },
+                  "bindings": { "x-signalr": { "target": "ReceiveMessage" } }
+                }
+              }
+            }
+            """)!.AsObject();
+        var push = AsyncApiDocumentInspector.FindOperation(document, "push")!;
+
+        // Act & Assert
+        AsyncApiOperationSearch.Protocols(document, push).ShouldBe(["signalr"]);
+    }
 }

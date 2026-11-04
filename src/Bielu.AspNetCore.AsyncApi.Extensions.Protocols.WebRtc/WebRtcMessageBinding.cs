@@ -22,7 +22,7 @@ public class WebRtcMessageBinding : MessageBinding<WebRtcMessageBinding>
     public AsyncApiJsonSchema? Headers { get; set; }
 
     /// <inheritdoc />
-    public override string BindingKey => WebRtcProtocol.ProtocolName;
+    public override string BindingKey => WebRtcProtocol.BindingKey;
 
     /// <inheritdoc />
     protected override FixedFieldMap<WebRtcMessageBinding> FixedFieldMap => new()

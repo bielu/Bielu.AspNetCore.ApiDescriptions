@@ -5,7 +5,7 @@ SignalR protocol bindings for
 
 AsyncAPI has no built-in `signalr` protocol, so this package adds one: channel, operation,
 message and server binding types that describe hubs, hub methods and the client callbacks they invoke, serialized into the generated document
-under the `signalr` binding key.
+under the `x-signalr` binding key (AsyncAPI 3 bindings objects only allow the specification's binding names and `x-` extensions).
 
 ## Installation
 
