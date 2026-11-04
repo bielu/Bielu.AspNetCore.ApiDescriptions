@@ -19,6 +19,14 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [2.1.0] - 2026-11-04
+
+### Minor Changes
+
+- [#179](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/179) [`280cd7e`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/280cd7e4db64c6d6da0b1382f89703378e232fb0) Thanks [@bielu](https://github.com/bielu)! - Write custom protocol bindings as `x-` extensions, so generated AsyncAPI 3 documents validate against the AsyncAPI JSON Schema. AsyncAPI 3 bindings objects only allow the specification's binding names (`amqp`, `http`, `kafka`, `ws`, ...) and `x-` extensions, so the `signalr`, `grpc`, `webrtc` and `sse` bindings are now written under `x-signalr`, `x-grpc`, `x-webrtc` and `x-sse`. The new `SignalRProtocol.BindingKey`, `GrpcProtocol.BindingKey`, `WebRtcProtocol.BindingKey` and `SseProtocol.BindingKey` constants hold the key; `ProtocolName` is unchanged and is still a server's `protocol`.
+
+  **Changes the generated document:** a consumer that reads `bindings.signalr` (or `grpc`, `webrtc`, `sse`) needs to read `bindings["x-signalr"]` instead. The Scalar SignalR and gRPC consoles read either key, the bare name first, so they work with documents from before and after this change, and the MCP operation search reports `x-signalr` as the `signalr` protocol.
+
 ## [2.0.2] - 2026-11-04
 
 ### Patch Changes
