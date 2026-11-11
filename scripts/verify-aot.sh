@@ -17,10 +17,14 @@
 # on consumers and nowhere else. This publishes the example against a locally packed feed, which is
 # the only way to exercise NuGet's own import of them.
 #
-# Usage: scripts/verify-aot.sh [runtime-identifier]
+# The example is built for one framework at a time (BieluExampleTargetFramework); CI runs this once per
+# supported framework, so the source-generated metadata and the reflection scan are compared on each runtime.
+#
+# Usage: scripts/verify-aot.sh [runtime-identifier] [target-framework]
 set -euo pipefail
 
 RID="${1:-linux-x64}"
+FRAMEWORK="${2:-net10.0}"
 PROJECT="src/examples/AotStreetlights"
 DOCUMENT_PATH="/asyncapi/Streetlights.json"
 WORK="$(mktemp -d)"
@@ -56,7 +60,7 @@ fetch_document() {
   fi
 }
 
-echo "==> Publishing $PROJECT as Native AOT ($RID)"
+echo "==> Publishing $PROJECT as Native AOT ($RID, $FRAMEWORK)"
 # PublishAot is deliberately NOT passed with -p: here. It is already set in AotStreetlights.csproj,
 # and a -p: value becomes a *global* property that flows into every referenced project — including
 # the netstandard2.0 analyzer and source generator, which cannot be AOT-compiled and fail the whole
@@ -67,10 +71,12 @@ echo "==> Publishing $PROJECT as Native AOT ($RID)"
 # own assembly, IL2104/IL3053, which is outside our control). Turn that on once the remaining trim
 # annotations on AsyncApiDocumentService / MapAsyncApi / AddAsyncApi are settled — this is the right
 # place to assert it, since it is where ILC actually runs.
-dotnet publish "$PROJECT" -c Release -r "$RID" -o "$WORK/aot"
+#
+# BieluExampleTargetFramework, unlike PublishAot, is safe as a global property: only the example reads it.
+dotnet publish "$PROJECT" -c Release -r "$RID" -o "$WORK/aot" -p:BieluExampleTargetFramework="$FRAMEWORK"
 
 echo "==> Publishing the same project without AOT, for comparison"
-dotnet publish "$PROJECT" -c Release -p:PublishAot=false -o "$WORK/jit"
+dotnet publish "$PROJECT" -c Release -p:PublishAot=false -o "$WORK/jit" -p:BieluExampleTargetFramework="$FRAMEWORK"
 
 # Both runs must use the SAME port. The generated document records the bound address as its server
 # host, so serving the two builds on different ports would make them differ on that field alone and
@@ -144,7 +150,7 @@ echo "==> Publishing the example as a package consumer (Native AOT)"
 # The consumer sits outside the repository, so BieluExampleTargetFramework (root Directory.Build.props)
 # has to be passed in: the copied project file's TargetFramework reads it.
 dotnet publish "$CONSUMER/AotStreetlights.csproj" -c Release -r "$RID" -o "$WORK/pkg" \
-  -p:UseAsyncApiPackage=true -p:BieluExampleTargetFramework=net10.0
+  -p:UseAsyncApiPackage=true -p:BieluExampleTargetFramework="$FRAMEWORK"
 
 echo "==> Fetching the document from the packaged-consumer build"
 fetch_document "$WORK/pkg/AotStreetlights" "$PORT" "$WORK/pkg.json"

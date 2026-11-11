@@ -102,6 +102,11 @@ jobs:
   aot-verification:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    # Once per supported framework: the source generator and the reflection scan must agree on each runtime.
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [net10.0, net11.0]
     # Blocking. It is the only thing standing between "README claims Native AOT support" and that
     # claim being true — three separate defects made the AOT path throw at runtime, and none of them
     # were visible to the rest of the suite.
@@ -119,7 +124,45 @@ jobs:
       # Invoked through bash rather than executed directly: this repository is developed on Windows
       # with core.filemode=false, so the executable bit on a committed script is easy to lose.
       - name: Verify Native AOT
-        run: bash scripts/verify-aot.sh linux-x64
+        run: bash scripts/verify-aot.sh linux-x64 ${{ matrix.framework }}
+
+  # Pull request: the examples build for one framework at a time (net10.0 by default, which the solution
+  # build covers); build them for net11.0 too, so an example that only works on one runtime is caught.
+  # The Aspire examples are left out: Aspire.AppHost.Sdk is versioned on its own schedule.
+  examples-net11:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            11.0.x
+      - name: Build the examples for net11.0
+        run: |
+          for example in StreetlightsAPI SignalRChat GrpcGreeter AotStreetlights BuildTimeDocuments OverlayDemo; do
+            dotnet build "src/examples/$example" -c Release -p:BieluExampleTargetFramework=net11.0
+          done
+
+  # Pull request: generate every `dotnet new` template for every supported framework from the packed
+  # template pack and build the result, checking that the Framework choice reached the projects.
+  templates:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            11.0.x
+      - name: Verify the templates
+        run: bash scripts/verify-templates.sh
 
   # Pull request: prove `dotnet asyncapi getdocument` works across runtimes. Both CLI builds run against
   # an app built for net10.0 and for net11.0 (the CLI relaunches itself on the app's runtime when they

@@ -11,7 +11,18 @@
     "Framework": {
       "type": "parameter",
       "description": "The target framework for the project.",
-      "datatype": "string",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "net10.0",
+          "description": "Target .NET 10 (LTS)"
+        },
+        {
+          "choice": "net11.0",
+          "description": "Target .NET 11 (STS)"
+        }
+      ],
+      "replaces": "net10.0",
       "defaultValue": "net10.0"
     }
   }

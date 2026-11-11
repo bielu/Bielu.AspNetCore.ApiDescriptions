@@ -11,8 +11,39 @@
     "Framework": {
       "type": "parameter",
       "description": "The target framework for the project.",
-      "datatype": "string",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "net10.0",
+          "description": "Target .NET 10 (LTS)"
+        },
+        {
+          "choice": "net11.0",
+          "description": "Target .NET 11 (STS)"
+        }
+      ],
+      "replaces": "net10.0",
       "defaultValue": "net10.0"
+    },
+    "MicrosoftExtensionsHostingVersion": {
+      "type": "generated",
+      "generator": "switch",
+      "description": "The Microsoft.Extensions.Hosting version that matches Framework.",
+      "replaces": "10.0.15",
+      "parameters": {
+        "evaluator": "C++",
+        "datatype": "string",
+        "cases": [
+          {
+            "condition": "(Framework == 'net11.0')",
+            "value": "11.0.0"
+          },
+          {
+            "condition": "",
+            "value": "10.0.15"
+          }
+        ]
+      }
     }
   }
 }

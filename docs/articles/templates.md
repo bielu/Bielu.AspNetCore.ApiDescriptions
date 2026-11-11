@@ -70,8 +70,13 @@ The AsyncAPI documentation will be available at:
 
 ## Customization
 
-You can customize the target framework using the `--Framework` parameter (default is `net10.0`):
+Pick the target framework with `--Framework`. Every template accepts `net10.0` (the default) and `net11.0`:
 
 ```bash
-dotnet new asyncapi-webapi -n MyApp --Framework net9.0
+dotnet new asyncapi-webapi -n MyApp --Framework net11.0
 ```
+
+The choice reaches every generated project. That includes all three projects of `asyncapi-sln`, and the
+`Microsoft.Extensions.Hosting` version of the console and worker projects, which has to match the framework
+(10.0.x for `net10.0`, 11.0.x for `net11.0`). Other values are rejected; see
+[Supported .NET versions](supported-dotnet-versions.md) for which frameworks the packages support.
