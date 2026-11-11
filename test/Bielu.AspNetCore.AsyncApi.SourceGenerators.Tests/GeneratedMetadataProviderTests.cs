@@ -327,6 +327,21 @@ public class GeneratedMetadataProviderTests
 
     private static string NewDocumentName() => "gen" + Guid.NewGuid().ToString("N");
 
+    [Fact]
+    public void Generate_NullableEnabledProject_GeneratedCodeRaisesNoNullableWarnings()
+    {
+        // Arrange & Act: the harness compiles with <Nullable>enable</Nullable>, like a typical app.
+        var compiled = Compile(Source, NewDocumentName());
+
+        // Assert: generated files are nullable-oblivious unless they say otherwise, so `?` annotations in
+        // them raise CS8669 in every consuming project unless the file opts in with #nullable enable.
+        compiled.CompilationDiagnostics
+            .Where(diagnostic => diagnostic.Location.SourceTree?.FilePath.EndsWith(".g.cs", StringComparison.Ordinal) == true
+                && diagnostic.Severity >= DiagnosticSeverity.Warning)
+            .Select(diagnostic => diagnostic.ToString())
+            .ShouldBeEmpty();
+    }
+
     private static async Task<AsyncApiDocument> GetDocumentAsync(string documentName, IAsyncApiMetadataProvider? provider)
     {
         var builder = WebApplication.CreateBuilder();
@@ -378,10 +393,14 @@ public class GeneratedMetadataProviderTests
         var providerType = assembly.GetType("Bielu.AspNetCore.AsyncApi.Generated.GeneratedAsyncApiMetadataProvider")!;
         var provider = (IAsyncApiMetadataProvider)Activator.CreateInstance(providerType)!;
 
-        return new Compiled(assembly, provider, generatorDiagnostics);
+        return new Compiled(assembly, provider, generatorDiagnostics, emitResult.Diagnostics);
     }
 
-    private sealed record Compiled(Assembly Assembly, IAsyncApiMetadataProvider Provider, IReadOnlyList<Diagnostic> Diagnostics);
+    private sealed record Compiled(
+        Assembly Assembly,
+        IAsyncApiMetadataProvider Provider,
+        IReadOnlyList<Diagnostic> Diagnostics,
+        IReadOnlyList<Diagnostic> CompilationDiagnostics);
 
     private sealed class OverridingProvider(
         IAsyncApiMetadataProvider inner,

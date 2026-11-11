@@ -4,29 +4,33 @@ This policy applies to the AsyncAPI, Arazzo, Overlay, and shared runtime librari
 Support for each .NET version ends when Microsoft ends support for that version. Use the latest servicing patch
 of a supported runtime.
 
-Last reviewed: 14 September 2026. Planned entries below describe future work, not support available in a released
+Last reviewed: 11 November 2026. Planned entries below describe future work, not support available in a released
 package.
 
 | .NET version | Target framework | Release track | Package support | Microsoft end of support | Target removal |
 | --- | --- | --- | --- | --- | --- |
-| .NET 10 | `net10.0` | LTS | Supported by the current runtime libraries | **14 November 2028** | Major package release scheduled for this EOL |
-| .NET 11 | `net11.0` | STS | Planned for the next minor release; prerelease validation first | Final-release EOL to be confirmed by Microsoft | Major package release scheduled for its official EOL |
+| .NET 10 | `net10.0` | LTS | Supported by every runtime-library package | **14 November 2028** | Major package release scheduled for this EOL, together with .NET 11 |
+| .NET 11 | `net11.0` | STS | Supported from 2.2.0 (published first as `2.2.0-beta` prereleases) | **14 November 2028** | Same major package release as .NET 10 |
 | .NET 12 | `net12.0` | Expected LTS under Microsoft's release cadence | Planned future support; not implemented | To be confirmed by Microsoft | Major package release scheduled for its official EOL |
 | .NET 9 and earlier | No runtime-library target | Varies | Not supported by this package family | Not applicable to this package policy | Not applicable |
 
-The .NET 10 date comes from [Microsoft's official .NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core).
+The .NET 10 and .NET 11 dates come from [Microsoft's official .NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core).
 Microsoft's current cadence assigns even-numbered releases to LTS and odd-numbered releases to STS; the .NET 12 track
 above is an expectation based on that cadence. [Microsoft lifecycle FAQ](https://learn.microsoft.com/en-us/lifecycle/faq/dotnet-core)
 
-.NET 11 is currently at RC1. Its short RC support window is separate from the final .NET 11 lifecycle and must not be
-used as the target-removal date. Record final .NET 11 and .NET 12 EOL dates here when Microsoft publishes them.
-[Microsoft prerelease support dates](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core#go-live-releases)
+.NET 11 shipped on 10 November 2026. STS releases now get 24 months of support, so .NET 11 reaches end of support
+on the same day as .NET 10, and both targets are removed in the same major package release. Record the .NET 12 EOL
+date here when Microsoft publishes it.
 
 ## Adding supported versions
 
-New .NET support is a backward-compatible feature delivered in a minor package release. The planned .NET 11 release
-will contain both `net10.0` and `net11.0` assets in each runtime-library package, preserving existing .NET 10 APIs and
-behavior. Consumers reference the same package ID and select their application's target framework.
+New .NET support is a backward-compatible feature delivered in a minor package release. Since 2.2.0, each
+runtime-library package contains both `net10.0` and `net11.0` assets, built from the same source with the same public
+API, and existing .NET 10 behavior is preserved. Consumers reference the same package ID and select their
+application's target framework. A .NET 10 application needs only the .NET 10 SDK, even though this repository builds
+with the .NET 11 SDK; CI checks this by building a consumer with nothing newer installed. The CLI tools ship both
+frameworks too, and `dotnet asyncapi getdocument` generates each document on the runtime its application targets.
+The `dotnet new` templates take `--Framework net10.0|net11.0`.
 
 Multi-targeting is not limited to two frameworks. When .NET 12 support is added, retain .NET 10 and .NET 11 if they
 have not reached EOL, producing `net10.0;net11.0;net12.0`. Apply the same rule to later releases. Adding a newer target
