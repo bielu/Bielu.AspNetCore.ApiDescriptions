@@ -19,6 +19,78 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [2.2.0] - 2026-11-11
+
+### Minor Changes
+
+- [#187](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/187) [`6034664`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/6034664c9275764785123ea00b0dc98179446ffb) Thanks [@bielu](https://github.com/bielu)! - `dotnet asyncapi`, `dotnet arazzo` and `dotnet overlay` ship `net10.0` and `net11.0` builds. `dotnet asyncapi
+getdocument` generates each document on the runtime the application targets: when that differs from the runtime
+  the CLI is on, it relaunches itself with the app's `runtimeconfig.json`/`deps.json`, as `dotnet getdocument` does,
+  so a net11.0 app no longer crashes a CLI on .NET 10 (`Could not load file or assembly 'System.Runtime,
+Version=11.0.0.0'`). Arguments, output and exit codes are unchanged, and an app on the CLI's own runtime runs
+  in-process exactly as before.
+
+  The `Bielu.AspNetCore.AsyncApi.ApiDescription.Server` MSBuild target runs once per target framework (never in the
+  outer or design-time build). In a multi-targeting project with a custom `AsyncApiDocumentsDirectory`, each framework
+  now writes to its own `<TargetFramework>` subfolder (opt out with `AsyncApiDocumentsPerTargetFramework=false`). It
+  also passes absolute `--assembly-path`/`--file-list` paths: the relative ones it used were resolved against the tool's
+  working directory, `$(OutputPath)`, and pointed one `OutputPath` too deep.
+
+- [#184](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/184) [`f7441f6`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/f7441f642af0d8264ec2dc3dd615cc20b9e0df47) Thanks [@bielu](https://github.com/bielu)! - Add .NET 11 support. Every runtime library package (AsyncAPI core and attributes, protocols, Scalar
+  consoles, Versioning, Wolverine, Avro, Protobuf, CloudEvents, XRegistry, Merger, ApiDescriptions,
+  ApiCatalog, MCP, Arazzo, Overlay and the shared helpers) now ships `lib/net10.0` and `lib/net11.0`
+  from the same source and public API. The `net11.0` assets use ASP.NET Core 11.0.0 packages
+  (`Microsoft.AspNetCore.OpenApi` 11.0.0, `Microsoft.OpenApi` 3.11.0); the `net10.0` assets keep the
+  10.0.x line, so .NET 10 consumers need no changes.
+
+  Fixed on .NET 11: Arazzo's startup validation again reports an `AddOpenApiSource` that names a
+  document never registered with `AddOpenApi`. ASP.NET Core 11 registers `IOpenApiDocumentProvider` for
+  any key, so the previous keyed-lookup check accepted every name.
+
+- [#188](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/188) [`f15de55`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/f15de556e8138c68150c34673c83e52021979148) Thanks [@bielu](https://github.com/bielu)! - Templates: `--Framework` is now a real choice (`net10.0`, the default, or `net11.0`) that reaches every generated
+  project. It used to be advertised but substituted nowhere. Console and worker projects get the
+  `Microsoft.Extensions.Hosting` version that matches the framework.
+
+  Template fixes found by the new end-to-end check, which generates and builds every template for every framework:
+
+  - generated projects enable `ImplicitUsings` and `Nullable`. Without them, `asyncapi-webapi` did not compile
+    (`DateTime` not found).
+  - the templates reference `Scalar.AspNetCore` 2.16.17. 2.16.15 is older than what the Scalar console packages
+    require, so `asyncapi-signalr` failed to restore with a package-downgrade error (NU1605).
+
+  `scripts/verify-aot.sh` takes the target framework as a second argument, and CI runs the AOT comparison for
+  `net10.0` and `net11.0`.
+
+- [#186](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/186) [`583ccbb`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/583ccbb79e4428a6b31c45f0c13415c49255b376) Thanks [@bielu](https://github.com/bielu)! - Support C# 15 union types on .NET 11. A `union` (or a `[Union]`-pattern type) used as a message payload
+  or a payload property is described as an `anyOf` with one entry per case, matching how
+  System.Text.Json serializes it (the active case, no wrapper) and how ASP.NET Core 11's OpenAPI
+  generator describes it. Schema transformers now run on each union case with that case's
+  `JsonTypeInfo`, as they already did for polymorphic derived types, and example providers may
+  return union values. New article: [Union types](https://apidescriptions.bielu.pl/articles/union-types.html).
+
+### Patch Changes
+
+- [#181](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/181) [`7d42857`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/7d42857ae3f009d6ec4f14077d8a9c38b72666e2) Thanks [@bielu](https://github.com/bielu)! - Move the .NET 10 Microsoft package pins to the latest servicing release: `10.0.10` → `10.0.15`
+  (ASP.NET Core OpenAPI, ApiDescription.Server, test hosts, SignalR client, System.Text.Json,
+  Microsoft.Extensions.Options/DependencyInjection.Abstractions), and the `10.x` Microsoft.Extensions
+  libraries to `10.11.0`. `Microsoft.OpenApi` rises from `2.10.0` to `2.13.0`, the floor
+  `Microsoft.AspNetCore.OpenApi` 10.0.15 declares. The `asyncapi-console` and `asyncapi-sln`
+  templates now reference `Microsoft.Extensions.Hosting` 10.0.15.
+
+- [#189](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/189) [`5cc0ee3`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/5cc0ee3f4a496061a829328f8855024ff220aac9) Thanks [@bielu](https://github.com/bielu)! - Fix: the `Bielu.AspNetCore.AsyncApi` package again ships its `buildTransitive/` Native AOT directives
+  (`Bielu.AspNetCore.AsyncApi.targets`, `.rd.xml`). They dropped out when the package became multi-targeted, because a
+  multi-targeted project packs in its outer build, where the `<None Update>` items that included them match nothing.
+  Native AOT apps that got the core package from NuGet were missing the runtime directives as a result.
+
+  Fix: the source-generated `GeneratedAsyncApiMetadataProvider` no longer raises CS8669 in apps with nullable
+  reference types enabled. It now declares `#nullable enable` and is nullable-clean.
+
+  `scripts/verify-packages.sh` is a new release gate. It packs the solution and checks every package (`lib/` and a
+  dependency group per framework, no 11.x Microsoft package in a `net10.0` group, both tool frameworks, analyzer and
+  `buildTransitive/` assets). Then it builds and runs a consumer on each framework, on a CI runner that has only that
+  framework's SDK. The support matrix now lists .NET 11 as supported, with end of support on 14 November 2028, the
+  same day as .NET 10.
+
 ## [2.1.0] - 2026-11-04
 
 ### Minor Changes
