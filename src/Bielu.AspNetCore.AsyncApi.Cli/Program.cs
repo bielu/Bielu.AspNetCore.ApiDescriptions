@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using Bielu.AspNetCore.AsyncApi.Cli.Commands;
+using Bielu.AspNetCore.AsyncApi.Cli.Hosting;
 using Bielu.Cli.Shared;
 
 // Parse command line arguments
@@ -89,6 +90,12 @@ if (string.IsNullOrEmpty(context.OutputDirectory))
 if (string.IsNullOrEmpty(context.ProjectName))
 {
     context.ProjectName = context.AssemblyName;
+}
+
+// An application built for another runtime is generated on that runtime, in a relaunched worker.
+if (TargetRuntimeLauncher.TryRelaunch(context, args, logger, out var relaunchExitCode))
+{
+    return relaunchExitCode;
 }
 
 // Set up assembly resolution for the target application

@@ -53,8 +53,8 @@ if [ -n "$unexpected" ]; then
 fi
 
 echo "==> Validating the Arazzo and AsyncAPI documents with their CLIs"
-dotnet run --project src/Bielu.Arazzo.Cli -c Release -- validate --file "$WORK/docs/${NAME}_arazzo-v1.json"
-dotnet run --project src/Bielu.AspNetCore.AsyncApi.Cli -c Release -- validate --file "$WORK/docs/${NAME}_asyncapi-v1.json"
+dotnet run --project src/Bielu.Arazzo.Cli -c Release -f net10.0 -- validate --file "$WORK/docs/${NAME}_arazzo-v1.json"
+dotnet run --project src/Bielu.AspNetCore.AsyncApi.Cli -c Release -f net10.0 -- validate --file "$WORK/docs/${NAME}_asyncapi-v1.json"
 
 echo "==> A stale Arazzo reference must fail the build"
 if BUILD_TIME_DOCUMENTS_BREAK_ARAZZO=1 dotnet build "$PROJECT" -c Release -t:Rebuild \
