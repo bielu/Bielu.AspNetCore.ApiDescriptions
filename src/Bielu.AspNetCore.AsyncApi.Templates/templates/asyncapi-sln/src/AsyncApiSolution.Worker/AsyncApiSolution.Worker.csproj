@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="2.1.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.15" />
     <ProjectReference Include="..\AsyncApiSolution.Contracts\AsyncApiSolution.Contracts.csproj" />
   </ItemGroup>
