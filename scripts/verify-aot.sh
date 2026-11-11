@@ -141,8 +141,10 @@ XML
 echo "==> Publishing the example as a package consumer (Native AOT)"
 # UseAsyncApiPackage swaps the project references for a PackageReference; the runtime directives now
 # arrive through the package's buildTransitive/ folder, imported by NuGet rather than by hand.
+# The consumer sits outside the repository, so BieluExampleTargetFramework (root Directory.Build.props)
+# has to be passed in: the copied project file's TargetFramework reads it.
 dotnet publish "$CONSUMER/AotStreetlights.csproj" -c Release -r "$RID" -o "$WORK/pkg" \
-  -p:UseAsyncApiPackage=true
+  -p:UseAsyncApiPackage=true -p:BieluExampleTargetFramework=net10.0
 
 echo "==> Fetching the document from the packaged-consumer build"
 fetch_document "$WORK/pkg/AotStreetlights" "$PORT" "$WORK/pkg.json"
