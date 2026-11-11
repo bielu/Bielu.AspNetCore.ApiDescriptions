@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
@@ -10,7 +12,7 @@
     <PackageReference Include="Bielu.AspNetCore.AsyncApi.Attributes" Version="2.1.0" />
     <PackageReference Include="Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR" Version="2.1.0" />
     <PackageReference Include="Bielu.AspNetCore.AsyncApi.Scalar.SignalR" Version="2.1.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.16.15" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.17" />
   </ItemGroup>
 
 </Project>
