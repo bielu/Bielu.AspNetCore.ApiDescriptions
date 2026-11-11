@@ -21,18 +21,39 @@
     3. The target below will invoke the CLI tool after build
   -->
 
+  <!--
+    Runs once per concrete framework build. NuGet imports build/ only into a project's per-framework
+    inner builds, never the multi-targeting outer build, and the conditions below make that explicit.
+    Design-time builds (IDE) skip it: they must not boot the application.
+  -->
   <Target
     Name="GenerateAsyncApiDocuments"
     AfterTargets="Build"
-    Condition="'$(AsyncApiGenerateDocumentsOnBuild)' == 'true'"
+    Condition="'$(AsyncApiGenerateDocumentsOnBuild)' == 'true' and '$(TargetFramework)' != '' and '$(IsCrossTargetingBuild)' != 'true' and '$(DesignTimeBuild)' != 'true'"
     DependsOnTargets="Build">
 
     <PropertyGroup>
-      <_AsyncApiOutputDir>$([System.IO.Path]::GetFullPath('$(AsyncApiDocumentsDirectory)'))</_AsyncApiOutputDir>
+      <!-- The .props default is $(OutputPath), but package props are imported before the SDK sets
+           OutputPath, so resolve the default here, where OutputPath is final. -->
+      <_AsyncApiDocumentsDirectory>$(AsyncApiDocumentsDirectory)</_AsyncApiDocumentsDirectory>
+      <_AsyncApiDocumentsDirectory Condition="'$(_AsyncApiDocumentsDirectory)' == ''">$(OutputPath)</_AsyncApiDocumentsDirectory>
+      <_AsyncApiOutputDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(_AsyncApiDocumentsDirectory)'))</_AsyncApiOutputDir>
+      <!-- A project with several target frameworks runs this once per framework. The default directory,
+           $(OutputPath), is already per framework; a custom one is shared, so each framework writes to
+           its own subfolder there instead of overwriting the others. Single-target projects keep the
+           directory exactly as configured. Set AsyncApiDocumentsPerTargetFramework=false to opt out. -->
+      <_AsyncApiOutputDir Condition="'$(TargetFrameworks)' != '' and '$(AsyncApiDocumentsPerTargetFramework)' != 'false' and '$(_AsyncApiOutputDir)' != '$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), $(OutputPath)))'">$([MSBuild]::NormalizeDirectory('$(_AsyncApiOutputDir)', '$(TargetFramework)'))</_AsyncApiOutputDir>
+      <!-- NormalizeDirectory ends with a separator; drop it, or the closing quote of "dir\" is read as
+           an escaped quote on Windows. -->
+      <_AsyncApiOutputDir>$(_AsyncApiOutputDir.TrimEnd('\').TrimEnd('/'))</_AsyncApiOutputDir>
       <_AsyncApiAssemblyName>$(AssemblyName)</_AsyncApiAssemblyName>
-      <_AsyncApiAssemblyPath>$([System.IO.Path]::Combine('$(OutputPath)', '$(AssemblyName).dll'))</_AsyncApiAssemblyPath>
+      <!-- Absolute: the tool runs with OutputPath as its working directory, where a relative
+           OutputPath-based path would point one OutputPath too deep. -->
+      <_AsyncApiAssemblyPath>$(TargetPath)</_AsyncApiAssemblyPath>
       <_AsyncApiProjectName>$(MSBuildProjectName)</_AsyncApiProjectName>
-      <_AsyncApiFileListPath>$([System.IO.Path]::Combine('$(IntermediateOutputPath)', 'asyncapi-documents.cache'))</_AsyncApiFileListPath>
+      <!-- Absolute for the same reason as the assembly path: IntermediateOutputPath is relative to the
+           project directory, not to OutputPath. -->
+      <_AsyncApiFileListPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'asyncapi-documents.cache'))</_AsyncApiFileListPath>
     </PropertyGroup>
 
     <!-- Build the dotnet-getdocument arguments -->

@@ -137,3 +137,12 @@ Configure your `.csproj`:
     <AsyncApiDocumentsDirectory>$(MSBuildProjectDirectory)/docs</AsyncApiDocumentsDirectory>
 </PropertyGroup>
 ```
+
+The target runs once for each target framework the project builds, on that framework's runtime (see
+[CLI: target runtime](cli.md#getdocument)). It doesn't run in the multi-targeting outer build or in IDE design-time
+builds. With the default directory (`$(OutputPath)`), each framework already writes to its own folder. When a
+project with several `<TargetFrameworks>` sets a custom `AsyncApiDocumentsDirectory`, each framework writes to a
+subfolder named after it, such as `docs/net10.0/MyApp.json` and `docs/net11.0/MyApp.json`, so one doesn't overwrite
+the other. A single-target project writes to the directory exactly as configured. Set
+`<AsyncApiDocumentsPerTargetFramework>false</AsyncApiDocumentsPerTargetFramework>` to write every framework to the
+same folder anyway.

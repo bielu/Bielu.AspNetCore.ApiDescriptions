@@ -22,6 +22,10 @@
 
     <!-- Override the output file name (without extension). Default: project name -->
     <AsyncApiFileName Condition="'$(AsyncApiFileName)' == ''"></AsyncApiFileName>
+
+    <!-- In a project with several target frameworks and a custom AsyncApiDocumentsDirectory, write each
+         framework's documents to a <TargetFramework> subfolder of it. Default: true -->
+    <AsyncApiDocumentsPerTargetFramework Condition="'$(AsyncApiDocumentsPerTargetFramework)' == ''">true</AsyncApiDocumentsPerTargetFramework>
   </PropertyGroup>
 
 </Project>

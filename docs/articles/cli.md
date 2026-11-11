@@ -30,6 +30,15 @@ dotnet asyncapi getdocument \
 - `--document <name>` - Generate only the specified document
 - `--file-name <name>` - Override file name (without extension)
 
+**Target runtime.** The tool ships builds for `net10.0` and `net11.0`, and generates each document on the
+runtime the application targets. It reads `runtimeOptions.tfm` from the app's `<app>.runtimeconfig.json`. When that
+runtime is not the one the CLI is running on, the CLI relaunches itself on the app's runtime (`dotnet exec` with the
+app's `runtimeconfig.json` and `deps.json`), the way `dotnet getdocument` does. The relaunched run uses the tool's
+build for the highest target framework that doesn't exceed the app's, and the app's own copies of its
+dependencies. Arguments, output and exit codes are the same either way. The app's runtime must be installed; if it
+isn't, the .NET host says so. Apps that target a framework older than `net10.0` are rejected with the list of
+supported ones.
+
 ### `merge`
 
 Merge multiple AsyncAPI documents into a single document.

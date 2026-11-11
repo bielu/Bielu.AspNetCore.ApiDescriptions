@@ -15,6 +15,10 @@
   -->
   <PropertyGroup>
     <BieluTargetFrameworks>net10.0;net11.0</BieluTargetFrameworks>
+    <!-- Examples are applications, so each builds for a single framework: the oldest supported one by
+         default, so they run on any machine that can build the repo. CI and the CLI tests switch it with
+         -p:BieluExampleTargetFramework=net11.0 to exercise the same app on each runtime. -->
+    <BieluExampleTargetFramework Condition="'$(BieluExampleTargetFramework)' == ''">net10.0</BieluExampleTargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

@@ -121,6 +121,25 @@ jobs:
       - name: Verify Native AOT
         run: bash scripts/verify-aot.sh linux-x64
 
+  # Pull request: prove `dotnet asyncapi getdocument` works across runtimes. Both CLI builds run against
+  # an app built for net10.0 and for net11.0 (the CLI relaunches itself on the app's runtime when they
+  # differ), and the packed tool drives the ApiDescription.Server target in a project that multi-targets
+  # both. Needs both runtimes, which no unit test can start.
+  cli-runtimes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            11.0.x
+      - name: Verify the CLI on each runtime
+        run: bash scripts/verify-cli-runtimes.sh
+
   # Pull request: prove build-time document generation works with Microsoft's own
   # `dotnet getdocument` tool. Unit tests can only exercise our provider; this runs the real tool
   # against an app that registers OpenAPI, AsyncAPI and Arazzo, checks the three files that come out and that a stale Arazzo reference fails the build.
