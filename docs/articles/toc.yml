@@ -10,6 +10,8 @@
   href: attributes.md
 - name: Configuration
   href: configuration.md
+- name: Union Types
+  href: union-types.md
 - name: Build-time Generation
   href: build-time-generation.md
 - name: Native AOT

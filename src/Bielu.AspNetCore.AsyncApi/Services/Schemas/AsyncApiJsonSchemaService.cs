@@ -628,6 +628,20 @@ internal sealed class AsyncApiJsonSchemaService
                 anyOfIndex++;
             }
         }
+#if NET11_0_OR_GREATER
+        // A C# union (or [Union] type) exports as an anyOf with one entry per case, in declaration order
+        // and without a discriminator, so the case types come from the union contract rather than
+        // PolymorphismOptions. Only walk it when the entries line up one-to-one with the cases.
+        else if (schema.AnyOf is { Count: > 0 } && GetUnionTypeInfo(jsonTypeInfo) is { } unionTypeInfo
+                 && unionTypeInfo.UnionCases.Count == schema.AnyOf.Count)
+        {
+            for (var i = 0; i < unionTypeInfo.UnionCases.Count; i++)
+            {
+                var caseJsonTypeInfo = _jsonSerializerOptions.GetTypeInfo(unionTypeInfo.UnionCases[i].CaseType);
+                await InnerApplySchemaTransformersAsync(schema.AnyOf[i], caseJsonTypeInfo, null, context, transformer, cancellationToken);
+            }
+        }
+#endif
 
         // If the schema is an array but uses AnyOf or OneOf then ElementType is null
         if (schema.Items is not null && jsonTypeInfo.ElementType is not null)
@@ -654,6 +668,25 @@ internal sealed class AsyncApiJsonSchemaService
             await InnerApplySchemaTransformersAsync(schema.AdditionalProperties, elementTypeInfo, null, context, transformer, cancellationToken);
         }
     }
+
+#if NET11_0_OR_GREATER
+    /// <summary>
+    /// The union contract behind <paramref name="jsonTypeInfo"/>: the type itself, or the union a
+    /// <see cref="Nullable{T}"/> wraps (unions declared with <c>union</c> are structs).
+    /// </summary>
+    private JsonTypeInfo? GetUnionTypeInfo(JsonTypeInfo jsonTypeInfo)
+    {
+        if (jsonTypeInfo.Kind == JsonTypeInfoKind.Union)
+        {
+            return jsonTypeInfo;
+        }
+
+        return Nullable.GetUnderlyingType(jsonTypeInfo.Type) is { } underlyingType
+            && _jsonSerializerOptions.GetTypeInfo(underlyingType) is { Kind: JsonTypeInfoKind.Union } underlyingTypeInfo
+                ? underlyingTypeInfo
+                : null;
+    }
+#endif
 
     private JsonNode CreateSchema(Type type)
     {
