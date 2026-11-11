@@ -6,6 +6,8 @@ on:
   pull_request:
     branches:
       - main
+      # Stacked PRs (e.g. the .NET 11 support stack) target the branch below them, not main.
+      - 'net11/**'
   release:
     types: [ published ]
   workflow_dispatch:
@@ -34,6 +36,10 @@ jobs:
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
     with:
       suffix: "pr"
+      # net10.0 + net11.0: SDK 11 builds both, and the net10.0 test runs need the .NET 10 runtime.
+      dotnet-version: |
+        10.0.x
+        11.0.x
       generate-schema: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
       artifact-name: npm-scalar-signalr
@@ -105,7 +111,9 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.x'
+          dotnet-version: |
+            10.0.x
+            11.0.x
       - name: Install the native AOT toolchain
         run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
       # Invoked through bash rather than executed directly: this repository is developed on Windows
@@ -125,7 +133,9 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.x'
+          dotnet-version: |
+            10.0.x
+            11.0.x
       - name: Verify build-time document generation
         run: bash scripts/verify-build-time-documents.sh
 
@@ -157,6 +167,10 @@ jobs:
       contents: read
       id-token: write
     with:
+      # net10.0 + net11.0: SDK 11 builds both, and the net10.0 test runs need the .NET 10 runtime.
+      dotnet-version: |
+        10.0.x
+        11.0.x
       generate-schema: false
       # Pushed by publishNugetStable instead: nuget.org trusted publishing only accepts a token minted
       # by a job declared in this repository's workflow, not inside the template's.
@@ -309,6 +323,10 @@ jobs:
     with:
       nuget-version-override: ${{ needs.betaVersions.outputs.nuget }}
       npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-signalr'] }}
+      # net10.0 + net11.0: SDK 11 builds both, and the net10.0 test runs need the .NET 10 runtime.
+      dotnet-version: |
+        10.0.x
+        11.0.x
       generate-schema: false
       push-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
@@ -407,6 +425,10 @@ jobs:
       contents: read
       id-token: write
     with:
+      # net10.0 + net11.0: SDK 11 builds both, and the net10.0 test runs need the .NET 10 runtime.
+      dotnet-version: |
+        10.0.x
+        11.0.x
       generate-schema: false
       push-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
