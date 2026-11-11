@@ -47,11 +47,15 @@
            (through .Merger, .Versioning, the protocol extensions, the Scalar consoles), and an app
            publishing Native AOT needs the directives regardless of how it acquired us. buildTransitive
            is imported by direct consumers too, so one location covers both.
-           Update, not Include: the SDK's default globs already pick these up as None items. Each
-           file names its own PackagePath — a directory PackagePath appends the item's own relative
-           path, which lands them in buildTransitive/build/ where NuGet does not look for them. -->
-      <None Update="build\Bielu.AspNetCore.AsyncApi.targets" Pack="true" PackagePath="buildTransitive\Bielu.AspNetCore.AsyncApi.targets" />
-      <None Update="build\Bielu.AspNetCore.AsyncApi.rd.xml" Pack="true" PackagePath="buildTransitive\Bielu.AspNetCore.AsyncApi.rd.xml" />
+           Remove + Include, not Update: a multi-targeted project packs in its outer build, which
+           has none of the SDK's default None items for an Update to match, so with Update the files
+           silently dropped out of the package (scripts/verify-packages.sh checks for them). Remove
+           first so the inner builds, which do glob them, don't list them twice. Each file names its
+           own PackagePath — a directory PackagePath appends the item's own relative path, which lands
+           them in buildTransitive/build/ where NuGet does not look for them. -->
+      <None Remove="build\Bielu.AspNetCore.AsyncApi.targets;build\Bielu.AspNetCore.AsyncApi.rd.xml" />
+      <None Include="build\Bielu.AspNetCore.AsyncApi.targets" Pack="true" PackagePath="buildTransitive\Bielu.AspNetCore.AsyncApi.targets" />
+      <None Include="build\Bielu.AspNetCore.AsyncApi.rd.xml" Pack="true" PackagePath="buildTransitive\Bielu.AspNetCore.AsyncApi.rd.xml" />
     </ItemGroup>
     <ItemGroup>
       <!-- Packaged analyzer is always built Release regardless of $(Configuration) here, so the
