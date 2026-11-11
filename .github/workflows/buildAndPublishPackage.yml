@@ -147,6 +147,58 @@ jobs:
             dotnet build "src/examples/$example" -c Release -p:BieluExampleTargetFramework=net11.0
           done
 
+  # Pull request: pack the solution once and inspect what NuGet will hand consumers: lib/ and a
+  # dependency group for every supported framework, no 11.x Microsoft package in the net10.0 group,
+  # both tool frameworks, and the core package's analyzer and buildTransitive assets.
+  packages:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            11.0.x
+      - name: Pack and inspect
+        run: bash scripts/verify-packages.sh pack "${{ runner.temp }}/feed"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verify-packages-feed
+          path: ${{ runner.temp }}/feed/*.nupkg
+          retention-days: 1
+
+  # Pull request: consume those packages from an app on each framework, on a runner with ONLY that
+  # framework's SDK. The net10.0 leg is the guarantee that .NET 10 consumers need nothing newer than
+  # the .NET 10 SDK, although this repository builds with SDK 11.
+  package-consumers:
+    if: github.event_name == 'pull_request'
+    needs: packages
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - framework: net10.0
+            sdk: 10.0.x
+          - framework: net11.0
+            sdk: 11.0.x
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.sdk }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: verify-packages-feed
+          path: ${{ runner.temp }}/feed
+      - name: Build and run a ${{ matrix.framework }} consumer
+        run: bash scripts/verify-packages.sh consume "${{ runner.temp }}/feed" ${{ matrix.framework }}
+
   # Pull request: generate every `dotnet new` template for every supported framework from the packed
   # template pack and build the result, checking that the Framework choice reached the projects.
   templates:

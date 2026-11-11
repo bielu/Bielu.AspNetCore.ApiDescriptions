@@ -35,8 +35,10 @@ API catalog and [CloudEvents](https://cloudevents.io/) messages.
 | xRegistry | 1.0-rc4 (message and schema registries; read-only) | `Bielu.AspNetCore.XRegistry`, served from the AsyncAPI documents | not read |
 | Model Context Protocol | as negotiated by the `ModelContextProtocol` C# SDK 2.3 | `Bielu.AspNetCore.ApiDescriptions.Mcp` (experimental), as tools and resources over the served documents | not read |
 
-The runtime libraries target **.NET 10**. See [Supported .NET versions](https://apidescriptions.bielu.pl/articles/supported-dotnet-versions.html)
-for the support matrix and the policy for adding and removing targets.
+The runtime libraries target **.NET 10** and **.NET 11**: every package carries both, so the same package works for
+either. On .NET 11, [C# 15 union types](https://apidescriptions.bielu.pl/articles/union-types.html) can be message
+payloads. See [Supported .NET versions](https://apidescriptions.bielu.pl/articles/supported-dotnet-versions.html) for
+the support matrix and the policy for adding and removing targets.
 
 ## Quick start
 
