@@ -82,7 +82,7 @@ Rules of thumb:
 
 ## Conventions
 
-- **Target framework:** `net10.0`. Requires the **.NET 10 SDK**.
+- **Target framework:** `net10.0`. Building needs the **.NET 11 SDK** (pinned in [`global.json`](./global.json)); running the `net10.0` tests also needs the **.NET 10 runtime**. See [Supported .NET versions](./docs/articles/supported-dotnet-versions.md).
 - **Language settings (set per project):** `Nullable` enabled, `ImplicitUsings` enabled. Respect nullable annotations — don't suppress with `!` except in test arrange/assert as the existing tests do.
 - **Central package management:** all package versions live in [`Directory.Packages.props`](./Directory.Packages.props). Reference packages with `<PackageReference Include="..." />` and **no `Version` attribute**. Add new versions to that file.
 - **Shared MSBuild properties:** [`src/Directory.Build.props`](./src/Directory.Build.props) (authors, package metadata). **Version** is centralized in [`version.props`](./version.props) — do not hardcode versions in csproj files.

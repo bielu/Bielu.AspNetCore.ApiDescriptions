@@ -245,7 +245,7 @@ The [changelog](CHANGELOG.md) lists what changed in each release.
 
 ## Building from source
 
-The repository needs the **.NET 10 SDK**. The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`.
+The repository needs the **.NET 11 SDK** (pinned in `global.json`) and the **.NET 10 runtime**. The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`.
 
 ```bash
 dotnet build src/Bielu.AspNetCore.AsyncApi.slnx

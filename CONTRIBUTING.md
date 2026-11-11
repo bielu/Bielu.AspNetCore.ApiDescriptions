@@ -35,7 +35,7 @@ Thank you for your interest in contributing to Bielu.AspNetCore.AsyncApi! We wel
 
 Before you begin, ensure you have the following installed:
 
-- **.NET SDK 10.0** or later (the project targets .NET 10)
+- **.NET SDK 11.0** (pinned in `global.json`) plus the **.NET 10 runtime** (or SDK), which the `net10.0` tests run on
 - **Node.js LTS** (required for building the UI components)
 - **npm** (comes with Node.js)
 - **Git**

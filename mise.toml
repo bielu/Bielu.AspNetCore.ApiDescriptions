@@ -2,8 +2,9 @@
 # `mise install` provisions the SDKs below; `mise run <task>` runs the common workflows from AGENTS.md.
 
 [tools]
-# The solution targets net10.0 and needs the .NET 10 SDK.
-dotnet = "10"
+# The libraries target net10.0 and net11.0: the .NET 11 SDK (pinned in global.json) builds both, and
+# the .NET 10 runtime that comes with the 10 SDK runs the net10.0 tests. The first entry is the default.
+dotnet = ["11", "10"]
 # Builds the Scalar console plugin bundles (npm workspaces at the repository root).
 node = "lts"
 
