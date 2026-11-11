@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Scalar.Grpc</RootNamespace>
         <Description>Interactive gRPC console for the Scalar API Reference in ASP.NET Core. Serves a Scalar bundle that adds a gRPC-Web client driven by your gRPC AsyncAPI bindings, plus a protobuf descriptor endpoint for dynamic message encoding.</Description>
         <PackageTags>scalar;grpc;grpc-web;asyncapi;aspnetcore;api-reference</PackageTags>

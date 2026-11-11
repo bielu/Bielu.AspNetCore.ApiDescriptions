@@ -1,0 +1,352 @@
+{
+  "asyncapi": "3.1.0",
+  "channels": {
+    "parityreceived": {
+      "address": "parity/received",
+      "description": "",
+      "messages": {
+        "parityShape": {
+          "$ref": "#/components/messages/parityShape"
+        }
+      }
+    },
+    "paritysent": {
+      "address": "parity/sent",
+      "description": "",
+      "messages": {
+        "parityMessage": {
+          "$ref": "#/components/messages/parityMessage"
+        }
+      }
+    }
+  },
+  "components": {
+    "messages": {
+      "parityMessage": {
+        "name": "parityMessage",
+        "payload": {
+          "$ref": "#/components/schemas/parityMessage"
+        },
+        "title": "parityMessage"
+      },
+      "parityShape": {
+        "name": "parityShape",
+        "payload": {
+          "$ref": "#/components/schemas/parityShape"
+        },
+        "title": "parityShape"
+      }
+    },
+    "schemas": {
+      "parityMessage": {
+        "properties": {
+          "amount": {
+            "format": "double",
+            "type": "number"
+          },
+          "branches": {
+            "additionalProperties": {
+              "properties": {
+                "city": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "street": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "street",
+                "city"
+              ],
+              "type": "object"
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "counters": {
+            "additionalProperties": {
+              "format": "int32",
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "custom_name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "duration": {
+            "pattern": "^-?(\\d\u002B\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "home": {
+            "properties": {
+              "city": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "street": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "street",
+              "city"
+            ],
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "link": {
+            "format": "uri",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "maybePriority": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "namedPriority": {
+            "enum": [
+              "Low",
+              "Normal",
+              "High"
+            ]
+          },
+          "nickname": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "optionalCount": {
+            "format": "int64",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "payload": {
+            "format": "byte",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "previous": {
+            "items": {
+              "properties": {
+                "city": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "street": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "street",
+                "city"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "score": {
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "shape": {
+            "anyOf": [
+              {
+                "properties": {
+                  "kind": {
+                    "const": "circle"
+                  },
+                  "label": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "radius": {
+                    "format": "double",
+                    "type": "number"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "const": "square"
+                  },
+                  "label": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "side": {
+                    "format": "double",
+                    "type": "number"
+                  }
+                }
+              }
+            ],
+            "required": [
+              "kind"
+            ],
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "work": {
+            "properties": {
+              "city": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "street": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "street",
+              "city"
+            ],
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "parityShape": {
+        "anyOf": [
+          {
+            "properties": {
+              "kind": {
+                "const": "circle"
+              },
+              "label": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "radius": {
+                "format": "double",
+                "type": "number"
+              }
+            }
+          },
+          {
+            "properties": {
+              "kind": {
+                "const": "square"
+              },
+              "label": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "side": {
+                "format": "double",
+                "type": "number"
+              }
+            }
+          }
+        ],
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "id": "urn:framework-parity",
+  "info": {
+    "title": "Framework parity",
+    "version": "1.0.0"
+  },
+  "operations": {
+    "parityReceived": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/parityreceived"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/parityreceived/messages/parityShape"
+        }
+      ],
+      "title": "parityReceived"
+    },
+    "paritySent": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/paritysent"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/paritysent/messages/parityMessage"
+        }
+      ],
+      "title": "paritySent"
+    }
+  },
+  "servers": {
+    "broker": {
+      "host": "localhost:9092",
+      "protocol": "kafka"
+    }
+  }
+}

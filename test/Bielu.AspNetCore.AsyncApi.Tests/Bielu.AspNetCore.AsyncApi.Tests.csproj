@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -43,6 +43,12 @@
   <ItemGroup>
     <!-- The AsyncAPI Initiative's own JSON Schemas, vendored so the suite stays offline. See Conformance/asyncapi/README.md. -->
     <Content Include="Conformance\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Where FrameworkParityDocumentTests reads (and, with BIELU_UPDATE_GOLDEN=1, writes) its golden
+         documents: the source tree, so every target framework compares against the same files. -->
+    <AssemblyMetadata Include="GoldenDirectory" Value="$(MSBuildProjectDirectory)$([System.IO.Path]::DirectorySeparatorChar)Fixtures$([System.IO.Path]::DirectorySeparatorChar)Golden" />
   </ItemGroup>
 
 </Project>

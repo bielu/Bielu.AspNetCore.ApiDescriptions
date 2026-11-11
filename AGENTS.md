@@ -82,7 +82,7 @@ Rules of thumb:
 
 ## Conventions
 
-- **Target framework:** `net10.0`. Building needs the **.NET 11 SDK** (pinned in [`global.json`](./global.json)); running the `net10.0` tests also needs the **.NET 10 runtime**. See [Supported .NET versions](./docs/articles/supported-dotnet-versions.md).
+- **Target frameworks:** runtime libraries and their tests target `$(BieluTargetFrameworks)` (`net10.0;net11.0`, defined in the root [`Directory.Build.props`](./Directory.Build.props)); use `<TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>` in a new library or test project rather than listing frameworks. Analyzers and the source generator stay `netstandard2.0`. Building needs the **.NET 11 SDK** (pinned in [`global.json`](./global.json)); running the `net10.0` tests also needs the **.NET 10 runtime**. Packages versioned with ASP.NET Core get a per-framework version in `Directory.Packages.props`. See [Supported .NET versions](./docs/articles/supported-dotnet-versions.md).
 - **Language settings (set per project):** `Nullable` enabled, `ImplicitUsings` enabled. Respect nullable annotations — don't suppress with `!` except in test arrange/assert as the existing tests do.
 - **Central package management:** all package versions live in [`Directory.Packages.props`](./Directory.Packages.props). Reference packages with `<PackageReference Include="..." />` and **no `Version` attribute**. Add new versions to that file.
 - **Shared MSBuild properties:** [`src/Directory.Build.props`](./src/Directory.Build.props) (authors, package metadata). **Version** is centralized in [`version.props`](./version.props) — do not hardcode versions in csproj files.
@@ -154,6 +154,7 @@ cd src/examples/StreetlightsAPI && dotnet run
 - Tests are split into `Unit/` and `Integration/` folders; shared inputs live in `Fixtures/`.
 - Tests that need real infrastructure (e.g. a Kafka broker) start it with Aspire's `DistributedApplicationTestingBuilder` while the code under test runs in-process, so coverage still counts. Mark them `[DockerFact]` so they skip, rather than fail, without a running Docker daemon. See `test/Bielu.AspNetCore.AsyncApi.Scalar.Aspire.Tests`.
 - Follow the **Arrange / Act / Assert** comment structure used throughout existing tests.
+- `dotnet test` runs each multi-targeted test project once per framework. `FrameworkParityDocumentTests` compares the generated document against golden files under `Fixtures/Golden/` on both, so a runtime difference in schema generation fails the build; regenerate them with `BIELU_UPDATE_GOLDEN=1 dotnet test -f net10.0` only for an intended change.
 - Add or update tests for any behavior change. Match the naming pattern `Method_Scenario_ExpectedResult` (e.g. `AddServer_ThrowsForNullName`).
 
 ## Before opening a PR

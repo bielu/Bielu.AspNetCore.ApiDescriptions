@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR</RootNamespace>
         <Description>SignalR protocol bindings for Bielu.AspNetCore.AsyncApi. Adds a custom "signalr" AsyncAPI protocol with channel, operation, message and server bindings.</Description>
         <PackageTags>asyncapi;signalr;bindings;protocol;aspnetcore</PackageTags>

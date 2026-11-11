@@ -25,20 +25,8 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.15" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.15" />
     <PackageVersion Include="System.Text.Json" Version="10.0.15" />
-    <!-- Arazzo ASP.NET Core integration (OpenAPI self-wiring source) -->
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
     <!-- Provides `dotnet getdocument`, used by src/examples/BuildTimeDocuments to write documents at build time. -->
     <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.15" />
-    <!-- Referenced directly, not just transitively through Microsoft.AspNetCore.OpenApi, to lift the
-         Microsoft.OpenApi it drags in past GHSA-v5pm-xwqc-g5wc — a high-severity advisory covering
-         >= 2.0.0-preview.11 through 2.7.4, patched in 2.7.5. Transitive pinning is disabled repo-wide,
-         so a PackageVersion alone would not move it.
-
-         Held at the floor `Microsoft.AspNetCore.OpenApi` itself declares: 10.0.15 depends on
-         [2.13.0, 3.0.0), so anything lower is a downgrade (NU1605). Earlier 10.0.x releases' XML-comment
-         source generator assigned `IOpenApiMediaType.Example`, which became read-only in 2.11.0; 10.0.15
-         is built against 2.13 and no longer does. 3.x stays out of reach until the net10.0 package moves. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.13.0" />
     <!-- Analyzers -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
@@ -55,11 +43,6 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="NSubstitute" Version="6.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Diagnostics.Testing" Version="10.11.0" />
-    <!-- ASP.NET Core testing -->
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.15" />
     <!-- Playwright for headless browser testing -->
     <PackageVersion Include="Microsoft.Playwright" Version="1.61.0" />
     <!-- Code Coverage -->
@@ -110,5 +93,41 @@
     <PackageVersion Include="Grpc.AspNetCore.Server" Version="2.80.0" />
     <PackageVersion Include="Grpc.AspNetCore.Web" Version="2.80.0" />
     <PackageVersion Include="Google.Protobuf" Version="3.35.1" />
+  </ItemGroup>
+  <!--
+    Packages released in lockstep with ASP.NET Core / the shared framework, so each target framework
+    gets the line built for it. $(TargetFramework) is set in every inner build and in restore's
+    per-framework evaluation, which is where package versions are resolved. Anything that is not a
+    net11.0 build, including the netstandard2.0 analyzers and the single-target examples, takes the
+    net10.0 line.
+  -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net11.0'">
+    <!-- Arazzo ASP.NET Core integration (OpenAPI self-wiring source) -->
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
+    <!-- Referenced directly, not just transitively through Microsoft.AspNetCore.OpenApi, to lift the
+         Microsoft.OpenApi it drags in past GHSA-v5pm-xwqc-g5wc — a high-severity advisory covering
+         >= 2.0.0-preview.11 through 2.7.4, patched in 2.7.5. Transitive pinning is disabled repo-wide,
+         so a PackageVersion alone would not move it.
+
+         Held at the floor `Microsoft.AspNetCore.OpenApi` itself declares: 10.0.15 depends on
+         [2.13.0, 3.0.0), so anything lower is a downgrade (NU1605). Earlier 10.0.x releases' XML-comment
+         source generator assigned `IOpenApiMediaType.Example`, which became read-only in 2.11.0; 10.0.15
+         is built against 2.13 and no longer does. 3.x stays out of reach until the net10.0 package moves. -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.13.0" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.Testing" Version="10.11.0" />
+    <!-- ASP.NET Core testing -->
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.15" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0" />
+    <!-- Microsoft.AspNetCore.OpenApi 11.0.0 depends on [3.11.0, 4.0.0); see the net10.0 entry for why
+         it is referenced directly. -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.Testing" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="11.0.0" />
   </ItemGroup>
 </Project>

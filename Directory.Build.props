@@ -5,6 +5,18 @@
     <RunSettingsFilePath>$(MSBuildThisFileDirectory)coverlet.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
+  <!--
+    The runtime targets every library and test project builds for: one per supported .NET version, see
+    docs/articles/supported-dotnet-versions.md. Projects opt in with
+    <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>, so adding a version (net12.0) or
+    retiring one at its EOL is a change here, not in 60 project files. Analyzers and the source generator
+    keep their own netstandard2.0 target; CLI tools, examples and templates pick theirs explicitly.
+    Defined at the root rather than in src/ so test/ sees it too.
+  -->
+  <PropertyGroup>
+    <BieluTargetFrameworks>net10.0;net11.0</BieluTargetFrameworks>
+  </PropertyGroup>
+
   <ItemGroup>
     <Using Include="System" />
     <Using Include="System.Collections.Generic" />

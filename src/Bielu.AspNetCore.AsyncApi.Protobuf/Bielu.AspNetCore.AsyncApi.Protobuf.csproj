@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Protobuf</RootNamespace>
         <IsAotCompatible>true</IsAotCompatible>
         <Description>Describes AsyncAPI message payloads whose types are Protocol Buffers messages as .proto schemas (schemaFormat application/vnd.google.protobuf), rendered from the generated message descriptors, so field numbers and types are the real wire contract.</Description>

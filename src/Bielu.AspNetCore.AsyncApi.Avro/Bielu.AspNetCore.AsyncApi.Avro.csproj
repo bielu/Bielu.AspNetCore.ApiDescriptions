@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Avro</RootNamespace>
         <IsAotCompatible>true</IsAotCompatible>
         <Description>Describes AsyncAPI message payloads as Apache Avro schemas (schemaFormat application/vnd.apache.avro), converted from the generated JSON Schemas, for Kafka and other Avro-based messaging.</Description>
