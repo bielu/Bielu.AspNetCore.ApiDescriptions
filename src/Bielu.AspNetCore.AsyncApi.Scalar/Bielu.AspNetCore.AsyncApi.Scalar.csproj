@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Scalar</RootNamespace>
         <Description>Shared building blocks for the Bielu Scalar AsyncAPI console packages (SignalR, gRPC, ...): document options, embedded-bundle endpoint mapping and Scalar HeadContent injection. Referenced by the per-protocol packages; not useful on its own.</Description>
         <PackageTags>scalar;asyncapi;aspnetcore;api-reference</PackageTags>

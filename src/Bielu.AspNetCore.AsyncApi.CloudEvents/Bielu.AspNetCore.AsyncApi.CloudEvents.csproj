@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.CloudEvents</RootNamespace>
         <IsAotCompatible>true</IsAotCompatible>
         <Description>Describes AsyncAPI messages as CloudEvents 1.0: binary-mode ce-* headers per protocol binding (HTTP, Kafka, AMQP, MQTT), or the structured-mode application/cloudevents+json envelope around the payload.</Description>

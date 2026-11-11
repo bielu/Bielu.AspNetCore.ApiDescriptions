@@ -6,7 +6,11 @@
   <Sdk Name="Aspire.AppHost.Sdk" Version="13.4.6" />
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
+    <!-- Aspire.AppHost.Sdk 13.4.6 picks the DCP/dashboard RID with the SDK's in-proc PickBestRid task,
+         which is only registered in the per-framework inner builds; the multi-targeting outer build
+         fails with MSB4036. Outside an inner build, take Aspire's own fallback (its out-of-proc RID tool). -->
+    <_AspireUseSdkPickBestRid Condition="'$(TargetFramework)' == ''">false</_AspireUseSdkPickBestRid>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>

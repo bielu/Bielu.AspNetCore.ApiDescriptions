@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <IsAotCompatible>true</IsAotCompatible>
         <PackageId>Bielu.Arazzo.NET</PackageId>
         <AssemblyName>Bielu.Arazzo</AssemblyName>
