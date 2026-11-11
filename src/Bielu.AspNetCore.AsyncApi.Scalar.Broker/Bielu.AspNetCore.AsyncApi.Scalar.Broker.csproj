@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Scalar.Broker</RootNamespace>
         <Description>Interactive message-broker console for the Scalar API Reference in ASP.NET Core. Serves a Scalar bundle that publishes to and tails your Kafka/MQTT/AMQP channels through an opt-in server-side bridge, driven by your AsyncAPI bindings. Install a driver package (for example Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka) to connect to a broker.</Description>
         <PackageTags>scalar;broker;kafka;mqtt;amqp;asyncapi;aspnetcore;api-reference</PackageTags>

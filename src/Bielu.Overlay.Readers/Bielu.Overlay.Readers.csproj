@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <IsAotCompatible>true</IsAotCompatible>
         <PackageId>Bielu.Overlay.NET.Readers</PackageId>
         <AssemblyName>Bielu.Overlay.Readers</AssemblyName>

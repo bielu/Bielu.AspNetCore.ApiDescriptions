@@ -80,8 +80,10 @@ internal sealed class ArazzoWorkspaceFactory(
     private async Task<object?> ResolveOpenApiDocumentAsync(
         ArazzoOptions.SourceWiring wiring, List<string> errors, CancellationToken cancellationToken)
     {
-        var provider = serviceProvider
-            .GetKeyedService<Microsoft.AspNetCore.OpenApi.IOpenApiDocumentProvider>(wiring.DocumentName);
+        // Registration is checked separately: on ASP.NET Core 11 the keyed lookup alone succeeds for any name.
+        var provider = OpenApiDocumentRegistrations.IsRegistered(serviceProvider, wiring.DocumentName)
+            ? serviceProvider.GetKeyedService<Microsoft.AspNetCore.OpenApi.IOpenApiDocumentProvider>(wiring.DocumentName)
+            : null;
         if (provider is null)
         {
             errors.Add(MissingProviderError(wiring, "AddOpenApi"));

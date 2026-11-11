@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <IsAotCompatible>true</IsAotCompatible>
         <RootNamespace>Bielu.AspNetCore.ApiDescriptions</RootNamespace>
         <Description>Shared build-time document generation for the Bielu API-description packages. Lets AsyncAPI, Arazzo and any other document family be written by one `dotnet getdocument` run next to Microsoft.AspNetCore.OpenApi's documents, under file names that never collide.</Description>

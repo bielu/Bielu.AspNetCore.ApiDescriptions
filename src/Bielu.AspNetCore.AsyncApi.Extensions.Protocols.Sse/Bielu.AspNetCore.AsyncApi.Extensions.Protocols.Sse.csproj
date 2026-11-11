@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse</RootNamespace>
         <Description>Server-Sent Events (SSE) protocol bindings for Bielu.AspNetCore.AsyncApi. Adds a custom "sse" AsyncAPI protocol with channel, operation, message and server bindings.</Description>
         <PackageTags>asyncapi;sse;server-sent-events;bindings;protocol;aspnetcore</PackageTags>

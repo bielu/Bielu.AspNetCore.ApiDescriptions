@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc</RootNamespace>
         <Description>gRPC protocol bindings for Bielu.AspNetCore.AsyncApi. Adds a custom "grpc" AsyncAPI protocol with channel, operation, message and server bindings.</Description>
         <PackageTags>asyncapi;grpc;bindings;protocol;aspnetcore</PackageTags>
