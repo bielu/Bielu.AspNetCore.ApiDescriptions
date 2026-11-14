@@ -452,10 +452,16 @@ public sealed class AsyncApiOptions
     public IDictionary<string, IList<IServerBinding>> ServerBindings { get; } = new Dictionary<string, IList<IServerBinding>>();
 
     /// <summary>
-    /// The route pattern the document is served from. Set by <c>MapAsyncApi(pattern)</c>; defaults to
-    /// <see cref="AsyncApiGeneratorConstants.DefaultAsyncApiRoute"/> so it is never null for anything
-    /// reading it before the endpoint is mapped (build-time generation, for one).
+    /// The route pattern passed to the most recent <c>MapAsyncApi(pattern)</c> call. Defaults to
+    /// <see cref="AsyncApiGeneratorConstants.DefaultAsyncApiRoute"/>.
     /// </summary>
+    /// <remarks>
+    /// Nothing in this library reads it, and setting it has no effect. <c>MapAsyncApi</c> writes it to the unnamed
+    /// options instance (<see cref="Microsoft.Extensions.Options.IOptionsMonitor{TOptions}.CurrentValue"/>), not to the named options of any
+    /// document, so a document's own options always report the default whatever route serves the document.
+    /// </remarks>
+    [Obsolete("DocumentRoutePattern is not read anywhere and setting it has no effect. The document's route is the " +
+              "pattern passed to MapAsyncApi(). It will be removed in the next major version.")]
     public string DocumentRoutePattern { get; set; } = AsyncApiGeneratorConstants.DefaultAsyncApiRoute;
 
     /// <summary>
