@@ -121,6 +121,55 @@ public class ScalarBrokerEndpointTests
     }
 
     [Fact]
+    public async Task Publish_ChannelNotInAllowList_Returns403WithoutPublishing()
+    {
+        // Arrange
+        var bridge = new FakeBrokerBridge();
+        using var host = await BrokerConsoleHost.StartAsync(bridge, allowedChannels: ["orders.created"]);
+
+        // Act
+        var response = await host.GetTestClient().PostAsJsonAsync(
+            $"{BrokerConsoleHost.BasePath}/publish",
+            new { connection = "orders", channel = "payments.refunded", payload = "{}" });
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await response.Content.ReadAsStringAsync()).ShouldContain("payments.refunded");
+        bridge.Published.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Publish_ChannelInAllowList_ForwardsToBridge()
+    {
+        // Arrange
+        var bridge = new FakeBrokerBridge();
+        using var host = await BrokerConsoleHost.StartAsync(bridge, allowedChannels: ["orders.created"]);
+
+        // Act
+        var response = await host.GetTestClient().PostAsJsonAsync(
+            $"{BrokerConsoleHost.BasePath}/publish",
+            new { connection = "orders", channel = "orders.created", payload = "{}" });
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        bridge.Published.ShouldHaveSingleItem().Channel.ShouldBe("orders.created");
+    }
+
+    [Fact]
+    public async Task Tail_ChannelNotInAllowList_Returns403()
+    {
+        // Arrange
+        using var host = await BrokerConsoleHost.StartAsync(new FakeBrokerBridge(), allowedChannels: ["orders.created"]);
+
+        // Act
+        var response = await host.GetTestClient().GetAsync(
+            $"{BrokerConsoleHost.BasePath}/tail?connection=orders&channel=payments.refunded");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task Tail_StreamsMessagesAsServerSentEvents()
     {
         // Arrange

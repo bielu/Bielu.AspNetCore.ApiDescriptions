@@ -90,6 +90,11 @@ public static class ScalarBrokerEndpointRouteBuilderExtensions
                 return Results.Problem("'connection', 'channel' and 'payload' are required.", statusCode: StatusCodes.Status400BadRequest);
             }
 
+            if (!ChannelAllowed(context, body.Channel))
+            {
+                return ChannelForbidden(body.Channel);
+            }
+
             if (!TryResolve(context, body.Connection, out var bridge, out var problem))
             {
                 return problem;
@@ -121,6 +126,11 @@ public static class ScalarBrokerEndpointRouteBuilderExtensions
             if (string.IsNullOrEmpty(connection) || string.IsNullOrEmpty(channel))
             {
                 return Results.Problem("'connection' and 'channel' query parameters are required.", statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            if (!ChannelAllowed(context, channel))
+            {
+                return ChannelForbidden(channel);
             }
 
             if (!TryResolve(context, connection, out var bridge, out var problem))
@@ -167,6 +177,14 @@ public static class ScalarBrokerEndpointRouteBuilderExtensions
 
     private static bool Allowed(HttpContext context) =>
         context.RequestServices.GetRequiredService<BrokerBridgeAccessGuard>().IsAllowed(context);
+
+    private static bool ChannelAllowed(HttpContext context, string channel) =>
+        context.RequestServices.GetRequiredService<ScalarBrokerBridgeOptions>().IsChannelAllowed(channel);
+
+    private static IResult ChannelForbidden(string channel) =>
+        Results.Problem(
+            $"The Scalar broker console proxy is not allowed to reach channel '{channel}'. Add it with AllowChannels on AddScalarBrokerBridge.",
+            statusCode: StatusCodes.Status403Forbidden);
 
     private static IResult Forbidden() =>
         Results.Problem(

@@ -33,13 +33,15 @@ internal static class BrokerConsoleHost
     /// Also applies <c>AllowAnonymous()</c> alongside <paramref name="requireAuthorization" />, the
     /// misconfiguration where the authorization middleware ends up enforcing nothing.
     /// </param>
+    /// <param name="allowedChannels">Passed to <see cref="ScalarBrokerBridgeOptions.AllowChannels" /> when set.</param>
     public static Task<IHost> StartAsync(
         FakeBrokerBridge? bridge = null,
         // Literal rather than Environments.Development: that is a static readonly field, not a const.
         string environment = "Development",
         bool allowAnonymous = false,
         bool requireAuthorization = false,
-        bool combineWithAllowAnonymous = false)
+        bool combineWithAllowAnonymous = false,
+        string[]? allowedChannels = null)
     {
         return new HostBuilder()
             .UseEnvironment(environment)
@@ -56,6 +58,11 @@ internal static class BrokerConsoleHost
                     services.AddScalarBrokerBridge(options =>
                     {
                         options.AllowAnonymous = allowAnonymous;
+                        if (allowedChannels is not null)
+                        {
+                            options.AllowChannels(allowedChannels);
+                        }
+
                         if (bridge is not null)
                         {
                             options.AddConnection(new BrokerConnectionRegistration(
