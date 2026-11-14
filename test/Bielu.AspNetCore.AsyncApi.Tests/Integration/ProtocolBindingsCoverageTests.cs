@@ -57,7 +57,7 @@ public class ProtocolBindingsCoverageTests
 
         [Channel("prices/kafka")]
         [Message(typeof(PriceChanged), MessageId = "priceChangedOverKafka", BindingsRef = "prices-kafka-message")]
-        [PublishOperation(OperationId = "pricesOverKafka")]
+        [ReceiveOperation(OperationId = "pricesOverKafka")]
         public void Kafka()
         {
         }

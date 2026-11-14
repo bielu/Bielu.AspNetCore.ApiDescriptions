@@ -28,7 +28,7 @@ public class AsyncApiV2WriterTests
     {
         [Channel("orders/placed", Servers = ["broker"])]
         [Message(typeof(OrderPlaced), MessageId = "orderPlaced", Traits = ["traced"])]
-        [SubscribeOperation(OperationId = "orderPlacedOperation")]
+        [SendOperation(OperationId = "orderPlacedOperation")]
         public void OrderPlacedEvent()
         {
         }

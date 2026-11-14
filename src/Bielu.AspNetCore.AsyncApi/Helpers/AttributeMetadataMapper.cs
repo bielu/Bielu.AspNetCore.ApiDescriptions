@@ -11,7 +11,7 @@ internal static class AttributeMetadataMapper
 {
     /// <summary>
     /// Attaches a message bindings item registered in <c>components/messageBindings</c> (via
-    /// <see cref="AsyncApiOptions.AddMessageBinding"/>) to <paramref name="message"/>.
+    /// <see cref="Services.AsyncApiOptions.AddMessageBinding"/>) to <paramref name="message"/>.
     /// </summary>
     public static void AttachMessageBindings(AsyncApiDocument document, AsyncApiMessage message, string? bindingsRef)
     {
