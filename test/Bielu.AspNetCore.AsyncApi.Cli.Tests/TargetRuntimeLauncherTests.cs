@@ -238,7 +238,7 @@ public sealed class TargetRuntimeLauncherTests : IDisposable
         // Assert
         handled.ShouldBeTrue();
         exitCode.ShouldBe(CliExitCode.Failure);
-        logger.Received(1).Error(Arg.Is<string>(message => message.Contains("net5.0") && message.Contains("does not support")));
+        logger.Received(1).Error(Arg.Is<string>(message => message != null && message.Contains("net5.0") && message.Contains("does not support")));
     }
 
     [Fact]
