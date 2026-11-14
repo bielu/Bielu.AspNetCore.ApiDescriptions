@@ -18,6 +18,11 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.Cli` | CLI tool for getting/merging documents at build time |
 | `Bielu.AspNetCore.AsyncApi.ApiDescription.Server` | MSBuild props/targets for build-time generation |
 | `Bielu.AspNetCore.AsyncApi.SourceGenerators` | Source Generator for Native AOT and compile-time metadata |
+| `Bielu.AspNetCore.AsyncApi.Analyzers` | Roslyn analyzers (`BASYNC*` rules). Not a package of its own: shipped inside `Bielu.AspNetCore.AsyncApi.Attributes`, whose analyzers reach apps through the core package. Rules are tracked in `AnalyzerReleases.*.md` |
+| `Bielu.Analyzers.Shared` | Helpers shared by the AsyncAPI and Arazzo analyzers, compiled into each as linked source rather than referenced (no project file) |
+| `Bielu.AspNetCore.AsyncApi.Avro` | Describes message payloads as Apache Avro schemas (`schemaFormat` `application/vnd.apache.avro`), converted from the generated JSON Schemas |
+| `Bielu.AspNetCore.AsyncApi.Protobuf` | Describes Protocol Buffers message payloads as `.proto` schemas (`schemaFormat` `application/vnd.google.protobuf`), rendered from the message descriptors |
+| `Bielu.AspNetCore.AsyncApi.CloudEvents` | Describes messages as CloudEvents 1.0: binary-mode `ce-*` headers per protocol binding, or the structured-mode `application/cloudevents+json` envelope |
 | `Bielu.AspNetCore.AsyncApi.Versioning` | API Versioning integration (`Asp.Versioning`) |
 | `Bielu.AspNetCore.AsyncApi.Wolverine` | Wolverine integration: builds channels and operations from Wolverine's message routing |
 | `Bielu.AspNetCore.AsyncApi.Templates` | `dotnet new` template pack (`asyncapi-webapi`, `-signalr`, `-grpc`, `-console`, `-sln`) |
@@ -33,6 +38,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.Arazzo` (package id `Bielu.Arazzo.NET`) | Arazzo Specification object model, JSON/YAML writers, validation — framework-free, no dependency on the AsyncAPI packages |
 | `Bielu.Arazzo.Readers` (package id `Bielu.Arazzo.NET.Readers`) | JSON/YAML readers for Arazzo documents, producing `Bielu.Arazzo` documents with diagnostics |
 | `Bielu.AspNetCore.Arazzo` | ASP.NET Core integration for Arazzo: `AddArazzo`/`MapArazzo`, fluent workflow builder, self-wiring `sourceDescriptions` against this app's own live AsyncAPI/OpenAPI documents, startup cross-spec reference validation |
+| `Bielu.AspNetCore.Arazzo.Analyzers` | Roslyn analyzers (`BARAZZO*` rules), packed into `Bielu.AspNetCore.Arazzo` rather than shipped on their own |
 | `Bielu.Overlay` (package id `Bielu.Overlay.NET`) | OpenAPI Overlay Specification object model, validator, and apply engine (1.0.0 + 1.1.0). Operates on `JsonNode`, so overlays apply to OpenAPI, AsyncAPI, or Arazzo documents alike — framework-free. Non-OpenAPI targets are our extension, not spec-sanctioned: OAI closed [Overlay-Specification#268](https://github.com/OAI/Overlay-Specification/issues/268) `not planned`; we filed [#367](https://github.com/OAI/Overlay-Specification/issues/367) to revisit |
 | `Bielu.Overlay.Readers` (package id `Bielu.Overlay.NET.Readers`) | JSON/YAML readers for Overlay documents, producing `Bielu.Overlay` documents with diagnostics |
 | `Bielu.AspNetCore.AsyncApi.Overlay` | `AsyncApiOptions.AddOverlay(...)` — applies overlays at the serialization boundary, so `MapAsyncApi()` and build-time generation both serve an already-overlaid document. Also owns the spec-neutral `OverlayPipeline` the Arazzo package reuses |
@@ -40,6 +46,10 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.ApiDescriptions` | Build-time generation shared by every document family: the single `IDocumentProvider` `dotnet getdocument` queries, composition with `Microsoft.AspNetCore.OpenApi`, and file-name settlement. Packages plug in a public `IBuildTimeDocumentSource` via `AddBuildTimeDocumentSource<T>()`; AsyncAPI is one such source |
 | `Bielu.Spec.Shared` | Document-parsing primitives shared by the spec libraries (YAML→`JsonNode` conversion), so the subtle plain-scalar type inference exists exactly once |
 | `Bielu.Cli.Shared` | Shared console-CLI infrastructure (logging, argument parsing, file globbing, validate/diff report formatting) used by `dotnet-asyncapi`, `dotnet-arazzo`, and `dotnet-overlay` |
+| `Bielu.AspNetCore.ApiCatalog` | Serves an RFC 9727 API catalog at `/.well-known/api-catalog`: a Linkset of every API description the app serves (AsyncAPI, OpenAPI, Arazzo), found from the app's own endpoints |
+| `Bielu.AspNetCore.XRegistry` | Serves the messages and payload schemas of the app's AsyncAPI documents as a read-only CNCF xRegistry (1.0-rc4) |
+| `Bielu.AspNetCore.ApiDescriptions.Mcp` | Experimental. Exposes the app's API descriptions to AI agents through a Model Context Protocol server: documents as resources, read-only lookup tools |
+| `Bielu.AspNetCore.AsyncApi.Tests.ExternalLibraries`, `.Tests.Shared.LibraryChannels` | Test projects (under `src/` for historical reasons): `[AsyncApi]` channels declared in a separate library assembly, and the test that the generator finds them |
 | `Bielu.Arazzo.Cli` (tool command `dotnet-arazzo`) | CLI tool for validating, linting, and diffing Arazzo documents |
 | `Bielu.Overlay.Cli` (tool command `dotnet-overlay`) | CLI tool for applying overlays to, and validating, any JSON/YAML API description |
 | `src/examples/StreetlightsAPI` | Minimal single-service example (best starting point) |
@@ -48,6 +58,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `src/examples/aspire` | Distributed .NET Aspire microservices demo |
 | `src/examples/OverlayDemo` | Applies an OpenAPI Overlay to an AsyncAPI document and to an Arazzo one, showing map-keyed vs array-keyed targeting (console) |
 | `src/examples/AotStreetlights` | `PublishAot` example using the source-generated metadata provider; `scripts/verify-aot.sh` publishes it and compares its document against the reflection-based build |
+| `src/examples/BuildTimeDocuments` | One `dotnet getdocument` run writing the OpenAPI, AsyncAPI and Arazzo documents of one app; `scripts/verify-build-time-documents.sh` builds it and proves a stale Arazzo reference fails the build |
 
 ## Feature slices & layering
 
