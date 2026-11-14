@@ -1,0 +1,71 @@
+﻿#nullable enable
+Bielu.Cli.Shared.CliArgumentReader
+Bielu.Cli.Shared.CliExitCode
+Bielu.Cli.Shared.CliFileResolver
+Bielu.Cli.Shared.CliJsonDefaults
+Bielu.Cli.Shared.ConsoleCliLogger
+Bielu.Cli.Shared.ConsoleCliLogger.ConsoleCliLogger() -> void
+Bielu.Cli.Shared.ConsoleCliLogger.Error(string! message) -> void
+Bielu.Cli.Shared.ConsoleCliLogger.Info(string! message) -> void
+Bielu.Cli.Shared.ConsoleCliLogger.Warning(string! message) -> void
+Bielu.Cli.Shared.DelegatingCliLogger
+Bielu.Cli.Shared.DelegatingCliLogger.DelegatingCliLogger(System.Action<string!>! writeInfo, System.Action<string!>! writeWarning, System.Action<string!>! writeError) -> void
+Bielu.Cli.Shared.DelegatingCliLogger.Error(string! message) -> void
+Bielu.Cli.Shared.DelegatingCliLogger.Info(string! message) -> void
+Bielu.Cli.Shared.DelegatingCliLogger.Warning(string! message) -> void
+Bielu.Cli.Shared.Diagnostics.DiagnosticItem
+Bielu.Cli.Shared.Diagnostics.DiagnosticItem.<Clone>$() -> Bielu.Cli.Shared.Diagnostics.DiagnosticItem!
+Bielu.Cli.Shared.Diagnostics.DiagnosticItem.Deconstruct(out string! Message, out string? Pointer) -> void
+Bielu.Cli.Shared.Diagnostics.DiagnosticItem.DiagnosticItem(string! Message, string? Pointer) -> void
+Bielu.Cli.Shared.Diagnostics.DiagnosticItem.Equals(Bielu.Cli.Shared.Diagnostics.DiagnosticItem? other) -> bool
+Bielu.Cli.Shared.Diagnostics.DiagnosticItem.Message.get -> string!
+Bielu.Cli.Shared.Diagnostics.DiagnosticItem.Message.init -> void
+Bielu.Cli.Shared.Diagnostics.DiagnosticItem.Pointer.get -> string?
+Bielu.Cli.Shared.Diagnostics.DiagnosticItem.Pointer.init -> void
+Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport
+Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport.Errors.get -> System.Collections.Generic.List<Bielu.Cli.Shared.Diagnostics.DiagnosticItem!>!
+Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport.Errors.init -> void
+Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport.FileDiagnosticReport() -> void
+Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport.FilePath.get -> string!
+Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport.FilePath.init -> void
+Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport.Warnings.get -> System.Collections.Generic.List<Bielu.Cli.Shared.Diagnostics.DiagnosticItem!>!
+Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport.Warnings.init -> void
+Bielu.Cli.Shared.Diagnostics.ValidateReportWriter
+Bielu.Cli.Shared.Diff.ChangeSeverity
+Bielu.Cli.Shared.Diff.ChangeSeverity.Breaking = 0 -> Bielu.Cli.Shared.Diff.ChangeSeverity
+Bielu.Cli.Shared.Diff.ChangeSeverity.NonBreaking = 1 -> Bielu.Cli.Shared.Diff.ChangeSeverity
+Bielu.Cli.Shared.Diff.DiffReportWriter
+Bielu.Cli.Shared.Diff.DocumentChange
+Bielu.Cli.Shared.Diff.DocumentChange.<Clone>$() -> Bielu.Cli.Shared.Diff.DocumentChange!
+Bielu.Cli.Shared.Diff.DocumentChange.Deconstruct(out string! Path, out string! Message, out Bielu.Cli.Shared.Diff.ChangeSeverity Severity) -> void
+Bielu.Cli.Shared.Diff.DocumentChange.DocumentChange(string! Path, string! Message, Bielu.Cli.Shared.Diff.ChangeSeverity Severity) -> void
+Bielu.Cli.Shared.Diff.DocumentChange.Equals(Bielu.Cli.Shared.Diff.DocumentChange? other) -> bool
+Bielu.Cli.Shared.Diff.DocumentChange.Message.get -> string!
+Bielu.Cli.Shared.Diff.DocumentChange.Message.init -> void
+Bielu.Cli.Shared.Diff.DocumentChange.Path.get -> string!
+Bielu.Cli.Shared.Diff.DocumentChange.Path.init -> void
+Bielu.Cli.Shared.Diff.DocumentChange.Severity.get -> Bielu.Cli.Shared.Diff.ChangeSeverity
+Bielu.Cli.Shared.Diff.DocumentChange.Severity.init -> void
+Bielu.Cli.Shared.ICliLogger
+Bielu.Cli.Shared.ICliLogger.Error(string! message) -> void
+Bielu.Cli.Shared.ICliLogger.Info(string! message) -> void
+Bielu.Cli.Shared.ICliLogger.Warning(string! message) -> void
+const Bielu.Cli.Shared.CliExitCode.Failure = 1 -> int
+const Bielu.Cli.Shared.CliExitCode.Success = 0 -> int
+override Bielu.Cli.Shared.Diagnostics.DiagnosticItem.Equals(object? obj) -> bool
+override Bielu.Cli.Shared.Diagnostics.DiagnosticItem.GetHashCode() -> int
+override Bielu.Cli.Shared.Diagnostics.DiagnosticItem.ToString() -> string!
+override Bielu.Cli.Shared.Diff.DocumentChange.Equals(object? obj) -> bool
+override Bielu.Cli.Shared.Diff.DocumentChange.GetHashCode() -> int
+override Bielu.Cli.Shared.Diff.DocumentChange.ToString() -> string!
+static Bielu.Cli.Shared.CliArgumentReader.TryReadValue(string![]! args, ref int index, string! optionName, Bielu.Cli.Shared.ICliLogger! logger, out string! value) -> bool
+static Bielu.Cli.Shared.CliFileResolver.ExpandFilePatterns(System.Collections.Generic.IEnumerable<string!>! patterns) -> System.Collections.Generic.List<string!>!
+static Bielu.Cli.Shared.Diagnostics.DiagnosticItem.operator !=(Bielu.Cli.Shared.Diagnostics.DiagnosticItem? left, Bielu.Cli.Shared.Diagnostics.DiagnosticItem? right) -> bool
+static Bielu.Cli.Shared.Diagnostics.DiagnosticItem.operator ==(Bielu.Cli.Shared.Diagnostics.DiagnosticItem? left, Bielu.Cli.Shared.Diagnostics.DiagnosticItem? right) -> bool
+static Bielu.Cli.Shared.Diagnostics.ValidateReportWriter.HasFailures(System.Collections.Generic.IReadOnlyList<Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport!>! reports, bool strict) -> bool
+static Bielu.Cli.Shared.Diagnostics.ValidateReportWriter.Write(System.Collections.Generic.IReadOnlyList<Bielu.Cli.Shared.Diagnostics.FileDiagnosticReport!>! reports, string! format, bool strict, Bielu.Cli.Shared.ICliLogger! logger, string! verb = "Validating") -> void
+static Bielu.Cli.Shared.Diff.DiffReportWriter.HasBreakingChanges(System.Collections.Generic.IReadOnlyList<Bielu.Cli.Shared.Diff.DocumentChange!>! changes) -> bool
+static Bielu.Cli.Shared.Diff.DiffReportWriter.Write(System.Collections.Generic.IReadOnlyList<Bielu.Cli.Shared.Diff.DocumentChange!>! changes, string! format, string! reportTitle, Bielu.Cli.Shared.ICliLogger! logger) -> void
+static Bielu.Cli.Shared.Diff.DocumentChange.operator !=(Bielu.Cli.Shared.Diff.DocumentChange? left, Bielu.Cli.Shared.Diff.DocumentChange? right) -> bool
+static Bielu.Cli.Shared.Diff.DocumentChange.operator ==(Bielu.Cli.Shared.Diff.DocumentChange? left, Bielu.Cli.Shared.Diff.DocumentChange? right) -> bool
+static readonly Bielu.Cli.Shared.CliJsonDefaults.Indented -> System.Text.Json.JsonSerializerOptions!

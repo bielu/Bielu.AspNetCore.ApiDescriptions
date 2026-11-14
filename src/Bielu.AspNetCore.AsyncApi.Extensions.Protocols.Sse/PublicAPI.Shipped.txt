@@ -1,0 +1,67 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.ContentType.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.ContentType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.Headers.get -> ByteBard.AsyncAPI.Models.AsyncApiJsonSchema?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.Headers.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.Method.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.Method.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.Path.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.Path.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.Query.get -> ByteBard.AsyncAPI.Models.AsyncApiJsonSchema?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.Query.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.SseChannelBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.Event.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.Event.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.Headers.get -> ByteBard.AsyncAPI.Models.AsyncApiJsonSchema?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.Headers.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.Id.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.Id.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.Retry.get -> int?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.Retry.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.SseMessageBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.Direction.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.Direction.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.Method.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.Method.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.SseOperationBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOptionsExtensions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseProtocol
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseProtocol.Directions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseProtocol.Methods
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.Heartbeat.get -> bool?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.Heartbeat.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.Retry.get -> int?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.Retry.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.SseServerBinding() -> void
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseProtocol.BindingKey = "x-sse" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseProtocol.DefaultBindingVersion = "0.1.0" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseProtocol.Directions.ServerToClient = "serverToClient" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseProtocol.EventStreamContentType = "text/event-stream" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseProtocol.Methods.Get = "GET" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseProtocol.ProtocolName = "sse" -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseMessageBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseServerBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOptionsExtensions.AddSseChannelBinding(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, string! channelName, System.Action<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseChannelBinding!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOptionsExtensions.AddSseOperationBinding(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, string! operationName, System.Action<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse.SseOperationBinding!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!

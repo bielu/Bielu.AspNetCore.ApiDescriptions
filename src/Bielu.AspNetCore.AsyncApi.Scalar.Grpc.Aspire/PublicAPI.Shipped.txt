@@ -1,0 +1,22 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.<Clone>$() -> Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument!
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.Deconstruct(out string! Name, out string! Url) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.Equals(Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument? other) -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.Name.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.Name.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.ScalarGrpcAspireDocument(string! Name, string! Url) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.Url.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.Url.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireExtensions
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireOptions
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireOptions.AddDocument(string! name, string! url) -> Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireOptions!
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireOptions.Documents.get -> System.Collections.Generic.IList<Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument!>!
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireOptions.ScalarGrpcAspireOptions() -> void
+const Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireExtensions.DefaultPluginUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-grpc@1.0.1/dist/scalar-plugin.mjs" -> string!
+override Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.Equals(object? obj) -> bool
+override Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.GetHashCode() -> int
+override Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.ToString() -> string!
+static Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.operator !=(Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument? left, Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument.operator ==(Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument? left, Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireDocument? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireExtensions.WithGrpcClient(this Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>! builder, System.Action<Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.ScalarGrpcAspireOptions!>? configure = null, string! pluginUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-grpc@1.0.1/dist/scalar-plugin.mjs") -> Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>!

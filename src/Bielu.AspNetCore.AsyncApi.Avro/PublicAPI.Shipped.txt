@@ -1,0 +1,14 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Avro.AsyncApiAvroOptionsExtensions
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.AvroPayloadOptions() -> void
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.AvroVersion.get -> string!
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.AvroVersion.set -> void
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.ForMessages(params string![]! messageKeys) -> Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions!
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.MessageFilter.get -> System.Func<string!, bool>?
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.MessageFilter.set -> void
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.Namespace.get -> string?
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.Namespace.set -> void
+Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.WithNamespace(string! avroNamespace) -> Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions!
+const Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions.DefaultAvroVersion = "1.9.0" -> string!
+static Bielu.AspNetCore.AsyncApi.Avro.AsyncApiAvroOptionsExtensions.AddAvroPayloads(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.Avro.AvroPayloadOptions!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!

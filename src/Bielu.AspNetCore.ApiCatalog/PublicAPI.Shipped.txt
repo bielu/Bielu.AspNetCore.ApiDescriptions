@@ -1,0 +1,20 @@
+﻿#nullable enable
+Bielu.AspNetCore.ApiCatalog.ApiCatalogDefaults
+Bielu.AspNetCore.ApiCatalog.ApiCatalogEndpointConventionBuilderExtensions
+Bielu.AspNetCore.ApiCatalog.ApiCatalogEndpointRouteBuilderExtensions
+Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions
+Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions.AddItem(string! href, string? title = null) -> Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions!
+Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions.AddServiceDoc(string! href, string? title = null) -> Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions!
+Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions.ApiCatalogOptions() -> void
+Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions.ApiUrl.get -> string!
+Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions.ApiUrl.set -> void
+Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions.OpenApiRoutePattern.get -> string?
+Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions.OpenApiRoutePattern.set -> void
+Bielu.AspNetCore.ApiCatalog.ApiCatalogServiceCollectionExtensions
+const Bielu.AspNetCore.ApiCatalog.ApiCatalogDefaults.DefaultOpenApiRoute = "/openapi/{documentName}.json" -> string!
+const Bielu.AspNetCore.ApiCatalog.ApiCatalogDefaults.DefaultRoute = "/.well-known/api-catalog" -> string!
+const Bielu.AspNetCore.ApiCatalog.ApiCatalogDefaults.MediaType = "application/linkset+json; profile=\"https://www.rfc-editor.org/info/rfc9727\"" -> string!
+const Bielu.AspNetCore.ApiCatalog.ApiCatalogDefaults.Profile = "https://www.rfc-editor.org/info/rfc9727" -> string!
+static Bielu.AspNetCore.ApiCatalog.ApiCatalogEndpointConventionBuilderExtensions.WithApiCatalogItem<TBuilder>(this TBuilder builder, string? title = null) -> TBuilder
+static Bielu.AspNetCore.ApiCatalog.ApiCatalogEndpointRouteBuilderExtensions.MapApiCatalog(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/.well-known/api-catalog") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static Bielu.AspNetCore.ApiCatalog.ApiCatalogServiceCollectionExtensions.AddApiCatalog(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Bielu.AspNetCore.ApiCatalog.ApiCatalogOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

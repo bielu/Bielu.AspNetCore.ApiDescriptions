@@ -1,0 +1,19 @@
+﻿#nullable enable
+Bielu.AspNetCore.XRegistry.XRegistryDefaults
+Bielu.AspNetCore.XRegistry.XRegistryEndpointRouteBuilderExtensions
+Bielu.AspNetCore.XRegistry.XRegistryOptions
+Bielu.AspNetCore.XRegistry.XRegistryOptions.Description.get -> string?
+Bielu.AspNetCore.XRegistry.XRegistryOptions.Description.set -> void
+Bielu.AspNetCore.XRegistry.XRegistryOptions.IncludeDocuments(params string![]! documentNames) -> Bielu.AspNetCore.XRegistry.XRegistryOptions!
+Bielu.AspNetCore.XRegistry.XRegistryOptions.Name.get -> string?
+Bielu.AspNetCore.XRegistry.XRegistryOptions.Name.set -> void
+Bielu.AspNetCore.XRegistry.XRegistryOptions.RegistryId.get -> string!
+Bielu.AspNetCore.XRegistry.XRegistryOptions.RegistryId.set -> void
+Bielu.AspNetCore.XRegistry.XRegistryOptions.WithRegistry(string! registryId, string? name = null) -> Bielu.AspNetCore.XRegistry.XRegistryOptions!
+Bielu.AspNetCore.XRegistry.XRegistryOptions.XRegistryOptions() -> void
+Bielu.AspNetCore.XRegistry.XRegistryServiceCollectionExtensions
+const Bielu.AspNetCore.XRegistry.XRegistryDefaults.DefaultRoute = "/registry" -> string!
+const Bielu.AspNetCore.XRegistry.XRegistryDefaults.SpecVersion = "1.0-rc4" -> string!
+const Bielu.AspNetCore.XRegistry.XRegistryDefaults.WellKnownRoute = "/.well-known/xregistry" -> string!
+static Bielu.AspNetCore.XRegistry.XRegistryEndpointRouteBuilderExtensions.MapXRegistry(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/registry", bool mapWellKnownDiscovery = true) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static Bielu.AspNetCore.XRegistry.XRegistryServiceCollectionExtensions.AddXRegistry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Bielu.AspNetCore.XRegistry.XRegistryOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

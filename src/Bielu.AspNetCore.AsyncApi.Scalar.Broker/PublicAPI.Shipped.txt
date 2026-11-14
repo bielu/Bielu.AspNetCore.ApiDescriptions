@@ -1,0 +1,125 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerBridgeServiceCollectionExtensions
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.<Clone>$() -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.BrokerConnectionDescriptor(string! Name, string! Protocol, string! Endpoint) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.Deconstruct(out string! Name, out string! Protocol, out string! Endpoint) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.Endpoint.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.Endpoint.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.Equals(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor? other) -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.Name.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.Name.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.Protocol.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.Protocol.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.<Clone>$() -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.BridgeFactory.get -> System.Func<System.IServiceProvider!, Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridge!>!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.BridgeFactory.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.BrokerConnectionRegistration(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor! Descriptor, System.Func<System.IServiceProvider!, Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridge!>! BridgeFactory) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.Deconstruct(out Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor! Descriptor, out System.Func<System.IServiceProvider!, Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridge!>! BridgeFactory) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.Descriptor.get -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.Descriptor.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.Equals(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration? other) -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.<Clone>$() -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.BrokerMessage(string! Channel, string? Key, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, string! Payload, System.DateTimeOffset Timestamp, int? Partition = null, long? Offset = null) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Channel.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Channel.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Deconstruct(out string! Channel, out string? Key, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, out string! Payload, out System.DateTimeOffset Timestamp, out int? Partition, out long? Offset) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Equals(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage? other) -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Headers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Headers.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Key.get -> string?
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Key.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Offset.get -> long?
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Offset.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Partition.get -> int?
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Partition.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Payload.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Payload.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Timestamp.get -> System.DateTimeOffset
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Timestamp.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.<Clone>$() -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.BrokerPublishReceipt(string! Channel, System.DateTimeOffset Timestamp, int? Partition = null, long? Offset = null) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Channel.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Channel.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Deconstruct(out string! Channel, out System.DateTimeOffset Timestamp, out int? Partition, out long? Offset) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Equals(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt? other) -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Offset.get -> long?
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Offset.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Partition.get -> int?
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Partition.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Timestamp.get -> System.DateTimeOffset
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Timestamp.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.<Clone>$() -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.BrokerPublishRequest(string! Channel, string! Payload, string? Key = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Headers = null) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Channel.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Channel.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Deconstruct(out string! Channel, out string! Payload, out string? Key, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Headers) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Equals(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest? other) -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Headers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Headers.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Key.get -> string?
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Key.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Payload.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Payload.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.<Clone>$() -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.BrokerTailRequest(string! Channel) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.Channel.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.Channel.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.Deconstruct(out string! Channel) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.Equals(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest? other) -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridge
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridge.PublishAsync(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt!>!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridge.TailAsync(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage!>!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridgeRegistry
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridgeRegistry.Connections.get -> System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor!>!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridgeRegistry.TryGetBridge(string! connectionName, out Bielu.AspNetCore.AsyncApi.Scalar.Broker.IBrokerBridge? bridge) -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions.AddConnection(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration! registration) -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions.AllowAnonymous.get -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions.AllowAnonymous.set -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions.Connections.get -> System.Collections.Generic.IReadOnlyList<Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration!>!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerDefaults
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerEndpointRouteBuilderExtensions
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerOptions
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerOptions.ScalarBrokerOptions() -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerOptionsExtensions
+const Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerDefaults.AssetsPath = "/bielu/scalar/broker" -> string!
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.Equals(object? obj) -> bool
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.GetHashCode() -> int
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.ToString() -> string!
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.Equals(object? obj) -> bool
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.GetHashCode() -> int
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.ToString() -> string!
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.Equals(object? obj) -> bool
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.GetHashCode() -> int
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.ToString() -> string!
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.Equals(object? obj) -> bool
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.GetHashCode() -> int
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.ToString() -> string!
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.Equals(object? obj) -> bool
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.GetHashCode() -> int
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.ToString() -> string!
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.Equals(object? obj) -> bool
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.GetHashCode() -> int
+override Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.ToString() -> string!
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerBridgeServiceCollectionExtensions.AddScalarBrokerBridge(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.operator !=(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor.operator ==(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionDescriptor? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.operator !=(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration.operator ==(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerConnectionRegistration? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.operator !=(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage.operator ==(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerMessage? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.operator !=(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt.operator ==(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishReceipt? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.operator !=(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest.operator ==(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerPublishRequest? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.operator !=(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest.operator ==(Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest? left, Bielu.AspNetCore.AsyncApi.Scalar.Broker.BrokerTailRequest? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerEndpointRouteBuilderExtensions.MapScalarBrokerAssets(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path = "/bielu/scalar/broker") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerOptionsExtensions.WithBrokerClient(this Scalar.AspNetCore.ScalarOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerOptions!>? configure = null, string! assetsPath = "/bielu/scalar/broker") -> Scalar.AspNetCore.ScalarOptions!

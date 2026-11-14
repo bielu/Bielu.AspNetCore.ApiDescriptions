@@ -1,0 +1,92 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.GrpcChannelBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.Package.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.Package.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.ProtoFile.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.ProtoFile.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.Service.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.Service.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.Encoding.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.Encoding.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.GrpcMessageBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.Headers.get -> ByteBard.AsyncAPI.Models.AsyncApiJsonSchema?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.Headers.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.MessageType.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.MessageType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType.BidirectionalStreaming = 3 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType.ClientStreaming = 2 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType.ServerStreaming = 1 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType.Unary = 0 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodTypeExtensions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.DeadlineSeconds.get -> double?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.DeadlineSeconds.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.GrpcOperationBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.IdempotencyLevel.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.IdempotencyLevel.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.Method.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.Method.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.MethodType.get -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.MethodType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.RequestType.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.RequestType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.ResponseType.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.ResponseType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOptionsExtensions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.Compressions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.IdempotencyLevels
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.MessageEncodings
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.MethodTypes
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.Compressions.get -> System.Collections.Generic.IList<string!>!
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.Compressions.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.GrpcServerBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.Reflection.get -> bool?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.Reflection.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.Services.get -> System.Collections.Generic.IList<string!>!
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.Services.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.Tls.get -> bool?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.Tls.set -> void
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.BindingKey = "x-grpc" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.Compressions.Deflate = "deflate" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.Compressions.Gzip = "gzip" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.Compressions.Identity = "identity" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.DefaultBindingVersion = "0.1.0" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.IdempotencyLevels.IdempotencyUnknown = "idempotencyUnknown" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.IdempotencyLevels.Idempotent = "idempotent" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.IdempotencyLevels.NoSideEffects = "noSideEffects" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.MessageEncodings.Json = "json" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.MessageEncodings.Protobuf = "protobuf" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.MethodTypes.BidirectionalStreaming = "bidirectionalStreaming" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.MethodTypes.ClientStreaming = "clientStreaming" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.MethodTypes.ServerStreaming = "serverStreaming" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.MethodTypes.Unary = "unary" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcProtocol.ProtocolName = "grpc" -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMessageBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcServerBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodTypeExtensions.Parse(string? value) -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType?
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodTypeExtensions.ToWireName(this Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcMethodType type) -> string!
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOptionsExtensions.AddGrpcChannelBinding(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, string! channelName, System.Action<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcChannelBinding!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOptionsExtensions.AddGrpcOperationBinding(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, string! operationName, System.Action<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc.GrpcOperationBinding!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!

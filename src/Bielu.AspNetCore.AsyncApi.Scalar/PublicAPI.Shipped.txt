@@ -1,0 +1,23 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.<Clone>$() -> Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument!
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.Deconstruct(out string! Name, out string! Url) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.Equals(Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument? other) -> bool
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.Name.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.Name.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.ScalarAsyncApiDocument(string! Name, string! Url) -> void
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.Url.get -> string!
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.Url.init -> void
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarPluginDocumentOptions<TSelf>
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarPluginDocumentOptions<TSelf>.AddDocument(string! name, string! url) -> TSelf!
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarPluginDocumentOptions<TSelf>.Documents.get -> System.Collections.Generic.IList<Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument!>!
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarPluginDocumentOptions<TSelf>.ScalarPluginDocumentOptions() -> void
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarPluginEndpointRouteBuilderExtensions
+Bielu.AspNetCore.AsyncApi.Scalar.ScalarPluginScalarOptionsExtensions
+override Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.Equals(object? obj) -> bool
+override Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.GetHashCode() -> int
+override Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.ToString() -> string!
+static Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.operator !=(Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument? left, Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument.operator ==(Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument? left, Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument? right) -> bool
+static Bielu.AspNetCore.AsyncApi.Scalar.ScalarPluginEndpointRouteBuilderExtensions.MapScalarPluginBundle(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path, System.Reflection.Assembly! assembly, string! resourceName, string! missingBundleMessage) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Bielu.AspNetCore.AsyncApi.Scalar.ScalarPluginScalarOptionsExtensions.WithAsyncApiPluginScript(this Scalar.AspNetCore.ScalarOptions! options, string! assetsPath, string! globalVariableName, System.Collections.Generic.IEnumerable<Bielu.AspNetCore.AsyncApi.Scalar.ScalarAsyncApiDocument!>? documents = null) -> Scalar.AspNetCore.ScalarOptions!

@@ -1,0 +1,5 @@
+﻿#nullable enable
+Bielu.Spec.Shared.JsonNodeToYamlConverter
+Bielu.Spec.Shared.YamlToJsonNodeConverter
+static Bielu.Spec.Shared.JsonNodeToYamlConverter.Serialize(System.Text.Json.Nodes.JsonNode? node) -> string!
+static Bielu.Spec.Shared.YamlToJsonNodeConverter.Convert(System.IO.TextReader! reader) -> System.Text.Json.Nodes.JsonNode?

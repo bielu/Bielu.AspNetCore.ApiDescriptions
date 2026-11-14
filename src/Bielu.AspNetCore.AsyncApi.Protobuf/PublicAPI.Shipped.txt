@@ -1,0 +1,8 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Protobuf.AsyncApiProtobufOptionsExtensions
+Bielu.AspNetCore.AsyncApi.Protobuf.ProtobufPayloadOptions
+Bielu.AspNetCore.AsyncApi.Protobuf.ProtobufPayloadOptions.ForMessages(params string![]! messageKeys) -> Bielu.AspNetCore.AsyncApi.Protobuf.ProtobufPayloadOptions!
+Bielu.AspNetCore.AsyncApi.Protobuf.ProtobufPayloadOptions.MessageFilter.get -> System.Func<string!, bool>?
+Bielu.AspNetCore.AsyncApi.Protobuf.ProtobufPayloadOptions.MessageFilter.set -> void
+Bielu.AspNetCore.AsyncApi.Protobuf.ProtobufPayloadOptions.ProtobufPayloadOptions() -> void
+static Bielu.AspNetCore.AsyncApi.Protobuf.AsyncApiProtobufOptionsExtensions.AddProtobufPayloads(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.Protobuf.ProtobufPayloadOptions!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!

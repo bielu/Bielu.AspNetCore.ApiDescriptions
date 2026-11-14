@@ -1,0 +1,4 @@
+﻿#nullable enable
+[BIELUMCP001]Microsoft.Extensions.DependencyInjection.McpServerBuilderApiDescriptionsExtensions
+[BIELUMCP001]const Microsoft.Extensions.DependencyInjection.McpServerBuilderApiDescriptionsExtensions.DiagnosticId = "BIELUMCP001" -> string!
+[BIELUMCP001]static Microsoft.Extensions.DependencyInjection.McpServerBuilderApiDescriptionsExtensions.WithApiDescriptions(this Microsoft.Extensions.DependencyInjection.IMcpServerBuilder! builder) -> Microsoft.Extensions.DependencyInjection.IMcpServerBuilder!

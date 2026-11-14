@@ -1,0 +1,76 @@
+﻿#nullable enable
+Bielu.Overlay.Models.IOverlayExtensible
+Bielu.Overlay.Models.IOverlayExtensible.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Overlay.Models.IOverlayExtensible.Extensions.set -> void
+Bielu.Overlay.Models.OverlayAction
+Bielu.Overlay.Models.OverlayAction.Copy.get -> string?
+Bielu.Overlay.Models.OverlayAction.Copy.set -> void
+Bielu.Overlay.Models.OverlayAction.Description.get -> string?
+Bielu.Overlay.Models.OverlayAction.Description.set -> void
+Bielu.Overlay.Models.OverlayAction.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Overlay.Models.OverlayAction.Extensions.set -> void
+Bielu.Overlay.Models.OverlayAction.OverlayAction() -> void
+Bielu.Overlay.Models.OverlayAction.Remove.get -> bool
+Bielu.Overlay.Models.OverlayAction.Remove.set -> void
+Bielu.Overlay.Models.OverlayAction.Target.get -> string!
+Bielu.Overlay.Models.OverlayAction.Target.set -> void
+Bielu.Overlay.Models.OverlayAction.Update.get -> System.Text.Json.Nodes.JsonNode?
+Bielu.Overlay.Models.OverlayAction.Update.set -> void
+Bielu.Overlay.Models.OverlayDocument
+Bielu.Overlay.Models.OverlayDocument.Actions.get -> System.Collections.Generic.IList<Bielu.Overlay.Models.OverlayAction!>!
+Bielu.Overlay.Models.OverlayDocument.Actions.set -> void
+Bielu.Overlay.Models.OverlayDocument.Extends.get -> string?
+Bielu.Overlay.Models.OverlayDocument.Extends.set -> void
+Bielu.Overlay.Models.OverlayDocument.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Overlay.Models.OverlayDocument.Extensions.set -> void
+Bielu.Overlay.Models.OverlayDocument.Info.get -> Bielu.Overlay.Models.OverlayInfo!
+Bielu.Overlay.Models.OverlayDocument.Info.set -> void
+Bielu.Overlay.Models.OverlayDocument.Overlay.get -> string!
+Bielu.Overlay.Models.OverlayDocument.Overlay.set -> void
+Bielu.Overlay.Models.OverlayDocument.OverlayDocument() -> void
+Bielu.Overlay.Models.OverlayInfo
+Bielu.Overlay.Models.OverlayInfo.Description.get -> string?
+Bielu.Overlay.Models.OverlayInfo.Description.set -> void
+Bielu.Overlay.Models.OverlayInfo.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Overlay.Models.OverlayInfo.Extensions.set -> void
+Bielu.Overlay.Models.OverlayInfo.OverlayInfo() -> void
+Bielu.Overlay.Models.OverlayInfo.Title.get -> string!
+Bielu.Overlay.Models.OverlayInfo.Title.set -> void
+Bielu.Overlay.Models.OverlayInfo.Version.get -> string!
+Bielu.Overlay.Models.OverlayInfo.Version.set -> void
+Bielu.Overlay.OverlayApplier
+Bielu.Overlay.OverlayApplyOptions
+Bielu.Overlay.OverlayApplyOptions.OverlayApplyOptions() -> void
+Bielu.Overlay.OverlayApplyOptions.Strict.get -> bool
+Bielu.Overlay.OverlayApplyOptions.Strict.set -> void
+Bielu.Overlay.OverlayApplyResult
+Bielu.Overlay.OverlayApplyResult.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<Bielu.Overlay.OverlayDiagnostic!>!
+Bielu.Overlay.OverlayApplyResult.Diagnostics.init -> void
+Bielu.Overlay.OverlayApplyResult.Document.get -> System.Text.Json.Nodes.JsonNode?
+Bielu.Overlay.OverlayApplyResult.Document.init -> void
+Bielu.Overlay.OverlayApplyResult.HasErrors.get -> bool
+Bielu.Overlay.OverlayApplyResult.OverlayApplyResult() -> void
+Bielu.Overlay.OverlayDiagnostic
+Bielu.Overlay.OverlayDiagnostic.<Clone>$() -> Bielu.Overlay.OverlayDiagnostic!
+Bielu.Overlay.OverlayDiagnostic.Equals(Bielu.Overlay.OverlayDiagnostic? other) -> bool
+Bielu.Overlay.OverlayDiagnostic.IsWarning.get -> bool
+Bielu.Overlay.OverlayDiagnostic.IsWarning.init -> void
+Bielu.Overlay.OverlayDiagnostic.Message.get -> string!
+Bielu.Overlay.OverlayDiagnostic.Message.init -> void
+Bielu.Overlay.OverlayDiagnostic.OverlayDiagnostic(string! path, string! message, bool isWarning = false) -> void
+Bielu.Overlay.OverlayDiagnostic.Path.get -> string!
+Bielu.Overlay.OverlayDiagnostic.Path.init -> void
+Bielu.Overlay.OverlayVersion
+Bielu.Overlay.OverlayVersion.V1_0 = 0 -> Bielu.Overlay.OverlayVersion
+Bielu.Overlay.OverlayVersion.V1_1 = 1 -> Bielu.Overlay.OverlayVersion
+Bielu.Overlay.OverlayVersionExtensions
+Bielu.Overlay.Validation.OverlayValidator
+override Bielu.Overlay.OverlayDiagnostic.Equals(object? obj) -> bool
+override Bielu.Overlay.OverlayDiagnostic.GetHashCode() -> int
+override Bielu.Overlay.OverlayDiagnostic.ToString() -> string!
+static Bielu.Overlay.OverlayApplier.Apply(System.Text.Json.Nodes.JsonNode? document, Bielu.Overlay.Models.OverlayDocument! overlay, Bielu.Overlay.OverlayApplyOptions? options = null) -> Bielu.Overlay.OverlayApplyResult!
+static Bielu.Overlay.OverlayDiagnostic.operator !=(Bielu.Overlay.OverlayDiagnostic? left, Bielu.Overlay.OverlayDiagnostic? right) -> bool
+static Bielu.Overlay.OverlayDiagnostic.operator ==(Bielu.Overlay.OverlayDiagnostic? left, Bielu.Overlay.OverlayDiagnostic? right) -> bool
+static Bielu.Overlay.OverlayVersionExtensions.ToVersionString(this Bielu.Overlay.OverlayVersion version) -> string!
+static Bielu.Overlay.OverlayVersionExtensions.TryParse(string? value, out Bielu.Overlay.OverlayVersion version) -> bool
+static Bielu.Overlay.Validation.OverlayValidator.Validate(Bielu.Overlay.Models.OverlayDocument! overlay) -> System.Collections.Generic.IReadOnlyList<Bielu.Overlay.OverlayDiagnostic!>!
