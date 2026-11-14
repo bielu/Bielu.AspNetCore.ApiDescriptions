@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -53,16 +51,9 @@ internal sealed class AsyncApiDocumentService(
     private readonly Lazy<IReadOnlyDictionary<Type, MessageAttribute>?> _payloadMessageAttributes =
         new(() => serviceProvider.GetRequiredKeyedService<IAsyncApiMetadataProvider>(documentName).GetPayloadMessageAttributes());
 
-    private readonly ConcurrentDictionary<string, AsyncApiOperationTransformerContext>
-        _operationTransformerContextCache = new();
-
     private static readonly FrozenSet<string> _disallowedHeaderParameters =
         new[] { HeaderNames.Accept, HeaderNames.Authorization, HeaderNames.ContentType }.ToFrozenSet(StringComparer
             .OrdinalIgnoreCase);
-
-    internal bool TryGetCachedOperationTransformerContext(string descriptionId,
-        [NotNullWhen(true)] out AsyncApiOperationTransformerContext? context)
-        => _operationTransformerContextCache.TryGetValue(descriptionId, out context);
 
     public async Task<AsyncApiDocument> GetAsyncApiDocumentAsync(IServiceProvider scopedServiceProvider,
         HttpRequest? httpRequest = null, CancellationToken cancellationToken = default)
@@ -805,7 +796,6 @@ internal sealed class AsyncApiDocumentService(
                     Document = document,
                     SchemaTransformers = schemaTransformers
                 };
-                _operationTransformerContextCache[opId] = operationTransformerContext;
 
                 foreach (var operationTransformer in operationTransformers)
                 {
