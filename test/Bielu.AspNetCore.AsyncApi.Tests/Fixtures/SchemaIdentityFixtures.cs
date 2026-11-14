@@ -37,6 +37,8 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
         public const string InlineSchema = "schema-identity-inline";
         public const string OperationIdCollision = "schema-identity-operation-id-collision";
         public const string MessageIdCollision = "schema-identity-message-id-collision";
+        public const string ChannelKeyCollision = "schema-identity-channel-key-collision";
+        public const string ChannelKeyReuse = "schema-identity-channel-key-reuse";
     }
 
     /// <summary>
@@ -259,6 +261,54 @@ namespace Bielu.AspNetCore.AsyncApi.Tests.Fixtures.SchemaIdentity
         [Message(typeof(MessageIdPayloadB), MessageId = "duplicateMessageId")]
         [SendOperation(OperationId = "messageIdCollisionOperationB")]
         public void MessageB()
+        {
+        }
+    }
+
+    public sealed class ChannelKeyPayloadA
+    {
+        public string? A { get; set; }
+    }
+
+    public sealed class ChannelKeyPayloadB
+    {
+        public string? B { get; set; }
+    }
+
+    /// <summary>Two different channel names that produce the same channel key once sanitized.</summary>
+    [AsyncApi(SchemaIdentityDocuments.ChannelKeyCollision)]
+    public sealed class ChannelKeyCollisionChannels
+    {
+        [Channel("schema-identity/orders")]
+        [Message(typeof(ChannelKeyPayloadA))]
+        [SendOperation(OperationId = "channelKeyCollisionOperationA")]
+        public void OperationA()
+        {
+        }
+
+        [Channel("schema-identityorders")]
+        [Message(typeof(ChannelKeyPayloadB))]
+        [SendOperation(OperationId = "channelKeyCollisionOperationB")]
+        public void OperationB()
+        {
+        }
+    }
+
+    /// <summary>The same channel name declared on two members, which is reuse rather than a collision.</summary>
+    [AsyncApi(SchemaIdentityDocuments.ChannelKeyReuse)]
+    public sealed class ChannelKeyReuseChannels
+    {
+        [Channel("schema-identity/shared")]
+        [Message(typeof(ChannelKeyPayloadA))]
+        [SendOperation(OperationId = "channelKeyReuseOperationA")]
+        public void OperationA()
+        {
+        }
+
+        [Channel("schema-identity/shared")]
+        [Message(typeof(ChannelKeyPayloadB))]
+        [ReceiveOperation(OperationId = "channelKeyReuseOperationB")]
+        public void OperationB()
         {
         }
     }

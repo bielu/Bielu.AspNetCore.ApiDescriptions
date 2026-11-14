@@ -218,6 +218,17 @@ internal sealed class AsyncApiDocumentService(
     {
         if (document.Channels.TryGetValue(sanitizedKey, out var existing))
         {
+            // Sanitizing drops characters, so two different channel names ("orders/created" and
+            // "orderscreated") can share a key. Merging them would put both channels' messages and
+            // operations under the first channel's address, so a different address is a collision.
+            if (!string.Equals(existing.Address, channelAttr.Name, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"AsyncAPI channel '{channelAttr.Name}' declared on '{DescribeMember(member)}' has the same " +
+                    $"channel key '{sanitizedKey}' as channel '{existing.Address}' once characters that are not " +
+                    "allowed in a component key are removed. Rename one of the channels so their keys differ.");
+            }
+
             existing.Description ??=
                 channelAttr.Description ?? _xmlDocumentationProvider.GetDocumentation(member)?.Summary;
             existing.Address ??= channelAttr.Name;
