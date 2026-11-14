@@ -13,6 +13,7 @@ internal class AsyncApiJsonSchemaKeywords
     public const string RequiredKeyword = "required";
     public const string AnyOfKeyword = "anyOf";
     public const string OneOfKeyword = "oneOf";
+    public const string AllOfKeyword = "allOf";
     public const string NotKeyword = "not";
     public const string EnumKeyword = "enum";
     public const string DefaultKeyword = "default";
