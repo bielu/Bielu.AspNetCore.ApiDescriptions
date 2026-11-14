@@ -107,6 +107,9 @@
     -->
     <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)../LICENSE" Pack="true" PackagePath="/" Visible="false" />
+        <!-- The MIT notice of the dotnet/aspnetcore code parts of this repository derive from, which its license
+             requires to travel with copies of that code. -->
+        <None Include="$(MSBuildThisFileDirectory)../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="/" Visible="false" />
         <AssemblyMetadata Include="License" Value="SPDX-License-Identifier: MIT" />
     </ItemGroup>
 
