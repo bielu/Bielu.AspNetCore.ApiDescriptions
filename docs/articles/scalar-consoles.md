@@ -62,6 +62,21 @@ app.MapScalarApiReference(options =>
 });
 ```
 
+### Why gRPC-Web and a descriptor endpoint
+
+- **Browsers cannot speak native gRPC.** It needs HTTP/2 trailers, which browsers do not expose, so the
+  console calls the service over gRPC-Web. That is why the app needs `Grpc.AspNetCore.Web` and
+  `UseGrpcWeb(...)`.
+- **The AsyncAPI document is not enough to encode a call.** Payload schemas are JSON Schema, with no
+  protobuf field numbers, so they can render a request form but not a wire message. The console needs
+  the real protobuf descriptors.
+- **Server reflection is out of reach.** Standard gRPC reflection is a bidirectional-streaming call,
+  which gRPC-Web cannot make. So `MapScalarGrpcAssets()` also serves `{path}/descriptors`: a serialized
+  `FileDescriptorSet` of every gRPC service the app maps.
+- **Only unary and server-streaming methods can be invoked.** gRPC-Web supports no other kind.
+  Client-streaming and bidirectional-streaming methods are listed for reference, marked as not invokable
+  from the browser.
+
 ## Broker Console (Kafka)
 
 The `Bielu.AspNetCore.AsyncApi.Scalar.Broker` package adds a console that publishes to and tails the
