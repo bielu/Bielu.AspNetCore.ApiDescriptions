@@ -1,9 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using Bielu.AspNetCore.AsyncApi.Schemas;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Writers;
 
@@ -16,23 +13,22 @@ namespace Bielu.AspNetCore.AsyncApi.Services;
 internal static class AsyncApiSerializationHelper
 {
     /// <summary>
-    /// Serializes an AsyncAPI V2 document to JSON, ensuring all required properties are present.
-    /// AsyncAPI 2.x specification requires 'channels' to be present. An empty channels object will
-    /// be added during serialization, but note that AsyncAPI 2.x validation requires at least one
-    /// channel to be defined for a valid document.
+    /// Serializes an AsyncAPI V2 document to JSON.
     /// </summary>
+    /// <remarks>
+    /// The output is ByteBard's, as for 3.x. It used to be parsed and written again with
+    /// <see cref="System.Text.Json"/>'s default options, which minified it and escaped every non-ASCII character
+    /// (and <c>+</c>, <c>&lt;</c>, <c>&gt;</c>) for no gain: the step meant to add a missing <c>channels</c> object
+    /// had been commented out. A document without channels is rejected before serialization instead.
+    /// </remarks>
     /// <param name="document">The AsyncAPI document to serialize.</param>
-    /// <returns>JSON string with all required AsyncAPI 2.x properties.</returns>
+    /// <returns>JSON string representation of the document.</returns>
     public static string SerializeV2ToJson(AsyncApiDocument document)
     {
-        // First serialize using ByteBard
         using var stringWriter = new StringWriter();
         var jsonWriter = new AsyncApiJsonWriter(stringWriter);
         document.SerializeV2(jsonWriter);
-        var serialized = stringWriter.ToString();
-
-        // Post-process to ensure required properties are present
-        return EnsureV2RequiredProperties(serialized);
+        return stringWriter.ToString();
     }
 
     /// <summary>
@@ -76,44 +72,5 @@ internal static class AsyncApiSerializationHelper
         var yamlWriter = new AsyncApiYamlWriter(stringWriter, null);
         document.SerializeV3(yamlWriter);
         return stringWriter.ToString();
-    }
-
-    /// <summary>
-    /// Ensures that AsyncAPI 2.x required properties are present in the JSON.
-    /// The AsyncAPI 2.x specification requires 'channels' to be present. This method adds an
-    /// empty channels object if missing, but note that for a valid AsyncAPI 2.x document,
-    /// at least one channel must be defined.
-    /// </summary>
-    /// <param name="json">The JSON string to process.</param>
-    /// <returns>JSON string with required properties ensured.</returns>
-    private static string EnsureV2RequiredProperties(string json)
-    {
-        try
-        {
-            var jsonNode = JsonNode.Parse(json);
-            if (jsonNode is JsonObject jsonObj)
-            {
-                // Ensure 'channels' property exists (required by AsyncAPI 2.x spec)
-                // Note: For AsyncAPI 2.x validation to fail when channels are empty,
-                // we should NOT add an empty object if we want the validator to report it as missing.
-                // However, the spec says it MUST be present.
-                // If we add it and it's empty, some validators might not complain if they only check for presence.
-                // The current tests expect a validation error when channels are empty.
-                if (!jsonObj.ContainsKey("channels"))
-                {
-                    // jsonObj["channels"] = new JsonObject();
-                }
-
-                return jsonObj.ToJsonString(AsyncApiJsonSchemaContext.Default.Options);
-            }
-        }
-        catch (JsonException)
-        {
-            // If JSON parsing fails, return the original content.
-            // This is acceptable because the original content was produced by ByteBard
-            // and should be valid - we just couldn't add the missing property.
-        }
-
-        return json;
     }
 }
