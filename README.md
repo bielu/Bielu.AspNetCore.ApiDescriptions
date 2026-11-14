@@ -259,4 +259,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Every pull
 
 ## License
 
-Copyright (c) 2025 Arkadiusz Biel. Licensed under the [MIT License](LICENSE).
+Copyright (c) 2025 Arkadiusz Biel. Licensed under the [MIT License](LICENSE). Parts are derived from
+[dotnet/aspnetcore](https://github.com/dotnet/aspnetcore), also MIT; see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
