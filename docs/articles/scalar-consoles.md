@@ -149,6 +149,19 @@ builder.Services.AddScalarBrokerBridge(broker =>
 Credentials entered in Scalar's auth panel travel with every proxy call — bearer tokens, HTTP Basic,
 and API keys in a header or a query parameter.
 
+Authorization decides who may use the proxy, not which topics they reach: by default an authorized
+caller can publish to and tail any topic the connection's credentials allow, documented or not.
+`AllowChannels` limits the proxy to the channels you name, and refuses any other with `403`:
+
+```csharp
+builder.Services.AddScalarBrokerBridge(broker => broker
+    .AllowChannels("orders.created", "orders.cancelled")
+    .AddKafkaConnection("orders", "localhost:9092"));
+```
+
+Names are compared exactly, as the console sends them: the channel's address, or the topic its binding
+names.
+
 ### Tailing does not disturb your cluster
 
 Each tail uses a throwaway consumer group starting at the newest offset, and never commits. Opening a

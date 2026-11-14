@@ -33,10 +33,59 @@ public sealed class ScalarBrokerBridgeOptions
     /// </remarks>
     public bool AllowAnonymous { get; set; }
 
+    private readonly HashSet<string> _allowedChannels = new(StringComparer.Ordinal);
+
     /// <summary>
     /// The registered connections, in declaration order.
     /// </summary>
     public IReadOnlyList<BrokerConnectionRegistration> Connections => _connections;
+
+    /// <summary>
+    /// The channels the proxy may publish to and tail. Empty, the default, allows every channel.
+    /// </summary>
+    /// <remarks>
+    /// Authorization decides <em>who</em> may use the proxy; this decides <em>what</em> they can reach. Without
+    /// it, a caller who passes authorization can publish to and read any topic the connection's credentials can,
+    /// not only the channels your AsyncAPI documents describe. Names are compared exactly, as the console sends
+    /// them: the channel's address, or the topic its binding names.
+    /// </remarks>
+    public IReadOnlySet<string> AllowedChannels => _allowedChannels;
+
+    /// <summary>
+    /// Restricts the proxy to the given channels, in addition to any allowed already. Requests for any other
+    /// channel are refused with <c>403</c>.
+    /// </summary>
+    /// <param name="channels">The channel names to allow, compared exactly.</param>
+    /// <returns>The same options instance for chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="channels" /> is null.</exception>
+    /// <exception cref="ArgumentException">A channel name is null, empty, or whitespace-only.</exception>
+    /// <example>
+    /// <code>
+    /// builder.Services.AddScalarBrokerBridge(broker => broker
+    ///     .AllowChannels("orders.created", "orders.cancelled")
+    ///     .AddKafkaConnection("orders", "localhost:9092"));
+    /// </code>
+    /// </example>
+    public ScalarBrokerBridgeOptions AllowChannels(params string[] channels)
+    {
+        ArgumentNullException.ThrowIfNull(channels);
+
+        foreach (var channel in channels)
+        {
+            if (string.IsNullOrWhiteSpace(channel))
+            {
+                throw new ArgumentException("A channel name must not be null, empty, or whitespace-only.", nameof(channels));
+            }
+        }
+
+        _allowedChannels.UnionWith(channels);
+        return this;
+    }
+
+    /// <summary>
+    /// Whether the proxy may publish to or tail <paramref name="channel" />.
+    /// </summary>
+    internal bool IsChannelAllowed(string channel) => _allowedChannels.Count == 0 || _allowedChannels.Contains(channel);
 
     /// <summary>
     /// Registers a broker connection under a logical name.
