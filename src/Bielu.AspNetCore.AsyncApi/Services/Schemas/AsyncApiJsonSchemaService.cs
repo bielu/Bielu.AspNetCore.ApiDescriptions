@@ -47,7 +47,9 @@ internal sealed class AsyncApiJsonSchemaService
     private readonly ConditionalWeakTable<AsyncApiDocument, Dictionary<string, Type>> _schemaKeyOwners = new();
     private readonly AsyncApiJsonSchemaContext _jsonSchemaContext;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
-    private readonly JsonSchemaExporterOptions _configuration;
+
+    // Written onto every exported object schema and stripped before deserialization; see CreateExporterOptions.
+    private const string SchemaTypeMarker = "x-bielu-schema-type-index";
 
     public AsyncApiJsonSchemaService(
         [ServiceKey] string documentName,
@@ -99,102 +101,119 @@ internal sealed class AsyncApiJsonSchemaService
                 }
             })
         };
+    }
 
-        _configuration = new JsonSchemaExporterOptions()
+    /// <summary>
+    /// The exporter options for one <see cref="CreateSchema"/> call. Each object schema is stamped with the index of
+    /// the type it describes in <paramref name="schemaTypes"/>, so a recursive <c>$ref</c> the exporter emits can be
+    /// traced back to that type's component. The stamp is removed again before the schema is deserialized.
+    /// </summary>
+    private JsonSchemaExporterOptions CreateExporterOptions(List<Type> schemaTypes) => new()
+    {
+        TreatNullObliviousAsNonNullable = true,
+        TransformSchemaNode = (context, schema) =>
         {
-            TreatNullObliviousAsNonNullable = true,
-            TransformSchemaNode = (context, schema) =>
+            schema = TransformSchemaNode(context, schema);
+            if (schema is JsonObject schemaObject)
             {
-                var type = context.TypeInfo.Type;
-                // Fix up schemas generated for IFormFile, IFormFileCollection, Stream, PipeReader and FileContentResult
-                // that appear as properties within complex types.
-                if (type == typeof(IFormFile) || type == typeof(Stream) || type == typeof(PipeReader) || type == typeof(FileContentResult))
-                {
-                    schema = new JsonObject
-                    {
-                        [AsyncApiJsonSchemaKeywords.TypeKeyword] = "string",
-                        [AsyncApiJsonSchemaKeywords.FormatKeyword] = "binary",
-                        [AsyncApiConstants.Id] = "IFormFile"
-                    };
-                }
-                else if (type == typeof(IFormFileCollection))
-                {
-                    schema = new JsonObject
-                    {
-                        [AsyncApiJsonSchemaKeywords.TypeKeyword] = "array",
-                        [AsyncApiJsonSchemaKeywords.ItemsKeyword] = new JsonObject
-                        {
-                            [AsyncApiJsonSchemaKeywords.TypeKeyword] = "string",
-                            [AsyncApiJsonSchemaKeywords.FormatKeyword] = "binary",
-                            [AsyncApiConstants.Id] = "IFormFile"
-                        }
-                    };
-                }
-                else if (type.IsJsonPatchDocument())
-                {
-                    schema = CreateSchemaForJsonPatch();
-                }
-                // STJ uses `true` in place of an empty object to represent a schema that matches
-                // anything (like the `object` type) or types with user-defined converters. We override
-                // this default behavior here to match the format expected in AsyncApi v3.
-                if (schema.GetValueKind() == JsonValueKind.True)
-                {
-                    schema = new JsonObject();
-                }
-                var createSchemaReferenceId = _optionsMonitor.Get(_documentName).CreateSchemaReferenceId;
-                schema.ApplyPrimitiveTypesAndFormats(context, createSchemaReferenceId);
-                schema.ApplySchemaReferenceId(context, createSchemaReferenceId);
-                schema.MapPolymorphismOptionsToDiscriminator(context, createSchemaReferenceId);
-                if (context.PropertyInfo is { } jsonPropertyInfo)
-                {
-                    schema.ApplyNullabilityContextInfo(jsonPropertyInfo);
-                }
-                if (context.TypeInfo.Type.GetCustomAttributes(inherit: false).OfType<DescriptionAttribute>().LastOrDefault() is { } typeDescriptionAttribute)
-                {
-                    schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = typeDescriptionAttribute.Description;
-                }
-                else
-                {
-                    var xmlDoc = _xmlDocumentationProvider.GetDocumentation(context.TypeInfo.Type);
-                    if (xmlDoc?.Summary != null)
-                    {
-                        schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = xmlDoc.Summary;
-                    }
-                }
-                if (context.PropertyInfo is { AttributeProvider: { } attributeProvider })
-                {
-                    var propertyAttributes = attributeProvider.GetCustomAttributes(inherit: false);
-                    if (propertyAttributes.OfType<ValidationAttribute>() is { } validationAttributes)
-                    {
-                        schema.ApplyValidationAttributes(validationAttributes);
-                    }
-                    if (propertyAttributes.OfType<DefaultValueAttribute>().LastOrDefault() is { } defaultValueAttribute)
-                    {
-                        schema.ApplyDefaultValue(defaultValueAttribute.Value, context.TypeInfo);
-                    }
-                    var descriptionAttribute = propertyAttributes.OfType<DescriptionAttribute>().LastOrDefault();
-                    var description = descriptionAttribute?.Description;
-
-                    if (description == null && context.PropertyInfo.AttributeProvider is MemberInfo member)
-                    {
-                        description = _xmlDocumentationProvider.GetDocumentation(member)?.Summary;
-                    }
-
-                    // Every property schema stays inline (nothing is componentized into a $ref), so the
-                    // description goes on the schema itself, also for enums and named complex types. It
-                    // replaces the type's own summary set above, which describes the type, not the property.
-                    if (description != null)
-                    {
-                        schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = description;
-                    }
-                }
-                // Nullable componentized-object schemas deliberately keep "null" in their type. A former
-                // PruneNullTypeForComponentizedTypes step stripped it, assuming a oneOf-wrapping restoration
-                // would re-add nullability at the property reference site. That restoration never worked,
-                // so pruning silently dropped nullability; see NullablePropertySchemaTests.
-                return schema;
+                schemaObject[SchemaTypeMarker] = schemaTypes.Count;
+                schemaTypes.Add(context.TypeInfo.Type);
             }
-        };
+
+            return schema;
+        }
+    };
+
+    private JsonNode TransformSchemaNode(JsonSchemaExporterContext context, JsonNode schema)
+    {
+        var type = context.TypeInfo.Type;
+        // Fix up schemas generated for IFormFile, IFormFileCollection, Stream, PipeReader and FileContentResult
+        // that appear as properties within complex types.
+        if (type == typeof(IFormFile) || type == typeof(Stream) || type == typeof(PipeReader) || type == typeof(FileContentResult))
+        {
+            schema = new JsonObject
+            {
+                [AsyncApiJsonSchemaKeywords.TypeKeyword] = "string",
+                [AsyncApiJsonSchemaKeywords.FormatKeyword] = "binary",
+                [AsyncApiConstants.Id] = "IFormFile"
+            };
+        }
+        else if (type == typeof(IFormFileCollection))
+        {
+            schema = new JsonObject
+            {
+                [AsyncApiJsonSchemaKeywords.TypeKeyword] = "array",
+                [AsyncApiJsonSchemaKeywords.ItemsKeyword] = new JsonObject
+                {
+                    [AsyncApiJsonSchemaKeywords.TypeKeyword] = "string",
+                    [AsyncApiJsonSchemaKeywords.FormatKeyword] = "binary",
+                    [AsyncApiConstants.Id] = "IFormFile"
+                }
+            };
+        }
+        else if (type.IsJsonPatchDocument())
+        {
+            schema = CreateSchemaForJsonPatch();
+        }
+        // STJ uses `true` in place of an empty object to represent a schema that matches
+        // anything (like the `object` type) or types with user-defined converters. We override
+        // this default behavior here to match the format expected in AsyncApi v3.
+        if (schema.GetValueKind() == JsonValueKind.True)
+        {
+            schema = new JsonObject();
+        }
+        var createSchemaReferenceId = _optionsMonitor.Get(_documentName).CreateSchemaReferenceId;
+        schema.ApplyPrimitiveTypesAndFormats(context, createSchemaReferenceId);
+        schema.ApplySchemaReferenceId(context, createSchemaReferenceId);
+        schema.MapPolymorphismOptionsToDiscriminator(context, createSchemaReferenceId);
+        if (context.PropertyInfo is { } jsonPropertyInfo)
+        {
+            schema.ApplyNullabilityContextInfo(jsonPropertyInfo);
+        }
+        if (context.TypeInfo.Type.GetCustomAttributes(inherit: false).OfType<DescriptionAttribute>().LastOrDefault() is { } typeDescriptionAttribute)
+        {
+            schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = typeDescriptionAttribute.Description;
+        }
+        else
+        {
+            var xmlDoc = _xmlDocumentationProvider.GetDocumentation(context.TypeInfo.Type);
+            if (xmlDoc?.Summary != null)
+            {
+                schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = xmlDoc.Summary;
+            }
+        }
+        if (context.PropertyInfo is { AttributeProvider: { } attributeProvider })
+        {
+            var propertyAttributes = attributeProvider.GetCustomAttributes(inherit: false);
+            if (propertyAttributes.OfType<ValidationAttribute>() is { } validationAttributes)
+            {
+                schema.ApplyValidationAttributes(validationAttributes);
+            }
+            if (propertyAttributes.OfType<DefaultValueAttribute>().LastOrDefault() is { } defaultValueAttribute)
+            {
+                schema.ApplyDefaultValue(defaultValueAttribute.Value, context.TypeInfo);
+            }
+            var descriptionAttribute = propertyAttributes.OfType<DescriptionAttribute>().LastOrDefault();
+            var description = descriptionAttribute?.Description;
+
+            if (description == null && context.PropertyInfo.AttributeProvider is MemberInfo member)
+            {
+                description = _xmlDocumentationProvider.GetDocumentation(member)?.Summary;
+            }
+
+            // Property schemas stay inline (only a recursive back-reference becomes a $ref), so the
+            // description goes on the schema itself, also for enums and named complex types. It
+            // replaces the type's own summary set above, which describes the type, not the property.
+            if (description != null)
+            {
+                schema[AsyncApiJsonSchemaKeywords.DescriptionKeyword] = description;
+            }
+        }
+        // Nullable componentized-object schemas deliberately keep "null" in their type. A former
+        // PruneNullTypeForComponentizedTypes step stripped it, assuming a oneOf-wrapping restoration
+        // would re-add nullability at the property reference site. That restoration never worked,
+        // so pruning silently dropped nullability; see NullablePropertySchemaTests.
+        return schema;
     }
 
     private static JsonObject CreateSchemaForJsonPatch()
@@ -293,7 +312,7 @@ internal sealed class AsyncApiJsonSchemaService
 
     internal async Task<AsyncApiJsonSchema> GetOrCreateUnresolvedSchemaAsync(AsyncApiDocument? document, Type type, IServiceProvider scopedServiceProvider, IAsyncApiSchemaTransformer[] schemaTransformers, CancellationToken cancellationToken = default)
     {
-        var schemaAsJsonObject = CreateSchema(type);
+        var (schemaAsJsonObject, recursiveReferences) = CreateSchema(type);
 
         // Convert string type values to numeric enum format and remove null IDs
         ConvertTypeStringsToEnumValues(schemaAsJsonObject);
@@ -303,6 +322,7 @@ internal sealed class AsyncApiJsonSchemaService
         {
             var deserializedSchema = JsonSerializer.Deserialize(schemaAsJsonObject, _jsonSchemaContext.AsyncApiJsonSchema);
             Debug.Assert(deserializedSchema != null, "The schema should have been deserialized successfully and materialize a non-null value.");
+            LinkRecursiveReferences(document, deserializedSchema, recursiveReferences);
             await ApplySchemaTransformersAsync(document, deserializedSchema, type, scopedServiceProvider, schemaTransformers, cancellationToken);
             return deserializedSchema;
         }
@@ -454,6 +474,17 @@ internal sealed class AsyncApiJsonSchemaService
             return (null, schema);
         }
 
+        AddComponentSchema(document, key, type, (AsyncApiJsonSchema)schema);
+
+        return (key, schema);
+    }
+
+    /// <summary>
+    /// Registers <paramref name="schema"/> under <paramref name="key"/> in <c>components/schemas</c> unless the key is
+    /// already registered for <paramref name="type"/>. Throws when a different type already claimed the key.
+    /// </summary>
+    private void AddComponentSchema(AsyncApiDocument document, string key, Type type, AsyncApiJsonSchema schema)
+    {
         var schemaKeyOwners = _schemaKeyOwners.GetValue(document, _ => new Dictionary<string, Type>(StringComparer.Ordinal));
         if (!schemaKeyOwners.TryAdd(key, type) && schemaKeyOwners[key] != type)
         {
@@ -466,13 +497,143 @@ internal sealed class AsyncApiJsonSchemaService
 
         document.Components ??= new AsyncApiComponents();
         document.Components.Schemas ??= new Dictionary<string, AsyncApiMultiFormatSchema>();
-        document.Components.Schemas.TryAdd(key, new AsyncApiMultiFormatSchema { Schema = schema as AsyncApiJsonSchema });
+        document.Components.Schemas.TryAdd(key, new AsyncApiMultiFormatSchema { Schema = schema });
+    }
 
-        return (key, schema);
+    /// <summary>
+    /// Replaces each recursive back-reference with a <c>$ref</c> to the component of the type it recurses into, and
+    /// registers that type's schema as the component. The type's first occurrence stays inline, so the property
+    /// that holds it keeps its own description, default and nullability.
+    /// </summary>
+    /// <remarks>
+    /// A back-reference always points at an ancestor of itself, so replacing one never moves the schema another
+    /// one points at. Without a document there is no <c>components/schemas</c> to point into, so the
+    /// back-references stay empty schemas.
+    /// </remarks>
+    private void LinkRecursiveReferences(
+        AsyncApiDocument? document,
+        AsyncApiJsonSchema rootSchema,
+        List<RecursiveReference> recursiveReferences)
+    {
+        if (document is null)
+        {
+            return;
+        }
+
+        foreach (var recursiveReference in recursiveReferences)
+        {
+            var targetType = recursiveReference.TargetType;
+            if (GetSchemaComponentKey(targetType) is not { Length: > 0 } key
+                || !TryGetSubschema(rootSchema, recursiveReference.TargetPath, out var target))
+            {
+                continue;
+            }
+
+            AddComponentSchema(document, key, targetType, target);
+            TryReplaceSubschema(rootSchema, recursiveReference.SourcePath,
+                new AsyncApiJsonSchemaReference($"#/components/schemas/{key}"));
+        }
+    }
+
+    /// <summary>
+    /// A place where <paramref name="TargetType"/> recurses into itself: where the back-reference sits, and where the
+    /// type's outermost occurrence starts, both as JSON pointer segments from the root schema.
+    /// </summary>
+    private sealed record RecursiveReference(string[] SourcePath, string[] TargetPath, Type TargetType);
+
+    private static bool TryGetReference(JsonObject schema, [NotNullWhen(true)] out string? reference)
+    {
+        if (schema.TryGetPropertyValue(AsyncApiConstants.DollarRef, out var refNode)
+            && refNode is JsonValue refValue
+            && refValue.TryGetValue(out reference)
+            && reference.StartsWith(AsyncApiGeneratorConstants.RefPrefix, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        reference = null;
+        return false;
+    }
+
+    private static bool TryGetSubschema(AsyncApiJsonSchema root, string[] path, [NotNullWhen(true)] out AsyncApiJsonSchema? subschema)
+    {
+        subschema = root;
+        for (var i = 0; i < path.Length && subschema is not null; i++)
+        {
+            subschema = path[i] switch
+            {
+                AsyncApiJsonSchemaKeywords.PropertiesKeyword when i + 1 < path.Length
+                    => subschema.Properties?.TryGetValue(path[++i], out var property) == true ? property : null,
+                AsyncApiJsonSchemaKeywords.ItemsKeyword => subschema.Items,
+                AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword => subschema.AdditionalProperties,
+                AsyncApiJsonSchemaKeywords.NotKeyword => subschema.Not,
+                AsyncApiJsonSchemaKeywords.AnyOfKeyword when i + 1 < path.Length => ElementAt(subschema.AnyOf, path[++i]),
+                AsyncApiJsonSchemaKeywords.OneOfKeyword when i + 1 < path.Length => ElementAt(subschema.OneOf, path[++i]),
+                AsyncApiJsonSchemaKeywords.AllOfKeyword when i + 1 < path.Length => ElementAt(subschema.AllOf, path[++i]),
+                _ => null,
+            };
+        }
+
+        return subschema is not null;
+
+        static AsyncApiJsonSchema? ElementAt(IList<AsyncApiJsonSchema>? schemas, string index) =>
+            int.TryParse(index, out var i) && schemas is not null && i >= 0 && i < schemas.Count ? schemas[i] : null;
+    }
+
+    private static void TryReplaceSubschema(AsyncApiJsonSchema root, string[] path, AsyncApiJsonSchema replacement)
+    {
+        // The last step is one segment ("items") or a keyword plus a key or index ("properties", "children").
+        var keyed = path.Length >= 2 && path[^2] is AsyncApiJsonSchemaKeywords.PropertiesKeyword
+            or AsyncApiJsonSchemaKeywords.AnyOfKeyword or AsyncApiJsonSchemaKeywords.OneOfKeyword
+            or AsyncApiJsonSchemaKeywords.AllOfKeyword;
+        var parentLength = path.Length - (keyed ? 2 : 1);
+        if (parentLength < 0 || !TryGetSubschema(root, path[..parentLength], out var parent))
+        {
+            return;
+        }
+
+        switch (path[parentLength])
+        {
+            case AsyncApiJsonSchemaKeywords.PropertiesKeyword when parent.Properties?.ContainsKey(path[^1]) == true:
+                parent.Properties[path[^1]] = replacement;
+                break;
+            case AsyncApiJsonSchemaKeywords.ItemsKeyword:
+                parent.Items = replacement;
+                break;
+            case AsyncApiJsonSchemaKeywords.AdditionalPropertiesKeyword:
+                parent.AdditionalProperties = replacement;
+                break;
+            case AsyncApiJsonSchemaKeywords.NotKeyword:
+                parent.Not = replacement;
+                break;
+            case AsyncApiJsonSchemaKeywords.AnyOfKeyword:
+                SetElement(parent.AnyOf, path[^1], replacement);
+                break;
+            case AsyncApiJsonSchemaKeywords.OneOfKeyword:
+                SetElement(parent.OneOf, path[^1], replacement);
+                break;
+            case AsyncApiJsonSchemaKeywords.AllOfKeyword:
+                SetElement(parent.AllOf, path[^1], replacement);
+                break;
+        }
+
+        static void SetElement(IList<AsyncApiJsonSchema>? schemas, string index, AsyncApiJsonSchema value)
+        {
+            if (int.TryParse(index, out var i) && schemas is not null && i >= 0 && i < schemas.Count)
+            {
+                schemas[i] = value;
+            }
+        }
     }
 
     internal static AsyncApiJsonSchema ResolveReferenceForSchema(AsyncApiDocument document, IAsyncApiSchema inputSchema, string? rootSchemaId, string? baseSchemaId = null)
     {
+        // Already a reference (a recursive back-reference); walking into it would cycle back to its target.
+        if (inputSchema is AsyncApiJsonSchemaReference existingReference)
+        {
+            return existingReference;
+        }
+
         var schema = UnwrapAsyncApiJsonSchema(inputSchema);
 
         var isComponentizedSchema = schema.IsComponentizedSchema(out var schemaId);
@@ -608,6 +769,12 @@ internal sealed class AsyncApiJsonSchemaService
         IAsyncApiSchemaTransformer transformer,
         CancellationToken cancellationToken = default)
     {
+        // A recursive back-reference: the schema it points at is transformed where it is defined.
+        if (inputSchema is AsyncApiJsonSchemaReference)
+        {
+            return;
+        }
+
         context.UpdateJsonTypeInfo(jsonTypeInfo, jsonPropertyInfo);
         var schema = UnwrapAsyncApiJsonSchema(inputSchema);
         await transformer.TransformAsync(schema, context, cancellationToken);
@@ -688,13 +855,17 @@ internal sealed class AsyncApiJsonSchemaService
     }
 #endif
 
-    private JsonNode CreateSchema(Type type)
+    private (JsonNode Schema, List<RecursiveReference> RecursiveReferences) CreateSchema(Type type)
     {
         try
         {
-            var schema = JsonSchemaExporter.GetJsonSchemaAsNode(_jsonSerializerOptions, type, _configuration);
+            var schemaTypes = new List<Type>();
+            var schema = JsonSchemaExporter.GetJsonSchemaAsNode(_jsonSerializerOptions, type, CreateExporterOptions(schemaTypes));
             NormalizeSchemaTypes(schema);
-            return ResolveReferences(schema, schema);
+            var recursiveReferences = new List<RecursiveReference>();
+            var resolved = ResolveReferencesRecursive(schema, schema, [], [], recursiveReferences, schemaTypes);
+            RemoveSchemaTypeMarkers(resolved);
+            return (resolved, recursiveReferences);
         }
         catch (NotSupportedException ex) when (ex.Message.Contains("JsonTypeInfo"))
         {
@@ -743,54 +914,92 @@ internal sealed class AsyncApiJsonSchemaService
         }
     }
 
-    private static JsonNode ResolveReferences(JsonNode node, JsonNode rootSchema)
-    {
-        return ResolveReferencesRecursive(node, rootSchema);
-    }
-
-    private static JsonNode ResolveReferencesRecursive(JsonNode node, JsonNode rootSchema)
+    /// <summary>
+    /// Copies <paramref name="node"/>, inlining every <c>$ref</c> the schema exporter emits. The exporter uses them
+    /// to point at the first occurrence of a type it has already described, which is how it writes recursion down.
+    /// Inlining stops where a type reappears below itself: that back-reference becomes an empty schema here and is
+    /// recorded in <paramref name="recursiveReferences"/> against the type's outermost occurrence, so
+    /// <see cref="LinkRecursiveReferences"/> can turn it into a <c>$ref</c> to the type's component.
+    /// </summary>
+    /// <param name="node">The node to copy.</param>
+    /// <param name="rootSchema">The exporter's root schema, which the <c>$ref</c> pointers are relative to.</param>
+    /// <param name="path">The JSON pointer segments of <paramref name="node"/>'s position in the copy.</param>
+    /// <param name="ancestors">The types being described around <paramref name="node"/>, with where each one starts.</param>
+    /// <param name="recursiveReferences">Receives the back-references found.</param>
+    /// <param name="schemaTypes">The types the exporter's schema type markers index into.</param>
+    private JsonNode ResolveReferencesRecursive(
+        JsonNode node,
+        JsonNode rootSchema,
+        List<string> path,
+        List<(Type Type, string[] Path)> ancestors,
+        List<RecursiveReference> recursiveReferences,
+        List<Type> schemaTypes)
     {
         if (node is JsonObject jsonObject)
         {
-            if (jsonObject.TryGetPropertyValue(AsyncApiConstants.DollarRef, out var refNode) &&
-                refNode is JsonValue refValue &&
-                refValue.TryGetValue<string>(out var refString) &&
-                refString.StartsWith(AsyncApiGeneratorConstants.RefPrefix, StringComparison.Ordinal))
+            // A pointer can land on another pointer; the hop limit only guards against a malformed chain.
+            for (var hops = 0; hops < 8 && TryGetReference(jsonObject, out var refString); hops++)
             {
+                JsonNode? resolvedNode;
                 try
                 {
-                    // Resolve the reference path to the actual schema content
-                    // to avoid relative references
-                    var resolvedNode = ResolveReference(refString, rootSchema);
-                    if (resolvedNode != null)
-                    {
-                        return resolvedNode.DeepClone();
-                    }
+                    resolvedNode = ResolveReference(refString, rootSchema);
                 }
                 catch (InvalidOperationException)
                 {
-                    // If resolution fails due to invalid path, return the original reference
-                    // This maintains backward compatibility while preventing crashes
+                    // An unresolvable pointer is kept as written rather than failing the whole document.
+                    return jsonObject.DeepClone();
                 }
 
-                // If resolution fails, return the original reference
-                return node;
+                if (resolvedNode is not JsonObject resolvedObject)
+                {
+                    return resolvedNode?.DeepClone() ?? jsonObject.DeepClone();
+                }
+
+                jsonObject = resolvedObject;
             }
 
-            // Process all properties recursively
+            var pushed = false;
+            if (jsonObject[SchemaTypeMarker] is JsonValue marker && marker.TryGetValue<int>(out var typeIndex))
+            {
+                var type = Nullable.GetUnderlyingType(schemaTypes[typeIndex]) ?? schemaTypes[typeIndex];
+                var ancestor = ancestors.FindIndex(candidate => candidate.Type == type);
+                if (ancestor >= 0)
+                {
+                    // A type that is always inlined has no component to point to, so its recursion ends here.
+                    if (GetSchemaComponentKey(type) is { Length: > 0 })
+                    {
+                        recursiveReferences.Add(new RecursiveReference([.. path], ancestors[ancestor].Path, type));
+                    }
+
+                    return new JsonObject();
+                }
+
+                ancestors.Add((type, [.. path]));
+                pushed = true;
+            }
+
             var newObject = new JsonObject();
             foreach (var property in jsonObject)
             {
                 if (property.Value != null)
                 {
-                    var processedValue = ResolveReferencesRecursive(property.Value, rootSchema);
-                    newObject[property.Key] = processedValue?.DeepClone();
+                    path.Add(property.Key);
+                    var processedValue = ResolveReferencesRecursive(property.Value, rootSchema, path, ancestors, recursiveReferences, schemaTypes);
+                    path.RemoveAt(path.Count - 1);
+                    newObject[property.Key] = processedValue;
                 }
                 else
                 {
                     newObject[property.Key] = null;
                 }
             }
+
+            if (pushed)
+            {
+                ancestors.RemoveAt(ancestors.Count - 1);
+            }
+
             return newObject;
         }
         else if (node is JsonArray jsonArray)
@@ -800,8 +1009,10 @@ internal sealed class AsyncApiJsonSchemaService
             {
                 if (jsonArray[i] != null)
                 {
-                    var processedValue = ResolveReferencesRecursive(jsonArray[i]!, rootSchema);
-                    newArray.Add(processedValue?.DeepClone());
+                    path.Add(i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    var processedValue = ResolveReferencesRecursive(jsonArray[i]!, rootSchema, path, ancestors, recursiveReferences, schemaTypes);
+                    path.RemoveAt(path.Count - 1);
+                    newArray.Add(processedValue);
                 }
                 else
                 {
@@ -811,8 +1022,8 @@ internal sealed class AsyncApiJsonSchemaService
             return newArray;
         }
 
-        // Return non-$ref nodes as-is
-        return node;
+        // Primitive values are copied as they are.
+        return node.DeepClone();
     }
 
     private static JsonNode? ResolveReference(string refPath, JsonNode rootSchema)
@@ -827,13 +1038,7 @@ internal sealed class AsyncApiJsonSchemaService
             throw new InvalidOperationException($"Only fragment references (starting with '{AsyncApiGeneratorConstants.RefPrefix}') are supported. Found: {refPath}");
         }
 
-        var path = refPath.TrimStart('#', '/');
-        if (string.IsNullOrEmpty(path))
-        {
-            return rootSchema;
-        }
-
-        var segments = path.Split('/');
+        var segments = ParsePointer(refPath);
         var current = rootSchema;
 
         for (var i = 0; i < segments.Length; i++)
@@ -851,6 +1056,14 @@ internal sealed class AsyncApiJsonSchemaService
                     throw new InvalidOperationException($"Failed to resolve reference '{refPath}': path segment '{segment}' not found at '#{partialPath}'");
                 }
             }
+            // Recursion through a polymorphic base type points into its anyOf array.
+            else if (current is JsonArray currentArray
+                     && int.TryParse(segment, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var index)
+                     && index < currentArray.Count
+                     && currentArray[index] is { } element)
+            {
+                current = element;
+            }
             else
             {
                 var partialPath = string.Join('/', segments.Take(i));
@@ -859,5 +1072,32 @@ internal sealed class AsyncApiJsonSchemaService
         }
 
         return current;
+    }
+
+    /// <summary>
+    /// The unescaped segments of a JSON pointer fragment such as <c>#/properties/children/items</c>; <c>#</c> is the root.
+    /// </summary>
+    private static string[] ParsePointer(string pointer) =>
+        pointer.TrimStart('#').Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Select(segment => segment.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal))
+            .ToArray();
+
+    private static void RemoveSchemaTypeMarkers(JsonNode? node)
+    {
+        if (node is JsonObject jsonObject)
+        {
+            jsonObject.Remove(SchemaTypeMarker);
+            foreach (var property in jsonObject)
+            {
+                RemoveSchemaTypeMarkers(property.Value);
+            }
+        }
+        else if (node is JsonArray jsonArray)
+        {
+            foreach (var element in jsonArray)
+            {
+                RemoveSchemaTypeMarkers(element);
+            }
+        }
     }
 }
