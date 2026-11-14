@@ -904,6 +904,10 @@ internal sealed class AsyncApiDocumentService(
         };
     }
 
+    /// <summary>
+    /// The document's <c>info</c>: a copy of <see cref="AsyncApiOptions.Info"/>, so a document transformer that edits
+    /// it changes this document only, not the options every later request starts from.
+    /// </summary>
     internal AsyncApiInfo GetAsyncApiInfo()
     {
         var info = new AsyncApiInfo
@@ -912,18 +916,37 @@ internal sealed class AsyncApiDocumentService(
             Version = AsyncApiGeneratorConstants.DefaultInfoVersion
         };
 
-        // Apply configured info from options if available
-        if (_options.Info is not null)
+        if (_options.Info is not { } configured)
         {
-            info.Title = _options.Info.Title ?? info.Title;
-            info.Version = _options.Info.Version ?? info.Version;
-            info.Description = _options.Info.Description;
-            info.License = _options.Info.License;
-            info.Contact = _options.Info.Contact;
+            return info;
+        }
+
+        info.Title = configured.Title ?? info.Title;
+        info.Version = configured.Version ?? info.Version;
+        info.Description = configured.Description;
+        info.TermsOfService = configured.TermsOfService;
+        info.ExternalDocs = configured.ExternalDocs;
+        info.Contact = configured.Contact is { } contact
+            ? new AsyncApiContact { Name = contact.Name, Url = contact.Url, Email = contact.Email, Extensions = CopyOrNull(contact.Extensions) }
+            : null;
+        info.License = configured.License is { } license
+            ? new AsyncApiLicense { Name = license.Name, Url = license.Url, Extensions = CopyOrNull(license.Extensions) }
+            : null;
+        if (configured.Tags is { } tags)
+        {
+            info.Tags = [.. tags];
+        }
+
+        if (configured.Extensions is { } extensions)
+        {
+            info.Extensions = new Dictionary<string, IAsyncApiExtension>(extensions);
         }
 
         return info;
     }
+
+    private static Dictionary<string, IAsyncApiExtension>? CopyOrNull(IDictionary<string, IAsyncApiExtension>? source) =>
+        source is null ? null : new Dictionary<string, IAsyncApiExtension>(source);
 
     private void ApplySecurityFromOptions(AsyncApiDocument document)
     {
@@ -1023,45 +1046,71 @@ internal sealed class AsyncApiDocumentService(
 
             if (document.Servers.TryGetValue(key, out var server))
             {
-                // The document shares server instances with the options, so attach to a per-document copy.
-                var documentServer = CopyServer(server);
-                var merged = new AsyncApiBindings<IServerBinding>();
-                if (server.Bindings is not null)
-                {
-                    foreach (var existing in server.Bindings)
-                    {
-                        merged[existing.Key] = existing.Value;
-                    }
-                }
-
-                // Bindings registered through AddServerBinding win over ones set on the server itself.
+                // The server is already this document's own copy (see GetAsyncApiServers). Bindings registered
+                // through AddServerBinding win over ones set on the server itself.
+                server.Bindings ??= new AsyncApiBindings<IServerBinding>();
                 foreach (var registered in bindings)
                 {
-                    merged[registered.Key] = registered.Value;
+                    server.Bindings[registered.Key] = registered.Value;
                 }
-
-                documentServer.Bindings = merged;
-                document.Servers[key] = documentServer;
             }
         }
     }
 
-    private static AsyncApiServer CopyServer(AsyncApiServer source) => new()
+    /// <summary>
+    /// A copy of a server configured on the options, with its own collections: generation adds security
+    /// requirements and bindings to the document's servers, and concurrent requests adding them to the options'
+    /// shared lists both corrupted those lists and failed with "Collection was modified".
+    /// </summary>
+    /// <remarks>
+    /// The collections are copied, not the objects in them: tags, variables, bindings and security requirements are
+    /// still the instances registered on the options.
+    /// </remarks>
+    private static AsyncApiServer CopyServer(AsyncApiServer source)
     {
-        Host = source.Host,
-        PathName = source.PathName,
-        Protocol = source.Protocol,
-        ProtocolVersion = source.ProtocolVersion,
-        Description = source.Description,
-        Title = source.Title,
-        Summary = source.Summary,
-        Variables = source.Variables,
-        Security = source.Security,
-        Tags = source.Tags,
-        ExternalDocs = source.ExternalDocs,
-        Bindings = source.Bindings,
-        Extensions = source.Extensions
-    };
+        var copy = new AsyncApiServer
+        {
+            Host = source.Host,
+            PathName = source.PathName,
+            Protocol = source.Protocol,
+            ProtocolVersion = source.ProtocolVersion,
+            Description = source.Description,
+            Title = source.Title,
+            Summary = source.Summary,
+            ExternalDocs = source.ExternalDocs,
+        };
+
+        if (source.Variables is { } variables)
+        {
+            copy.Variables = new Dictionary<string, AsyncApiServerVariable>(variables);
+        }
+
+        if (source.Security is { } security)
+        {
+            copy.Security = [.. security];
+        }
+
+        if (source.Tags is { } tags)
+        {
+            copy.Tags = [.. tags];
+        }
+
+        if (source.Extensions is { } extensions)
+        {
+            copy.Extensions = new Dictionary<string, IAsyncApiExtension>(extensions);
+        }
+
+        if (source.Bindings is { } bindings)
+        {
+            copy.Bindings = new AsyncApiBindings<IServerBinding>();
+            foreach (var binding in bindings)
+            {
+                copy.Bindings[binding.Key] = binding.Value;
+            }
+        }
+
+        return copy;
+    }
 
     private static AsyncApiBindings<TBinding> ToBindings<TBinding>(IEnumerable<TBinding> source)
         where TBinding : IBinding
@@ -1084,7 +1133,7 @@ internal sealed class AsyncApiDocumentService(
         {
             foreach (var kvp in _options.Servers)
             {
-                servers[AsyncApiNamingHelper.SanitizeKey(kvp.Key)] = kvp.Value;
+                servers[AsyncApiNamingHelper.SanitizeKey(kvp.Key)] = CopyServer(kvp.Value);
             }
 
             return servers;
