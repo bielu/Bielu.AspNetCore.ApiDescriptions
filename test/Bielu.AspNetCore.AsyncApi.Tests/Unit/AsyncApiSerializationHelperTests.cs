@@ -24,6 +24,32 @@ public class AsyncApiSerializationHelperTests
     }
 
     [Fact]
+    public void SerializeV2ToJson_NonAsciiAndHtmlCharacters_AreWrittenUnescaped()
+    {
+        // Arrange
+        var document = new AsyncApiDocument { Info = new AsyncApiInfo { Title = "Café <lights> + more", Version = "1.0.0" } };
+
+        // Act
+        var result = AsyncApiSerializationHelper.SerializeV2ToJson(document);
+
+        // Assert
+        result.ShouldContain("Café <lights> + more");
+    }
+
+    [Fact]
+    public void SerializeV2ToJson_IsIndentedLikeV3()
+    {
+        // Arrange
+        var document = CreateSimpleDocument();
+
+        // Act
+        var result = AsyncApiSerializationHelper.SerializeV2ToJson(document);
+
+        // Assert: ByteBard's writer indents, as for 3.x; 2.x used to be re-minified onto one line.
+        result.Split('\n').Length.ShouldBeGreaterThan(3);
+    }
+
+    [Fact]
     public void SerializeV2ToJson_ProducesNonEmptyJson()
     {
         // Arrange
