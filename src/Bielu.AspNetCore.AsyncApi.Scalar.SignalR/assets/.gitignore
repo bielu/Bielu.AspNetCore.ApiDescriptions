@@ -1,3 +1,6 @@
 node_modules/
 dist/
 *.tsbuildinfo
+# Written by `npm run build:standalone` (scripts/build-standalone.mjs) on every build. Nothing reads it from the
+# repository; it is build output, like dist/.
+standalone/
