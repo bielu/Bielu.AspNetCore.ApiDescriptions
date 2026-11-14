@@ -320,22 +320,13 @@ internal sealed class AsyncApiDocumentService(
                 continue;
             }
 
-            // Avoid duplicates by checking the reference string
-            var alreadyExists = channel.Servers.Any(s =>
-            {
-                if (s is { Reference.Reference: not null } serverRef)
-                {
-                    var reference = serverRef.Reference.Reference;
-                    return reference.EndsWith(sanitizedServerKey, StringComparison.OrdinalIgnoreCase);
-                }
-
-                return false;
-            });
-
-            if (alreadyExists)
+            // Compare the whole reference: a suffix match would treat "prod" as already present once
+            // "eu-prod" is referenced. Server keys are case-sensitive in the document, so ordinal.
+            var reference = $"#/servers/{sanitizedServerKey}";
+            if (channel.Servers.Any(s => string.Equals(s.Reference?.Reference, reference, StringComparison.Ordinal)))
                 continue;
 
-            channel.Servers.Add(new AsyncApiServerReference($"#/servers/{sanitizedServerKey}"));
+            channel.Servers.Add(new AsyncApiServerReference(reference));
         }
     }
 
