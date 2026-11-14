@@ -2,7 +2,6 @@
 using System.Text.Json;
 using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Services;
-using Bielu.AspNetCore.AsyncApi.Tests.LibraryChannels;
 using ByteBard.AsyncAPI;
 using ByteBard.AsyncAPI.Readers;
 using Microsoft.AspNetCore.Builder;
@@ -71,8 +70,9 @@ public class AsyncApiDocumentGenerationTests
 
         // Parse with ByteBard reader to verify structure
         var reader = new AsyncApiStringReader();
+        // Nothing touches a LibraryChannels type before the request (see LibraryChannelsReference), so the library
+        // assembly is not loaded yet: its channels must be found by following this assembly's references.
         var document = reader.Read(content, out var diagnostic);
-        var forceReference = new ExternaltMessageBus();
         document.ShouldNotBeNull();
 
         // Check for any parsing errors
@@ -84,6 +84,13 @@ public class AsyncApiDocumentGenerationTests
 
         document.Components.Tags.ContainsKey("External").ShouldBe(true);
     }
+
+    /// <summary>
+    /// Never called. It keeps the LibraryChannels assembly in this assembly's references, the way an app's use of
+    /// its contract types does, without loading it: an uncalled method is never compiled, so the type is never
+    /// resolved.
+    /// </summary>
+    private static Type LibraryChannelsReference() => typeof(LibraryChannels.ExternaltMessageBus);
 
     private static async Task<IHost> CreateTestHostAsync(AsyncApiVersion? version = null)
     {
