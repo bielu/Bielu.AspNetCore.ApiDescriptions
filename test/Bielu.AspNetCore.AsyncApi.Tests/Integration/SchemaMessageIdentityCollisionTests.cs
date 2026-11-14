@@ -239,6 +239,48 @@ public class SchemaMessageIdentityCollisionTests
         exception.Message.ShouldContain("duplicateMessageId");
     }
 
+    /// <summary>
+    /// Two different channel names that sanitize to the same channel key ("schema-identity/orders" and
+    /// "schema-identityorders") must be reported. They used to be merged into one channel carrying the
+    /// first channel's address and both channels' messages.
+    /// </summary>
+    [Fact]
+    public async Task ChannelKeyCollision_DifferentAddressesSameSanitizedKey_ThrowsClearDiagnostic()
+    {
+        // Arrange
+        using var host = await CreateHostAsync(SchemaIdentityFixtures.SchemaIdentityDocuments.ChannelKeyCollision);
+        var provider = host.Services.GetRequiredKeyedService<IAsyncApiDocumentProvider>(
+            SchemaIdentityFixtures.SchemaIdentityDocuments.ChannelKeyCollision);
+
+        // Act
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() => provider.GetAsyncApiDocumentAsync());
+
+        // Assert
+        exception.Message.ShouldContain("schema-identity/orders");
+        exception.Message.ShouldContain("schema-identityorders");
+        exception.Message.ShouldContain(nameof(SchemaIdentityFixtures.ChannelKeyCollisionChannels));
+    }
+
+    /// <summary>
+    /// The same channel name on two members is deliberate reuse: both members' messages and operations
+    /// belong to one channel.
+    /// </summary>
+    [Fact]
+    public async Task ChannelKeyReuse_SameAddressOnTwoMembers_ProducesSingleChannel()
+    {
+        // Arrange
+        using var host = await CreateHostAsync(SchemaIdentityFixtures.SchemaIdentityDocuments.ChannelKeyReuse);
+
+        // Act
+        var document = await GetDocumentAsync(host, SchemaIdentityFixtures.SchemaIdentityDocuments.ChannelKeyReuse);
+
+        // Assert
+        var channel = document.Channels.Values.Where(c => c.Address == "schema-identity/shared").ShouldHaveSingleItem();
+        channel.Messages.Count.ShouldBe(2);
+        document.Operations.Keys.ShouldContain("channelKeyReuseOperationA");
+        document.Operations.Keys.ShouldContain("channelKeyReuseOperationB");
+    }
+
     private static Task<AsyncApiDocument> GetDocumentAsync(IHost host, string documentName)
         => host.Services.GetRequiredKeyedService<IAsyncApiDocumentProvider>(documentName).GetAsyncApiDocumentAsync();
 
