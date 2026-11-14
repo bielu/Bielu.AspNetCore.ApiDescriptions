@@ -1,0 +1,95 @@
+﻿#nullable enable
+Bielu.AspNetCore.Arazzo.ArazzoDefaults
+Bielu.AspNetCore.Arazzo.ArazzoId
+Bielu.AspNetCore.Arazzo.Extensions.ArazzoEndpointRouteBuilderExtensions
+Bielu.AspNetCore.Arazzo.Extensions.ArazzoServiceCollectionExtensions
+Bielu.AspNetCore.Arazzo.Services.ArazzoDocumentValidationException
+Bielu.AspNetCore.Arazzo.Services.ArazzoDocumentValidationException.DocumentName.get -> string!
+Bielu.AspNetCore.Arazzo.Services.ArazzoDocumentValidationException.Errors.get -> System.Collections.Generic.IReadOnlyList<Bielu.Arazzo.Validation.ArazzoError!>!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddAsyncApiSource(string! sourceName, string! asyncApiDocumentName, string? url = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddOpenApiSource(string! sourceName, string! openApiDocumentName, string? url = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddSerializedDocumentTransformer(Bielu.AspNetCore.Arazzo.Transformers.IArazzoSerializedDocumentTransformer! transformer) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddSerializedDocumentTransformer(System.Func<string!, Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string!>>! transformer) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddSourceDescription(string! name, string! url, string! type) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddWorkflow(string! workflowId, System.Action<Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!>! configure) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddWorkflow<TWorkflow>(System.Action<Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!>! configure) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.ArazzoOptions() -> void
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.BuildTimeDocumentName.get -> string?
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.BuildTimeDocumentName.set -> void
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.DocumentName.get -> string!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.Info.get -> Bielu.Arazzo.Models.ArazzoInfo?
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.Info.set -> void
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.StartupValidationTimeout.get -> System.TimeSpan
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.StartupValidationTimeout.set -> void
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.ValidateSourceReferencesOnStartup.get -> bool
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.ValidateSourceReferencesOnStartup.set -> void
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.Version.get -> Bielu.Arazzo.ArazzoVersion
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.Version.set -> void
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.WithInfo(System.Action<Bielu.Arazzo.Models.ArazzoInfo!>! configure) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.WithInfo(string! title, string! version) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Channel(string! sourceName, string! channelName, string! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.DependsOn(params string![]! stepIds) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.DependsOn<TStep>() -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.OnFailure(Bielu.Arazzo.Models.ArazzoFailureAction! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.OnSuccess(Bielu.Arazzo.Models.ArazzoSuccessAction! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Operation(string! operationId) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.OperationPath(string! sourceName, string! path, string! httpMethod) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Output(string! name, string! expression) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Parameter(string! name, string! valueExpression, string? location = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Payload(System.Text.Json.Nodes.JsonNode! payload, string? contentType = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.PayloadExpression(string! expression, string? contentType = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.SuccessCriteria(string! condition, string? context = null, Bielu.Arazzo.Models.ArazzoSelectorType? type = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.WithCorrelationId(string! correlationId) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.WithDescription(string! description) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.WithTimeout(int milliseconds) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Workflow(string! workflowId) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Workflow<TWorkflow>() -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.DependsOn(params string![]! workflowIds) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.DependsOn<TWorkflow>() -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.Step(string! stepId, System.Action<Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!>! configure) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.Step<TStep>(System.Action<Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!>! configure) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.WithDescription(string! description) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.WithInputs(System.Text.Json.Serialization.Metadata.JsonTypeInfo! typeInfo) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.WithInputs<TInputs>(System.Text.Json.JsonSerializerOptions? serializerOptions = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.WithSummary(string! summary) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.IArazzoDocumentProvider
+Bielu.AspNetCore.Arazzo.Services.IArazzoDocumentProvider.GetArazzoDocumentAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Bielu.Arazzo.Models.ArazzoDocument!>!
+Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver
+Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver.AsyncApiSourceResolver() -> void
+Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver.SourceType.get -> string!
+Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver.TryResolveChannelPath(object! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
+Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver.TryResolveOperation(object! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver.TryResolveOperationPath(object! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver
+Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.OpenApiSourceResolver() -> void
+Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.SourceType.get -> string!
+Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.TryResolveChannelPath(object! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
+Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.TryResolveOperation(object! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.TryResolveOperationPath(object! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentFormat
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentFormat.Json = 0 -> Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentFormat
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentFormat.Yaml = 1 -> Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentFormat
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext.ApplicationServices.get -> System.IServiceProvider!
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext.ApplicationServices.init -> void
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext.ArazzoSerializedDocumentContext() -> void
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext.DocumentName.get -> string!
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext.DocumentName.init -> void
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext.Format.get -> Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentFormat
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext.Format.init -> void
+Bielu.AspNetCore.Arazzo.Transformers.IArazzoSerializedDocumentTransformer
+Bielu.AspNetCore.Arazzo.Transformers.IArazzoSerializedDocumentTransformer.TransformAsync(string! document, Bielu.AspNetCore.Arazzo.Transformers.ArazzoSerializedDocumentContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string!>
+Bielu.AspNetCore.Arazzo.Validation.ArazzoStartupValidationException
+Bielu.AspNetCore.Arazzo.Validation.ArazzoStartupValidationException.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+const Bielu.AspNetCore.Arazzo.ArazzoDefaults.DefaultArazzoRoute = "/arazzo/{documentName}.json" -> string!
+const Bielu.AspNetCore.Arazzo.ArazzoDefaults.DefaultDocumentName = "v1" -> string!
+static Bielu.AspNetCore.Arazzo.ArazzoId.FromType(System.Type! type) -> string!
+static Bielu.AspNetCore.Arazzo.ArazzoId.FromType<T>() -> string!
+static Bielu.AspNetCore.Arazzo.Extensions.ArazzoEndpointRouteBuilderExtensions.MapArazzo(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/arazzo/{documentName}.json") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static Bielu.AspNetCore.Arazzo.Extensions.ArazzoServiceCollectionExtensions.AddArazzo(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Bielu.AspNetCore.Arazzo.Extensions.ArazzoServiceCollectionExtensions.AddArazzo(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!>! configureOptions) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Bielu.AspNetCore.Arazzo.Extensions.ArazzoServiceCollectionExtensions.AddArazzo(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! documentName) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Bielu.AspNetCore.Arazzo.Extensions.ArazzoServiceCollectionExtensions.AddArazzo(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! documentName, System.Action<Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!>! configureOptions) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

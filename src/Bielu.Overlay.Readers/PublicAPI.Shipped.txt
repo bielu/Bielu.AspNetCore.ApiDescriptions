@@ -1,0 +1,18 @@
+﻿#nullable enable
+Bielu.Overlay.Readers.OverlayReadResult
+Bielu.Overlay.Readers.OverlayReadResult.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<Bielu.Overlay.OverlayDiagnostic!>!
+Bielu.Overlay.Readers.OverlayReadResult.Diagnostics.init -> void
+Bielu.Overlay.Readers.OverlayReadResult.Document.get -> Bielu.Overlay.Models.OverlayDocument?
+Bielu.Overlay.Readers.OverlayReadResult.Document.init -> void
+Bielu.Overlay.Readers.OverlayReadResult.HasErrors.get -> bool
+Bielu.Overlay.Readers.OverlayReadResult.OverlayReadResult() -> void
+Bielu.Overlay.Readers.OverlayReaderSettings
+Bielu.Overlay.Readers.OverlayReaderSettings.IgnoreUnrecognizedFields.get -> bool
+Bielu.Overlay.Readers.OverlayReaderSettings.IgnoreUnrecognizedFields.set -> void
+Bielu.Overlay.Readers.OverlayReaderSettings.OverlayReaderSettings() -> void
+Bielu.Overlay.Readers.OverlayStreamReader
+Bielu.Overlay.Readers.OverlayStringReader
+Bielu.Overlay.Readers.OverlayTextReader
+static Bielu.Overlay.Readers.OverlayStreamReader.Read(System.IO.Stream! stream, Bielu.Overlay.Readers.OverlayReaderSettings? settings = null) -> Bielu.Overlay.Readers.OverlayReadResult!
+static Bielu.Overlay.Readers.OverlayStringReader.Read(string! content, Bielu.Overlay.Readers.OverlayReaderSettings? settings = null) -> Bielu.Overlay.Readers.OverlayReadResult!
+static Bielu.Overlay.Readers.OverlayTextReader.Read(System.IO.TextReader! reader, Bielu.Overlay.Readers.OverlayReaderSettings? settings = null) -> Bielu.Overlay.Readers.OverlayReadResult!

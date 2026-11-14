@@ -1,0 +1,9 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.ScalarGrpcDefaults
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.ScalarGrpcEndpointRouteBuilderExtensions
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.ScalarGrpcOptions
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.ScalarGrpcOptions.ScalarGrpcOptions() -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Grpc.ScalarGrpcOptionsExtensions
+const Bielu.AspNetCore.AsyncApi.Scalar.Grpc.ScalarGrpcDefaults.AssetsPath = "/bielu/scalar/grpc" -> string!
+static Bielu.AspNetCore.AsyncApi.Scalar.Grpc.ScalarGrpcEndpointRouteBuilderExtensions.MapScalarGrpcAssets(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path = "/bielu/scalar/grpc") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Bielu.AspNetCore.AsyncApi.Scalar.Grpc.ScalarGrpcOptionsExtensions.WithGrpcClient(this Scalar.AspNetCore.ScalarOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.Scalar.Grpc.ScalarGrpcOptions!>? configure = null, string! assetsPath = "/bielu/scalar/grpc") -> Scalar.AspNetCore.ScalarOptions!

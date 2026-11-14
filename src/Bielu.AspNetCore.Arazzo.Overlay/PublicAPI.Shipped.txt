@@ -1,0 +1,6 @@
+﻿#nullable enable
+Bielu.AspNetCore.Arazzo.Overlay.ArazzoOverlayOptionsExtensions
+static Bielu.AspNetCore.Arazzo.Overlay.ArazzoOverlayOptionsExtensions.AddOverlay(this Bielu.AspNetCore.Arazzo.Services.ArazzoOptions! options, Bielu.AspNetCore.Overlay.OverlaySource! source) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+static Bielu.AspNetCore.Arazzo.Overlay.ArazzoOverlayOptionsExtensions.AddOverlay(this Bielu.AspNetCore.Arazzo.Services.ArazzoOptions! options, Bielu.Overlay.Models.OverlayDocument! overlay) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+static Bielu.AspNetCore.Arazzo.Overlay.ArazzoOverlayOptionsExtensions.AddOverlay(this Bielu.AspNetCore.Arazzo.Services.ArazzoOptions! options, string! filePath) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+static Bielu.AspNetCore.Arazzo.Overlay.ArazzoOverlayOptionsExtensions.ConfigureOverlays(this Bielu.AspNetCore.Arazzo.Services.ArazzoOptions! options, System.Action<Bielu.Overlay.OverlayApplyOptions!>! configure) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!

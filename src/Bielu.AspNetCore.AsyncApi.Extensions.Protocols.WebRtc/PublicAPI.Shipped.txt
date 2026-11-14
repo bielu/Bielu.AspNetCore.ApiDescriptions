@@ -1,0 +1,90 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.ChannelType.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.ChannelType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.Id.get -> int?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.Id.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.Label.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.Label.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.MaxPacketLifeTime.get -> int?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.MaxPacketLifeTime.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.MaxRetransmits.get -> int?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.MaxRetransmits.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.Negotiated.get -> bool?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.Negotiated.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.Ordered.get -> bool?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.Ordered.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.SubProtocol.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.SubProtocol.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.WebRtcChannelBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.Encoding.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.Encoding.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.Headers.get -> ByteBard.AsyncAPI.Models.AsyncApiJsonSchema?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.Headers.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.SignalingType.get -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.SignalingType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.WebRtcMessageBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.Direction.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.Direction.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.SignalingType.get -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.SignalingType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.WebRtcOperationBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOptionsExtensions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.BundlePolicies
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.ChannelTypes
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.Directions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.Encodings
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.BundlePolicy.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.BundlePolicy.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.IceServers.get -> System.Collections.Generic.IList<string!>!
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.IceServers.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.SignalingUrl.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.SignalingUrl.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.WebRtcServerBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType.Answer = 1 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType.Candidate = 2 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType.Offer = 0 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingTypeExtensions
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.BindingKey = "x-webrtc" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.BundlePolicies.Balanced = "balanced" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.BundlePolicies.MaxBundle = "max-bundle" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.BundlePolicies.MaxCompat = "max-compat" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.ChannelTypes.DataChannel = "dataChannel" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.ChannelTypes.Media = "media" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.DefaultBindingVersion = "0.1.0" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.Directions.Bidirectional = "bidirectional" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.Directions.ClientToServer = "clientToServer" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.Directions.ServerToClient = "serverToClient" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.Encodings.Binary = "binary" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.Encodings.Json = "json" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.Encodings.Text = "text" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcProtocol.ProtocolName = "webrtc" -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcMessageBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcServerBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOptionsExtensions.AddWebRtcChannelBinding(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, string! channelName, System.Action<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcChannelBinding!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOptionsExtensions.AddWebRtcOperationBinding(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, string! operationName, System.Action<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcOperationBinding!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingTypeExtensions.Parse(string? value) -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType?
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingTypeExtensions.ToWireName(this Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc.WebRtcSignalingType type) -> string!

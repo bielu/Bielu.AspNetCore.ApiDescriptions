@@ -1,0 +1,37 @@
+﻿#nullable enable
+Bielu.Arazzo.Readers.ArazzoDiagnostics
+Bielu.Arazzo.Readers.ArazzoDiagnostics.ArazzoDiagnostics() -> void
+Bielu.Arazzo.Readers.ArazzoDiagnostics.Errors.get -> System.Collections.Generic.IList<Bielu.Arazzo.Readers.ArazzoReaderError!>!
+Bielu.Arazzo.Readers.ArazzoDiagnostics.Version.get -> Bielu.Arazzo.ArazzoVersion
+Bielu.Arazzo.Readers.ArazzoDiagnostics.Version.set -> void
+Bielu.Arazzo.Readers.ArazzoDiagnostics.Warnings.get -> System.Collections.Generic.IList<Bielu.Arazzo.Readers.ArazzoReaderError!>!
+Bielu.Arazzo.Readers.ArazzoReadResult
+Bielu.Arazzo.Readers.ArazzoReadResult.ArazzoReadResult() -> void
+Bielu.Arazzo.Readers.ArazzoReadResult.Diagnostics.get -> Bielu.Arazzo.Readers.ArazzoDiagnostics!
+Bielu.Arazzo.Readers.ArazzoReadResult.Diagnostics.init -> void
+Bielu.Arazzo.Readers.ArazzoReadResult.Document.get -> Bielu.Arazzo.Models.ArazzoDocument?
+Bielu.Arazzo.Readers.ArazzoReadResult.Document.init -> void
+Bielu.Arazzo.Readers.ArazzoReaderError
+Bielu.Arazzo.Readers.ArazzoReaderError.<Clone>$() -> Bielu.Arazzo.Readers.ArazzoReaderError!
+Bielu.Arazzo.Readers.ArazzoReaderError.ArazzoReaderError(string! Path, string! Message) -> void
+Bielu.Arazzo.Readers.ArazzoReaderError.Deconstruct(out string! Path, out string! Message) -> void
+Bielu.Arazzo.Readers.ArazzoReaderError.Equals(Bielu.Arazzo.Readers.ArazzoReaderError? other) -> bool
+Bielu.Arazzo.Readers.ArazzoReaderError.Message.get -> string!
+Bielu.Arazzo.Readers.ArazzoReaderError.Message.init -> void
+Bielu.Arazzo.Readers.ArazzoReaderError.Path.get -> string!
+Bielu.Arazzo.Readers.ArazzoReaderError.Path.init -> void
+Bielu.Arazzo.Readers.ArazzoReaderSettings
+Bielu.Arazzo.Readers.ArazzoReaderSettings.ArazzoReaderSettings() -> void
+Bielu.Arazzo.Readers.ArazzoReaderSettings.IgnoreUnrecognizedFields.get -> bool
+Bielu.Arazzo.Readers.ArazzoReaderSettings.IgnoreUnrecognizedFields.set -> void
+Bielu.Arazzo.Readers.ArazzoStreamReader
+Bielu.Arazzo.Readers.ArazzoStringReader
+Bielu.Arazzo.Readers.ArazzoTextReader
+override Bielu.Arazzo.Readers.ArazzoReaderError.Equals(object? obj) -> bool
+override Bielu.Arazzo.Readers.ArazzoReaderError.GetHashCode() -> int
+override Bielu.Arazzo.Readers.ArazzoReaderError.ToString() -> string!
+static Bielu.Arazzo.Readers.ArazzoReaderError.operator !=(Bielu.Arazzo.Readers.ArazzoReaderError? left, Bielu.Arazzo.Readers.ArazzoReaderError? right) -> bool
+static Bielu.Arazzo.Readers.ArazzoReaderError.operator ==(Bielu.Arazzo.Readers.ArazzoReaderError? left, Bielu.Arazzo.Readers.ArazzoReaderError? right) -> bool
+static Bielu.Arazzo.Readers.ArazzoStreamReader.Read(System.IO.Stream! stream, Bielu.Arazzo.Readers.ArazzoReaderSettings? settings = null) -> Bielu.Arazzo.Readers.ArazzoReadResult!
+static Bielu.Arazzo.Readers.ArazzoStringReader.Read(string! content, Bielu.Arazzo.Readers.ArazzoReaderSettings? settings = null) -> Bielu.Arazzo.Readers.ArazzoReadResult!
+static Bielu.Arazzo.Readers.ArazzoTextReader.Read(System.IO.TextReader! reader, Bielu.Arazzo.Readers.ArazzoReaderSettings? settings = null) -> Bielu.Arazzo.Readers.ArazzoReadResult!

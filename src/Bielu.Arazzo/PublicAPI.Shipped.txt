@@ -1,0 +1,579 @@
+﻿#nullable enable
+Bielu.Arazzo.ArazzoVersion
+Bielu.Arazzo.ArazzoVersion.V1_0 = 0 -> Bielu.Arazzo.ArazzoVersion
+Bielu.Arazzo.ArazzoVersion.V1_1 = 1 -> Bielu.Arazzo.ArazzoVersion
+Bielu.Arazzo.ArazzoVersionExtensions
+Bielu.Arazzo.ArazzoWorkspace
+Bielu.Arazzo.ArazzoWorkspace.ArazzoWorkspace() -> void
+Bielu.Arazzo.ArazzoWorkspace.RegisterDocument(string! sourceName, string! sourceType, object! document) -> void
+Bielu.Arazzo.ArazzoWorkspace.RegisterResolver(Bielu.Arazzo.IArazzoSourceResolver! resolver) -> void
+Bielu.Arazzo.ArazzoWorkspace.TryGetDocument(string! sourceName, out object? document) -> bool
+Bielu.Arazzo.ArazzoWorkspace.TryGetResolver(string! sourceType, out Bielu.Arazzo.IArazzoSourceResolver? resolver) -> bool
+Bielu.Arazzo.ArazzoWorkspace.TryResolveChannelPath(string! sourceName, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
+Bielu.Arazzo.ArazzoWorkspace.TryResolveOperation(string! sourceName, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.Arazzo.ArazzoWorkspace.TryResolveOperationPath(string! sourceName, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.GetComponent(string! field, string! name) -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.GetInput(string! name) -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.GetMessageValue(Bielu.Arazzo.Expressions.RuntimeExpressionSource! source) -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.GetOutput(string! name) -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.GetRequestValue(Bielu.Arazzo.Expressions.RuntimeExpressionSource! source) -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.GetResponseValue(Bielu.Arazzo.Expressions.RuntimeExpressionSource! source) -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.GetSourceDescriptionReference(string! sourceName, string! referenceId) -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.GetStepOutput(string! stepId, string! outputName) -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.GetWorkflowField(string! workflowName, string! field, string? fieldName) -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.Method.get -> string?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.Self.get -> string?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.StatusCode.get -> int?
+Bielu.Arazzo.Expressions.IRuntimeExpressionContext.Url.get -> string?
+Bielu.Arazzo.Expressions.RuntimeExpression
+Bielu.Arazzo.Expressions.RuntimeExpression.Components
+Bielu.Arazzo.Expressions.RuntimeExpression.Components.Components(string! Raw, string! Field, string! Name) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Components.Deconstruct(out string! Raw, out string! Field, out string! Name) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Components.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Components? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Components.Field.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.Components.Field.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Components.Name.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.Components.Name.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Deconstruct(out string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Inputs
+Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.Deconstruct(out string! Raw, out string! Name, out string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Inputs? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.Inputs(string! Raw, string! Name, string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.JsonPointer.get -> string?
+Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.JsonPointer.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.Name.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.Name.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Message
+Bielu.Arazzo.Expressions.RuntimeExpression.Message.Deconstruct(out string! Raw, out Bielu.Arazzo.Expressions.RuntimeExpressionSource! Source) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Message.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Message? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Message.Message(string! Raw, Bielu.Arazzo.Expressions.RuntimeExpressionSource! Source) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Message.Source.get -> Bielu.Arazzo.Expressions.RuntimeExpressionSource!
+Bielu.Arazzo.Expressions.RuntimeExpression.Message.Source.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Method
+Bielu.Arazzo.Expressions.RuntimeExpression.Method.Deconstruct(out string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Method.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Method? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Method.Method(string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Outputs
+Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.Deconstruct(out string! Raw, out string! Name, out string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Outputs? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.JsonPointer.get -> string?
+Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.JsonPointer.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.Name.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.Name.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.Outputs(string! Raw, string! Name, string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Raw.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.Raw.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Request
+Bielu.Arazzo.Expressions.RuntimeExpression.Request.Deconstruct(out string! Raw, out Bielu.Arazzo.Expressions.RuntimeExpressionSource! Source) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Request.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Request? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Request.Request(string! Raw, Bielu.Arazzo.Expressions.RuntimeExpressionSource! Source) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Request.Source.get -> Bielu.Arazzo.Expressions.RuntimeExpressionSource!
+Bielu.Arazzo.Expressions.RuntimeExpression.Request.Source.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Response
+Bielu.Arazzo.Expressions.RuntimeExpression.Response.Deconstruct(out string! Raw, out Bielu.Arazzo.Expressions.RuntimeExpressionSource! Source) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Response.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Response? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Response.Response(string! Raw, Bielu.Arazzo.Expressions.RuntimeExpressionSource! Source) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Response.Source.get -> Bielu.Arazzo.Expressions.RuntimeExpressionSource!
+Bielu.Arazzo.Expressions.RuntimeExpression.Response.Source.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.RuntimeExpression(Bielu.Arazzo.Expressions.RuntimeExpression! original) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.RuntimeExpression(string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Self
+Bielu.Arazzo.Expressions.RuntimeExpression.Self.Deconstruct(out string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Self.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Self? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Self.Self(string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions
+Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.Deconstruct(out string! Raw, out string! SourceName, out string! ReferenceId) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.ReferenceId.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.ReferenceId.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.SourceDescriptions(string! Raw, string! SourceName, string! ReferenceId) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.SourceName.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.SourceName.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode
+Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.Deconstruct(out string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.StatusCode(string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps.Deconstruct(out string! Raw, out string! StepId, out string! OutputName, out string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Steps? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps.JsonPointer.get -> string?
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps.JsonPointer.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps.OutputName.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps.OutputName.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps.StepId.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps.StepId.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Steps.Steps(string! Raw, string! StepId, string! OutputName, string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Url
+Bielu.Arazzo.Expressions.RuntimeExpression.Url.Deconstruct(out string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Url.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Url? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Url.Url(string! Raw) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.Deconstruct(out string! Raw, out string! WorkflowName, out string! Field, out string? FieldName, out string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.Equals(Bielu.Arazzo.Expressions.RuntimeExpression.Workflows? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.Field.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.Field.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.FieldName.get -> string?
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.FieldName.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.JsonPointer.get -> string?
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.JsonPointer.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.WorkflowName.get -> string!
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.WorkflowName.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.Workflows(string! Raw, string! WorkflowName, string! Field, string? FieldName, string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpressionEvaluator
+Bielu.Arazzo.Expressions.RuntimeExpressionParser
+Bielu.Arazzo.Expressions.RuntimeExpressionSource
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpressionSource!
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.Deconstruct(out Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind Kind, out string? Name, out string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.Equals(Bielu.Arazzo.Expressions.RuntimeExpressionSource? other) -> bool
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.JsonPointer.get -> string?
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.JsonPointer.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.Kind.get -> Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.Kind.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.Name.get -> string?
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.Name.init -> void
+Bielu.Arazzo.Expressions.RuntimeExpressionSource.RuntimeExpressionSource(Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind Kind, string? Name, string? JsonPointer) -> void
+Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind
+Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind.Body = 3 -> Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind
+Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind.Header = 0 -> Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind
+Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind.Path = 2 -> Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind
+Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind.Payload = 4 -> Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind
+Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind.Query = 1 -> Bielu.Arazzo.Expressions.RuntimeExpressionSourceKind
+Bielu.Arazzo.IArazzoSourceResolver
+Bielu.Arazzo.IArazzoSourceResolver.SourceType.get -> string!
+Bielu.Arazzo.IArazzoSourceResolver.TryResolveChannelPath(object! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
+Bielu.Arazzo.IArazzoSourceResolver.TryResolveOperation(object! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.Arazzo.IArazzoSourceResolver.TryResolveOperationPath(object! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.Arazzo.Models.ArazzoComponents
+Bielu.Arazzo.Models.ArazzoComponents.ArazzoComponents() -> void
+Bielu.Arazzo.Models.ArazzoComponents.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoComponents.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoComponents.FailureActions.get -> System.Collections.Generic.IDictionary<string!, Bielu.Arazzo.Models.ArazzoFailureAction!>?
+Bielu.Arazzo.Models.ArazzoComponents.FailureActions.set -> void
+Bielu.Arazzo.Models.ArazzoComponents.Inputs.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoComponents.Inputs.set -> void
+Bielu.Arazzo.Models.ArazzoComponents.Parameters.get -> System.Collections.Generic.IDictionary<string!, Bielu.Arazzo.Models.ArazzoParameter!>?
+Bielu.Arazzo.Models.ArazzoComponents.Parameters.set -> void
+Bielu.Arazzo.Models.ArazzoComponents.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoComponents.SuccessActions.get -> System.Collections.Generic.IDictionary<string!, Bielu.Arazzo.Models.ArazzoSuccessAction!>?
+Bielu.Arazzo.Models.ArazzoComponents.SuccessActions.set -> void
+Bielu.Arazzo.Models.ArazzoCriterion
+Bielu.Arazzo.Models.ArazzoCriterion.ArazzoCriterion() -> void
+Bielu.Arazzo.Models.ArazzoCriterion.Condition.get -> string!
+Bielu.Arazzo.Models.ArazzoCriterion.Condition.set -> void
+Bielu.Arazzo.Models.ArazzoCriterion.Context.get -> string?
+Bielu.Arazzo.Models.ArazzoCriterion.Context.set -> void
+Bielu.Arazzo.Models.ArazzoCriterion.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoCriterion.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoCriterion.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoCriterion.Type.get -> Bielu.Arazzo.Models.ArazzoSelectorType?
+Bielu.Arazzo.Models.ArazzoCriterion.Type.set -> void
+Bielu.Arazzo.Models.ArazzoCriterionType
+Bielu.Arazzo.Models.ArazzoDocument
+Bielu.Arazzo.Models.ArazzoDocument.Arazzo.get -> string!
+Bielu.Arazzo.Models.ArazzoDocument.Arazzo.set -> void
+Bielu.Arazzo.Models.ArazzoDocument.ArazzoDocument() -> void
+Bielu.Arazzo.Models.ArazzoDocument.Components.get -> Bielu.Arazzo.Models.ArazzoComponents?
+Bielu.Arazzo.Models.ArazzoDocument.Components.set -> void
+Bielu.Arazzo.Models.ArazzoDocument.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoDocument.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoDocument.Info.get -> Bielu.Arazzo.Models.ArazzoInfo!
+Bielu.Arazzo.Models.ArazzoDocument.Info.set -> void
+Bielu.Arazzo.Models.ArazzoDocument.Self.get -> string?
+Bielu.Arazzo.Models.ArazzoDocument.Self.set -> void
+Bielu.Arazzo.Models.ArazzoDocument.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoDocument.SourceDescriptions.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoSourceDescription!>!
+Bielu.Arazzo.Models.ArazzoDocument.SourceDescriptions.set -> void
+Bielu.Arazzo.Models.ArazzoDocument.Workflows.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoWorkflow!>!
+Bielu.Arazzo.Models.ArazzoDocument.Workflows.set -> void
+Bielu.Arazzo.Models.ArazzoExtensibleWriterExtensions
+Bielu.Arazzo.Models.ArazzoFailureAction
+Bielu.Arazzo.Models.ArazzoFailureAction.ArazzoFailureAction() -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.Criteria.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoCriterion!>?
+Bielu.Arazzo.Models.ArazzoFailureAction.Criteria.set -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoFailureAction.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.Name.get -> string!
+Bielu.Arazzo.Models.ArazzoFailureAction.Name.set -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.Parameters.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoReferenceable<Bielu.Arazzo.Models.ArazzoParameter!>!>?
+Bielu.Arazzo.Models.ArazzoFailureAction.Parameters.set -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.RetryAfter.get -> double?
+Bielu.Arazzo.Models.ArazzoFailureAction.RetryAfter.set -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.RetryLimit.get -> int?
+Bielu.Arazzo.Models.ArazzoFailureAction.RetryLimit.set -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.StepId.get -> string?
+Bielu.Arazzo.Models.ArazzoFailureAction.StepId.set -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.Type.get -> string!
+Bielu.Arazzo.Models.ArazzoFailureAction.Type.set -> void
+Bielu.Arazzo.Models.ArazzoFailureAction.WorkflowId.get -> string?
+Bielu.Arazzo.Models.ArazzoFailureAction.WorkflowId.set -> void
+Bielu.Arazzo.Models.ArazzoFailureActionType
+Bielu.Arazzo.Models.ArazzoInfo
+Bielu.Arazzo.Models.ArazzoInfo.ArazzoInfo() -> void
+Bielu.Arazzo.Models.ArazzoInfo.Description.get -> string?
+Bielu.Arazzo.Models.ArazzoInfo.Description.set -> void
+Bielu.Arazzo.Models.ArazzoInfo.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoInfo.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoInfo.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoInfo.Summary.get -> string?
+Bielu.Arazzo.Models.ArazzoInfo.Summary.set -> void
+Bielu.Arazzo.Models.ArazzoInfo.Title.get -> string!
+Bielu.Arazzo.Models.ArazzoInfo.Title.set -> void
+Bielu.Arazzo.Models.ArazzoInfo.Version.get -> string!
+Bielu.Arazzo.Models.ArazzoInfo.Version.set -> void
+Bielu.Arazzo.Models.ArazzoParameter
+Bielu.Arazzo.Models.ArazzoParameter.ArazzoParameter() -> void
+Bielu.Arazzo.Models.ArazzoParameter.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoParameter.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoParameter.In.get -> string?
+Bielu.Arazzo.Models.ArazzoParameter.In.set -> void
+Bielu.Arazzo.Models.ArazzoParameter.Name.get -> string!
+Bielu.Arazzo.Models.ArazzoParameter.Name.set -> void
+Bielu.Arazzo.Models.ArazzoParameter.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoParameter.Value.get -> Bielu.Arazzo.Models.ArazzoValue!
+Bielu.Arazzo.Models.ArazzoParameter.Value.set -> void
+Bielu.Arazzo.Models.ArazzoParameterLocation
+Bielu.Arazzo.Models.ArazzoPayloadReplacement
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.ArazzoPayloadReplacement() -> void
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.Target.get -> string!
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.Target.set -> void
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.TargetSelectorType.get -> Bielu.Arazzo.Models.ArazzoSelectorType?
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.TargetSelectorType.set -> void
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.Value.get -> Bielu.Arazzo.Models.ArazzoValue!
+Bielu.Arazzo.Models.ArazzoPayloadReplacement.Value.set -> void
+Bielu.Arazzo.Models.ArazzoReferenceable<T>
+Bielu.Arazzo.Models.ArazzoReferenceable<T>.ArazzoReferenceable() -> void
+Bielu.Arazzo.Models.ArazzoReferenceable<T>.IsReference.get -> bool
+Bielu.Arazzo.Models.ArazzoReferenceable<T>.Reference.get -> Bielu.Arazzo.Models.ArazzoReusableObject?
+Bielu.Arazzo.Models.ArazzoReferenceable<T>.Reference.set -> void
+Bielu.Arazzo.Models.ArazzoReferenceable<T>.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoReferenceable<T>.Value.get -> T?
+Bielu.Arazzo.Models.ArazzoReferenceable<T>.Value.set -> void
+Bielu.Arazzo.Models.ArazzoRequestBody
+Bielu.Arazzo.Models.ArazzoRequestBody.ArazzoRequestBody() -> void
+Bielu.Arazzo.Models.ArazzoRequestBody.ContentType.get -> string?
+Bielu.Arazzo.Models.ArazzoRequestBody.ContentType.set -> void
+Bielu.Arazzo.Models.ArazzoRequestBody.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoRequestBody.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoRequestBody.Payload.get -> Bielu.Arazzo.Models.ArazzoValue?
+Bielu.Arazzo.Models.ArazzoRequestBody.Payload.set -> void
+Bielu.Arazzo.Models.ArazzoRequestBody.Replacements.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoPayloadReplacement!>?
+Bielu.Arazzo.Models.ArazzoRequestBody.Replacements.set -> void
+Bielu.Arazzo.Models.ArazzoRequestBody.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoReusableObject
+Bielu.Arazzo.Models.ArazzoReusableObject.ArazzoReusableObject() -> void
+Bielu.Arazzo.Models.ArazzoReusableObject.Reference.get -> string!
+Bielu.Arazzo.Models.ArazzoReusableObject.Reference.set -> void
+Bielu.Arazzo.Models.ArazzoReusableObject.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoReusableObject.Value.get -> string?
+Bielu.Arazzo.Models.ArazzoReusableObject.Value.set -> void
+Bielu.Arazzo.Models.ArazzoSelector
+Bielu.Arazzo.Models.ArazzoSelector.ArazzoSelector() -> void
+Bielu.Arazzo.Models.ArazzoSelector.Context.get -> string!
+Bielu.Arazzo.Models.ArazzoSelector.Context.set -> void
+Bielu.Arazzo.Models.ArazzoSelector.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoSelector.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoSelector.Selector.get -> string!
+Bielu.Arazzo.Models.ArazzoSelector.Selector.set -> void
+Bielu.Arazzo.Models.ArazzoSelector.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoSelector.Type.get -> Bielu.Arazzo.Models.ArazzoSelectorType!
+Bielu.Arazzo.Models.ArazzoSelector.Type.set -> void
+Bielu.Arazzo.Models.ArazzoSelectorType
+Bielu.Arazzo.Models.ArazzoSelectorType.ArazzoSelectorType() -> void
+Bielu.Arazzo.Models.ArazzoSelectorType.IsExpressionTypeObject.get -> bool
+Bielu.Arazzo.Models.ArazzoSelectorType.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoSelectorType.Type.get -> string!
+Bielu.Arazzo.Models.ArazzoSelectorType.Type.set -> void
+Bielu.Arazzo.Models.ArazzoSelectorType.Version.get -> string?
+Bielu.Arazzo.Models.ArazzoSelectorType.Version.set -> void
+Bielu.Arazzo.Models.ArazzoSourceDescription
+Bielu.Arazzo.Models.ArazzoSourceDescription.ArazzoSourceDescription() -> void
+Bielu.Arazzo.Models.ArazzoSourceDescription.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoSourceDescription.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoSourceDescription.Name.get -> string!
+Bielu.Arazzo.Models.ArazzoSourceDescription.Name.set -> void
+Bielu.Arazzo.Models.ArazzoSourceDescription.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoSourceDescription.Type.get -> string?
+Bielu.Arazzo.Models.ArazzoSourceDescription.Type.set -> void
+Bielu.Arazzo.Models.ArazzoSourceDescription.Url.get -> string!
+Bielu.Arazzo.Models.ArazzoSourceDescription.Url.set -> void
+Bielu.Arazzo.Models.ArazzoSourceDescriptionType
+Bielu.Arazzo.Models.ArazzoStep
+Bielu.Arazzo.Models.ArazzoStep.Action.get -> string?
+Bielu.Arazzo.Models.ArazzoStep.Action.set -> void
+Bielu.Arazzo.Models.ArazzoStep.ArazzoStep() -> void
+Bielu.Arazzo.Models.ArazzoStep.ChannelPath.get -> string?
+Bielu.Arazzo.Models.ArazzoStep.ChannelPath.set -> void
+Bielu.Arazzo.Models.ArazzoStep.CorrelationId.get -> string?
+Bielu.Arazzo.Models.ArazzoStep.CorrelationId.set -> void
+Bielu.Arazzo.Models.ArazzoStep.DependsOn.get -> System.Collections.Generic.IList<string!>?
+Bielu.Arazzo.Models.ArazzoStep.DependsOn.set -> void
+Bielu.Arazzo.Models.ArazzoStep.Description.get -> string?
+Bielu.Arazzo.Models.ArazzoStep.Description.set -> void
+Bielu.Arazzo.Models.ArazzoStep.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoStep.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoStep.OnFailure.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoReferenceable<Bielu.Arazzo.Models.ArazzoFailureAction!>!>?
+Bielu.Arazzo.Models.ArazzoStep.OnFailure.set -> void
+Bielu.Arazzo.Models.ArazzoStep.OnSuccess.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoReferenceable<Bielu.Arazzo.Models.ArazzoSuccessAction!>!>?
+Bielu.Arazzo.Models.ArazzoStep.OnSuccess.set -> void
+Bielu.Arazzo.Models.ArazzoStep.OperationId.get -> string?
+Bielu.Arazzo.Models.ArazzoStep.OperationId.set -> void
+Bielu.Arazzo.Models.ArazzoStep.OperationPath.get -> string?
+Bielu.Arazzo.Models.ArazzoStep.OperationPath.set -> void
+Bielu.Arazzo.Models.ArazzoStep.Outputs.get -> System.Collections.Generic.IDictionary<string!, Bielu.Arazzo.Models.ArazzoValue!>?
+Bielu.Arazzo.Models.ArazzoStep.Outputs.set -> void
+Bielu.Arazzo.Models.ArazzoStep.Parameters.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoReferenceable<Bielu.Arazzo.Models.ArazzoParameter!>!>?
+Bielu.Arazzo.Models.ArazzoStep.Parameters.set -> void
+Bielu.Arazzo.Models.ArazzoStep.RequestBody.get -> Bielu.Arazzo.Models.ArazzoRequestBody?
+Bielu.Arazzo.Models.ArazzoStep.RequestBody.set -> void
+Bielu.Arazzo.Models.ArazzoStep.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoStep.StepId.get -> string!
+Bielu.Arazzo.Models.ArazzoStep.StepId.set -> void
+Bielu.Arazzo.Models.ArazzoStep.SuccessCriteria.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoCriterion!>?
+Bielu.Arazzo.Models.ArazzoStep.SuccessCriteria.set -> void
+Bielu.Arazzo.Models.ArazzoStep.Timeout.get -> int?
+Bielu.Arazzo.Models.ArazzoStep.Timeout.set -> void
+Bielu.Arazzo.Models.ArazzoStep.WorkflowId.get -> string?
+Bielu.Arazzo.Models.ArazzoStep.WorkflowId.set -> void
+Bielu.Arazzo.Models.ArazzoStepAction
+Bielu.Arazzo.Models.ArazzoSuccessAction
+Bielu.Arazzo.Models.ArazzoSuccessAction.ArazzoSuccessAction() -> void
+Bielu.Arazzo.Models.ArazzoSuccessAction.Criteria.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoCriterion!>?
+Bielu.Arazzo.Models.ArazzoSuccessAction.Criteria.set -> void
+Bielu.Arazzo.Models.ArazzoSuccessAction.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoSuccessAction.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoSuccessAction.Name.get -> string!
+Bielu.Arazzo.Models.ArazzoSuccessAction.Name.set -> void
+Bielu.Arazzo.Models.ArazzoSuccessAction.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoSuccessAction.StepId.get -> string?
+Bielu.Arazzo.Models.ArazzoSuccessAction.StepId.set -> void
+Bielu.Arazzo.Models.ArazzoSuccessAction.Type.get -> string!
+Bielu.Arazzo.Models.ArazzoSuccessAction.Type.set -> void
+Bielu.Arazzo.Models.ArazzoSuccessAction.WorkflowId.get -> string?
+Bielu.Arazzo.Models.ArazzoSuccessAction.WorkflowId.set -> void
+Bielu.Arazzo.Models.ArazzoSuccessActionType
+Bielu.Arazzo.Models.ArazzoValue
+Bielu.Arazzo.Models.ArazzoValue.Expression.get -> string?
+Bielu.Arazzo.Models.ArazzoValue.IsExpression.get -> bool
+Bielu.Arazzo.Models.ArazzoValue.IsLiteral.get -> bool
+Bielu.Arazzo.Models.ArazzoValue.IsSelector.get -> bool
+Bielu.Arazzo.Models.ArazzoValue.Kind.get -> Bielu.Arazzo.Models.ArazzoValueKind
+Bielu.Arazzo.Models.ArazzoValue.Literal.get -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Models.ArazzoValue.Selector.get -> Bielu.Arazzo.Models.ArazzoSelector?
+Bielu.Arazzo.Models.ArazzoValue.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoValueKind
+Bielu.Arazzo.Models.ArazzoValueKind.Expression = 1 -> Bielu.Arazzo.Models.ArazzoValueKind
+Bielu.Arazzo.Models.ArazzoValueKind.Literal = 0 -> Bielu.Arazzo.Models.ArazzoValueKind
+Bielu.Arazzo.Models.ArazzoValueKind.Selector = 2 -> Bielu.Arazzo.Models.ArazzoValueKind
+Bielu.Arazzo.Models.ArazzoWorkflow
+Bielu.Arazzo.Models.ArazzoWorkflow.ArazzoWorkflow() -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.DependsOn.get -> System.Collections.Generic.IList<string!>?
+Bielu.Arazzo.Models.ArazzoWorkflow.DependsOn.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.Description.get -> string?
+Bielu.Arazzo.Models.ArazzoWorkflow.Description.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.ArazzoWorkflow.Extensions.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.FailureActions.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoReferenceable<Bielu.Arazzo.Models.ArazzoFailureAction!>!>?
+Bielu.Arazzo.Models.ArazzoWorkflow.FailureActions.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.Inputs.get -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Models.ArazzoWorkflow.Inputs.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.Outputs.get -> System.Collections.Generic.IDictionary<string!, Bielu.Arazzo.Models.ArazzoValue!>?
+Bielu.Arazzo.Models.ArazzoWorkflow.Outputs.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.Parameters.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoReferenceable<Bielu.Arazzo.Models.ArazzoParameter!>!>?
+Bielu.Arazzo.Models.ArazzoWorkflow.Parameters.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.Steps.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoStep!>!
+Bielu.Arazzo.Models.ArazzoWorkflow.Steps.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.SuccessActions.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoReferenceable<Bielu.Arazzo.Models.ArazzoSuccessAction!>!>?
+Bielu.Arazzo.Models.ArazzoWorkflow.SuccessActions.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.Summary.get -> string?
+Bielu.Arazzo.Models.ArazzoWorkflow.Summary.set -> void
+Bielu.Arazzo.Models.ArazzoWorkflow.WorkflowId.get -> string!
+Bielu.Arazzo.Models.ArazzoWorkflow.WorkflowId.set -> void
+Bielu.Arazzo.Models.IArazzoExtensible
+Bielu.Arazzo.Models.IArazzoExtensible.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
+Bielu.Arazzo.Models.IArazzoExtensible.Extensions.set -> void
+Bielu.Arazzo.Models.IArazzoSerializable
+Bielu.Arazzo.Models.IArazzoSerializable.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
+Bielu.Arazzo.Validation.ArazzoError
+Bielu.Arazzo.Validation.ArazzoError.<Clone>$() -> Bielu.Arazzo.Validation.ArazzoError!
+Bielu.Arazzo.Validation.ArazzoError.ArazzoError(string! Path, string! Message, bool IsWarning = false) -> void
+Bielu.Arazzo.Validation.ArazzoError.Deconstruct(out string! Path, out string! Message, out bool IsWarning) -> void
+Bielu.Arazzo.Validation.ArazzoError.Equals(Bielu.Arazzo.Validation.ArazzoError? other) -> bool
+Bielu.Arazzo.Validation.ArazzoError.IsWarning.get -> bool
+Bielu.Arazzo.Validation.ArazzoError.IsWarning.init -> void
+Bielu.Arazzo.Validation.ArazzoError.Message.get -> string!
+Bielu.Arazzo.Validation.ArazzoError.Message.init -> void
+Bielu.Arazzo.Validation.ArazzoError.Path.get -> string!
+Bielu.Arazzo.Validation.ArazzoError.Path.init -> void
+Bielu.Arazzo.Validation.ArazzoValidator
+Bielu.Arazzo.Writers.ArazzoJsonWriter
+Bielu.Arazzo.Writers.ArazzoYamlWriter
+Bielu.Arazzo.Writers.IArazzoWriter
+Bielu.Arazzo.Writers.IArazzoWriter.WriteEndArray() -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteEndObject() -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteNull() -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteOptionalArrayProperty<T>(string! name, System.Collections.Generic.ICollection<T>? items, System.Action<T>! writeItem) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteOptionalMapProperty<T>(string! name, System.Collections.Generic.IDictionary<string!, T>? map, System.Action<T>! writeValue) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteOptionalProperty(string! name, System.Text.Json.Nodes.JsonNode? value) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteOptionalProperty(string! name, bool? value) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteOptionalProperty(string! name, double? value) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteOptionalProperty(string! name, int? value) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteOptionalProperty(string! name, string? value) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WritePropertyName(string! name) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteRaw(System.Text.Json.Nodes.JsonNode? node) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteStartArray() -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteStartObject() -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteValue(bool value) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteValue(double value) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteValue(int value) -> void
+Bielu.Arazzo.Writers.IArazzoWriter.WriteValue(string? value) -> void
+abstract Bielu.Arazzo.Expressions.RuntimeExpression.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression!
+const Bielu.Arazzo.Models.ArazzoCriterionType.JsonPath = "jsonpath" -> string!
+const Bielu.Arazzo.Models.ArazzoCriterionType.Regex = "regex" -> string!
+const Bielu.Arazzo.Models.ArazzoCriterionType.Simple = "simple" -> string!
+const Bielu.Arazzo.Models.ArazzoCriterionType.XPath = "xpath" -> string!
+const Bielu.Arazzo.Models.ArazzoFailureActionType.End = "end" -> string!
+const Bielu.Arazzo.Models.ArazzoFailureActionType.Goto = "goto" -> string!
+const Bielu.Arazzo.Models.ArazzoFailureActionType.Retry = "retry" -> string!
+const Bielu.Arazzo.Models.ArazzoParameterLocation.Cookie = "cookie" -> string!
+const Bielu.Arazzo.Models.ArazzoParameterLocation.Header = "header" -> string!
+const Bielu.Arazzo.Models.ArazzoParameterLocation.Path = "path" -> string!
+const Bielu.Arazzo.Models.ArazzoParameterLocation.Query = "query" -> string!
+const Bielu.Arazzo.Models.ArazzoParameterLocation.QueryString = "querystring" -> string!
+const Bielu.Arazzo.Models.ArazzoSourceDescriptionType.Arazzo = "arazzo" -> string!
+const Bielu.Arazzo.Models.ArazzoSourceDescriptionType.AsyncApi = "asyncapi" -> string!
+const Bielu.Arazzo.Models.ArazzoSourceDescriptionType.OpenApi = "openapi" -> string!
+const Bielu.Arazzo.Models.ArazzoStepAction.Receive = "receive" -> string!
+const Bielu.Arazzo.Models.ArazzoStepAction.Send = "send" -> string!
+const Bielu.Arazzo.Models.ArazzoSuccessActionType.End = "end" -> string!
+const Bielu.Arazzo.Models.ArazzoSuccessActionType.Goto = "goto" -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Components.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Components!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Components.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Components.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Components.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Inputs!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Message.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Message!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Message.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Message.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Message.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Method.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Method!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Method.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Method.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Method.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Outputs!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Request.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Request!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Request.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Request.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Request.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Response.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Response!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Response.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Response.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Response.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Self.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Self!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Self.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Self.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Self.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions!
+override Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode!
+override Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Steps.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Steps!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Steps.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Steps.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Steps.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Url.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Url!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Url.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Url.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Url.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Workflows!
+override Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.ToString() -> string!
+override Bielu.Arazzo.Expressions.RuntimeExpressionSource.Equals(object? obj) -> bool
+override Bielu.Arazzo.Expressions.RuntimeExpressionSource.GetHashCode() -> int
+override Bielu.Arazzo.Expressions.RuntimeExpressionSource.ToString() -> string!
+override Bielu.Arazzo.Validation.ArazzoError.Equals(object? obj) -> bool
+override Bielu.Arazzo.Validation.ArazzoError.GetHashCode() -> int
+override Bielu.Arazzo.Validation.ArazzoError.ToString() -> string!
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Components.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Message.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Method.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Request.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Response.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Self.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Steps.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Url.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+override sealed Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+static Bielu.Arazzo.ArazzoVersionExtensions.ToVersionString(this Bielu.Arazzo.ArazzoVersion version) -> string!
+static Bielu.Arazzo.ArazzoVersionExtensions.TryParse(string? value, out Bielu.Arazzo.ArazzoVersion version) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Components.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Components? left, Bielu.Arazzo.Expressions.RuntimeExpression.Components? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Components.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Components? left, Bielu.Arazzo.Expressions.RuntimeExpression.Components? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Inputs? left, Bielu.Arazzo.Expressions.RuntimeExpression.Inputs? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Inputs.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Inputs? left, Bielu.Arazzo.Expressions.RuntimeExpression.Inputs? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Message.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Message? left, Bielu.Arazzo.Expressions.RuntimeExpression.Message? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Message.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Message? left, Bielu.Arazzo.Expressions.RuntimeExpression.Message? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Method.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Method? left, Bielu.Arazzo.Expressions.RuntimeExpression.Method? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Method.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Method? left, Bielu.Arazzo.Expressions.RuntimeExpression.Method? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Outputs? left, Bielu.Arazzo.Expressions.RuntimeExpression.Outputs? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Outputs.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Outputs? left, Bielu.Arazzo.Expressions.RuntimeExpression.Outputs? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Request.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Request? left, Bielu.Arazzo.Expressions.RuntimeExpression.Request? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Request.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Request? left, Bielu.Arazzo.Expressions.RuntimeExpression.Request? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Response.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Response? left, Bielu.Arazzo.Expressions.RuntimeExpression.Response? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Response.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Response? left, Bielu.Arazzo.Expressions.RuntimeExpression.Response? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Self.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Self? left, Bielu.Arazzo.Expressions.RuntimeExpression.Self? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Self.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Self? left, Bielu.Arazzo.Expressions.RuntimeExpression.Self? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions? left, Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions? left, Bielu.Arazzo.Expressions.RuntimeExpression.SourceDescriptions? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode? left, Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode? left, Bielu.Arazzo.Expressions.RuntimeExpression.StatusCode? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Steps.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Steps? left, Bielu.Arazzo.Expressions.RuntimeExpression.Steps? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Steps.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Steps? left, Bielu.Arazzo.Expressions.RuntimeExpression.Steps? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Url.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Url? left, Bielu.Arazzo.Expressions.RuntimeExpression.Url? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Url.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Url? left, Bielu.Arazzo.Expressions.RuntimeExpression.Url? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression.Workflows? left, Bielu.Arazzo.Expressions.RuntimeExpression.Workflows? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.Workflows.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression.Workflows? left, Bielu.Arazzo.Expressions.RuntimeExpression.Workflows? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.operator !=(Bielu.Arazzo.Expressions.RuntimeExpression? left, Bielu.Arazzo.Expressions.RuntimeExpression? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpression.operator ==(Bielu.Arazzo.Expressions.RuntimeExpression? left, Bielu.Arazzo.Expressions.RuntimeExpression? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpressionEvaluator.Evaluate(Bielu.Arazzo.Expressions.RuntimeExpression! expression, Bielu.Arazzo.Expressions.IRuntimeExpressionContext! context) -> System.Text.Json.Nodes.JsonNode?
+static Bielu.Arazzo.Expressions.RuntimeExpressionParser.TryParse(string! input, out Bielu.Arazzo.Expressions.RuntimeExpression? expression, out string? error) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpressionSource.operator !=(Bielu.Arazzo.Expressions.RuntimeExpressionSource? left, Bielu.Arazzo.Expressions.RuntimeExpressionSource? right) -> bool
+static Bielu.Arazzo.Expressions.RuntimeExpressionSource.operator ==(Bielu.Arazzo.Expressions.RuntimeExpressionSource? left, Bielu.Arazzo.Expressions.RuntimeExpressionSource? right) -> bool
+static Bielu.Arazzo.Models.ArazzoExtensibleWriterExtensions.WriteExtensions(this Bielu.Arazzo.Writers.IArazzoWriter! writer, System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>? extensions) -> void
+static Bielu.Arazzo.Models.ArazzoReferenceable<T>.Of(Bielu.Arazzo.Models.ArazzoReusableObject! reference) -> Bielu.Arazzo.Models.ArazzoReferenceable<T>!
+static Bielu.Arazzo.Models.ArazzoReferenceable<T>.Of(T value) -> Bielu.Arazzo.Models.ArazzoReferenceable<T>!
+static Bielu.Arazzo.Models.ArazzoSelectorType.Simple.get -> Bielu.Arazzo.Models.ArazzoSelectorType!
+static Bielu.Arazzo.Models.ArazzoSelectorType.implicit operator Bielu.Arazzo.Models.ArazzoSelectorType!(string! type) -> Bielu.Arazzo.Models.ArazzoSelectorType!
+static Bielu.Arazzo.Models.ArazzoValue.FromExpression(string! expression) -> Bielu.Arazzo.Models.ArazzoValue!
+static Bielu.Arazzo.Models.ArazzoValue.FromLiteral(System.Text.Json.Nodes.JsonNode? literal) -> Bielu.Arazzo.Models.ArazzoValue!
+static Bielu.Arazzo.Models.ArazzoValue.FromSelector(Bielu.Arazzo.Models.ArazzoSelector! selector) -> Bielu.Arazzo.Models.ArazzoValue!
+static Bielu.Arazzo.Models.ArazzoValue.implicit operator Bielu.Arazzo.Models.ArazzoValue!(string! expression) -> Bielu.Arazzo.Models.ArazzoValue!
+static Bielu.Arazzo.Validation.ArazzoError.operator !=(Bielu.Arazzo.Validation.ArazzoError? left, Bielu.Arazzo.Validation.ArazzoError? right) -> bool
+static Bielu.Arazzo.Validation.ArazzoError.operator ==(Bielu.Arazzo.Validation.ArazzoError? left, Bielu.Arazzo.Validation.ArazzoError? right) -> bool
+static Bielu.Arazzo.Validation.ArazzoValidator.Validate(Bielu.Arazzo.Models.ArazzoDocument! document) -> System.Collections.Generic.IReadOnlyList<Bielu.Arazzo.Validation.ArazzoError!>!
+static Bielu.Arazzo.Writers.ArazzoJsonWriter.Write(Bielu.Arazzo.Models.IArazzoSerializable! document, bool indented = true) -> string!
+static Bielu.Arazzo.Writers.ArazzoYamlWriter.Write(Bielu.Arazzo.Models.IArazzoSerializable! document) -> string!
+virtual Bielu.Arazzo.Expressions.RuntimeExpression.EqualityContract.get -> System.Type!
+virtual Bielu.Arazzo.Expressions.RuntimeExpression.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
+virtual Bielu.Arazzo.Expressions.RuntimeExpression.PrintMembers(System.Text.StringBuilder! builder) -> bool

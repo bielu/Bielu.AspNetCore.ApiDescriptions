@@ -1,0 +1,9 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Scalar.SignalR.ScalarSignalRDefaults
+Bielu.AspNetCore.AsyncApi.Scalar.SignalR.ScalarSignalREndpointRouteBuilderExtensions
+Bielu.AspNetCore.AsyncApi.Scalar.SignalR.ScalarSignalROptions
+Bielu.AspNetCore.AsyncApi.Scalar.SignalR.ScalarSignalROptions.ScalarSignalROptions() -> void
+Bielu.AspNetCore.AsyncApi.Scalar.SignalR.ScalarSignalROptionsExtensions
+const Bielu.AspNetCore.AsyncApi.Scalar.SignalR.ScalarSignalRDefaults.AssetsPath = "/bielu/scalar/signalr" -> string!
+static Bielu.AspNetCore.AsyncApi.Scalar.SignalR.ScalarSignalREndpointRouteBuilderExtensions.MapScalarSignalRAssets(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path = "/bielu/scalar/signalr") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Bielu.AspNetCore.AsyncApi.Scalar.SignalR.ScalarSignalROptionsExtensions.WithSignalRClient(this Scalar.AspNetCore.ScalarOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.Scalar.SignalR.ScalarSignalROptions!>? configure = null, string! assetsPath = "/bielu/scalar/signalr") -> Scalar.AspNetCore.ScalarOptions!

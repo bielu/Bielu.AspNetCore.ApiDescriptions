@@ -1,0 +1,89 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Headers.get -> ByteBard.AsyncAPI.Models.AsyncApiJsonSchema?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Headers.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Hub.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Hub.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Protocols.get -> System.Collections.Generic.IList<string!>!
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Protocols.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Query.get -> ByteBard.AsyncAPI.Models.AsyncApiJsonSchema?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Query.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.SignalRChannelBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Transports.get -> System.Collections.Generic.IList<string!>!
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.Transports.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.Headers.get -> ByteBard.AsyncAPI.Models.AsyncApiJsonSchema?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.Headers.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.HubProtocol.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.HubProtocol.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.MessageType.get -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.MessageType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.SignalRMessageBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType.CancelInvocation = 5 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType.Close = 7 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType.Completion = 3 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType.Invocation = 1 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType.Ping = 6 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType.StreamInvocation = 4 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType.StreamItem = 2 -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageTypeExtensions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.CallType.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.CallType.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.Direction.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.Direction.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.SignalROperationBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.Streaming.get -> bool?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.Streaming.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.Target.get -> string?
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.Target.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROptionsExtensions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.CallTypes
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.Directions
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.HubProtocols
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.Transports
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.Protocols.get -> System.Collections.Generic.IList<string!>!
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.Protocols.set -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.SignalRServerBinding() -> void
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.Transports.get -> System.Collections.Generic.IList<string!>!
+Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.Transports.set -> void
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.BindingKey = "x-signalr" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.CallTypes.Invocation = "invocation" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.CallTypes.Send = "send" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.CallTypes.StreamInvocation = "streamInvocation" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.DefaultBindingVersion = "0.1.0" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.Directions.ClientToServer = "clientToServer" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.Directions.ServerToClient = "serverToClient" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.HubProtocols.Json = "json" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.HubProtocols.MessagePack = "messagepack" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.ProtocolName = "signalr" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.Transports.LongPolling = "longPolling" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.Transports.ServerSentEvents = "serverSentEvents" -> string!
+const Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRProtocol.Transports.WebSockets = "webSockets" -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.BindingKey.get -> string!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.FixedFieldMap.get -> ByteBard.AsyncAPI.Readers.ParseNodes.FixedFieldMap<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding!>!
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.SerializeProperties(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.SerializeV2(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+override Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRServerBinding.SerializeV3(ByteBard.AsyncAPI.Writers.IAsyncApiWriter! writer) -> void
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageTypeExtensions.Parse(string? value) -> Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType?
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageTypeExtensions.ToWireName(this Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRMessageType type) -> string!
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROptionsExtensions.AddSignalRChannelBinding(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, string! channelName, System.Action<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalRChannelBinding!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+static Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROptionsExtensions.AddSignalROperationBinding(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, string! operationName, System.Action<Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.SignalROperationBinding!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!

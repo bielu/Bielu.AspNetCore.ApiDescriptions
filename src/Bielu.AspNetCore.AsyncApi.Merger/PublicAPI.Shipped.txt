@@ -1,0 +1,29 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Merger.Extensions.AsyncApiMergeEndpointRouteBuilderExtensions
+Bielu.AspNetCore.AsyncApi.Merger.Extensions.AsyncApiMergeServiceCollectionExtensions
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentMerger
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentMerger.AsyncApiDocumentMerger(System.Net.Http.HttpClient! httpClient) -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentMerger.MergeAsync(Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ByteBard.AsyncAPI.Models.AsyncApiDocument!>!
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentSource
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentSource.AsyncApiDocumentSource() -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentSource.KeyPrefix.get -> string?
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentSource.KeyPrefix.set -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentSource.Uri.get -> string!
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentSource.Uri.set -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.AddSource(string! uri, string? keyPrefix = null) -> Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions!
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.AsyncApiMergeOptions() -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.AsyncApiSpecVersion.get -> string?
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.AsyncApiSpecVersion.set -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.CacheDuration.get -> System.TimeSpan
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.CacheDuration.set -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.DefaultContentType.get -> string?
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.DefaultContentType.set -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.HttpTimeout.get -> System.TimeSpan
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.HttpTimeout.set -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.Info.get -> ByteBard.AsyncAPI.Models.AsyncApiInfo?
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.Info.set -> void
+Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions.Sources.get -> System.Collections.Generic.List<Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentSource!>!
+static Bielu.AspNetCore.AsyncApi.Merger.Extensions.AsyncApiMergeEndpointRouteBuilderExtensions.MapMergedAsyncApi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/asyncapi/merged.json") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static Bielu.AspNetCore.AsyncApi.Merger.Extensions.AsyncApiMergeServiceCollectionExtensions.AddAsyncApiMerge(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiMergeOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Bielu.AspNetCore.AsyncApi.Merger.Merge.AsyncApiDocumentMerger.MergeDocuments(System.Collections.Generic.IReadOnlyList<(ByteBard.AsyncAPI.Models.AsyncApiDocument! Document, string? KeyPrefix)>! documents, ByteBard.AsyncAPI.Models.AsyncApiInfo? info = null, string? defaultContentType = null) -> ByteBard.AsyncAPI.Models.AsyncApiDocument!

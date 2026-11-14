@@ -1,0 +1,39 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.CloudEvents.AsyncApiCloudEventsOptionsExtensions
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions.CloudEventsMessageOptions() -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions.DataSchema.get -> string?
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions.DataSchema.set -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions.Mode.get -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMode?
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions.Mode.set -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions.Source.get -> string?
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions.Source.set -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions.Type.get -> string?
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions.Type.set -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMode
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMode.Binary = 0 -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMode
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMode.Structured = 1 -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMode
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.CloudEventsOptions() -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.ConfigureMessage(string! messageKey, System.Action<Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMessageOptions!>! configure) -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions!
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.MessageFilter.get -> System.Func<string!, bool>?
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.MessageFilter.set -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.Mode.get -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMode
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.Mode.set -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.ProtocolBinding.get -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.ProtocolBinding.set -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.Source.get -> string?
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.Source.set -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.TypePrefix.get -> string?
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.TypePrefix.set -> void
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.UseMode(Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsMode mode) -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions!
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.UseProtocolBinding(Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding protocolBinding) -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions!
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.WithSource(string! source) -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions!
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions.WithTypePrefix(string! typePrefix) -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions!
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding.Amqp = 3 -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding.Auto = 0 -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding.Http = 1 -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding.Kafka = 2 -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding
+Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding.Mqtt = 4 -> Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsProtocolBinding
+static Bielu.AspNetCore.AsyncApi.CloudEvents.AsyncApiCloudEventsOptionsExtensions.AddCloudEvents(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.CloudEvents.CloudEventsOptions!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!

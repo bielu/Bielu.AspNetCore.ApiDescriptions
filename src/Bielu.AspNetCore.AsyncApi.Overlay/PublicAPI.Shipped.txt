@@ -1,0 +1,24 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Overlay.AsyncApiOverlayOptionsExtensions
+Bielu.AspNetCore.Overlay.OverlayApplicationException
+Bielu.AspNetCore.Overlay.OverlayApplicationException.OverlayApplicationException(string! message) -> void
+Bielu.AspNetCore.Overlay.OverlayApplicationException.OverlayApplicationException(string! message, System.Exception! innerException) -> void
+Bielu.AspNetCore.Overlay.OverlayDocumentFormat
+Bielu.AspNetCore.Overlay.OverlayDocumentFormat.Json = 0 -> Bielu.AspNetCore.Overlay.OverlayDocumentFormat
+Bielu.AspNetCore.Overlay.OverlayDocumentFormat.Yaml = 1 -> Bielu.AspNetCore.Overlay.OverlayDocumentFormat
+Bielu.AspNetCore.Overlay.OverlayPipeline
+Bielu.AspNetCore.Overlay.OverlayPipeline.Add(Bielu.AspNetCore.Overlay.OverlaySource! source) -> void
+Bielu.AspNetCore.Overlay.OverlayPipeline.Apply(string! serialized, Bielu.AspNetCore.Overlay.OverlayDocumentFormat format, string! documentName, Microsoft.Extensions.Logging.ILogger? logger = null) -> string!
+Bielu.AspNetCore.Overlay.OverlayPipeline.ApplyOptions.get -> Bielu.Overlay.OverlayApplyOptions!
+Bielu.AspNetCore.Overlay.OverlayPipeline.IsEmpty.get -> bool
+Bielu.AspNetCore.Overlay.OverlayPipeline.OverlayPipeline() -> void
+Bielu.AspNetCore.Overlay.OverlaySource
+Bielu.AspNetCore.Overlay.OverlaySource.OverlaySource() -> void
+abstract Bielu.AspNetCore.Overlay.OverlaySource.Origin.get -> string!
+abstract Bielu.AspNetCore.Overlay.OverlaySource.Resolve() -> Bielu.Overlay.Models.OverlayDocument!
+static Bielu.AspNetCore.AsyncApi.Overlay.AsyncApiOverlayOptionsExtensions.AddOverlay(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, Bielu.AspNetCore.Overlay.OverlaySource! source) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+static Bielu.AspNetCore.AsyncApi.Overlay.AsyncApiOverlayOptionsExtensions.AddOverlay(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, Bielu.Overlay.Models.OverlayDocument! overlay) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+static Bielu.AspNetCore.AsyncApi.Overlay.AsyncApiOverlayOptionsExtensions.AddOverlay(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, string! filePath) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+static Bielu.AspNetCore.AsyncApi.Overlay.AsyncApiOverlayOptionsExtensions.ConfigureOverlays(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, System.Action<Bielu.Overlay.OverlayApplyOptions!>! configure) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
+static Bielu.AspNetCore.Overlay.OverlaySource.FromDocument(Bielu.Overlay.Models.OverlayDocument! document) -> Bielu.AspNetCore.Overlay.OverlaySource!
+static Bielu.AspNetCore.Overlay.OverlaySource.FromFile(string! path) -> Bielu.AspNetCore.Overlay.OverlaySource!

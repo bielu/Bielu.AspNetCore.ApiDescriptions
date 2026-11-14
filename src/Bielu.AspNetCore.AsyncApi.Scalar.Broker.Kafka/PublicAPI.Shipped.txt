@@ -1,0 +1,9 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.KafkaBrokerBridgeOptionsExtensions
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.KafkaConnectionOptions
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.KafkaConnectionOptions.ConfigureConsumer.get -> System.Action<Confluent.Kafka.ConsumerConfig!>?
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.KafkaConnectionOptions.ConfigureConsumer.set -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.KafkaConnectionOptions.ConfigureProducer.get -> System.Action<Confluent.Kafka.ProducerConfig!>?
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.KafkaConnectionOptions.ConfigureProducer.set -> void
+Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.KafkaConnectionOptions.KafkaConnectionOptions() -> void
+static Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.KafkaBrokerBridgeOptionsExtensions.AddKafkaConnection(this Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions! options, string! name, string! bootstrapServers, System.Action<Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.KafkaConnectionOptions!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions!
