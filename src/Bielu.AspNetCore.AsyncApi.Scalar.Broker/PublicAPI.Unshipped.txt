@@ -1,3 +1,1 @@
 ﻿#nullable enable
-Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions.AllowChannels(params string![]! channels) -> Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions!
-Bielu.AspNetCore.AsyncApi.Scalar.Broker.ScalarBrokerBridgeOptions.AllowedChannels.get -> System.Collections.Generic.IReadOnlySet<string!>!
