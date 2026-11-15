@@ -19,6 +19,77 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [2.3.0] - 2026-11-15
+
+### Minor Changes
+
+- [#201](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/201) [`b7e59b6`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/b7e59b62b748a0d153612d91b5a89176e34e36db) Thanks [@bielu](https://github.com/bielu)! - Add `ScalarBrokerBridgeOptions.AllowChannels(...)` to limit the channels the Scalar broker console's proxy may publish to
+  and tail. Requests for any other channel are refused with `403`. Authorization decides who may use the proxy; without an
+  allow-list, an authorized caller can reach any topic the connection's credentials allow, not only the documented
+  channels. Without `AllowChannels`, every channel is allowed, as before.
+
+### Patch Changes
+
+- [#200](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/200) [`86cf264`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/86cf2645017c6a91368b4f19fe36c984b506c216) Thanks [@bielu](https://github.com/bielu)! - Security: `Bielu.AspNetCore.AsyncApi.Scalar.SignalR.Aspire` and `Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire` now depend
+  on Scalar.Aspire 0.15.0, which brings Aspire.Hosting 13.6.5. Through Scalar.Aspire 0.11.12 they pulled in
+  Aspire.Hosting 13.2.1, affected by [GHSA-f7vh-h5g3-7jrh](https://github.com/advisories/GHSA-f7vh-h5g3-7jrh) (high).
+  The broker console's Kafka driver moves to Confluent.Kafka 2.15.0, the version Aspire.Confluent.Kafka 13.6.5 uses.
+
+- [#199](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/199) [`c232472`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/c23247228a3efc8da2fa71587c7466b7c2a76edc) Thanks [@bielu](https://github.com/bielu)! - Update ByteBard.AsyncAPI.NET, ByteBard.AsyncAPI.NET.Bindings and ByteBard.AsyncAPI.NET.Readers from 4.0.0-beta.21 to
+  the stable 4.0.0, so the packages no longer depend on a prerelease. No API changes were needed.
+
+- [#190](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/190) [`f5dac3c`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/f5dac3c96d6585380f8829fed749b87906f7fafe) Thanks [@bielu](https://github.com/bielu)! - Fix: two different channel names that produce the same channel key once characters not allowed in a component key are
+  removed (for example `orders/created` and `orderscreated`) now fail generation with an error naming both channels.
+  They used to be merged into one channel that kept the first channel's address and carried both channels' messages and
+  operations. Message, operation and schema ids already failed the same way.
+
+- [#191](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/191) [`771975e`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/771975e0d1b05b048961ef7615fc7f0a7b0deed8) Thanks [@bielu](https://github.com/bielu)! - Fix: a channel listing several servers in `[Channel(Servers = ...)]` now references every one of them. A server whose
+  name ends another listed server's name (`prod` after `eu-prod`) was treated as already referenced and left out.
+
+- [#194](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/194) [`300c0f1`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/300c0f165c97ab937cfcaa6dc9e0ab209d61663b) Thanks [@bielu](https://github.com/bielu)! - Fix: `[AsyncApi]` types in a referenced assembly that has not been loaded yet are now found. Only the assemblies already
+  loaded into the app domain were scanned, so channels kept in a contracts library could be missing from the document
+  until some code happened to touch one of that library's types. The references of every loaded application assembly
+  are now followed and loaded (framework assemblies are skipped).
+
+  The scanned assemblies are now ordered by name, so channels and operations come out in the same order regardless of the
+  order assemblies were loaded in. A document that declares channels in more than one assembly may list them in a
+  different order than before; the content is unchanged.
+
+- [#205](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/205) [`1a30fe9`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/1a30fe969e61497000c949aaef54094d71b7b0d6) Thanks [@bielu](https://github.com/bielu)! - Internal: an XML documentation link in the core package that did not resolve now points at
+  `AsyncApiOptions.AddMessageBinding`, clearing the CS1574 build warning.
+
+- [#198](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/198) [`e027cd8`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/e027cd8430a095334a98f72242c8bf4d402e26eb) Thanks [@bielu](https://github.com/bielu)! - `AsyncApiOptions.DocumentRoutePattern` is now marked `[Obsolete]` and will be removed in the next major version.
+  Nothing reads it and setting it has no effect: the document is served from the pattern passed to `MapAsyncApi()`.
+  `MapAsyncApi()` wrote it to the unnamed options instance only, so the options of a named document always reported the
+  default route. Its value is unchanged in this release.
+
+- [#193](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/193) [`5f0803f`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/5f0803f877e2c5b2f0cbae5aab49ef60cfdaa72f) Thanks [@bielu](https://github.com/bielu)! - Fix: concurrent requests for a document whose servers have security requirements (`AddServerSecurity`) no longer
+  fail with "Collection was modified", and no longer grow the server's security list with duplicate requirements. Each
+  document now gets its own copy of the servers configured with `AddServer`, instead of sharing (and adding to) the
+  options' instances. For the same reason, a document transformer's edits to a server or to `info` (including its
+  license and contact) now apply to that document only, rather than carrying into every later request.
+
+  Fix: `info.termsOfService`, `info.tags`, `info.externalDocs` and `info` extensions set through `WithInfo` now reach the
+  document. Only the title, version, description, license and contact were copied before.
+
+- [#192](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/192) [`65c2cac`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/65c2cac739b2bf1efdbc345c1d1b9a3d39cf87d2) Thanks [@bielu](https://github.com/bielu)! - Fix: recursive payload types are now described completely. Where a type recurses into itself (a tree node's
+  `Children`, a category's `Parent`, a person's pet whose `Owner` is a person), the schema now holds a `$ref` to that type's
+  component, and the type is added to `components/schemas`. It used to be inlined one level and then written as an empty
+  schema (`"items": {}`), so anything below the first level was untyped. The type's first occurrence stays inline, so
+  that property keeps its own description, default and nullability. Types whose `CreateSchemaReferenceId` returns
+  `null` have no component to point to, so their recursion still ends in an empty schema, now one level earlier.
+
+- [#197](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/197) [`884d2e0`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/884d2e0855d1bc8215966a46af20b620a9c6d86a) Thanks [@bielu](https://github.com/bielu)! - Internal: the document service no longer keeps the last operation transformer context for each operation id. Nothing
+  read it, and it kept the last request's scoped service provider and document alive for the lifetime of the app.
+
+- [#206](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/206) [`9f7ceae`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/9f7ceae93982c7bb7983cd23a06395fdd158d559) Thanks [@bielu](https://github.com/bielu)! - Every package now ships `THIRD-PARTY-NOTICES.md` next to `LICENSE`. It carries the MIT notice of dotnet/aspnetcore,
+  which parts of the generator and the build-time tooling derive from (`Microsoft.AspNetCore.OpenApi`,
+  `GetDocumentInsider`), as that license requires.
+
+- [#196](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/196) [`6755779`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/675577925d8ac1a1307a8049c2d71910be9cf199) Thanks [@bielu](https://github.com/bielu)! - Fix: AsyncAPI 2.6 documents served as JSON are now written the same way as 3.1 ones: indented, with non-ASCII characters
+  and `+`, `<`, `>` written as they are. The 2.x JSON used to be parsed and written again, which put it on one line and
+  escaped those characters (`Café` became `Caf\u00E9`). The content of the document is unchanged; the ETag changes once.
+
 ## [2.2.0] - 2026-11-11
 
 ### Minor Changes
