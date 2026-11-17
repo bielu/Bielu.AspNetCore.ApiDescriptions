@@ -236,7 +236,7 @@ const description = computed(() => renderMarkdown(heading.value.description))
         </svg>
       </button>
       <div class="ba-step-heading">
-        <div class="ba-kicker">Step · {{ step.stepId }}</div>
+        <div v-if="open && heading.title !== step.stepId" class="ba-kicker ba-step-id">{{ step.stepId }}</div>
         <ArazzoAnchor
           :eventBus="eventBus"
           :navId="id">
@@ -253,7 +253,7 @@ const description = computed(() => renderMarkdown(heading.value.description))
             v-if="spec"
             class="ba-spec"
             :class="[`ba-spec-${spec.family}`, { 'ba-spec-unresolved': !spec.resolved }]">
-            {{ spec.family === 'arazzo' ? 'Workflow' : specLabel(spec) }}
+            {{ spec.family === 'arazzo' ? 'Workflow' : spec.family === 'openapi' ? 'OpenAPI' : 'AsyncAPI' }}
           </span>
           {{ collapsedSummary }}
         </div>
@@ -296,31 +296,23 @@ const description = computed(() => renderMarkdown(heading.value.description))
       v-if="target"
       class="ba-target"
       :class="{ 'ba-target-unresolved': target.kind !== 'workflow' && !target.documentName }">
+      <div class="ba-target-header">
       <span
         v-if="spec"
         class="ba-spec"
         :class="[`ba-spec-${spec.family}`, { 'ba-spec-unresolved': !spec.resolved }]"
         :title="specTitle">
-        {{ spec.family === 'arazzo' ? 'Workflow' : specLabel(spec) }}
+        {{ spec.family === 'arazzo' ? 'Workflow' : spec.family === 'openapi' ? 'OpenAPI' : 'AsyncAPI' }}
         <template v-if="!spec.resolved">· not loaded</template>
       </span>
-      <span class="ba-target-label">{{ targetLabel }}</span>
+      <span v-if="target.kind !== 'operation'" class="ba-target-label">{{ channelAction || (target.kind === 'workflow' ? 'Invoke' : 'Channel') }}</span>
       <a
         v-if="targetLink"
         class="ba-target-link"
         :href="targetLink.href"
         :title="targetLink.external ? `Open in ${targetDocumentTitle ?? 'its document'}` : 'Go to the workflow'"
         @click="followTargetLink">
-        <code
-          v-if="targetName"
-          class="ba-target-id">
-          {{ targetName }}
-        </code>
-        <span
-          v-if="targetSignature && targetSignature !== targetName"
-          class="ba-target-signature">
-          {{ targetSignature }}
-        </span>
+        <code class="ba-target-signature">{{ targetSignature || targetName || target.identifier }}</code>
         <span
           aria-hidden="true"
           class="ba-target-arrow">
@@ -328,23 +320,13 @@ const description = computed(() => renderMarkdown(heading.value.description))
         </span>
       </a>
       <template v-else>
-        <code
-          v-if="targetName"
-          class="ba-target-id"
-          :title="target.identifier">
-          {{ targetName }}
-        </code>
-        <span
-          v-if="targetSignature && targetSignature !== targetName"
-          class="ba-target-signature">
-          {{ targetSignature }}
-        </span>
+        <code class="ba-target-signature" :title="target.identifier">{{ targetSignature || targetName || target.identifier }}</code>
       </template>
-      <span
-        v-if="targetDocumentTitle"
-        class="ba-muted">
-        in {{ targetDocumentTitle }}
-      </span>
+      </div>
+      <div v-if="(targetSignature && targetName !== targetSignature) || targetDocumentTitle" class="ba-target-meta">
+        <code v-if="targetSignature && targetName && targetName !== targetSignature">{{ targetName }}</code>
+        <span v-if="targetDocumentTitle">{{ targetDocumentTitle }}</span>
+      </div>
       <div
         v-if="targetSummary"
         class="ba-target-summary">

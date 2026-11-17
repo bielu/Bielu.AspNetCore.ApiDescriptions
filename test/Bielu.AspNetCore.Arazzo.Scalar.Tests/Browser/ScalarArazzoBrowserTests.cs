@@ -37,11 +37,11 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         // Assert
         badges.Select(Normalize).ShouldBe(
         [
-            "OpenAPI 3.1.1", // create: operationPath
-            "AsyncAPI 3.0.0", // confirmed: channelPath, receive
-            "OpenAPI 3.1.1", // read: qualified operationId
-            "OpenAPI 3.1.1", // retryCreate: bare operationId
-            "AsyncAPI 3.0.0", // announce: AsyncAPI operationId
+            "OpenAPI", // create: operationPath
+            "AsyncAPI", // confirmed: channelPath, receive
+            "OpenAPI", // read: qualified operationId
+            "OpenAPI", // retryCreate: bare operationId
+            "AsyncAPI", // announce: AsyncAPI operationId
             "Workflow", // nested
         ]);
         (await page.Locator(".bielu-arazzo .ba-sources .ba-spec").AllTextContentsAsync()).Select(Normalize)
@@ -65,7 +65,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
             () => text.ShouldContain("xpath xpath-30"),
             () => text.ShouldContain("Timeout: 15 s"),
             () => text.ShouldContain("Correlation ID: $steps.create.outputs.orderId"),
-            () => text.ShouldContain("RECEIVES FROM CHANNEL"),
+            () => text.ShouldContain("RECEIVE"),
             () => text.ShouldContain("Reusable components"),
             () => text.ShouldContain("jsonpointer"),
             () => text.ShouldContain("Extensions (1)"));
@@ -76,7 +76,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
     {
         // Arrange
         var page = await fixture.OpenArazzoDocumentAsync();
-        var link = page.Locator(".bielu-arazzo a.ba-target-link", new() { HasText = "createOrder" }).First;
+        var link = page.Locator(".bielu-arazzo a.ba-target-link", new() { HasText = "POST /orders" }).First;
 
         // Act
         await link.ClickAsync();
@@ -143,7 +143,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
 
         // Assert
         collapsed.ShouldAllBe(state => state == "false");
-        summary.ShouldBe("OpenAPI 3.1.1 Calls operation createOrder POST /orders");
+        summary.ShouldBe("OpenAPI Calls operation createOrder POST /orders");
         afterOne.ShouldBe(["true", "false", "false"]);
         (await workflow.Locator(".ba-step-body").First.IsVisibleAsync()).ShouldBeTrue();
     }
