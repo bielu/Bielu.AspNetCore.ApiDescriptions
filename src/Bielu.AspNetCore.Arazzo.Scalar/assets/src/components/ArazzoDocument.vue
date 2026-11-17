@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { renderMarkdown } from '../helpers/markdown'
 import { toWorkflowViews } from '../helpers/navigation'
+import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
 import type { ArazzoDocument, PluginEventBus, PluginNavigationEntry } from '../types'
 import ArazzoWorkflow from './ArazzoWorkflow.vue'
 
@@ -31,6 +32,12 @@ const info = computed(() => props.document?.info ?? {})
 const description = computed(() => renderMarkdown(info.value.description))
 
 const workflows = computed(() => (props.document ? toWorkflowViews(props.document, props.navigation ?? []) : []))
+
+/** Each source description with its spec, whether it is loaded, and how many steps use it. */
+const sources = computed(() => (props.document ? summarizeSources(props.document, loadedDocuments.value) : []))
+
+/** "3 OpenAPI steps · 2 AsyncAPI steps": how the workflows split between the specs. */
+const stepsBySpec = computed(() => (props.document ? countStepsBySpec(props.document, loadedDocuments.value) : []))
 
 /**
  * The workspace documents, re-read whenever one is added. Scalar loads the sibling documents after
@@ -125,20 +132,50 @@ onBeforeUnmount(() => {
       <div
         v-if="document?.sourceDescriptions?.length"
         class="ba-block">
-        <div class="ba-block-title">Source descriptions</div>
-        <table class="ba-table">
+        <div class="ba-block-title ba-sources-title">
+          Source descriptions
+          <span
+            v-if="stepsBySpec.length"
+            class="ba-spec-counts">
+            <span
+              v-for="entry in stepsBySpec"
+              :key="entry.family"
+              class="ba-spec"
+              :class="`ba-spec-${entry.family}`">
+              {{ entry.count }} {{ entry.family === 'arazzo' ? 'workflow' : specLabel({ family: entry.family, version: undefined }) }}
+              {{ entry.count === 1 ? 'step' : 'steps' }}
+            </span>
+          </span>
+        </div>
+        <table class="ba-table ba-sources">
           <tbody>
             <tr
-              v-for="source in document.sourceDescriptions"
-              :key="source.name">
-              <td><code>{{ source.name }}</code></td>
-              <td class="ba-muted">{{ source.type ?? 'openapi' }}</td>
+              v-for="summary in sources"
+              :key="summary.source.name">
+              <td><code>{{ summary.source.name }}</code></td>
+              <td>
+                <span
+                  v-if="summary.family"
+                  class="ba-spec"
+                  :class="[`ba-spec-${summary.family}`, { 'ba-spec-unresolved': !summary.documentName }]">
+                  {{ specLabel({ family: summary.family, version: summary.version }) }}
+                </span>
+                <span
+                  v-else
+                  class="ba-muted">
+                  {{ summary.source.type ?? 'unknown' }}
+                </span>
+              </td>
+              <td class="ba-muted ba-nowrap">
+                {{ summary.documentName ? 'loaded' : 'not loaded' }} ·
+                {{ summary.stepCount }} {{ summary.stepCount === 1 ? 'step' : 'steps' }}
+              </td>
               <td>
                 <a
-                  :href="source.url"
+                  :href="summary.source.url"
                   rel="noopener"
                   target="_blank">
-                  {{ source.url }}
+                  {{ summary.source.url }}
                 </a>
               </td>
             </tr>
@@ -293,6 +330,56 @@ onBeforeUnmount(() => {
   border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
   color: var(--scalar-color-2);
   font-size: var(--scalar-mini, 12px);
+}
+/*
+ * Spec markers: one color per spec, shared by the step badge, the header summary and the overview
+ * diagram, so a mixed OpenAPI/AsyncAPI workflow reads at a glance. The text always names the spec
+ * too, so the color is never the only cue.
+ */
+.bielu-arazzo {
+  --ba-spec-openapi: var(--scalar-color-blue, #2f6fdb);
+  --ba-spec-asyncapi: var(--scalar-color-purple, #8a4fd8);
+  --ba-spec-arazzo: var(--scalar-color-3, #888);
+}
+.bielu-arazzo .ba-spec {
+  --ba-spec-color: var(--scalar-color-3);
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 7px;
+  border: var(--scalar-border-width, 1px) solid var(--ba-spec-color);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ba-spec-color) 12%, transparent);
+  color: var(--scalar-color-1);
+  font-size: var(--scalar-mini, 12px);
+  font-weight: var(--scalar-semibold, 600);
+  white-space: nowrap;
+}
+.bielu-arazzo .ba-spec-openapi {
+  --ba-spec-color: var(--ba-spec-openapi);
+}
+.bielu-arazzo .ba-spec-asyncapi {
+  --ba-spec-color: var(--ba-spec-asyncapi);
+}
+.bielu-arazzo .ba-spec-arazzo {
+  --ba-spec-color: var(--ba-spec-arazzo);
+}
+.bielu-arazzo .ba-spec-unresolved {
+  border-style: dashed;
+  background: none;
+}
+.bielu-arazzo .ba-sources-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.bielu-arazzo .ba-spec-counts .ba-spec {
+  margin: 0 0 0 6px;
+  font-weight: normal;
+}
+.bielu-arazzo .ba-nowrap {
+  white-space: nowrap;
 }
 .bielu-arazzo .ba-target {
   margin: 12px 0;
@@ -509,6 +596,43 @@ onBeforeUnmount(() => {
 }
 .bielu-arazzo .ba-diagram-dragging {
   cursor: grabbing;
+}
+.bielu-arazzo .ba-diagram-node rect.ba-diagram-spec {
+  fill: var(--ba-spec-color);
+  stroke: none;
+}
+/* Under the diagram rather than over it, so it never hides a step box. */
+.bielu-arazzo .ba-overview-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 6px;
+}
+.bielu-arazzo .ba-overview-footer .ba-overview-hint {
+  margin-top: 0;
+}
+.bielu-arazzo .ba-diagram-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-mini, 12px);
+  list-style: none;
+}
+.bielu-arazzo .ba-diagram-legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.bielu-arazzo .ba-diagram-legend-swatch {
+  width: 6px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--ba-spec-color);
 }
 .bielu-arazzo .ba-diagram-canvas {
   transform-origin: 0 0;
