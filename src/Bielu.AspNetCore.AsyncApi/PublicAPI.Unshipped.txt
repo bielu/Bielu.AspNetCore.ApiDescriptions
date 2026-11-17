@@ -1,1 +1,3 @@
 #nullable enable
+*REMOVED*Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DocumentRoutePattern.get -> string!
+*REMOVED*Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DocumentRoutePattern.set -> void
