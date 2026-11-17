@@ -396,3 +396,78 @@ export const targetDescription = (target: StepTarget | undefined): string => {
         : [target.operation?.description, target.channel?.description, target.operation?.summary, target.channel?.title]
   return candidates.find((value): value is string => typeof value === 'string' && value.trim() !== '') ?? ''
 }
+
+/** A message an AsyncAPI step sends or receives, with its payload schema, for display next to the step. */
+export type TargetMessage = {
+  /** The key the message has on its channel (or in `components.messages`). */
+  name: string
+  title: string
+  summary: string
+  description: string
+  contentType: string | undefined
+  /** The payload schema, unwrapped from a Multi Format Schema Object when it is one. */
+  payload: AnyRecord | undefined
+  /** `schemaFormat` of a payload that is not plain JSON Schema (Avro, Protobuf, …); its schema is shown as written. */
+  schemaFormat: string | undefined
+  /** The first example payload, when the message declares one. */
+  example: unknown
+  /** The AsyncAPI document the message lives in, which the payload's `$ref`s resolve against. */
+  root: AnyRecord
+}
+
+const JSON_SCHEMA_FORMAT = /^application\/(schema\+json|vnd\.aai\.asyncapi)/
+
+/** The key a `#/…/messages/NAME` reference ends with. */
+const lastSegment = (ref: unknown): string | undefined =>
+  typeof ref === 'string' ? parseJsonPointer(ref.replace(/^#/, '')).pop() : undefined
+
+/**
+ * The messages of a resolved AsyncAPI target: those the AsyncAPI 3 operation lists when the step
+ * targets an operation, else every message of the channel. References are followed within the
+ * target's document, and a payload given as a Multi Format Schema Object (`{ schemaFormat, schema }`)
+ * is unwrapped. Empty for an OpenAPI, workflow or unresolved target.
+ */
+export const targetMessages = (target: StepTarget | undefined, documents: Record<string, unknown>): TargetMessage[] => {
+  if (target?.kind !== 'channel' || !target.documentName) {
+    return []
+  }
+  const root = documents[target.documentName]
+  if (!isRecord(root)) {
+    return []
+  }
+
+  const listed = Array.isArray(target.operation?.messages) ? (target.operation.messages as unknown[]) : undefined
+  const entries: [string | undefined, unknown][] = listed
+    ? listed.map((entry) => [lastSegment(isRecord(entry) ? entry.$ref : undefined), entry])
+    : Object.entries(isRecord(target.channel?.messages) ? target.channel.messages : {})
+
+  const defaultContentType = typeof root.defaultContentType === 'string' ? root.defaultContentType : undefined
+  return entries.flatMap(([key, entry]) => {
+    const message = deref(root, entry)
+    if (!isRecord(message)) {
+      return []
+    }
+    const text = (value: unknown): string => (typeof value === 'string' ? value : '')
+    let payload = deref(root, message.payload)
+    let schemaFormat: string | undefined
+    if (isRecord(payload) && typeof payload.schemaFormat === 'string' && 'schema' in payload) {
+      schemaFormat = JSON_SCHEMA_FORMAT.test(payload.schemaFormat) ? undefined : payload.schemaFormat
+      payload = deref(root, payload.schema)
+    }
+    const examples = Array.isArray(message.examples) ? message.examples : []
+    const example = examples.map((candidate) => deref(root, candidate)).find((candidate) => isRecord(candidate) && 'payload' in candidate)
+    return [
+      {
+        name: key ?? (text(message.name) || 'message'),
+        title: text(message.title),
+        summary: text(message.summary),
+        description: text(message.description),
+        contentType: typeof message.contentType === 'string' ? message.contentType : defaultContentType,
+        payload: isRecord(payload) ? payload : undefined,
+        schemaFormat,
+        example: isRecord(example) ? example.payload : undefined,
+        root,
+      },
+    ]
+  })
+}
