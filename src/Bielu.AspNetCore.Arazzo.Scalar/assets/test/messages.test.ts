@@ -132,6 +132,30 @@ describe('schemaPropertyRows with a document root', () => {
     expect(rows[1]!.children!.map((row) => row.name)).toEqual(['sku', 'quantity'])
   })
 
+  it('reads the type of an enum or const that states none from its values', () => {
+    // Arrange
+    const schema = {
+      type: 'object',
+      properties: {
+        status: { enum: ['Succeeded', 'Declined'] },
+        priority: { enum: [1, 2, null] },
+        kind: { const: 'order' },
+        anything: {},
+      },
+    }
+
+    // Act
+    const rows = schemaPropertyRows(schema)!
+
+    // Assert
+    expect(rows.map((row) => [row.name, row.type])).toEqual([
+      ['status', 'string'],
+      ['priority', 'number | null'],
+      ['kind', 'string'],
+      ['anything', 'any'],
+    ])
+  })
+
   it("uses the target Scalar's workspace store already resolved", () => {
     // Arrange
     const schema = { $ref: '#/elsewhere', '$ref-value': { type: 'object', properties: { a: { type: 'string' } } } }

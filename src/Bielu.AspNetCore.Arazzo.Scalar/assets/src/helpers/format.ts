@@ -80,7 +80,19 @@ const describeType = (root: Schema, schema: Schema, ref: string | undefined, see
   if (isSchema(schema.properties)) {
     return 'object'
   }
-  return 'any'
+  return enumType(schema) ?? 'any'
+}
+
+/**
+ * The type an `enum` or `const` implies when the schema states none, as .NET writes for an enum
+ * serialized as text: `{ "enum": ["Succeeded", "Declined"] }` reads as `string`, not `any`.
+ */
+const enumType = (schema: Schema): string | undefined => {
+  const values = Array.isArray(schema.enum) ? schema.enum : 'const' in schema ? [schema.const] : []
+  const types = new Set(values.map((value) => (value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value)))
+  types.delete('undefined')
+  const named = [...types].map((type) => (type === 'bigint' ? 'integer' : type))
+  return named.length ? named.join(' | ') : undefined
 }
 
 const describeDetails = (schema: Schema): string[] | undefined => {
