@@ -18,7 +18,8 @@ permissions:
 
 # The npm packages live at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets (@bielu/scalar-signalr),
 # src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets (@bielu/scalar-grpc) and
-# src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets (@bielu/scalar-broker); the changeset workspace
+# src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets (@bielu/scalar-broker) and
+# src/Bielu.AspNetCore.Arazzo.Scalar/assets (@bielu/scalar-arazzo); the changeset workspace
 # root is the repository root (package.json + .changeset). The reusable templates take a single npm
 # working-directory, so each package after the first gets its own npm-only job next to each combined
 # job, chained so the publishes stay serialised.
@@ -71,7 +72,6 @@ jobs:
       artifact-name: npm-scalar-broker
 
   # Pull request: build the fourth npm package (@bielu/scalar-arazzo), the Arazzo document type.
-  # Build-only for now: the package stays private until its release jobs are added.
   ciArazzoNpm:
     if: github.event_name == 'pull_request'
     permissions:
@@ -345,6 +345,20 @@ jobs:
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
       artifact-name: npm-scalar-broker
 
+  # Version PR merged: publish the fourth npm package (@bielu/scalar-arazzo), chained after the
+  # broker job so the npm publishes stay serialised.
+  releaseStableArazzoNpm:
+    needs: [version, releaseStableBrokerNpm]
+    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
+      artifact-name: npm-scalar-arazzo
+
   # Record-keeping: tag + GitHub Release for the shared NuGet version, when not already present.
   # Release notes are the version's section of CHANGELOG.md (written by the changeset adapter in
   # the Version Packages PR); versions with a prerelease suffix are marked as GitHub prereleases.
@@ -512,6 +526,25 @@ jobs:
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
       artifact-name: npm-scalar-broker
 
+  # In-flight prereleases for the fourth npm package (@bielu/scalar-arazzo), chained after the broker
+  # job. The same `always()` caveat applies, so the dependencies that matter are re-asserted by hand.
+  releaseBetaArazzoNpm:
+    needs: [version, betaVersions, releaseBetaBrokerNpm]
+    if: >-
+      always() && !cancelled()
+      && needs.betaVersions.result == 'success' && needs.releaseBetaBrokerNpm.result == 'success'
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-arazzo'] }}
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
+      artifact-name: npm-scalar-arazzo
+
   # Record-keeping for interim betas: surface each published beta build as a GitHub prerelease,
   # using the exact `-beta.<stamp>` version that was packed (release.yml's nuget-version output,
   # which echoes the betaVersions override) and the pending — not yet versioned — changesets as the
@@ -592,3 +625,14 @@ jobs:
     with:
       publish-nuget: false
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
+
+  # Manual GitHub Release: the fourth npm package (@bielu/scalar-arazzo).
+  releaseArazzoNpm:
+    if: github.event_name == 'release'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
