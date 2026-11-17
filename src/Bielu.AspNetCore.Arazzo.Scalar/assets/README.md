@@ -2,7 +2,8 @@
 
 An [Arazzo](https://spec.openapis.org/arazzo/latest.html) document type for the
 [Scalar](https://scalar.com/) API Reference. Scalar claims any source with an `arazzo` version,
-lists its workflows and steps in the sidebar, and renders them. Each step's target
+lists its workflows and steps in the sidebar, and renders them, each workflow next to a flowchart of
+its steps (laid out with [dagre](https://github.com/dagrejs/dagre)). Each step's target
 (`operationId`, `operationPath`, `channelPath` or `workflowId`) is resolved in the OpenAPI and
 AsyncAPI documents loaded in the same Scalar page.
 

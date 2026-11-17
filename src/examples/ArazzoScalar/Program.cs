@@ -38,6 +38,12 @@ builder.Services.AddArazzo(options =>
             .WithDescription("Create the order.")
             .Payload(new JsonObject { ["sku"] = "$inputs.sku", ["quantity"] = "$inputs.quantity" }, "application/json")
             .SuccessCriteria("$statusCode == 201")
+            .OnFailure(new ArazzoFailureAction
+            {
+                Name = "rejected",
+                Type = "end",
+                Criteria = [new ArazzoCriterion { Condition = "$statusCode == 400" }],
+            })
             .Output("orderId", "$response.body#/id"))
         .Step("announce", step => step
             .Channel("events", "orderPlaced", ArazzoStepAction.Send)
@@ -52,8 +58,20 @@ builder.Services.AddArazzo(options =>
             .WithDescription("Reuse the placeOrder workflow."))
         .Step("status", step => step
             .Operation("getOrder")
+            .WithDescription("Check the order status.")
             .Parameter("id", "$steps.place.outputs.orderId", "path")
-            .SuccessCriteria("$statusCode == 200"))
+            .SuccessCriteria("$statusCode == 200")
+            // Freshly placed orders can take a moment to appear: retry a 404 a few times before giving up.
+            .OnFailure(new ArazzoFailureAction
+            {
+                Name = "notYetVisible",
+                Type = "retry",
+                StepId = "status",
+                RetryAfter = 2,
+                RetryLimit = 3,
+                Criteria = [new ArazzoCriterion { Condition = "$statusCode == 404" }],
+            })
+            .OnFailure(new ArazzoFailureAction { Name = "unavailable", Type = "end" }))
         .Step("shipped", step => step
             .Channel("events", "orderShipped", ArazzoStepAction.Receive)
             .WithDescription("Wait for the shipment notification.")
@@ -84,7 +102,9 @@ app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 
 app.Run();
 
-internal sealed record PlaceOrderInputs(string Sku, int Quantity);
+internal sealed record PlaceOrderInputs(string Sku, int Quantity, ShippingAddress ShipTo);
+
+internal sealed record ShippingAddress(string Street, string City, string PostalCode);
 
 internal sealed record OrderRequest(string Sku, int Quantity);
 

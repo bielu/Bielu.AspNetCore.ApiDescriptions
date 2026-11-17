@@ -3,9 +3,11 @@ import { computed } from 'vue'
 import { formatValue } from '../helpers/format'
 import { renderMarkdown } from '../helpers/markdown'
 import { resolveReusables } from '../helpers/reusable'
-import { resolveStepTarget } from '../helpers/resolve-target'
-import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction } from '../types'
+import { resolveStepTarget, targetDescription, targetParameters } from '../helpers/resolve-target'
+import { stepHeading } from '../helpers/heading'
+import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
+import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
 
 const props = defineProps<{
@@ -13,18 +15,30 @@ const props = defineProps<{
   step: ArazzoStep
   document: ArazzoDocument
   documents: Record<string, unknown>
+  eventBus?: PluginEventBus
 }>()
 
 const target = computed(() => resolveStepTarget(props.document, props.step, props.documents))
+
+/** A one-line description reads as the step's title, as in Scalar's own POC; anything longer stays a description. */
+const heading = computed(() => stepHeading(props.step))
+
+/** The target's longer description, when it says more than the summary line above it. */
+const targetDetails = computed(() => {
+  const details = targetDescription(target.value)
+  return details && details !== targetSummary.value ? renderMarkdown(details) : ''
+})
+
+const targetParameterRows = computed(() => targetParameters(target.value, props.documents))
 
 const targetLabel = computed(() => {
   switch (target.value?.kind) {
     case 'workflow':
       return 'Invokes workflow'
     case 'channel':
-      return 'Channel'
+      return 'Calls channel'
     default:
-      return 'Operation'
+      return 'Calls operation'
   }
 })
 
@@ -78,7 +92,7 @@ const onSuccess = computed(() => resolveReusables<ArazzoSuccessAction>(props.doc
 
 const onFailure = computed(() => resolveReusables<ArazzoFailureAction>(props.document, props.step.onFailure))
 
-const description = computed(() => renderMarkdown(props.step.description))
+const description = computed(() => renderMarkdown(heading.value.description))
 </script>
 
 <template>
@@ -86,8 +100,16 @@ const description = computed(() => renderMarkdown(props.step.description))
     :id="id"
     class="ba-step"
     :data-nav-id="id">
-    <div class="ba-kicker">Step</div>
-    <h3 class="ba-step-title">{{ step.stepId }}</h3>
+    <div class="ba-kicker">Step · {{ step.stepId }}</div>
+    <ArazzoAnchor
+      :eventBus="eventBus"
+      :navId="id">
+      <h3
+        class="ba-step-title"
+        :class="{ 'ba-step-title-id': heading.title === step.stepId }">
+        {{ heading.title }}
+      </h3>
+    </ArazzoAnchor>
 
     <div
       v-if="step.dependsOn?.length"
@@ -125,6 +147,34 @@ const description = computed(() => renderMarkdown(props.step.description))
         v-if="targetSummary"
         class="ba-target-summary">
         {{ targetSummary }}
+      </div>
+      <div
+        v-if="targetDetails"
+        class="ba-markdown ba-target-summary"
+        v-html="targetDetails" />
+      <div
+        v-if="targetParameterRows.length"
+        class="ba-target-parameters">
+        <div class="ba-block-title">{{ target.kind === 'channel' ? 'Channel parameters' : 'Operation parameters' }}</div>
+        <table class="ba-table">
+          <tbody>
+            <tr
+              v-for="parameter in targetParameterRows"
+              :key="`${parameter.location}:${parameter.name}`">
+              <td>
+                <code>{{ parameter.name }}</code>
+                <span
+                  v-if="parameter.required"
+                  class="ba-required">
+                  required
+                </span>
+              </td>
+              <td class="ba-muted">{{ parameter.location }}</td>
+              <td class="ba-muted">{{ parameter.type }}</td>
+              <td>{{ parameter.description }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
