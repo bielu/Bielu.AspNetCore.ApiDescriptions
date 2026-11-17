@@ -46,7 +46,7 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 
 ## What is rendered
 
-- The document's `info` and its `sourceDescriptions`. Each source shows its spec and version, whether
+- The document's `info`, its `$self` URL (Arazzo 1.1) and its `sourceDescriptions`. Each source shows its spec and version, whether
   it is loaded in the page, and how many steps use it, and the header counts the steps per spec.
 - One sidebar entry per workflow, with one child entry per step. Sidebar clicks, deep links and
   scroll position stay in sync, as they do for operations.
@@ -69,6 +69,11 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
   like) are resolved.
 - Each step target is labeled with its spec: `OpenAPI 3.1.1`, `AsyncAPI 3.0.0` or `Workflow`. Channel
   steps also say whether they send or receive. See [Which spec a step targets](#which-spec-a-step-targets).
+- The reusable `components` (input schemas, parameters, success and failure actions) in a section
+  of their own after the workflows, with a sidebar entry.
+- Specification Extensions (`x-*` fields) on the document, `info`, source descriptions, workflows,
+  steps, request bodies, actions and components, in a collapsed "Extensions" list. Scalar's own
+  `x-scalar-*` fields are left out.
 - Each workflow and step heading has a copy-link button. With Scalar's `classic` layout, each
   workflow can be collapsed.
 
