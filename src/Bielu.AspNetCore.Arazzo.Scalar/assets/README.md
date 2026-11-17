@@ -21,8 +21,9 @@ Requires `@scalar/api-reference` 1.80.0 or later, the first version with plugin 
   outputs, Selector Objects, reusable `components`, `$self`, and `x-*` extensions.
 - Which spec each step targets (`OpenAPI 3.1.1`, `AsyncAPI 3.0.0` or `Workflow`, plus send/receive),
   on the step, on the overview flowchart, and per source description.
-- Links from each step to the operation or channel it calls in its own document.
-- A filter for workflows and steps. The overview can be used from the keyboard, and the layout works
+- Links from each step to the operation or channel it calls in its own document, and for AsyncAPI
+  steps the message payload they send or receive.
+- Collapsible steps, a filter for workflows and steps. The overview can be used from the keyboard, and the layout works
   at phone width. A malformed document renders what it can instead of failing.
 
 ## Versioning
