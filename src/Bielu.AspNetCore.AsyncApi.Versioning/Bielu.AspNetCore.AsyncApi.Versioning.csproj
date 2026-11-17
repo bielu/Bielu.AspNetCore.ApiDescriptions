@@ -16,4 +16,8 @@
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.Versioning.Tests" />
+  </ItemGroup>
+
 </Project>

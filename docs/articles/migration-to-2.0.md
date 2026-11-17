@@ -94,7 +94,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 ## API versioning
 
-`AddAsyncApiForApiVersions()` serves one document per API version, with that version's `info` and deprecation flag. The documents were never filtered by version: in 1.x the `ShouldInclude` filter it set was never called. This is unchanged in 2.0, so each document lists every channel. To limit a version's document, include its channels in the `configure` callback:
+`AddAsyncApiForApiVersions()` serves one document per API version, with that version's `info` and deprecation flag. In 1.x the documents were never filtered by version (the `ShouldInclude` filter it set was never called), so each one listed every channel. Each version's document now holds only the declarations of that version: those whose `[ApiVersion]`, `[MapToApiVersion]` or endpoint versioning metadata name it, plus version-neutral and unversioned ones. See [One document per API version](multiple-documents.md#5-one-document-per-api-version). If a version's document lost a channel it should list, declare that version on it, or mark it `[ApiVersionNeutral]`. To narrow a version's document further, include its channels in the `configure` callback:
 
 ```csharp
 builder.Services.AddAsyncApiForApiVersions((options, version) =>

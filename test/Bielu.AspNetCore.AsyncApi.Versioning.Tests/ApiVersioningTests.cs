@@ -57,10 +57,11 @@ public class ApiVersioningTests
         v1Content.ShouldContain("\"version\": \"1.0\"");
         v2Content.ShouldContain("\"version\": \"2.0\"");
 
-        // V1 should contain TestV1 (as it matches all documents if not specified)
+        // Each version's document holds only its own controller's channel.
         v1Content.ShouldContain("api/v1/test");
-        // V2 should contain TestV2
+        v1Content.ShouldNotContain("api/v2/test");
         v2Content.ShouldContain("api/v2/test");
+        v2Content.ShouldNotContain("api/v1/test");
 
         await app.StopAsync();
     }
