@@ -57,8 +57,10 @@ type system already enforces — unique `workflowId`/`stepId` values, step targe
 JSON Schema shape checks on `workflow.inputs`, and more. It also checks that every
 `$components.{kind}.{name}` reference and `#/components/inputs/{name}` `$ref` resolves to an entry of
 the right kind, that outputs are expressions or Selector Objects rather than literals, and that a
-document declaring `arazzo: 1.0.x` uses none of the 1.1 additions it knows about: `$self`, the Selector
-Object, and `targetSelectorType`. It does **not** resolve references against real source documents
+document declaring `arazzo: 1.0.x` uses none of the 1.1 additions: `$self`, the Selector Object,
+`targetSelectorType`, `asyncapi` source descriptions, the `channelPath`, `action`, `correlationId`,
+`timeout` and `dependsOn` step fields, the `querystring` parameter location, and the `jsonpointer`
+criterion type and `rfc9535` JSONPath version. It does **not** resolve references against real source documents
 (does this `operationId` actually exist?). That is `ArazzoWorkspace`'s job.
 
 ## Writing a document
@@ -259,10 +261,6 @@ readers and writers, and rendered by the Scalar plugin.
 | Parameter, Success Action, Failure Action, Selector, Criterion | every field, by passing the model object (`Parameter(ArazzoParameter)`, `OnSuccess(ArazzoSuccessAction)`, and so on) | `x-*` on a criterion added with `SuccessCriteria(...)` |
 | Reusable Object | `reference`, and `value` for parameters | — |
 | Components | `inputs`, `parameters`, `successActions`, `failureActions` | `x-*` |
-
-Validation of the version split covers only the 1.1 additions listed under
-[Validating a document](#validating-a-document). A 1.0 document using a `channelPath` step, `action`,
-`correlationId`, `timeout`, step `dependsOn` or an `asyncapi` source description is not rejected yet.
 
 ### Identifying workflows and steps by type
 

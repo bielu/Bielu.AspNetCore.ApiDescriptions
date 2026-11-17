@@ -24,9 +24,150 @@ public static class ArazzoValidator
         ValidateWorkflows(document, errors);
         ValidateValues(document, errors);
         ValidateSelf(document, errors);
+        ValidateVersion10Features(document, errors);
         ValidateComponents(document, errors);
 
         return errors;
+    }
+
+    /// <summary>
+    /// Rejects, in a document declaring Arazzo 1.0, the fields and values Arazzo 1.1.0 added besides <c>$self</c>,
+    /// the Selector Object and <c>targetSelectorType</c> (checked elsewhere): AsyncAPI sources and their step fields,
+    /// step <c>timeout</c> and <c>dependsOn</c>, the <c>querystring</c> parameter location, and the
+    /// <c>jsonpointer</c> criterion type and <c>rfc9535</c> JSONPath version.
+    /// </summary>
+    private static void ValidateVersion10Features(ArazzoDocument document, List<ArazzoError> errors)
+    {
+        if (!ArazzoVersionExtensions.TryParse(document.Arazzo, out var version) || version != ArazzoVersion.V1_0)
+        {
+            return;
+        }
+
+        void Require11(string path, string feature) => errors.Add(new ArazzoError(path, $"{feature} requires Arazzo 1.1.0 or later."));
+
+        void CheckParameters(IList<ArazzoReferenceable<ArazzoParameter>>? parameters, string path)
+        {
+            for (var i = 0; parameters is not null && i < parameters.Count; i++)
+            {
+                if (parameters[i].Value?.In == ArazzoParameterLocation.QueryString)
+                {
+                    Require11($"{path}/{i}/in", "The 'querystring' parameter location");
+                }
+            }
+        }
+
+        void CheckCriteria(IList<ArazzoCriterion>? criteria, string path)
+        {
+            for (var i = 0; criteria is not null && i < criteria.Count; i++)
+            {
+                if (criteria[i].Type is not { } type)
+                {
+                    continue;
+                }
+
+                if (type.Type == "jsonpointer")
+                {
+                    Require11($"{path}/{i}/type", "The 'jsonpointer' criterion type");
+                }
+
+                if (type.Version == "rfc9535")
+                {
+                    Require11($"{path}/{i}/type/version", "The 'rfc9535' JSONPath version");
+                }
+            }
+        }
+
+        void CheckSuccessActions(IList<ArazzoReferenceable<ArazzoSuccessAction>>? actions, string path)
+        {
+            for (var i = 0; actions is not null && i < actions.Count; i++)
+            {
+                CheckCriteria(actions[i].Value?.Criteria, $"{path}/{i}/criteria");
+            }
+        }
+
+        void CheckFailureActions(IList<ArazzoReferenceable<ArazzoFailureAction>>? actions, string path)
+        {
+            for (var i = 0; actions is not null && i < actions.Count; i++)
+            {
+                CheckCriteria(actions[i].Value?.Criteria, $"{path}/{i}/criteria");
+                CheckParameters(actions[i].Value?.Parameters, $"{path}/{i}/parameters");
+            }
+        }
+
+        for (var i = 0; i < document.SourceDescriptions.Count; i++)
+        {
+            if (document.SourceDescriptions[i].Type == ArazzoSourceDescriptionType.AsyncApi)
+            {
+                Require11($"/sourceDescriptions/{i}/type", "An 'asyncapi' source description");
+            }
+        }
+
+        if (document.Components is { } components)
+        {
+            foreach (var (name, parameter) in components.Parameters ?? new Dictionary<string, ArazzoParameter>())
+            {
+                if (parameter.In == ArazzoParameterLocation.QueryString)
+                {
+                    Require11($"/components/parameters/{EscapePointerSegment(name)}/in", "The 'querystring' parameter location");
+                }
+            }
+
+            foreach (var (name, action) in components.SuccessActions ?? new Dictionary<string, ArazzoSuccessAction>())
+            {
+                CheckCriteria(action.Criteria, $"/components/successActions/{EscapePointerSegment(name)}/criteria");
+            }
+
+            foreach (var (name, action) in components.FailureActions ?? new Dictionary<string, ArazzoFailureAction>())
+            {
+                var path = $"/components/failureActions/{EscapePointerSegment(name)}";
+                CheckCriteria(action.Criteria, $"{path}/criteria");
+                CheckParameters(action.Parameters, $"{path}/parameters");
+            }
+        }
+
+        for (var w = 0; w < document.Workflows.Count; w++)
+        {
+            var workflow = document.Workflows[w];
+            var workflowPath = $"/workflows/{w}";
+            CheckParameters(workflow.Parameters, $"{workflowPath}/parameters");
+            CheckSuccessActions(workflow.SuccessActions, $"{workflowPath}/successActions");
+            CheckFailureActions(workflow.FailureActions, $"{workflowPath}/failureActions");
+
+            for (var s = 0; s < workflow.Steps.Count; s++)
+            {
+                var step = workflow.Steps[s];
+                var stepPath = $"{workflowPath}/steps/{s}";
+                if (step.ChannelPath is not null)
+                {
+                    Require11($"{stepPath}/channelPath", "channelPath");
+                }
+
+                if (step.Action is not null)
+                {
+                    Require11($"{stepPath}/action", "action");
+                }
+
+                if (step.CorrelationId is not null)
+                {
+                    Require11($"{stepPath}/correlationId", "correlationId");
+                }
+
+                if (step.Timeout is not null)
+                {
+                    Require11($"{stepPath}/timeout", "A step timeout");
+                }
+
+                if (step.DependsOn is not null)
+                {
+                    Require11($"{stepPath}/dependsOn", "A step dependsOn");
+                }
+
+                CheckParameters(step.Parameters, $"{stepPath}/parameters");
+                CheckCriteria(step.SuccessCriteria, $"{stepPath}/successCriteria");
+                CheckSuccessActions(step.OnSuccess, $"{stepPath}/onSuccess");
+                CheckFailureActions(step.OnFailure, $"{stepPath}/onFailure");
+            }
+        }
     }
 
     private static void ValidateSelf(ArazzoDocument document, List<ArazzoError> errors)
