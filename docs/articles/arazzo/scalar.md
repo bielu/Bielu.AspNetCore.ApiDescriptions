@@ -63,7 +63,10 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
   each step box, and Enter opens the step. Each step box has a
   colored marker for the spec its target is described in, explained by a legend in the corner.
 - For each step: the operation, channel or workflow it targets, with that target's description and
-  its own parameters, then the step's parameters, request body, success criteria,
+  its own parameters. An AsyncAPI step also shows the message it sends or receives: its payload as
+  a property list (references followed into the AsyncAPI document), its content type, and its first
+  example payload; a payload in another schema format, such as Avro, is shown as written. Then come
+  the step's parameters, request body, success criteria,
   `onSuccess`/`onFailure` actions and outputs. Arazzo 1.1 steps also show their `timeout` and
   `correlationId`. A criterion that isn't a simple condition is labeled with its language
   (`regex`, `jsonpath`, `xpath`, plus the version when given) and the context it reads, and an

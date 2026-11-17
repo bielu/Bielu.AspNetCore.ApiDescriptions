@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { criterionTypeLabel, formatDuration, formatValue } from '../helpers/format'
+import { criterionTypeLabel, formatDuration, formatValue, schemaPropertyRows } from '../helpers/format'
 import { renderMarkdown } from '../helpers/markdown'
 import { resolveReusables } from '../helpers/reusable'
-import { resolveStepTarget, targetDescription, targetParameters } from '../helpers/resolve-target'
+import { resolveStepTarget, targetDescription, targetMessages, targetParameters } from '../helpers/resolve-target'
 import { stepHeading } from '../helpers/heading'
 import { navigationHref, openInOtherDocument, targetDisplayName, targetNavigationId } from '../helpers/target-link'
 import { specLabel, targetSpec } from '../helpers/target-spec'
@@ -13,6 +13,7 @@ import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoCriteria from './ArazzoCriteria.vue'
 import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
+import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
 import ArazzoValue from './ArazzoValue.vue'
 
 const props = defineProps<{
@@ -86,6 +87,22 @@ const targetDetails = computed(() => {
 })
 
 const targetParameterRows = computed(() => targetParameters(target.value, props.documents))
+
+/**
+ * The messages an AsyncAPI target sends or receives, each with its payload as a property list
+ * (references followed in the AsyncAPI document), or as written when it is not an object schema.
+ */
+const messages = computed(() =>
+  targetMessages(target.value, props.documents).map((message) => ({
+    ...message,
+    rows: message.schemaFormat ? undefined : schemaPropertyRows(message.payload, message.root),
+  })),
+)
+
+/** "Sends message", "Receives message", or just "Message" when the action is not known. */
+const messageHeading = computed(() =>
+  channelAction.value === 'send' ? 'Sends message' : channelAction.value === 'receive' ? 'Receives message' : 'Message',
+)
 
 /**
  * What an AsyncAPI step does on its channel. The step's own action (Arazzo 1.1 `channelPath` steps)
@@ -291,6 +308,43 @@ const description = computed(() => renderMarkdown(heading.value.description))
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div
+        v-for="message in messages"
+        :key="message.name"
+        class="ba-target-message">
+        <div class="ba-block-title">
+          {{ messageHeading }}
+          <code>{{ message.title || message.name }}</code>
+          <span
+            v-if="message.contentType"
+            class="ba-muted">
+            {{ message.contentType }}
+          </span>
+        </div>
+        <div
+          v-if="message.summary || message.description"
+          class="ba-target-summary">
+          {{ message.summary || message.description }}
+        </div>
+        <ArazzoSchemaProperties
+          v-if="message.rows?.length"
+          :rows="message.rows" />
+        <template v-else-if="message.payload">
+          <div
+            v-if="message.schemaFormat"
+            class="ba-muted">
+            {{ message.schemaFormat }}
+          </div>
+          <pre class="ba-code"><code>{{ formatValue(message.payload) }}</code></pre>
+        </template>
+        <details
+          v-if="message.example !== undefined"
+          class="ba-extensions">
+          <summary>Example payload</summary>
+          <pre class="ba-code"><code>{{ formatValue(message.example) }}</code></pre>
+        </details>
       </div>
     </div>
 
