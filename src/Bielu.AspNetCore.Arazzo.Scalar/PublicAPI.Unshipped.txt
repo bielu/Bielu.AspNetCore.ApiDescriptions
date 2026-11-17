@@ -1,0 +1,8 @@
+﻿#nullable enable
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoDefaults
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoEndpointRouteBuilderExtensions
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptionsExtensions
+const Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoDefaults.AssetsPath = "/bielu/scalar/arazzo" -> string!
+static Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoEndpointRouteBuilderExtensions.MapScalarArazzoAssets(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path = "/bielu/scalar/arazzo") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptionsExtensions.AddArazzoDocument(this Scalar.AspNetCore.ScalarOptions! options, string! documentName = "v1", string? title = null, string! routePattern = "/arazzo/{documentName}.json", bool isDefault = false) -> Scalar.AspNetCore.ScalarOptions!
+static Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptionsExtensions.WithArazzo(this Scalar.AspNetCore.ScalarOptions! options, string! assetsPath = "/bielu/scalar/arazzo") -> Scalar.AspNetCore.ScalarOptions!
