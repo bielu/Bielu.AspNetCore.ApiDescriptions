@@ -46,11 +46,12 @@ public sealed class ApiDescriptionsMcpServerTests : IAsyncLifetime
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddOpenApi();
         builder.Services.AddAsyncApi(DocumentName, options => options.WithInfo("Orders", "1.0.0"));
-        // A second Arazzo document without the required info, to see generation failures reported to the agent.
+        // A second, invalid Arazzo document, to see generation failures reported to the agent.
         builder.Services.AddArazzo("broken", options =>
         {
             options.ValidateSourceReferencesOnStartup = false;
-            options.AddWorkflow("noop", workflow => workflow.Step("only", step => step.Workflow("noop")));
+            // A step with no target fails validation, so the document cannot be built.
+            options.AddWorkflow("noop", workflow => workflow.Step("only", _ => { }));
         });
         builder.Services.AddArazzo(options =>
         {
@@ -140,7 +141,7 @@ public sealed class ApiDescriptionsMcpServerTests : IAsyncLifetime
 
         // Assert
         var broken = result.RootElement.GetProperty("documents").EnumerateArray().Single(d => d.GetProperty("name").GetString() == "broken");
-        broken.GetProperty("error").GetString()!.ShouldContain("has no Info");
+        broken.GetProperty("error").GetString()!.ShouldContain("failed validation");
     }
 
     [Fact]
@@ -261,7 +262,7 @@ public sealed class ApiDescriptionsMcpServerTests : IAsyncLifetime
 
         // Assert
         result.IsError.ShouldBe(true);
-        Text(result).ShouldContain("has no Info");
+        Text(result).ShouldContain("failed validation");
     }
 
     [Fact]

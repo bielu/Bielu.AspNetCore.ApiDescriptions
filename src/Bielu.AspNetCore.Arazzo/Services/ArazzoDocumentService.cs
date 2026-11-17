@@ -3,6 +3,7 @@ using Bielu.Arazzo.Models;
 using Bielu.Arazzo.Validation;
 using Bielu.AspNetCore.Arazzo.Transformers;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Bielu.AspNetCore.Arazzo.Services;
@@ -37,17 +38,20 @@ internal sealed class ArazzoDocumentService(
 
     private async Task<ArazzoDocument> BuildAsync(ArazzoOptions options, CancellationToken cancellationToken)
     {
-        if (options.Info is null)
+        // Without WithInfo, the info defaults as an AsyncAPI document's does: "{application} | {document}", 1.0.0.
+        var info = options.Info ?? new ArazzoInfo
         {
-            throw new InvalidOperationException(
-                $"Arazzo document '{options.DocumentName}' has no Info; call WithInfo(...) when configuring AddArazzo.");
-        }
+            Title = services.GetService<IHostEnvironment>() is { } environment
+                ? $"{environment.ApplicationName} | {options.DocumentName}"
+                : options.DocumentName,
+            Version = ArazzoDefaults.DefaultInfoVersion,
+        };
 
         var document = new ArazzoDocument
         {
             Arazzo = options.Version.ToVersionString(),
             Self = options.Self,
-            Info = options.Info,
+            Info = info,
             SourceDescriptions = [.. options.SourceDescriptions],
             Workflows = [.. options.Workflows],
             Components = options.Components,
