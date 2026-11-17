@@ -4,6 +4,7 @@ import { renderMarkdown } from '../helpers/markdown'
 import { type DocumentWatch, watchDocuments } from '../helpers/document-watch'
 import { componentsEntryId, toWorkflowViews } from '../helpers/navigation'
 import { normalizeArazzoDocument } from '../helpers/normalize'
+import { filterWorkflows } from '../helpers/search'
 import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
 import type { ArazzoDocument, PluginEventBus, PluginNavigationEntry } from '../types'
 import ArazzoComponents from './ArazzoComponents.vue'
@@ -56,6 +57,10 @@ const workflows = computed(() => (arazzo.value ? toWorkflowViews(arazzo.value, p
 
 /** The document's own extensions and its `info`'s, shown together in the header (the root's win on a clash). */
 const documentExtensions = computed(() => ({ ...info.value, ...arazzo.value }))
+
+/** The text in the filter box; the workflows and steps it leaves are `filter`, everything when empty. */
+const query = ref('')
+const filter = computed(() => filterWorkflows(workflows.value, query.value))
 
 /** workflowId → its section's sidebar id, so a step that invokes a workflow links to it. */
 const workflowNavIds = computed(() => Object.fromEntries(workflows.value.map((view) => [view.workflow.workflowId, view.id])))
@@ -246,11 +251,35 @@ onBeforeUnmount(() => {
           </tbody>
         </table>
       </div>
+      <div
+        v-if="workflows.length"
+        class="ba-filter"
+        role="search">
+        <input
+          v-model="query"
+          aria-label="Filter workflows and steps"
+          class="ba-filter-input"
+          placeholder="Filter workflows and steps"
+          type="search" />
+        <span
+          aria-live="polite"
+          class="ba-muted">
+          <template v-if="filter">{{ filter.matchingSteps }} of {{ filter.totalSteps }} steps</template>
+        </span>
+      </div>
     </header>
+
+    <p
+      v-if="filter && filter.workflows.size === 0"
+      class="ba-muted">
+      No workflow or step matches “{{ query }}”.
+    </p>
 
     <ArazzoWorkflow
       v-for="view in workflows"
+      v-show="!filter || filter.workflows.has(view.id)"
       :key="view.id"
+      :visibleSteps="filter?.steps"
       :document="arazzo!"
       :documents="loadedDocuments"
       :eventBus="eventBus"
@@ -349,15 +378,14 @@ onBeforeUnmount(() => {
   list-style: none;
   margin: 24px 0 0;
   padding: 0;
-  counter-reset: ba-step;
 }
 .bielu-arazzo .ba-steps > li {
   position: relative;
   padding-left: 40px;
-  counter-increment: ba-step;
 }
+/* The number comes from the step's position, not a CSS counter, so a filter that hides steps does not renumber the rest. */
 .bielu-arazzo .ba-steps > li::before {
-  content: counter(ba-step);
+  content: attr(data-step-number);
   position: absolute;
   left: 0;
   top: 18px;
@@ -629,6 +657,28 @@ onBeforeUnmount(() => {
   .bielu-arazzo .ba-key-values dd {
     margin-bottom: 4px;
   }
+}
+.bielu-arazzo .ba-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 20px;
+}
+.bielu-arazzo .ba-filter-input {
+  flex: 1 1 240px;
+  max-width: 420px;
+  padding: 6px 10px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius, 4px);
+  background: var(--scalar-background-1);
+  color: var(--scalar-color-1);
+  font: inherit;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-filter-input:focus-visible {
+  outline: 2px solid var(--scalar-color-accent);
+  outline-offset: 1px;
 }
 .bielu-arazzo .ba-render-error {
   margin: 8px 0;
