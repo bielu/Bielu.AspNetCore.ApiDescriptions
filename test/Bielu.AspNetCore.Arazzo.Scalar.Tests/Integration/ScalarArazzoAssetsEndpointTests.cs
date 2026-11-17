@@ -39,6 +39,64 @@ public class ScalarArazzoAssetsEndpointTests
     }
 
     [Fact]
+    public async Task MapScalarArazzoAssets_SendsAnETagAndRevalidation()
+    {
+        // Arrange
+        await using var app = await StartAsync(endpoints => endpoints.MapScalarArazzoAssets());
+        var client = app.GetTestClient();
+
+        // Act
+        var first = await client.GetAsync("/bielu/scalar/arazzo/plugin.js");
+        var second = await client.GetAsync("/bielu/scalar/arazzo/plugin.js");
+
+        // Assert
+        first.Headers.CacheControl!.NoCache.ShouldBeTrue();
+        first.Headers.ETag.ShouldNotBeNull();
+        first.Headers.ETag!.IsWeak.ShouldBeFalse();
+        // Derived from the content, so it is the same on every response.
+        second.Headers.ETag.ShouldBe(first.Headers.ETag);
+        first.Content.Headers.ContentLength.ShouldBe((await first.Content.ReadAsByteArrayAsync()).Length);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task MapScalarArazzoAssets_MatchingIfNoneMatch_Returns304WithoutBody(bool wildcard)
+    {
+        // Arrange
+        await using var app = await StartAsync(endpoints => endpoints.MapScalarArazzoAssets());
+        var client = app.GetTestClient();
+        var etag = (await client.GetAsync("/bielu/scalar/arazzo/plugin.js")).Headers.ETag!;
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/bielu/scalar/arazzo/plugin.js");
+        request.Headers.TryAddWithoutValidation("If-None-Match", wildcard ? "*" : $"\"other\", {etag.Tag}");
+
+        // Act
+        var response = await client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.NotModified);
+        response.Headers.ETag.ShouldBe(etag);
+        (await response.Content.ReadAsByteArrayAsync()).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task MapScalarArazzoAssets_StaleIfNoneMatch_ServesTheBundle()
+    {
+        // Arrange
+        await using var app = await StartAsync(endpoints => endpoints.MapScalarArazzoAssets());
+        var client = app.GetTestClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/bielu/scalar/arazzo/plugin.js");
+        request.Headers.TryAddWithoutValidation("If-None-Match", "\"an-older-bundle\"");
+
+        // Act
+        var response = await client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).ShouldContain("bielu-arazzo-document");
+    }
+
+    [Fact]
     public async Task MapScalarArazzoAssets_CustomPath_ServesTheBundleThere()
     {
         // Arrange
