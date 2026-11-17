@@ -48,6 +48,9 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 
 - The document's `info`, its `$self` URL (Arazzo 1.1) and its `sourceDescriptions`. Each source shows its spec and version, whether
   it is loaded in the page, and how many steps use it, and the header counts the steps per spec.
+- A filter box under the header that narrows the workflows and steps by id, summary, description,
+  target or action (every word must match), keeping each step's number. Scalar's own search (Ctrl+K)
+  does not index plugin documents yet.
 - One sidebar entry per workflow, with one child entry per step. Sidebar clicks, deep links and
   scroll position stay in sync, as they do for operations.
 - For each workflow: its inputs (nested properties fold out), shared parameters, steps, success
