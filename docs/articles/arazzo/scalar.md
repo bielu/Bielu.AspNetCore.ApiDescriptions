@@ -3,7 +3,7 @@
 `Bielu.AspNetCore.Arazzo.Scalar` renders Arazzo documents in the [Scalar](https://scalar.com/) API
 Reference, on the same page as the OpenAPI and AsyncAPI documents their steps call.
 
-![An Arazzo workflow in Scalar: the source descriptions with their specs, the workflow's inputs and first step, and the workflow overview flowchart with a marker per spec](../../images/arazzo/scalar-workflow-overview.png)
+![An Arazzo workflow in Scalar: the source descriptions with their specs, the workflow's inputs and first step, and the workflow overview flowchart with a marker per spec](../../images/arazzo/scalar-workflow-overview.jpg)
 
 > [!IMPORTANT]
 > The plugin uses Scalar's plugin `documentTypes` API, first released in `@scalar/api-reference` 1.80.0
@@ -55,11 +55,11 @@ share the page surface, and nested properties, examples and extensions use consi
 An AsyncAPI step shows the message it receives, with its payload, next to the step's correlation ID,
 timeout, criteria and outputs:
 
-![A step receiving the paymentCompleted message: spec badge, channel link, the message payload's properties, a JSONPath success criterion and a failure branch](../../images/arazzo/scalar-asyncapi-step.png)
+![A step receiving the paymentCompleted message: spec badge, channel link, the message payload's properties, a JSONPath success criterion and a failure branch](../../images/arazzo/scalar-asyncapi-step.jpg)
 
 With its steps collapsed, a workflow reads as an outline of what each step calls:
 
-![The placeOrder workflow with its five steps collapsed, each showing its spec and target in one line, beside the workflow overview](../../images/arazzo/scalar-collapsed-steps.png)
+![The placeOrder workflow with its five steps collapsed, each showing its spec and target in one line, beside the workflow overview](../../images/arazzo/scalar-collapsed-steps.jpg)
 
 - The document's `info`, its `$self` URL (Arazzo 1.1) and its `sourceDescriptions`. Each source shows its spec and version, whether
   it is loaded in the page, and how many steps use it, and the header counts the steps per spec.
