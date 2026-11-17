@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { renderMarkdown } from '../helpers/markdown'
-import { toWorkflowViews } from '../helpers/navigation'
+import { componentsEntryId, toWorkflowViews } from '../helpers/navigation'
 import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
 import type { ArazzoDocument, PluginEventBus, PluginNavigationEntry } from '../types'
+import ArazzoComponents from './ArazzoComponents.vue'
+import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoWorkflow from './ArazzoWorkflow.vue'
 
 /**
@@ -32,6 +34,12 @@ const info = computed(() => props.document?.info ?? {})
 const description = computed(() => renderMarkdown(info.value.description))
 
 const workflows = computed(() => (props.document ? toWorkflowViews(props.document, props.navigation ?? []) : []))
+
+/** The document's own extensions and its `info`'s, shown together in the header (the root's win on a clash). */
+const documentExtensions = computed(() => ({ ...info.value, ...props.document }))
+
+/** The components section's sidebar id; `undefined` when the document declares no components. */
+const componentsId = computed(() => componentsEntryId(props.navigation ?? []))
 
 /** Each source description with its spec, whether it is loaded, and how many steps use it. */
 const sources = computed(() => (props.document ? summarizeSources(props.document, loadedDocuments.value) : []))
@@ -119,6 +127,17 @@ onBeforeUnmount(() => {
         <template v-if="info.version">· v{{ info.version }}</template>
       </div>
       <h1 class="ba-title">{{ info.title || documentName }}</h1>
+      <div
+        v-if="document?.$self"
+        class="ba-self ba-muted">
+        Canonical URL
+        <a
+          :href="document.$self"
+          rel="noopener"
+          target="_blank">
+          {{ document.$self }}
+        </a>
+      </div>
       <p
         v-if="info.summary"
         class="ba-summary">
@@ -128,6 +147,7 @@ onBeforeUnmount(() => {
         v-if="description"
         class="ba-markdown"
         v-html="description" />
+      <ArazzoExtensions :of="documentExtensions" />
 
       <div
         v-if="document?.sourceDescriptions?.length"
@@ -177,6 +197,7 @@ onBeforeUnmount(() => {
                   target="_blank">
                   {{ summary.source.url }}
                 </a>
+                <ArazzoExtensions :of="summary.source" />
               </td>
             </tr>
           </tbody>
@@ -192,6 +213,13 @@ onBeforeUnmount(() => {
       :eventBus="eventBus"
       :layout="layout"
       :view="view" />
+
+    <ArazzoComponents
+      v-if="document?.components && componentsId"
+      :id="componentsId"
+      :components="document.components"
+      :document="document"
+      :eventBus="eventBus" />
 
     <p
       v-if="!workflows.length"
@@ -500,6 +528,42 @@ onBeforeUnmount(() => {
   align-items: baseline;
   gap: 0 4px;
   white-space: normal;
+}
+.bielu-arazzo .ba-self {
+  margin: -4px 0 8px;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-extensions {
+  margin: 8px 0;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-extensions summary {
+  width: fit-content;
+  color: var(--scalar-color-2);
+  cursor: pointer;
+}
+.bielu-arazzo .ba-extensions summary:hover {
+  color: var(--scalar-color-1);
+}
+.bielu-arazzo .ba-extensions .ba-key-values {
+  margin-top: 4px;
+}
+.bielu-arazzo .ba-actions .ba-extensions {
+  flex-basis: 100%;
+  margin: 0 0 4px 12px;
+}
+.bielu-arazzo .ba-components {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-component {
+  margin-bottom: 12px;
+}
+.bielu-arazzo .ba-component-name {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-weight: var(--scalar-semibold, 600);
 }
 .bielu-arazzo .ba-criterion-type {
   margin-right: 6px;

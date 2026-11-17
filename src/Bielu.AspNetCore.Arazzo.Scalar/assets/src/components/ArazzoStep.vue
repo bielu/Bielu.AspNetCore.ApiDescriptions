@@ -10,6 +10,7 @@ import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, 
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoCriteria from './ArazzoCriteria.vue'
+import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
 import ArazzoValue from './ArazzoValue.vue'
 
@@ -273,6 +274,7 @@ const description = computed(() => renderMarkdown(heading.value.description))
           </tbody>
         </table>
       </template>
+      <ArazzoExtensions :of="step.requestBody" />
     </div>
 
     <div
@@ -297,5 +299,7 @@ const description = computed(() => renderMarkdown(heading.value.description))
       v-if="outputs.length"
       :rows="outputs"
       title="Outputs" />
+
+    <ArazzoExtensions :of="step" />
   </section>
 </template>

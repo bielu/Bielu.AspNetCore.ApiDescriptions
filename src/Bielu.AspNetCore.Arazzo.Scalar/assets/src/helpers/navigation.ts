@@ -6,6 +6,16 @@ export const WORKFLOW_KIND = 'workflow'
 /** `PluginNavigationEntry.kind` of a step entry. */
 export const STEP_KIND = 'step'
 
+/** `PluginNavigationEntry.kind` of the entry for the document's reusable components. */
+export const COMPONENTS_KIND = 'components'
+
+/** The component kinds Arazzo defines; an `x-*` extension alone does not earn a sidebar entry. */
+const COMPONENT_KINDS = ['inputs', 'parameters', 'successActions', 'failureActions'] as const
+
+/** Whether the document declares any reusable component. */
+export const hasComponents = (document: ArazzoDocument): boolean =>
+  COMPONENT_KINDS.some((kind) => Object.keys(document.components?.[kind] ?? {}).length > 0)
+
 /** Whether a parsed document is an Arazzo document (`arazzo: "1.x.y"`). */
 export const isArazzoDocument = (document: Record<string, unknown>): boolean =>
   typeof document.arazzo === 'string' && Array.isArray(document.workflows)
@@ -23,8 +33,9 @@ export const traverseArazzoDocument = ({
 }: {
   documentId: string
   document: Record<string, unknown>
-}): PluginNavigationEntry[] =>
-  ((document as ArazzoDocument).workflows ?? []).map((workflow) => {
+}): PluginNavigationEntry[] => {
+  const arazzo = document as ArazzoDocument
+  const entries: PluginNavigationEntry[] = (arazzo.workflows ?? []).map((workflow) => {
     const workflowEntryId = `${documentId}/workflow/${workflow.workflowId}`
     return {
       id: workflowEntryId,
@@ -37,6 +48,16 @@ export const traverseArazzoDocument = ({
       })),
     }
   })
+  // After the workflows, as OpenAPI's "Models" come after its operations.
+  if (hasComponents(arazzo)) {
+    entries.push({ id: `${documentId}/components`, title: 'Components', kind: COMPONENTS_KIND })
+  }
+  return entries
+}
+
+/** The sidebar entry id of the components section, when the document has one. */
+export const componentsEntryId = (navigation: PluginNavigationEntry[]): string | undefined =>
+  navigation.find((entry) => entry.kind === COMPONENTS_KIND)?.id
 
 /** A workflow paired with the sidebar entry Scalar scrolls to, and likewise for each of its steps. */
 export type WorkflowView = {
