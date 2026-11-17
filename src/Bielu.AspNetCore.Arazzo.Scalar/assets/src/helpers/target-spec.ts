@@ -32,16 +32,25 @@ type AnyRecord = Record<string, unknown>
 
 const isRecord = (value: unknown): value is AnyRecord => !!value && typeof value === 'object'
 
-/** The spec and version a parsed document declares, or `undefined` when it is neither OpenAPI nor AsyncAPI. */
+/** The version the author wrote, when Scalar recorded it, else the document's own field. */
+const authoredVersion = (original: unknown, current: unknown): string =>
+  typeof original === 'string' && original ? original : String(current)
+
+/**
+ * The spec and version a loaded document was written in, or `undefined` when it is neither OpenAPI
+ * nor AsyncAPI. Scalar upgrades documents as it loads them (AsyncAPI 3.0 to 3.1, Swagger 2.0 to
+ * OpenAPI 3.1) and keeps the authored version in `x-original-oas-version`/`x-original-aas-version`,
+ * which is what a reader of the source document expects to see.
+ */
 export const documentSpec = (document: unknown): Pick<TargetSpec, 'family' | 'version'> | undefined => {
   if (!isRecord(document)) {
     return undefined
   }
   if (isOpenApi(document)) {
-    return { family: 'openapi', version: String(document.openapi ?? document.swagger) }
+    return { family: 'openapi', version: authoredVersion(document['x-original-oas-version'], document.openapi ?? document.swagger) }
   }
   if (isAsyncApi(document)) {
-    return { family: 'asyncapi', version: String(document.asyncapi) }
+    return { family: 'asyncapi', version: authoredVersion(document['x-original-aas-version'], document.asyncapi) }
   }
   return undefined
 }
