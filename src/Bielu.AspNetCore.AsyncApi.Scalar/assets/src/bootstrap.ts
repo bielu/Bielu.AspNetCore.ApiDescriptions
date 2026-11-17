@@ -1,6 +1,6 @@
 import { defineCustomElement } from 'vue'
 import { resolveDocuments } from './discovery'
-import { createConsolePlugin } from './plugin'
+import { createConsolePlugin, type ApiReferencePlugin } from './plugin'
 import type { ConsoleBundleSpec, ConsoleModuleSpec } from './types'
 
 /**
@@ -38,53 +38,68 @@ export function registerConsoleElement(spec: ConsoleModuleSpec, component: any):
   customElements.define(spec.elementTag, defineCustomElement(component, { shadowRoot: false }))
 }
 
+/** Identifies one plugin installed by a page-level hook (see `installScalarPluginHook`). */
+export type ScalarPluginHookSpec = {
+  /** The Scalar plugin's identifier, used to detect (and de-duplicate) an existing registration. */
+  pluginName: string
+  /** The marker property set on `window.Scalar` once wrapped (e.g. `'__bieluSignalRWrapped'`). */
+  wrappedFlag: string
+}
+
+/** Builds the plugin from the configuration Scalar is about to render. */
+export type ScalarPluginFactory = (config: Record<string, any>) => ApiReferencePlugin
+
 /**
- * Adds the console plugin to a Scalar configuration without mutating the caller's object. The
- * AsyncAPI documents are discovered from the very config Scalar is about to render, then handed to
- * the plugin so the console never has to rely on Scalar re-binding its config to the element.
+ * Adds a plugin to a Scalar configuration without mutating the caller's object. The factory gets
+ * the very config Scalar is about to render, so a plugin can derive its inputs (e.g. the AsyncAPI
+ * documents a console drives) from it instead of relying on Scalar re-binding its config later.
  */
-function withConsolePlugin(spec: ConsoleBundleSpec, config: Record<string, any>): Record<string, any> {
+function withPlugin(
+  spec: ScalarPluginHookSpec,
+  createPlugin: ScalarPluginFactory,
+  config: Record<string, any>,
+): Record<string, any> {
   const plugins = Array.isArray(config.plugins) ? config.plugins.slice() : []
   // Don't register a second time if the consumer already added the plugin (e.g. they both load the
   // auto-registering bundle and call the plugin factory themselves).
   if (plugins.some((plugin) => (plugin as { pluginName?: string })?.pluginName === spec.pluginName)) {
     return config
   }
-  const documents = resolveDocuments(config, spec.discovery)
-  plugins.push(createConsolePlugin(spec, documents))
+  plugins.push(createPlugin(config))
   return { ...config, plugins }
 }
 
-/** Wrap `Scalar.createApiReference` so every call registers the console plugin. */
-function wrapScalar(spec: ConsoleBundleSpec, scalar: any): any {
+/** Wrap `Scalar.createApiReference` so every call registers the plugin. */
+function wrapScalar(spec: ScalarPluginHookSpec, createPlugin: ScalarPluginFactory, scalar: any): any {
   if (scalar && typeof scalar.createApiReference === 'function' && !scalar[spec.wrappedFlag]) {
     const original = scalar.createApiReference.bind(scalar)
     scalar.createApiReference = (element: unknown, config: Record<string, any> = {}) =>
-      original(element, withConsolePlugin(spec, config))
+      original(element, withPlugin(spec, createPlugin, config))
     scalar[spec.wrappedFlag] = true
   }
   return scalar
 }
 
 /**
- * Install the hook regardless of script order: if Scalar's bundle has already set `window.Scalar`
- * we wrap it now; otherwise we intercept the assignment so we wrap it the moment Scalar registers.
+ * Adds a plugin to every Scalar API Reference on the page, regardless of script order: if Scalar's
+ * bundle has already set `window.Scalar` we wrap it now; otherwise we intercept the assignment so we
+ * wrap it the moment Scalar registers.
  *
- * Several console bundles can coexist on one page: each wraps with its own `wrappedFlag`, and the
- * property interception below re-defines the (configurable) accessor installed by earlier bundles,
- * chaining the wraps.
+ * Several bundles can coexist on one page: each wraps with its own `wrappedFlag`, and the property
+ * interception below re-defines the (configurable) accessor installed by earlier bundles, chaining
+ * the wraps.
  */
-export function installScalarHook(spec: ConsoleBundleSpec): void {
+export function installScalarPluginHook(spec: ScalarPluginHookSpec, createPlugin: ScalarPluginFactory): void {
   if (typeof window === 'undefined') {
     return
   }
-  // An earlier console bundle may have installed its own accessor. Capture its setter so we can
-  // chain onto it instead of replacing it — otherwise only the last-installed bundle would wrap
-  // Scalar when it is finally assigned.
+  // An earlier bundle may have installed its own accessor. Capture its setter so we can chain onto
+  // it instead of replacing it — otherwise only the last-installed bundle would wrap Scalar when it
+  // is finally assigned.
   const priorSetter = Object.getOwnPropertyDescriptor(window, 'Scalar')?.set
   let stored: any = (window as any).Scalar
   if (stored) {
-    wrapScalar(spec, stored)
+    wrapScalar(spec, createPlugin, stored)
   }
   try {
     Object.defineProperty(window, 'Scalar', {
@@ -95,13 +110,21 @@ export function installScalarHook(spec: ConsoleBundleSpec): void {
         // Let the earlier hook wrap first (it mutates the same Scalar object in place), then apply
         // our own wrap, so every installed bundle's plugin is chained onto the loaded Scalar.
         priorSetter?.call(window, value)
-        stored = wrapScalar(spec, value)
+        stored = wrapScalar(spec, createPlugin, value)
       },
     })
   } catch {
     // `Scalar` is already defined and non-configurable — best-effort wrap what is there.
-    wrapScalar(spec, (window as any).Scalar)
+    wrapScalar(spec, createPlugin, (window as any).Scalar)
   }
+}
+
+/**
+ * Installs the console plugin hook. The AsyncAPI documents are discovered from the config being
+ * rendered and handed to the console plugin.
+ */
+export function installScalarHook(spec: ConsoleBundleSpec): void {
+  installScalarPluginHook(spec, (config) => createConsolePlugin(spec, resolveDocuments(config, spec.discovery)))
 }
 
 /** Register the console element and hook Scalar — the whole side-effect entry of a console bundle. */
