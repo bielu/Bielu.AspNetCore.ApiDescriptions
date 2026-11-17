@@ -123,6 +123,8 @@ export type ArazzoWorkflow = {
 
 export type ArazzoDocument = {
   arazzo: string
+  /** The document's own canonical URL, the base its relative references resolve against (Arazzo 1.1). */
+  $self?: string
   info?: ArazzoInfo
   sourceDescriptions?: ArazzoSourceDescription[]
   workflows?: ArazzoWorkflow[]
@@ -130,6 +132,12 @@ export type ArazzoDocument = {
   /** Set by Scalar's workspace store: the URL the document was loaded from. */
   'x-scalar-original-source-url'?: string
 }
+
+/**
+ * The reusable `components`, by kind (`inputs`, `parameters`, `successActions`, `failureActions`)
+ * and then by name. Kept loose: entries are resolved where they are used.
+ */
+export type ArazzoComponents = NonNullable<ArazzoDocument['components']>
 
 /** A sidebar entry contributed by a plugin document type (`PluginNavigationEntry` in `@scalar/types`). */
 export type PluginNavigationEntry = {

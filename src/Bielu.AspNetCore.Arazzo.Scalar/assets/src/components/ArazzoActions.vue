@@ -2,6 +2,7 @@
 import { resolveReusables } from '../helpers/reusable'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction } from '../types'
 import ArazzoCriteria from './ArazzoCriteria.vue'
+import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoValue from './ArazzoValue.vue'
 
 const props = defineProps<{
@@ -52,6 +53,7 @@ const parametersOf = (action: ArazzoSuccessAction | ArazzoFailureAction): Arazzo
             <dd><ArazzoValue :value="parameter.value" /></dd>
           </template>
         </dl>
+        <ArazzoExtensions :of="action" />
       </li>
     </ul>
   </div>

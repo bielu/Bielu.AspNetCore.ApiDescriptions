@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
+import { resolveLocalRef } from '../helpers/extensions'
 import { renderMarkdown } from '../helpers/markdown'
 import type { WorkflowView } from '../helpers/navigation'
 import { resolveReusables } from '../helpers/reusable'
@@ -10,6 +11,7 @@ import { buildWorkflowGraph, layoutWorkflowGraph } from '../helpers/workflow-gra
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
+import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
 import ArazzoSpecLegend from './ArazzoSpecLegend.vue'
@@ -29,7 +31,10 @@ const workflow = computed(() => props.view.workflow)
 
 const description = computed(() => renderMarkdown(workflow.value.description))
 
-const inputRows = computed(() => schemaPropertyRows(workflow.value.inputs))
+/** The inputs schema, followed through a `$ref` to `components.inputs` when it is one. */
+const inputs = computed(() => resolveLocalRef(props.document, workflow.value.inputs))
+
+const inputRows = computed(() => schemaPropertyRows(inputs.value))
 
 const parameters = computed(() =>
   resolveReusables<ArazzoParameter>(props.document, workflow.value.parameters).map((parameter) => ({
@@ -129,6 +134,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
       v-if="description"
       class="ba-markdown"
       v-html="description" />
+    <ArazzoExtensions :of="workflow" />
 
     <div
       v-show="!classic || open"
@@ -143,7 +149,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
             :rows="inputRows" />
           <pre
             v-else
-            class="ba-code"><code>{{ formatValue(workflow.inputs) }}</code></pre>
+            class="ba-code"><code>{{ formatValue(inputs) }}</code></pre>
         </div>
 
         <ArazzoKeyValues
