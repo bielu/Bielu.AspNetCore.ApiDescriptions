@@ -54,7 +54,10 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 - For each step: the operation, channel or workflow it targets, with that target's description and
   its own parameters (path item and operation parameters for OpenAPI, channel address parameters for
   AsyncAPI), then the step's parameters, request body, success criteria, `onSuccess`/`onFailure`
-  actions and outputs. Reusable objects
+  actions and outputs. A one-line step description reads as the step's heading, under a
+  `Step · id` label.
+- Each workflow and step heading has a copy-link button. With Scalar's `classic` layout, each
+  workflow can be collapsed. Reusable objects
   (`$components.parameters.*` and the like) are resolved.
 
 A step's target is looked up in the documents loaded in the same Scalar page. The step's

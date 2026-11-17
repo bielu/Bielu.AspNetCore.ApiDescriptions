@@ -52,6 +52,7 @@ builder.Services.AddArazzo(options =>
             .WithDescription("Reuse the placeOrder workflow."))
         .Step("status", step => step
             .Operation("getOrder")
+            .WithDescription("Check the order status.")
             .Parameter("id", "$steps.place.outputs.orderId", "path")
             .SuccessCriteria("$statusCode == 200"))
         .Step("shipped", step => step

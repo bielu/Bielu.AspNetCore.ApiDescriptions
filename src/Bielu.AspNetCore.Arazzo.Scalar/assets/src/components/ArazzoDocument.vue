@@ -18,11 +18,13 @@ const props = defineProps<{
   /** The sidebar entries `traverse` built for this document. */
   navigation?: PluginNavigationEntry[]
   eventBus?: PluginEventBus
-  /** Scalar's configuration; not used yet, declared so it is not reflected as an attribute. */
+  /** Scalar's configuration; `layout` (`modern` or `classic`) is the part read here. */
   options?: Record<string, unknown>
 }>()
 
 const root = ref<HTMLElement>()
+
+const layout = computed(() => (typeof props.options?.layout === 'string' ? props.options.layout : 'modern'))
 
 const info = computed(() => props.document?.info ?? {})
 
@@ -150,6 +152,8 @@ onBeforeUnmount(() => {
       :key="view.id"
       :document="document!"
       :documents="loadedDocuments"
+      :eventBus="eventBus"
+      :layout="layout"
       :view="view" />
 
     <p
@@ -270,7 +274,6 @@ onBeforeUnmount(() => {
 }
 .bielu-arazzo .ba-step-title {
   margin: 2px 0 8px;
-  font-family: var(--scalar-font-code);
   font-size: var(--scalar-heading-4, 18px);
   font-weight: var(--scalar-semibold, 600);
 }
@@ -381,6 +384,54 @@ onBeforeUnmount(() => {
   padding: 10px 12px;
   overflow: auto;
   border-radius: var(--scalar-radius, 4px);
+  background: var(--scalar-background-2);
+}
+.bielu-arazzo .ba-step-title-id {
+  font-family: var(--scalar-font-code);
+}
+.bielu-arazzo .ba-anchor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bielu-arazzo .ba-anchor-button {
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--scalar-color-3);
+  font-size: var(--scalar-small, 13px);
+  cursor: pointer;
+  opacity: 0;
+}
+.bielu-arazzo .ba-anchor:hover .ba-anchor-button,
+.bielu-arazzo .ba-anchor-button:focus-visible {
+  opacity: 1;
+}
+.bielu-arazzo .ba-anchor-button:hover {
+  color: var(--scalar-color-accent);
+}
+.bielu-arazzo .ba-workflow-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.bielu-arazzo .ba-workflow-heading {
+  min-width: 0;
+}
+.bielu-arazzo .ba-toggle {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius, 4px);
+  background: var(--scalar-background-1);
+  color: var(--scalar-color-2);
+  font: inherit;
+  font-size: var(--scalar-mini, 12px);
+  cursor: pointer;
+}
+.bielu-arazzo .ba-toggle:hover {
+  color: var(--scalar-color-1);
   background: var(--scalar-background-2);
 }
 .bielu-arazzo .ba-target-parameters {

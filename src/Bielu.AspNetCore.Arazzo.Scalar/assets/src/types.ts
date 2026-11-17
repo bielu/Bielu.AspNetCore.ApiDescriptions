@@ -111,5 +111,5 @@ export type PluginNavigationEntry = {
 
 /** The workspace event bus subset the plugin emits on. */
 export type PluginEventBus = {
-  emit: (event: string, payload: { id: string }) => void
+  emit: (event: string, payload: { id: string; open?: boolean }) => void
 }
