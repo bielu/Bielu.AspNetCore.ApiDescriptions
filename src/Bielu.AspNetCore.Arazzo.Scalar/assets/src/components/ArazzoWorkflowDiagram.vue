@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import { INITIAL_PAN_ZOOM, panBy, type PanZoomState, zoomAt } from '../helpers/pan-zoom'
-import type { LaidOutEdge, LaidOutNode, WorkflowLayout } from '../helpers/workflow-graph'
+import { specLabel } from '../helpers/target-spec'
+import { type LaidOutEdge, type LaidOutNode, SPEC_MARKER_WIDTH, type WorkflowLayout } from '../helpers/workflow-graph'
 
 /**
  * Draws a laid-out workflow graph as SVG. Colors come from Scalar's theme variables, so the diagram
@@ -107,6 +108,9 @@ const edgePath = (edge: LaidOutEdge): string => {
   return `${path} L${last.x},${last.y}`
 }
 
+const specName = (family: NonNullable<LaidOutNode['spec']>): string =>
+  family === 'arazzo' ? 'Workflow' : specLabel({ family, version: undefined })
+
 const viewBox = computed(() => `0 0 ${Math.max(props.layout.width, 1)} ${Math.max(props.layout.height, 1)}`)
 
 const label = computed(() =>
@@ -187,7 +191,9 @@ const label = computed(() =>
           :key="node.id"
           :class="[`ba-diagram-node ba-diagram-node-${node.kind}`, { 'ba-diagram-link': node.kind === 'step' && stepSectionIds[node.id] }]"
           @click="openStep(node)">
-          <title v-if="node.kind === 'step'">Go to step {{ node.label }}</title>
+          <title v-if="node.kind === 'step'">
+            Go to step {{ node.label }}<template v-if="node.spec"> ({{ specName(node.spec) }})</template>
+          </title>
           <rect
             v-if="node.kind === 'step'"
             :height="node.height"
@@ -196,7 +202,15 @@ const label = computed(() =>
             :x="node.x - node.width / 2"
             :y="node.y - node.height / 2" />
           <rect
-            v-else
+            v-if="node.kind === 'step' && node.spec"
+            :class="`ba-diagram-spec ba-spec-${node.spec}`"
+            :height="node.height - 2"
+            rx="5"
+            :width="SPEC_MARKER_WIDTH"
+            :x="node.x - node.width / 2 + 1"
+            :y="node.y - node.height / 2 + 1" />
+          <rect
+            v-else-if="node.kind !== 'step'"
             :height="node.height"
             :rx="node.height / 2"
             :width="node.width"
@@ -205,7 +219,7 @@ const label = computed(() =>
           <text
             dominant-baseline="central"
             text-anchor="middle"
-            :x="node.x"
+            :x="node.spec ? node.x + SPEC_MARKER_WIDTH / 2 : node.x"
             :y="node.y">
             {{ node.label }}
           </text>

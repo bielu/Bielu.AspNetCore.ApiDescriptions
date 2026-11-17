@@ -1,4 +1,4 @@
-import type { ArazzoDocument, ArazzoStep, ArazzoWorkflow } from '../types'
+import type { ArazzoDocument, ArazzoSourceDescription, ArazzoStep, ArazzoWorkflow } from '../types'
 
 type AnyRecord = Record<string, any>
 
@@ -13,6 +13,8 @@ export type WorkflowTarget = {
 export type OperationTarget = {
   kind: 'operation'
   identifier: string
+  /** The `sourceDescriptions[].name` the target belongs to, when the step or the resolved document says. */
+  sourceName: string | undefined
   documentName: string | undefined
   method: string | undefined
   path: string | undefined
@@ -23,6 +25,8 @@ export type OperationTarget = {
 export type ChannelTarget = {
   kind: 'channel'
   identifier: string
+  /** The `sourceDescriptions[].name` the target belongs to, when the step or the resolved document says. */
+  sourceName: string | undefined
   documentName: string | undefined
   channelName: string | undefined
   channel: AnyRecord | undefined
@@ -36,7 +40,7 @@ export type ChannelTarget = {
 export type StepTarget = WorkflowTarget | OperationTarget | ChannelTarget
 
 /** The only Runtime Expression form `operationPath`/`channelPath` use: `{$sourceDescriptions.NAME.url}#/POINTER`. */
-const SOURCE_DESCRIPTION_POINTER = /^\{\$sourceDescriptions\.([^.}]+)\.url\}#(\/.*)?$/
+export const SOURCE_DESCRIPTION_POINTER = /^\{\$sourceDescriptions\.([^.}]+)\.url\}#(\/.*)?$/
 
 const HTTP_METHODS = new Set(['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'])
 
@@ -93,34 +97,34 @@ const absoluteUrl = (url: string | undefined, base: string | undefined): string 
 /** The page URL, used as the base for relative document URLs. */
 const pageUrl = (): string | undefined => (typeof location === 'undefined' ? undefined : location.href)
 
-type LoadedDocument = { name: string; document: AnyRecord }
+type LoadedDocument = { name: string; document: AnyRecord; sourceName: string }
 
 /**
  * Finds the loaded workspace document a `sourceDescriptions[].url` refers to. Both sides are
  * resolved to absolute URLs first: our generator writes app-relative URLs (`/asyncapi/v1.json`),
  * while Scalar records each source the way it was configured.
  */
-const findDocumentByUrl = (
+export const findDocumentByUrl = (
   arazzo: ArazzoDocument,
   documents: Record<string, unknown>,
-  url: string,
+  source: ArazzoSourceDescription,
 ): LoadedDocument | undefined => {
   const page = pageUrl()
-  const wanted = absoluteUrl(url, absoluteUrl(arazzo['x-scalar-original-source-url'], page) ?? page)
+  const wanted = absoluteUrl(source.url, absoluteUrl(arazzo['x-scalar-original-source-url'], page) ?? page)
   if (!wanted) {
     return undefined
   }
   for (const [name, document] of Object.entries(documents)) {
     if (isRecord(document) && absoluteUrl(document['x-scalar-original-source-url'], page) === wanted) {
-      return { name, document }
+      return { name, document, sourceName: source.name }
     }
   }
   return undefined
 }
 
-const isOpenApi = (document: AnyRecord): boolean => typeof document.openapi === 'string' || typeof document.swagger === 'string'
+export const isOpenApi = (document: AnyRecord): boolean => typeof document.openapi === 'string' || typeof document.swagger === 'string'
 
-const isAsyncApi = (document: AnyRecord): boolean => typeof document.asyncapi === 'string'
+export const isAsyncApi = (document: AnyRecord): boolean => typeof document.asyncapi === 'string'
 
 /** The channel name an AsyncAPI 3 operation's `channel: { $ref: '#/channels/NAME' }` points at. */
 const channelNameOf = (operation: AnyRecord | undefined): string | undefined => {
@@ -139,6 +143,7 @@ const asyncApiOperationTarget = (
   return {
     kind: 'channel',
     identifier,
+    sourceName: loaded.sourceName,
     documentName: loaded.name,
     channelName,
     channel: channelName ? (deref(loaded.document, loaded.document.channels?.[channelName]) as AnyRecord) : undefined,
@@ -161,7 +166,7 @@ const findByOperationId = (
   const sources = (arazzo.sourceDescriptions ?? []).filter((source) => !qualified || source.name === qualified[1])
 
   for (const source of sources) {
-    const loaded = findDocumentByUrl(arazzo, documents, source.url)
+    const loaded = findDocumentByUrl(arazzo, documents, source)
     if (!loaded) {
       continue
     }
@@ -175,7 +180,15 @@ const findByOperationId = (
         for (const [method, operationNode] of Object.entries<unknown>(pathItem)) {
           const operation = HTTP_METHODS.has(method) ? deref(loaded.document, operationNode) : undefined
           if (isRecord(operation) && operation.operationId === id) {
-            return { kind: 'operation', identifier: operationId, documentName: loaded.name, method, path, operation }
+            return {
+              kind: 'operation',
+              identifier: operationId,
+              sourceName: loaded.sourceName,
+              documentName: loaded.name,
+              method,
+              path,
+              operation,
+            }
           }
         }
       }
@@ -192,6 +205,14 @@ const findByOperationId = (
   return undefined
 }
 
+/**
+ * The source description a raw step reference names: `{$sourceDescriptions.NAME.url}#/…` for
+ * `operationPath`/`channelPath`, or a qualified `$sourceDescriptions.NAME.operationId`. A bare
+ * `operationId` names none.
+ */
+export const sourceNameOf = (reference: string): string | undefined =>
+  SOURCE_DESCRIPTION_POINTER.exec(reference)?.[1] ?? /^\$sourceDescriptions\.([^.]+)\./.exec(reference)?.[1]
+
 /** Resolves `operationPath`/`channelPath`, which name their source explicitly. */
 const findByPointer = (
   arazzo: ArazzoDocument,
@@ -200,7 +221,7 @@ const findByPointer = (
 ): OperationTarget | ChannelTarget | undefined => {
   const match = SOURCE_DESCRIPTION_POINTER.exec(value)
   const source = match ? arazzo.sourceDescriptions?.find((candidate) => candidate.name === match[1]) : undefined
-  const loaded = source ? findDocumentByUrl(arazzo, documents, source.url) : undefined
+  const loaded = source ? findDocumentByUrl(arazzo, documents, source) : undefined
   if (!match || !loaded) {
     return undefined
   }
@@ -216,6 +237,7 @@ const findByPointer = (
     return {
       kind: 'operation',
       identifier: value,
+      sourceName: loaded.sourceName,
       documentName: loaded.name,
       path: segments[1],
       method: segments[2],
@@ -227,6 +249,7 @@ const findByPointer = (
     return {
       kind: 'channel',
       identifier: value,
+      sourceName: loaded.sourceName,
       documentName: loaded.name,
       channelName: segments[1],
       channel: node,
@@ -261,6 +284,7 @@ export const resolveStepTarget = (
   const unresolvedOperation = (identifier: string): OperationTarget => ({
     kind: 'operation',
     identifier,
+    sourceName: sourceNameOf(identifier),
     documentName: undefined,
     method: undefined,
     path: undefined,
@@ -278,6 +302,7 @@ export const resolveStepTarget = (
       findByPointer(arazzo, documents, step.channelPath) ?? {
         kind: 'channel',
         identifier: step.channelPath,
+        sourceName: sourceNameOf(step.channelPath),
         documentName: undefined,
         channelName: undefined,
         channel: undefined,

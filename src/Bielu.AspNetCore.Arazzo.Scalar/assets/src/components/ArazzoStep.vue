@@ -5,6 +5,7 @@ import { renderMarkdown } from '../helpers/markdown'
 import { resolveReusables } from '../helpers/reusable'
 import { resolveStepTarget, targetDescription, targetParameters } from '../helpers/resolve-target'
 import { stepHeading } from '../helpers/heading'
+import { specLabel, targetSpec } from '../helpers/target-spec'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
@@ -20,6 +21,23 @@ const props = defineProps<{
 
 const target = computed(() => resolveStepTarget(props.document, props.step, props.documents))
 
+/** Which spec the target is described in, so HTTP calls and messages can be told apart in a mixed workflow. */
+const spec = computed(() => targetSpec(props.document, props.step, target.value, props.documents))
+
+const specTitle = computed(() => {
+  const value = spec.value
+  if (!value) {
+    return undefined
+  }
+  if (value.family === 'arazzo') {
+    return 'Invokes a workflow of this Arazzo document'
+  }
+  const source = value.sourceName ? ` (source description "${value.sourceName}")` : ''
+  return value.resolved
+    ? `Described in ${specLabel(value)}${source}`
+    : `${specLabel(value)}${source}, taken from the source description: the document is not loaded`
+})
+
 /** A one-line description reads as the step's title, as in Scalar's own POC; anything longer stays a description. */
 const heading = computed(() => stepHeading(props.step))
 
@@ -31,28 +49,39 @@ const targetDetails = computed(() => {
 
 const targetParameterRows = computed(() => targetParameters(target.value, props.documents))
 
+/**
+ * What an AsyncAPI step does on its channel. The step's own action (Arazzo 1.1 `channelPath` steps)
+ * wins over the AsyncAPI operation's, and is known even when the target's document is not loaded.
+ */
+const channelAction = computed(() => {
+  const value = target.value
+  const action = props.step.action ?? (value?.kind === 'channel' ? value.operation?.action : undefined)
+  return action === 'send' || action === 'receive' ? action : undefined
+})
+
 const targetLabel = computed(() => {
   switch (target.value?.kind) {
     case 'workflow':
       return 'Invokes workflow'
     case 'channel':
-      return 'Calls channel'
+      return channelAction.value === 'send'
+        ? 'Sends to channel'
+        : channelAction.value === 'receive'
+          ? 'Receives from channel'
+          : 'Uses channel'
     default:
       return 'Calls operation'
   }
 })
 
-/** `GET /pets/{id}` for an OpenAPI target, the channel name for an AsyncAPI one. */
+/** `GET /pets/{id}` for an OpenAPI target, the channel address for an AsyncAPI one. */
 const targetSignature = computed(() => {
   const value = target.value
   if (value?.kind === 'operation' && value.method && value.path) {
     return `${value.method.toUpperCase()} ${value.path}`
   }
-  if (value?.kind === 'channel') {
-    // The step's own action (Arazzo 1.1 channelPath steps) wins over the AsyncAPI operation's.
-    const action = props.step.action ?? value.operation?.action
-    const prefix = typeof action === 'string' ? `${action.toUpperCase()} ` : ''
-    return value.channelName ? `${prefix}${value.channel?.address ?? value.channelName}` : undefined
+  if (value?.kind === 'channel' && value.channelName) {
+    return value.channel?.address ?? value.channelName
   }
   return undefined
 })
@@ -131,6 +160,14 @@ const description = computed(() => renderMarkdown(heading.value.description))
       v-if="target"
       class="ba-target"
       :class="{ 'ba-target-unresolved': target.kind !== 'workflow' && !target.documentName }">
+      <span
+        v-if="spec"
+        class="ba-spec"
+        :class="[`ba-spec-${spec.family}`, { 'ba-spec-unresolved': !spec.resolved }]"
+        :title="specTitle">
+        {{ spec.family === 'arazzo' ? 'Workflow' : specLabel(spec) }}
+        <template v-if="!spec.resolved">· not loaded</template>
+      </span>
       <span class="ba-target-label">{{ targetLabel }}</span>
       <code class="ba-target-id">{{ target.identifier }}</code>
       <span

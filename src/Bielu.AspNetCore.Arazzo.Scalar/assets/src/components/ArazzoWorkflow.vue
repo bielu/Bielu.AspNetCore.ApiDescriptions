@@ -4,12 +4,15 @@ import { formatValue, schemaPropertyRows } from '../helpers/format'
 import { renderMarkdown } from '../helpers/markdown'
 import type { WorkflowView } from '../helpers/navigation'
 import { resolveReusables } from '../helpers/reusable'
+import { resolveStepTarget } from '../helpers/resolve-target'
+import { targetSpec } from '../helpers/target-spec'
 import { buildWorkflowGraph, layoutWorkflowGraph } from '../helpers/workflow-graph'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
+import ArazzoSpecLegend from './ArazzoSpecLegend.vue'
 import ArazzoStep from './ArazzoStep.vue'
 import ArazzoWorkflowDiagram from './ArazzoWorkflowDiagram.vue'
 
@@ -46,7 +49,16 @@ const failureActions = computed(() =>
   resolveReusables<ArazzoFailureAction>(props.document, workflow.value.failureActions),
 )
 
-const diagram = computed(() => layoutWorkflowGraph(buildWorkflowGraph(props.document, workflow.value)))
+/** Each step box is marked with the spec its target is described in. */
+const diagram = computed(() =>
+  layoutWorkflowGraph(
+    buildWorkflowGraph(
+      props.document,
+      workflow.value,
+      (step) => targetSpec(props.document, step, resolveStepTarget(props.document, step, props.documents), props.documents)?.family,
+    ),
+  ),
+)
 
 const stepSectionIds = computed(() => Object.fromEntries(props.view.steps.map((entry) => [entry.step.stepId, entry.id])))
 
@@ -195,7 +207,10 @@ const closeOnBackdrop = (event: MouseEvent) => {
           <ArazzoWorkflowDiagram
             :layout="diagram"
             :stepSectionIds="stepSectionIds" />
-          <div class="ba-muted ba-overview-hint">Drag to pan, scroll to zoom, double-click to reset.</div>
+          <div class="ba-overview-footer">
+            <ArazzoSpecLegend :layout="diagram" />
+            <div class="ba-muted ba-overview-hint">Drag to pan, scroll to zoom, double-click to reset.</div>
+          </div>
         </div>
       </aside>
     </div>
@@ -208,6 +223,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
       <div class="ba-dialog-header">
         <div class="ba-overview-title">Workflow overview · {{ workflow.summary || workflow.workflowId }}</div>
         <div class="ba-dialog-actions">
+          <ArazzoSpecLegend :layout="diagram" />
           <button
             class="ba-toggle"
             type="button"

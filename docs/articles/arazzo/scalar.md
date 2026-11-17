@@ -46,7 +46,8 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 
 ## What is rendered
 
-- The document's `info` and its `sourceDescriptions`.
+- The document's `info` and its `sourceDescriptions`. Each source shows its spec and version, whether
+  it is loaded in the page, and how many steps use it, and the header counts the steps per spec.
 - One sidebar entry per workflow, with one child entry per step. Sidebar clicks, deep links and
   scroll position stay in sync, as they do for operations.
 - For each workflow: its inputs (nested properties fold out), shared parameters, steps, success
@@ -54,11 +55,14 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 - A workflow overview beside the steps: a flowchart of the steps, with arrows for `dependsOn` (or
   document order) and labeled success and failure branches for `onSuccess`/`onFailure`, ending in
   Success or Failed for `end` actions. Drag to pan, scroll to zoom, click a step to jump to it, or
-  expand it to fill the window. It follows Scalar's light and dark themes.
+  expand it to fill the window. It follows Scalar's light and dark themes. Each step box has a
+  colored marker for the spec its target is described in, explained by a legend in the corner.
 - For each step: the operation, channel or workflow it targets, with that target's description and
   its own parameters, then the step's parameters, request body, success criteria,
   `onSuccess`/`onFailure` actions and outputs. Reusable objects (`$components.parameters.*` and the
   like) are resolved.
+- Each step target is labeled with its spec: `OpenAPI 3.1.1`, `AsyncAPI 3.0.0` or `Workflow`. Channel
+  steps also say whether they send or receive. See [Which spec a step targets](#which-spec-a-step-targets).
 - Each workflow and step heading has a copy-link button. With Scalar's `classic` layout, each
   workflow can be collapsed.
 
@@ -69,6 +73,28 @@ the target's document is not loaded, the step still shows the raw `operationId` 
 
 The [`ArazzoScalar` example](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/ArazzoScalar)
 puts this together: two workflows mixing HTTP operations and messages, rendered at `/scalar`.
+
+## Which spec a step targets
+
+An Arazzo workflow can mix HTTP calls (OpenAPI) and messages (AsyncAPI), so each step says which
+one it targets. The spec is worked out in this order:
+
+1. When the target is found in a loaded document, that document's `openapi`, `swagger` or
+   `asyncapi` field gives the spec and its version.
+2. Otherwise the step's source description decides: the one named by
+   `{$sourceDescriptions.NAME.url}#/…` or by a qualified `$sourceDescriptions.NAME.operationId`, through
+   its `type`. A source without a `type` falls back to the pointer: `/paths/…` is OpenAPI, and
+   `/channels/…` and `/operations/…` are AsyncAPI. A `channelPath` step is always AsyncAPI.
+3. A bare `operationId` that is not loaded takes the spec all the source descriptions share. When
+   they mix specs, no badge is shown.
+
+In cases 2 and 3 the badge has a dashed border and reads "not loaded". A step that invokes another
+workflow is labeled `Workflow`. The generated `sourceDescriptions` from `AddOpenApiSource` and
+`AddAsyncApiSource` always set `type`, so this fallback works for them.
+
+The spec is also shown as a color (blue for OpenAPI, purple for AsyncAPI, gray for workflows),
+taken from Scalar's theme, but the badge text and the diagram's legend and tooltips always name it,
+so the color is never the only cue.
 
 ## Without ASP.NET Core
 
