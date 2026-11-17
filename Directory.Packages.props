@@ -71,8 +71,9 @@
     <!-- DI Decorator support -->
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <!-- Scalar API reference UI (AsyncAPI rendering) -->
-    <!-- 2.16.17 / 0.11.12 are the first releases carrying `PluginUrls`, which the Aspire console
-         packages use to register their plugin against the stock Scalar bundle. -->
+    <!-- Scalar.AspNetCore 3.0.1 is the first release bundling @scalar/api-reference 1.80.0, whose plugin
+         `documentTypes` API the Arazzo plugin needs. 2.16.17 / 0.11.12 were the first carrying `PluginUrls`,
+         which the Aspire console packages use to register their plugin against the stock Scalar bundle. -->
     <PackageVersion Include="Scalar.AspNetCore" Version="3.0.1" />
     <PackageVersion Include="Scalar.Aspire" Version="0.15.0" />
     <!-- Referenced directly by the projects that pull in Aspire.Hosting, to lift the MessagePack that
