@@ -54,14 +54,28 @@ public sealed class ArazzoWorkflowBuilder
     /// reflection-based JSON contract resolution; use the <see cref="JsonTypeInfo"/> overload with a
     /// source-generated <c>JsonSerializerContext</c> in trimmed/Native AOT apps.
     /// </summary>
+    /// <param name="serializerOptions">
+    /// Options that shape the schema, such as a naming policy. When they have no
+    /// <see cref="JsonSerializerOptions.TypeInfoResolver" /> (for example
+    /// <c>new JsonSerializerOptions(JsonSerializerDefaults.Web)</c>), a copy with the default reflection-based
+    /// resolver is used, and the instance passed in is left unchanged. Defaults to
+    /// <see cref="JsonSerializerOptions.Default" />.
+    /// </param>
     [RequiresUnreferencedCode(
         "Generating a JSON schema from an arbitrary type requires reflection-based JSON contract resolution unless a source-generated JsonTypeInfo is supplied via the JsonTypeInfo overload.")]
     [RequiresDynamicCode(
         "Generating a JSON schema from an arbitrary type requires reflection-based JSON contract resolution unless a source-generated JsonTypeInfo is supplied via the JsonTypeInfo overload.")]
     public ArazzoWorkflowBuilder WithInputs<TInputs>(JsonSerializerOptions? serializerOptions = null)
     {
-        Inputs = JsonSchemaExporter.GetJsonSchemaAsNode(serializerOptions ?? JsonSerializerOptions.Default,
-            typeof(TInputs));
+        var options = serializerOptions ?? JsonSerializerOptions.Default;
+        if (options.TypeInfoResolver is null)
+        {
+            // JsonSchemaExporter needs a resolver. Copy rather than set it, so options the caller still uses
+            // (and may later lock with a different resolver) are left alone.
+            options = new JsonSerializerOptions(options) { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
+        }
+
+        Inputs = JsonSchemaExporter.GetJsonSchemaAsNode(options, typeof(TInputs));
         return this;
     }
 
