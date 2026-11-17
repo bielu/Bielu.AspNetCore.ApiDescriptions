@@ -243,7 +243,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
             :stepSectionIds="stepSectionIds" />
           <div class="ba-overview-footer">
             <ArazzoSpecLegend :layout="diagram" />
-            <div class="ba-muted ba-overview-hint">Drag to pan, scroll to zoom, double-click to reset.</div>
+            <span class="ba-muted ba-overview-hint">Select a step to view details</span>
           </div>
         </div>
       </aside>

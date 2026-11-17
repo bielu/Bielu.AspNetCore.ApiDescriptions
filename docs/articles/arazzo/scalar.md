@@ -48,6 +48,10 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 
 ## What is rendered
 
+Step targets emphasize the HTTP method and path or channel action and address. Source versions remain
+in the Sources table and target tooltips; steps use compact spec labels. Message payload properties
+share the page surface, and nested properties, examples and extensions use consistent disclosure controls.
+
 An AsyncAPI step shows the message it receives, with its payload, next to the step's correlation ID,
 timeout, criteria and outputs:
 
@@ -86,7 +90,7 @@ With its steps collapsed, a workflow reads as an outline of what each step calls
   an Arazzo 1.1 Selector Object (outputs, parameters, replacements), it reads as
   "`$.lines[0]` on `$response.body`" with its language as a badge, rather than as raw JSON. Reusable objects (`$components.parameters.*` and the
   like) are resolved.
-- Each step target is labeled with its spec: `OpenAPI 3.1.1`, `AsyncAPI 3.0.0` or `Workflow`. Channel
+- Each step target is labeled with its spec: `OpenAPI`, `AsyncAPI` or `Workflow`, with the version in its tooltip and the Sources table. Channel
   steps also say whether they send or receive. See [Which spec a step targets](#which-spec-a-step-targets).
 - The reusable `components` (input schemas, parameters, success and failure actions) in a section
   of their own after the workflows, with a sidebar entry.

@@ -7,6 +7,10 @@ its steps (laid out with [dagre](https://github.com/dagrejs/dagre)). Each step's
 (`operationId`, `operationPath`, `channelPath` or `workflowId`) is resolved in the OpenAPI and
 AsyncAPI documents loaded in the same Scalar page.
 
+Targets emphasize the HTTP method and path or channel action and address. Compact step labels keep
+the view quiet; full spec versions remain in Sources and target tooltips. Payload properties share
+the page surface, with consistent disclosures for nested properties, examples and extensions.
+
 Requires `@scalar/api-reference` 1.80.0 or later, the first version with plugin `documentTypes`
 ([scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816)).
 

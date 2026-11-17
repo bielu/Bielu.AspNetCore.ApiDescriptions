@@ -201,7 +201,7 @@ onBeforeUnmount(() => {
         v-if="arazzo?.sourceDescriptions?.length"
         class="ba-block">
         <div class="ba-block-title ba-sources-title">
-          Source descriptions
+          Sources
           <span
             v-if="stepsBySpec.length"
             class="ba-spec-counts">
@@ -235,7 +235,7 @@ onBeforeUnmount(() => {
                 </span>
               </td>
               <td class="ba-muted ba-nowrap">
-                {{ summary.documentName ? 'loaded' : 'not loaded' }} ·
+                <template v-if="!summary.documentName">Not loaded · </template>
                 {{ summary.stepCount }} {{ summary.stepCount === 1 ? 'step' : 'steps' }}
               </td>
               <td>
@@ -338,8 +338,7 @@ onBeforeUnmount(() => {
   font-size: var(--scalar-mini, 12px);
   font-weight: var(--scalar-semibold, 600);
   color: var(--scalar-color-2);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: normal;
 }
 .bielu-arazzo .ba-title {
   margin: 4px 0 8px;
@@ -364,7 +363,7 @@ onBeforeUnmount(() => {
   margin-bottom: 0;
 }
 .bielu-arazzo .ba-workflow {
-  margin-top: 64px;
+  margin-top: 48px;
   padding-top: 32px;
   border-top: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
   scroll-margin-top: var(--refs-viewport-offset, 0px);
@@ -446,10 +445,10 @@ onBeforeUnmount(() => {
   display: inline-block;
   margin-right: 8px;
   padding: 0 7px;
-  border: var(--scalar-border-width, 1px) solid var(--ba-spec-color);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ba-spec-color) 12%, transparent);
-  color: var(--scalar-color-1);
+  border: var(--scalar-border-width, 1px) solid transparent;
+  border-radius: var(--scalar-radius, 4px);
+  background: color-mix(in srgb, var(--ba-spec-color) 9%, transparent);
+  color: var(--scalar-color-2);
   font-size: var(--scalar-mini, 12px);
   font-weight: var(--scalar-semibold, 600);
   white-space: nowrap;
@@ -464,6 +463,7 @@ onBeforeUnmount(() => {
   --ba-spec-color: var(--ba-spec-arazzo);
 }
 .bielu-arazzo .ba-spec-unresolved {
+  border-color: var(--scalar-border-color);
   border-style: dashed;
   background: none;
 }
@@ -477,18 +477,38 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-spec-counts .ba-spec {
   margin: 0 0 0 6px;
   font-weight: normal;
+  background: none;
+  padding: 0;
+  color: var(--scalar-color-3);
 }
 .bielu-arazzo .ba-nowrap {
   white-space: nowrap;
 }
 .bielu-arazzo .ba-target {
-  margin: 12px 0;
+  margin: 16px 0;
+  padding: 0;
+  min-width: 0;
+}
+.bielu-arazzo .ba-target-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   padding: 10px 12px;
   border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
-  border-radius: var(--scalar-radius-lg, 8px);
+  border-radius: var(--scalar-radius, 4px);
   background: var(--scalar-background-2);
 }
-.bielu-arazzo .ba-target-unresolved {
+.bielu-arazzo .ba-target-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 8px 0 12px;
+  color: var(--scalar-color-3);
+  font-size: var(--scalar-small, 13px);
+  overflow-wrap: anywhere;
+}
+.bielu-arazzo .ba-target-unresolved .ba-target-header {
   border-style: dashed;
 }
 .bielu-arazzo .ba-target-label {
@@ -608,7 +628,7 @@ onBeforeUnmount(() => {
   color: var(--scalar-color-2);
 }
 .bielu-arazzo .ba-target-message {
-  margin-top: 12px;
+  margin-top: 24px;
 }
 .bielu-arazzo .ba-target-message .ba-block-title code {
   margin: 0 4px;
@@ -932,8 +952,7 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-overview-title {
   font-size: var(--scalar-mini, 12px);
   font-weight: var(--scalar-bold, 700);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  letter-spacing: normal;
   color: var(--scalar-color-2);
 }
 .bielu-arazzo .ba-overview-hint {
@@ -1141,10 +1160,12 @@ onBeforeUnmount(() => {
   margin-top: 8px;
 }
 .bielu-arazzo .ba-schema-children > summary {
-  display: inline-block;
-  padding: 2px 10px;
-  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
-  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 4px 6px;
+  border-radius: var(--scalar-radius, 4px);
   color: var(--scalar-color-2);
   font-size: var(--scalar-mini, 12px);
   cursor: pointer;
@@ -1160,5 +1181,59 @@ onBeforeUnmount(() => {
   margin-left: 6px;
   padding-left: 12px;
   border-left: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-step-id {
+  font-family: var(--scalar-font-code);
+  color: var(--scalar-color-3);
+}
+.bielu-arazzo .ba-extensions > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--scalar-radius, 4px);
+  list-style: none;
+}
+.bielu-arazzo .ba-extensions > summary::-webkit-details-marker {
+  display: none;
+}
+.bielu-arazzo .ba-extensions > summary::before,
+.bielu-arazzo .ba-schema-children > summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+.bielu-arazzo .ba-extensions[open] > summary::before,
+.bielu-arazzo .ba-schema-children[open] > summary::before {
+  transform: rotate(45deg);
+}
+.bielu-arazzo .ba-extensions > summary:hover,
+.bielu-arazzo .ba-schema-children > summary:hover {
+  background: var(--scalar-background-2);
+  color: var(--scalar-color-1);
+}
+.bielu-arazzo :is(button, summary, a):focus-visible {
+  outline: 2px solid var(--scalar-color-accent);
+  outline-offset: 3px;
+}
+.bielu-arazzo .ba-toggle,
+.bielu-arazzo .ba-icon-button {
+  min-height: 28px;
+}
+.bielu-arazzo .ba-target-header .ba-spec {
+  order: 2;
+  margin-left: auto;
+  margin-right: 0;
+  background: none;
+  color: var(--scalar-color-3);
+}
+.bielu-arazzo .ba-target-link,
+.bielu-arazzo .ba-target-signature {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 </style>
