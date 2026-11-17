@@ -57,8 +57,12 @@ export const parseJsonPointer = (pointer: string): string[] =>
       return decoded.replace(/~1/g, '/').replace(/~0/g, '~')
     })
 
-const walk = (root: unknown, segments: string[]): unknown =>
-  segments.reduce<unknown>((node, segment) => (isRecord(node) ? node[segment] : undefined), root)
+/**
+ * Follows a JSON Pointer through `root`, dereferencing each node on the way, so a pointer can pass
+ * through a referenced Path Item (`/paths/~1pets/get` where `/paths/~1pets` is a `$ref`).
+ */
+const walk = (root: AnyRecord, segments: string[], depth = 0): unknown =>
+  segments.reduce<unknown>((node, segment) => deref(root, isRecord(node) ? node[segment] : undefined, depth), root)
 
 /**
  * Follows a `$ref`. Scalar's workspace store exposes the resolved target as `$ref-value`; a plain
@@ -71,7 +75,7 @@ const deref = (root: AnyRecord, node: unknown, depth = 0): unknown => {
   if (isRecord(node['$ref-value'])) {
     return deref(root, node['$ref-value'], depth + 1)
   }
-  return node.$ref.startsWith('#') ? deref(root, walk(root, parseJsonPointer(node.$ref.slice(1))), depth + 1) : undefined
+  return node.$ref.startsWith('#') ? walk(root, parseJsonPointer(node.$ref.slice(1)), depth + 1) : undefined
 }
 
 /** Resolves a possibly relative URL to an absolute one, or `undefined` when it cannot be parsed. */
@@ -178,8 +182,10 @@ const findByOperationId = (
     }
 
     // AsyncAPI 3 operations have no `operationId` field: the key on `operations` is the id.
-    if (isAsyncApi(loaded.document) && loaded.document.operations?.[id]) {
-      return asyncApiOperationTarget(loaded, operationId, loaded.document.operations[id])
+    // Own keys only: an inherited name such as `constructor` is not a declared operation.
+    const operations = isAsyncApi(loaded.document) ? loaded.document.operations : undefined
+    if (operations && Object.prototype.hasOwnProperty.call(operations, id)) {
+      return asyncApiOperationTarget(loaded, operationId, operations[id])
     }
   }
 
@@ -200,7 +206,7 @@ const findByPointer = (
   }
 
   const segments = parseJsonPointer(match[2] ?? '')
-  const node = deref(loaded.document, walk(loaded.document, segments))
+  const node = walk(loaded.document, segments)
   if (!isRecord(node)) {
     return undefined
   }

@@ -88,8 +88,10 @@ describe('schemaPropertyRows', () => {
         petId: { type: 'string', description: 'The pet' },
         tags: { type: ['array', 'null'] },
         owner: { $ref: '#/components/inputs/owner' },
+        id: { $ref: '#/$defs/id' },
         extra: {},
       },
+      $defs: { id: { type: 'string' } },
     }
 
     // Act
@@ -99,7 +101,9 @@ describe('schemaPropertyRows', () => {
     expect(rows).toEqual([
       { name: 'petId', type: 'string', required: true, description: 'The pet' },
       { name: 'tags', type: 'array | null', required: false, description: '' },
-      { name: 'owner', type: 'object', required: false, description: '' },
+      // A reference outside the schema shows the referenced name; one inside it, that schema's type.
+      { name: 'owner', type: 'owner', required: false, description: '' },
+      { name: 'id', type: 'string', required: false, description: '' },
       { name: 'extra', type: 'any', required: false, description: '' },
     ])
   })

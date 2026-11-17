@@ -98,6 +98,53 @@ describe('resolveStepTarget', () => {
     expect(target).toMatchObject({ kind: 'operation', path: '/x', method: 'get' })
   })
 
+  it('does not take an inherited property for an AsyncAPI operation', () => {
+    // Arrange
+    const withConstructor = {
+      ...documents,
+      pets: { ...petsApi, paths: { '/build': { post: { operationId: 'constructor' } } } },
+    }
+    const eventsFirst: ArazzoDocument = { ...arazzo, sourceDescriptions: [...arazzo.sourceDescriptions!].reverse() }
+
+    // Act
+    const target = resolveStepTarget(eventsFirst, { stepId: 's', operationId: 'constructor' }, withConstructor)
+
+    // Assert
+    expect(target).toMatchObject({ kind: 'operation', documentName: 'pets', path: '/build', method: 'post' })
+  })
+
+  it('resolves an operationPath through a referenced Path Item', () => {
+    // Arrange
+    const referenced = {
+      pets: {
+        ...petsApi,
+        paths: { '/pets': { $ref: '#/components/pathItems/pets' } },
+        components: { pathItems: { pets: { get: { operationId: 'listPets' } } } },
+      },
+    }
+    const operationPath = '{$sourceDescriptions.petsApi.url}#/paths/~1pets/get'
+
+    // Act
+    const target = resolveStepTarget(arazzo, { stepId: 's', operationPath }, referenced)
+
+    // Assert
+    expect(target).toMatchObject({ kind: 'operation', path: '/pets', method: 'get', operation: { operationId: 'listPets' } })
+  })
+
+  it('stops following a cyclic reference', () => {
+    // Arrange
+    const cyclic = {
+      pets: { ...petsApi, paths: { '/a': { $ref: '#/paths/~1b' }, '/b': { $ref: '#/paths/~1a' } } },
+    }
+    const operationPath = '{$sourceDescriptions.petsApi.url}#/paths/~1a/get'
+
+    // Act
+    const target = resolveStepTarget(arazzo, { stepId: 's', operationPath }, cyclic)
+
+    // Assert
+    expect(target).toMatchObject({ kind: 'operation', identifier: operationPath, operation: undefined })
+  })
+
   it('narrows a qualified operationId to its source', () => {
     // Arrange / Act
     const wrongSource = resolveStepTarget(arazzo, { stepId: 's', operationId: '$sourceDescriptions.eventsApi.getPet' }, documents)
