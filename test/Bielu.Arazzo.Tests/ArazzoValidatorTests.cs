@@ -356,4 +356,131 @@ public class ArazzoValidatorTests
         // Assert
         errors.ShouldContain(e => e.Message.Contains("context is required"));
     }
+
+    private static ArazzoSelector Selector() => new() { Context = "$response.body", Selector = "$.id", Type = "jsonpath" };
+
+    [Fact]
+    public void Validate_LiteralStepOutput_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Workflows[0].Steps[0].Outputs = new Dictionary<string, ArazzoValue>
+        {
+            ["id"] = ArazzoValue.FromLiteral(JsonValue.Create(42)),
+        };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldContain(e => e.Path == "/workflows/0/steps/0/outputs/id" && e.Message.Contains("not a literal"));
+    }
+
+    [Fact]
+    public void Validate_LiteralWorkflowOutput_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Workflows[0].Outputs = new Dictionary<string, ArazzoValue>
+        {
+            ["a/b"] = ArazzoValue.FromLiteral(JsonValue.Create("x")),
+        };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldContain(e => e.Path == "/workflows/0/outputs/a~1b");
+    }
+
+    [Fact]
+    public void Validate_SelectorValuesInArazzo11Document_ReturnsNoErrors()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        var step = document.Workflows[0].Steps[0];
+        step.Outputs = new Dictionary<string, ArazzoValue> { ["id"] = ArazzoValue.FromSelector(Selector()) };
+        step.Parameters = [ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = "id", In = "path", Value = ArazzoValue.FromSelector(Selector()) })];
+        step.RequestBody = new ArazzoRequestBody
+        {
+            Payload = ArazzoValue.FromSelector(Selector()),
+            Replacements = [new ArazzoPayloadReplacement { Target = "$.id", TargetSelectorType = "jsonpath", Value = ArazzoValue.FromSelector(Selector()) }],
+        };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Validate_SelectorValuesInArazzo10Document_ReturnsAnErrorPerPosition()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Arazzo = "1.0.1";
+        var workflow = document.Workflows[0];
+        var step = workflow.Steps[0];
+        workflow.Outputs = new Dictionary<string, ArazzoValue> { ["id"] = ArazzoValue.FromSelector(Selector()) };
+        workflow.Parameters = [ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = "id", In = "path", Value = ArazzoValue.FromSelector(Selector()) })];
+        step.OnFailure =
+        [
+            ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoFailureAction
+            {
+                Name = "retry",
+                Type = ArazzoFailureActionType.Goto,
+                WorkflowId = "wf",
+                Parameters = [ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = "id", Value = ArazzoValue.FromSelector(Selector()) })],
+            }),
+        ];
+        step.RequestBody = new ArazzoRequestBody
+        {
+            Payload = ArazzoValue.FromSelector(Selector()),
+            Replacements = [new ArazzoPayloadReplacement { Target = "$.id", TargetSelectorType = "jsonpath", Value = ArazzoValue.FromSelector(Selector()) }],
+        };
+        document.Components = new ArazzoComponents
+        {
+            Parameters = new Dictionary<string, ArazzoParameter>
+            {
+                ["shared"] = new() { Name = "id", In = "query", Value = ArazzoValue.FromSelector(Selector()) },
+            },
+        };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.Select(e => e.Path).ShouldBe(
+        [
+            "/components/parameters/shared/value",
+            "/workflows/0/parameters/0/value",
+            "/workflows/0/outputs/id",
+            "/workflows/0/steps/0/onFailure/0/parameters/0/value",
+            "/workflows/0/steps/0/requestBody/payload",
+            "/workflows/0/steps/0/requestBody/replacements/0/targetSelectorType",
+            "/workflows/0/steps/0/requestBody/replacements/0/value",
+        ], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void Validate_ExpressionAndLiteralValuesInArazzo10Document_ReturnsNoErrors()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Arazzo = "1.0.0";
+        var step = document.Workflows[0].Steps[0];
+        step.Outputs = new Dictionary<string, ArazzoValue> { ["id"] = "$response.body#/id" };
+        step.RequestBody = new ArazzoRequestBody
+        {
+            Payload = ArazzoValue.FromLiteral(JsonNode.Parse("""{"id":null}""")),
+            Replacements = [new ArazzoPayloadReplacement { Target = "/id", Value = "$inputs.id" }],
+        };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldBeEmpty();
+    }
 }

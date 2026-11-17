@@ -1,1 +1,5 @@
 ﻿#nullable enable
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Output(string! name, Bielu.Arazzo.Models.ArazzoSelector! selector) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.PayloadSelector(Bielu.Arazzo.Models.ArazzoSelector! selector, string? contentType = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Replacement(string! target, Bielu.Arazzo.Models.ArazzoValue! value, Bielu.Arazzo.Models.ArazzoSelectorType? targetSelectorType = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Parameter(Bielu.Arazzo.Models.ArazzoParameter! parameter) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!

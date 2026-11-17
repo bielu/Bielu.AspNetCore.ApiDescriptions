@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Bielu.Arazzo.Readers\Bielu.Arazzo.Readers.csproj" />
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.Arazzo\Bielu.AspNetCore.Arazzo.csproj" />
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
   </ItemGroup>
