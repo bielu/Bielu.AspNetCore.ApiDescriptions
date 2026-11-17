@@ -287,3 +287,83 @@ export const resolveStepTarget = (
   }
   return undefined
 }
+
+/** A parameter of the operation or channel a step targets, for display next to the step. */
+export type TargetParameter = {
+  name: string
+  /** `path`, `query`, `header`, `cookie` (OpenAPI) or `channel` (AsyncAPI). */
+  location: string
+  required: boolean
+  type: string
+  description: string
+}
+
+const parameterType = (schema: unknown): string => {
+  if (!isRecord(schema)) {
+    return 'string'
+  }
+  const type = Array.isArray(schema.type) ? schema.type.join(' | ') : schema.type
+  const format = typeof schema.format === 'string' ? ` (${schema.format})` : ''
+  return typeof type === 'string' ? `${type}${format}` : 'string'
+}
+
+/**
+ * The parameters of a resolved target, so a step shows what the operation or channel it calls
+ * accepts. OpenAPI: the path item's parameters, overridden by the operation's own (matched on name
+ * and location, as OpenAPI specifies). AsyncAPI: the channel's address parameters, always required.
+ * References are followed within the target's document. Empty for an unresolved target.
+ */
+export const targetParameters = (target: StepTarget | undefined, documents: Record<string, unknown>): TargetParameter[] => {
+  if (!target || target.kind === 'workflow' || !target.documentName) {
+    return []
+  }
+  const root = documents[target.documentName]
+  if (!isRecord(root)) {
+    return []
+  }
+
+  if (target.kind === 'operation') {
+    const pathItem = target.path ? walk(root, ['paths', target.path]) : undefined
+    const declared = [
+      ...(isRecord(pathItem) && Array.isArray(pathItem.parameters) ? pathItem.parameters : []),
+      ...(Array.isArray(target.operation?.parameters) ? target.operation.parameters : []),
+    ]
+    const byKey = new Map<string, TargetParameter>()
+    for (const entry of declared) {
+      const parameter = deref(root, entry)
+      if (!isRecord(parameter) || typeof parameter.name !== 'string') {
+        continue
+      }
+      const location = typeof parameter.in === 'string' ? parameter.in : 'query'
+      byKey.set(`${location}:${parameter.name}`, {
+        name: parameter.name,
+        location,
+        required: parameter.required === true || location === 'path',
+        type: parameterType(deref(root, parameter.schema)),
+        description: typeof parameter.description === 'string' ? parameter.description : '',
+      })
+    }
+    return [...byKey.values()]
+  }
+
+  const parameters = isRecord(target.channel?.parameters) ? target.channel.parameters : {}
+  return Object.entries(parameters).map(([name, entry]) => {
+    const parameter = deref(root, entry)
+    const description = isRecord(parameter) && typeof parameter.description === 'string' ? parameter.description : ''
+    return { name, location: 'channel', required: true, type: 'string', description }
+  })
+}
+
+/** The description of a resolved target, falling back to its summary (or a channel's title). */
+export const targetDescription = (target: StepTarget | undefined): string => {
+  if (!target) {
+    return ''
+  }
+  const candidates =
+    target.kind === 'workflow'
+      ? [target.workflow?.description, target.workflow?.summary]
+      : target.kind === 'operation'
+        ? [target.operation?.description, target.operation?.summary]
+        : [target.operation?.description, target.channel?.description, target.operation?.summary, target.channel?.title]
+  return candidates.find((value): value is string => typeof value === 'string' && value.trim() !== '') ?? ''
+}

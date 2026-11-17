@@ -383,6 +383,9 @@ onBeforeUnmount(() => {
   border-radius: var(--scalar-radius, 4px);
   background: var(--scalar-background-2);
 }
+.bielu-arazzo .ba-target-parameters {
+  margin-top: 12px;
+}
 .bielu-arazzo .ba-schema {
   margin: 0;
   padding: 0;
