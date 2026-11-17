@@ -1,0 +1,23 @@
+{
+  "openapi": "3.1.1",
+  "info": { "title": "Orders", "version": "v1" },
+  "paths": {
+    "/orders": {
+      "post": {
+        "operationId": "createOrder",
+        "tags": ["Orders"],
+        "summary": "Create an order",
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "operationId": "getOrder",
+        "tags": ["Orders"],
+        "summary": "Get an order",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}
