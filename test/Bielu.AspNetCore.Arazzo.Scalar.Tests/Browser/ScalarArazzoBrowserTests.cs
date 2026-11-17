@@ -126,5 +126,27 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         focused.ShouldBe("Go to step create (OpenAPI)");
     }
 
+    [BrowserFact]
+    public async Task Steps_CollapseTogetherOrOneByOne_AndKeepASummary()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync();
+        var workflow = page.Locator(".bielu-arazzo .ba-workflow").First;
+        var toggles = workflow.Locator(".ba-step-toggle");
+
+        // Act
+        await workflow.GetByRole(AriaRole.Button, new() { Name = "Collapse steps" }).ClickAsync();
+        var collapsed = await toggles.EvaluateAllAsync<string[]>("buttons => buttons.map(button => button.getAttribute('aria-expanded'))");
+        var summary = Normalize(await workflow.Locator(".ba-step-collapsed-summary").First.InnerTextAsync());
+        await toggles.First.ClickAsync();
+        var afterOne = await toggles.EvaluateAllAsync<string[]>("buttons => buttons.map(button => button.getAttribute('aria-expanded'))");
+
+        // Assert
+        collapsed.ShouldAllBe(state => state == "false");
+        summary.ShouldBe("OpenAPI 3.1.1 Calls operation createOrder POST /orders");
+        afterOne.ShouldBe(["true", "false", "false"]);
+        (await workflow.Locator(".ba-step-body").First.IsVisibleAsync()).ShouldBeTrue();
+    }
+
     private static string Normalize(string? text) => string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 }

@@ -81,6 +81,15 @@ const toggle = () => {
   props.eventBus?.emit('toggle:nav-item', { id: props.view.id, open: open.value })
 }
 
+/**
+ * Folds or unfolds every step of the workflow at once; each step can still be toggled on its own
+ * afterwards. A new `version` is what the steps react to, so pressing the button twice works.
+ */
+const expandSignal = ref({ open: true, version: 0 })
+const toggleSteps = () => {
+  expandSignal.value = { open: !expandSignal.value.open, version: expandSignal.value.version + 1 }
+}
+
 /** The expanded overview, in a native `<dialog>`: it brings the backdrop, Escape to close, and focus handling. */
 const dialog = ref<HTMLDialogElement>()
 const expanded = ref<InstanceType<typeof ArazzoWorkflowDiagram>>()
@@ -113,14 +122,23 @@ const closeOnBackdrop = (event: MouseEvent) => {
           <h2 class="ba-workflow-title">{{ workflow.summary || workflow.workflowId }}</h2>
         </ArazzoAnchor>
       </div>
-      <button
-        v-if="classic"
-        :aria-expanded="open"
-        class="ba-toggle"
-        type="button"
-        @click="toggle">
-        {{ open ? 'Collapse' : 'Expand' }}
-      </button>
+      <div class="ba-workflow-actions">
+        <button
+          v-if="view.steps.length"
+          class="ba-toggle"
+          type="button"
+          @click="toggleSteps">
+          {{ expandSignal.open ? 'Collapse steps' : 'Expand steps' }}
+        </button>
+        <button
+          v-if="classic"
+          :aria-expanded="open"
+          class="ba-toggle"
+          type="button"
+          @click="toggle">
+          {{ open ? 'Collapse' : 'Expand' }}
+        </button>
+      </div>
     </div>
 
     <div
@@ -172,6 +190,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
               :document="document"
               :documents="documents"
               :eventBus="eventBus"
+              :expandSignal="expandSignal"
               :step="entry.step"
               :workflowNavIds="workflowNavIds" />
           </li>

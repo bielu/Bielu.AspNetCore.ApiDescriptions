@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { criterionTypeLabel, formatDuration, formatValue, schemaPropertyRows } from '../helpers/format'
 import { renderMarkdown } from '../helpers/markdown'
 import { resolveReusables } from '../helpers/reusable'
 import { resolveStepTarget, targetDescription, targetMessages, targetParameters } from '../helpers/resolve-target'
 import { stepHeading } from '../helpers/heading'
+import { STEP_EXPAND_EVENT } from '../helpers/navigation'
 import { navigationHref, openInOtherDocument, targetDisplayName, targetNavigationId } from '../helpers/target-link'
 import { specLabel, targetSpec } from '../helpers/target-spec'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction, PluginEventBus } from '../types'
@@ -24,7 +25,29 @@ const props = defineProps<{
   eventBus?: PluginEventBus
   /** workflowId → the sidebar id of that workflow's section, so a step that invokes one can link to it. */
   workflowNavIds?: Record<string, string>
+  /** "Collapse steps" / "Expand steps" of the workflow: each new `version` sets every step to `open`. */
+  expandSignal?: { open: boolean; version: number }
 }>()
+
+/** Whether the step's body is shown. Steps start open; the chevron or the workflow's button folds them. */
+const open = ref(true)
+const bodyId = `${props.id}/body`
+watch(
+  () => props.expandSignal?.version,
+  () => {
+    if (props.expandSignal) {
+      open.value = props.expandSignal.open
+    }
+  },
+)
+
+/** The overview diagram asks a step to open before it scrolls to it (`STEP_EXPAND_EVENT`). */
+const section = ref<HTMLElement>()
+const expand = () => {
+  open.value = true
+}
+onMounted(() => section.value?.addEventListener(STEP_EXPAND_EVENT, expand))
+onBeforeUnmount(() => section.value?.removeEventListener(STEP_EXPAND_EVENT, expand))
 
 const target = computed(() => resolveStepTarget(props.document, props.step, props.documents))
 
@@ -98,6 +121,17 @@ const messages = computed(() =>
     rows: message.schemaFormat ? undefined : schemaPropertyRows(message.payload, message.root),
   })),
 )
+
+/** What a collapsed step still says: "Calls operation createOrder POST /orders". */
+const collapsedSummary = computed(() => {
+  const value = target.value
+  if (!value) {
+    return ''
+  }
+  const name = targetName.value || value.identifier
+  const signature = targetSignature.value && targetSignature.value !== name ? ` ${targetSignature.value}` : ''
+  return `${targetLabel.value} ${name}${signature}`
+})
 
 /** "Sends message", "Receives message", or just "Message" when the action is not known. */
 const messageHeading = computed(() =>
@@ -182,19 +216,54 @@ const description = computed(() => renderMarkdown(heading.value.description))
 <template>
   <section
     :id="id"
+    ref="section"
     class="ba-step"
+    :class="{ 'ba-step-closed': !open }"
     :data-nav-id="id">
-    <div class="ba-kicker">Step · {{ step.stepId }}</div>
-    <ArazzoAnchor
-      :eventBus="eventBus"
-      :navId="id">
-      <h3
-        class="ba-step-title"
-        :class="{ 'ba-step-title-id': heading.title === step.stepId }">
-        {{ heading.title }}
-      </h3>
-    </ArazzoAnchor>
+    <div class="ba-step-header">
+      <button
+        :aria-controls="bodyId"
+        :aria-expanded="open"
+        :aria-label="`${open ? 'Collapse' : 'Expand'} step ${step.stepId}`"
+        class="ba-step-toggle"
+        type="button"
+        @click="open = !open">
+        <svg
+          aria-hidden="true"
+          class="ba-chevron"
+          viewBox="0 0 16 16">
+          <path d="M6 4l4 4-4 4" />
+        </svg>
+      </button>
+      <div class="ba-step-heading">
+        <div class="ba-kicker">Step · {{ step.stepId }}</div>
+        <ArazzoAnchor
+          :eventBus="eventBus"
+          :navId="id">
+          <h3
+            class="ba-step-title"
+            :class="{ 'ba-step-title-id': heading.title === step.stepId }">
+            {{ heading.title }}
+          </h3>
+        </ArazzoAnchor>
+        <div
+          v-if="!open && collapsedSummary"
+          class="ba-step-collapsed-summary">
+          <span
+            v-if="spec"
+            class="ba-spec"
+            :class="[`ba-spec-${spec.family}`, { 'ba-spec-unresolved': !spec.resolved }]">
+            {{ spec.family === 'arazzo' ? 'Workflow' : specLabel(spec) }}
+          </span>
+          {{ collapsedSummary }}
+        </div>
+      </div>
+    </div>
 
+    <div
+      v-show="open"
+      :id="bodyId"
+      class="ba-step-body">
     <div
       v-if="step.dependsOn?.length || typeof step.timeout === 'number' || step.correlationId"
       class="ba-badges">
@@ -419,5 +488,6 @@ const description = computed(() => renderMarkdown(heading.value.description))
       title="Outputs" />
 
     <ArazzoExtensions :of="step" />
+    </div>
   </section>
 </template>

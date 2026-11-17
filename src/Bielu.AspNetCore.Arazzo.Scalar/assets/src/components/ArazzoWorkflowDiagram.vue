@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
+import { STEP_EXPAND_EVENT } from '../helpers/navigation'
 import { INITIAL_PAN_ZOOM, panBy, panZoomForKey, type PanZoomState, zoomAt } from '../helpers/pan-zoom'
 import { specLabel } from '../helpers/target-spec'
 import { type LaidOutEdge, type LaidOutNode, SPEC_MARKER_WIDTH, type WorkflowLayout } from '../helpers/workflow-graph'
@@ -107,7 +108,9 @@ const onNodeKeydown = (event: KeyboardEvent, node: LaidOutNode) => {
 const openStep = (node: LaidOutNode) => {
   const id = props.stepSectionIds[node.id]
   if (node.kind === 'step' && id && !moved) {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const section = document.getElementById(id)
+    section?.dispatchEvent(new CustomEvent(STEP_EXPAND_EVENT))
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
