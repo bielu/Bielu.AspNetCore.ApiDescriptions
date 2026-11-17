@@ -152,7 +152,7 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
             // Step targets resolve once Scalar has also loaded the OpenAPI and AsyncAPI documents, which
             // it does after rendering the Arazzo one: wait until both sources show as loaded.
             await page.WaitForFunctionAsync(
-                "() => [...document.querySelectorAll('.bielu-arazzo .ba-sources tr')].filter(row => !row.textContent.includes('not loaded')).length === 2",
+                "() => [...document.querySelectorAll('.bielu-arazzo .ba-sources tr')].filter(row => !row.textContent.toLowerCase().includes('not loaded')).length === 2",
                 null,
                 new() { Timeout = 15000 });
         }
