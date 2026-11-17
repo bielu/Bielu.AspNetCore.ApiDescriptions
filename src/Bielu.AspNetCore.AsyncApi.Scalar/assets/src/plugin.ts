@@ -9,6 +9,8 @@ export type ApiReferencePlugin = () => {
   name: string
   extensions: unknown[]
   views?: Record<string, unknown[]>
+  /** Document formats the plugin teaches Scalar to load and render (`@scalar/api-reference` 1.80.0 or later). */
+  documentTypes?: unknown[]
   hooks?: Record<string, unknown>
   apiClientPlugins?: unknown[]
 }
