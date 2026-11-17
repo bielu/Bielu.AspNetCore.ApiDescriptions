@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { formatValue } from '../helpers/format'
 import { renderMarkdown } from '../helpers/markdown'
 import { resolveReusables } from '../helpers/reusable'
-import { resolveStepTarget } from '../helpers/resolve-target'
+import { resolveStepTarget, targetDescription, targetParameters } from '../helpers/resolve-target'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
@@ -17,14 +17,22 @@ const props = defineProps<{
 
 const target = computed(() => resolveStepTarget(props.document, props.step, props.documents))
 
+/** The target's longer description, when it says more than the summary line above it. */
+const targetDetails = computed(() => {
+  const details = targetDescription(target.value)
+  return details && details !== targetSummary.value ? renderMarkdown(details) : ''
+})
+
+const targetParameterRows = computed(() => targetParameters(target.value, props.documents))
+
 const targetLabel = computed(() => {
   switch (target.value?.kind) {
     case 'workflow':
       return 'Invokes workflow'
     case 'channel':
-      return 'Channel'
+      return 'Calls channel'
     default:
-      return 'Operation'
+      return 'Calls operation'
   }
 })
 
@@ -125,6 +133,34 @@ const description = computed(() => renderMarkdown(props.step.description))
         v-if="targetSummary"
         class="ba-target-summary">
         {{ targetSummary }}
+      </div>
+      <div
+        v-if="targetDetails"
+        class="ba-markdown ba-target-summary"
+        v-html="targetDetails" />
+      <div
+        v-if="targetParameterRows.length"
+        class="ba-target-parameters">
+        <div class="ba-block-title">{{ target.kind === 'channel' ? 'Channel parameters' : 'Operation parameters' }}</div>
+        <table class="ba-table">
+          <tbody>
+            <tr
+              v-for="parameter in targetParameterRows"
+              :key="`${parameter.location}:${parameter.name}`">
+              <td>
+                <code>{{ parameter.name }}</code>
+                <span
+                  v-if="parameter.required"
+                  class="ba-required">
+                  required
+                </span>
+              </td>
+              <td class="ba-muted">{{ parameter.location }}</td>
+              <td class="ba-muted">{{ parameter.type }}</td>
+              <td>{{ parameter.description }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
