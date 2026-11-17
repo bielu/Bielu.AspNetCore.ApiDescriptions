@@ -141,6 +141,17 @@ describe('documentSpec and specLabel', () => {
     expect(documentSpec(undefined)).toBeUndefined()
   })
 
+  it("reports the version the author wrote, which Scalar keeps when it upgrades a document", () => {
+    // Arrange
+    const upgradedAsyncApi = { asyncapi: '3.1.0', 'x-original-aas-version': '3.0.0' }
+    const upgradedSwagger = { openapi: '3.1.1', 'x-original-oas-version': '2.0' }
+
+    // Act / Assert
+    expect(documentSpec(upgradedAsyncApi)).toEqual({ family: 'asyncapi', version: '3.0.0' })
+    expect(documentSpec(upgradedSwagger)).toEqual({ family: 'openapi', version: '2.0' })
+    expect(documentSpec({ asyncapi: '3.1.0', 'x-original-aas-version': '' })).toEqual({ family: 'asyncapi', version: '3.1.0' })
+  })
+
   it('names the spec, with the version when known', () => {
     // Arrange / Act / Assert
     expect(specLabel({ family: 'asyncapi', version: '3.0.0' })).toBe('AsyncAPI 3.0.0')
