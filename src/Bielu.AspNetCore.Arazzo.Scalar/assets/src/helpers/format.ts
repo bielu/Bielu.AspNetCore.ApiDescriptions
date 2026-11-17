@@ -11,58 +11,139 @@ export const formatValue = (value: unknown): string => {
   return JSON.stringify(value, null, 2)
 }
 
-/** One row of a workflow's `inputs` JSON Schema, flattened for display. */
+/** One property of a workflow's `inputs` JSON Schema, with its nested properties as `children`. */
 export type SchemaPropertyRow = {
   name: string
   type: string
   required: boolean
   description: string
+  /** Short facts worth a glance: `format`, allowed values, default, bounds. Omitted when there are none. */
+  details?: string[]
+  /** The properties of an object property, or of an array property's items. */
+  children?: SchemaPropertyRow[]
 }
 
-/**
- * Flattens the top-level properties of an object JSON Schema (the shape `workflow.inputs` takes in
- * practice) into rows. Returns `undefined` for any other schema, which the caller shows as JSON.
- */
-export const schemaPropertyRows = (schema: unknown): SchemaPropertyRow[] | undefined => {
-  if (!schema || typeof schema !== 'object') {
-    return undefined
-  }
-  const { properties, required } = schema as { properties?: unknown; required?: unknown }
-  if (!properties || typeof properties !== 'object') {
-    return undefined
-  }
-  const requiredNames = new Set(Array.isArray(required) ? required : [])
-  return Object.entries(properties as Record<string, Record<string, unknown> | undefined>).map(([name, property]) => {
-    return {
-      name,
-      type: propertyType(schema, property),
-      required: requiredNames.has(name),
-      description: typeof property?.description === 'string' ? property.description : '',
-    }
-  })
-}
+type Schema = Record<string, unknown>
+
+/** Nesting deeper than this is shown no further; real workflow inputs are far shallower. */
+const MAX_DEPTH = 6
+
+const isSchema = (value: unknown): value is Schema => !!value && typeof value === 'object' && !Array.isArray(value)
 
 const typeName = (type: unknown): string | undefined =>
   Array.isArray(type) ? type.join(' | ') : typeof type === 'string' ? type : undefined
 
 /**
- * The type shown for one property. A `$ref` alone says nothing about the type, so the row takes the
- * type of the schema it points to when that lives in the same schema (`#/$defs/…`), and otherwise
- * shows the referenced schema's name.
+ * Follows a `$ref` that points inside the same schema (`#/$defs/…`, the form `JsonSchemaExporter`
+ * writes). Returns the referenced schema, or `undefined` for a reference it cannot follow.
  */
-const propertyType = (root: object, property: Record<string, unknown> | undefined): string => {
-  const own = typeName(property?.type)
+const followRef = (root: Schema, ref: string): Schema | undefined => {
+  if (!ref.startsWith('#')) {
+    return undefined
+  }
+  const target = parseJsonPointer(ref.slice(1)).reduce<unknown>(
+    (node, segment) => (isSchema(node) ? node[segment] : undefined),
+    root,
+  )
+  return isSchema(target) ? target : undefined
+}
+
+/** The schema a property describes: itself, or what its `$ref` points to, with the property's own keywords on top. */
+const resolveSchema = (root: Schema, schema: Schema, seen: Set<string>): { schema: Schema; ref?: string } => {
+  const ref = typeof schema.$ref === 'string' ? schema.$ref : undefined
+  if (!ref || seen.has(ref)) {
+    return { schema, ref }
+  }
+  const target = followRef(root, ref)
+  return { schema: target ? { ...target, ...schema } : schema, ref }
+}
+
+/**
+ * The type shown for a property. A `$ref` alone says nothing about the type, so it takes the type of
+ * the schema it points to, or else that schema's name. An array shows its item type: `array<string>`.
+ */
+const describeType = (root: Schema, schema: Schema, ref: string | undefined, seen: Set<string>): string => {
+  const own = typeName(schema.type)
+  if (own === 'array' && isSchema(schema.items)) {
+    const items = resolveSchema(root, schema.items, seen)
+    return `array<${describeType(root, items.schema, items.ref, seen)}>`
+  }
   if (own) {
     return own
   }
-  const ref = property?.$ref
-  if (typeof ref !== 'string') {
-    return 'any'
+  if (ref) {
+    return ref.split('/').pop() || ref
   }
-  const target = (ref.startsWith('#') ? parseJsonPointer(ref.slice(1)) : []).reduce<unknown>(
-    (node, segment) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[segment] : undefined),
-    ref.startsWith('#') ? root : undefined,
-  )
-  const referenced = target && typeof target === 'object' ? typeName((target as Record<string, unknown>).type) : undefined
-  return referenced ?? ref.split('/').pop() ?? ref
+  if (isSchema(schema.properties)) {
+    return 'object'
+  }
+  return 'any'
 }
+
+const describeDetails = (schema: Schema): string[] | undefined => {
+  const details: string[] = []
+  if (typeof schema.format === 'string') {
+    details.push(schema.format)
+  }
+  if (Array.isArray(schema.enum) && schema.enum.length) {
+    details.push(`one of: ${schema.enum.map((value) => JSON.stringify(value)).join(', ')}`)
+  }
+  if (schema.const !== undefined) {
+    details.push(`const: ${JSON.stringify(schema.const)}`)
+  }
+  if (schema.default !== undefined) {
+    details.push(`default: ${JSON.stringify(schema.default)}`)
+  }
+  for (const [keyword, label] of [
+    ['minimum', 'min'],
+    ['maximum', 'max'],
+    ['minLength', 'min length'],
+    ['maxLength', 'max length'],
+    ['minItems', 'min items'],
+    ['maxItems', 'max items'],
+  ] as const) {
+    if (typeof schema[keyword] === 'number') {
+      details.push(`${label}: ${schema[keyword]}`)
+    }
+  }
+  if (typeof schema.pattern === 'string') {
+    details.push(`pattern: ${schema.pattern}`)
+  }
+  return details.length ? details : undefined
+}
+
+const propertyRows = (root: Schema, schema: Schema, depth: number, seen: Set<string>): SchemaPropertyRow[] | undefined => {
+  if (!isSchema(schema.properties) || depth > MAX_DEPTH) {
+    return undefined
+  }
+  const requiredNames = new Set(Array.isArray(schema.required) ? schema.required : [])
+  return Object.entries(schema.properties).map(([name, value]) => {
+    const property = isSchema(value) ? value : {}
+    const { schema: resolved, ref } = resolveSchema(root, property, seen)
+    // A reference already being expanded higher up is shown by name only, so a recursive schema ends.
+    const nested = ref ? new Set(seen).add(ref) : seen
+    const container = typeName(resolved.type) === 'array' && isSchema(resolved.items)
+      ? resolveSchema(root, resolved.items, nested)
+      : { schema: resolved }
+    const children =
+      ref && seen.has(ref)
+        ? undefined
+        : propertyRows(root, container.schema, depth + 1, container.ref ? new Set(nested).add(container.ref) : nested)
+    return {
+      name,
+      type: describeType(root, resolved, ref, seen),
+      required: requiredNames.has(name),
+      description: typeof resolved.description === 'string' ? resolved.description : '',
+      details: describeDetails(resolved),
+      children,
+    }
+  })
+}
+
+/**
+ * Turns an object JSON Schema (the shape `workflow.inputs` takes in practice) into property rows,
+ * nesting the properties of object and array-of-object properties. Returns `undefined` for any other
+ * schema, which the caller shows as JSON.
+ */
+export const schemaPropertyRows = (schema: unknown): SchemaPropertyRow[] | undefined =>
+  isSchema(schema) ? propertyRows(schema, schema, 0, new Set()) : undefined

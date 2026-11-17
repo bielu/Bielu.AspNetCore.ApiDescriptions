@@ -7,6 +7,7 @@ import { resolveReusables } from '../helpers/reusable'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
+import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
 import ArazzoStep from './ArazzoStep.vue'
 
 const props = defineProps<{
@@ -68,26 +69,9 @@ const failureActions = computed(() =>
       v-if="workflow.inputs"
       class="ba-block">
       <div class="ba-block-title">Inputs</div>
-      <table
+      <ArazzoSchemaProperties
         v-if="inputRows"
-        class="ba-table">
-        <tbody>
-          <tr
-            v-for="row in inputRows"
-            :key="row.name">
-            <td>
-              <code>{{ row.name }}</code>
-              <span
-                v-if="row.required"
-                class="ba-required">
-                required
-              </span>
-            </td>
-            <td class="ba-muted">{{ row.type }}</td>
-            <td>{{ row.description }}</td>
-          </tr>
-        </tbody>
-      </table>
+        :rows="inputRows" />
       <pre
         v-else
         class="ba-code"><code>{{ formatValue(workflow.inputs) }}</code></pre>
