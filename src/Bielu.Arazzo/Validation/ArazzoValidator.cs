@@ -22,9 +22,116 @@ public static class ArazzoValidator
 
         ValidateSourceDescriptions(document, errors);
         ValidateWorkflows(document, errors);
+        ValidateValues(document, errors);
 
         return errors;
     }
+
+    /// <summary>
+    /// Checks every <c>Any | {expression} | Selector Object</c> position: outputs may not be literals, and a
+    /// document declaring Arazzo 1.0 may not use the Selector Object or <c>targetSelectorType</c>, both new in 1.1.0.
+    /// </summary>
+    private static void ValidateValues(ArazzoDocument document, List<ArazzoError> errors)
+    {
+        var isVersion10 = ArazzoVersionExtensions.TryParse(document.Arazzo, out var version) && version == ArazzoVersion.V1_0;
+
+        void CheckValue(ArazzoValue? value, string path)
+        {
+            if (value is { IsSelector: true } && isVersion10)
+            {
+                errors.Add(new ArazzoError(path, "Selector Objects require Arazzo 1.1.0 or later."));
+            }
+        }
+
+        void CheckOutputs(IDictionary<string, ArazzoValue>? outputs, string path)
+        {
+            if (outputs is null)
+            {
+                return;
+            }
+
+            foreach (var (name, value) in outputs)
+            {
+                var outputPath = $"{path}/{EscapePointerSegment(name)}";
+                if (value.IsLiteral)
+                {
+                    errors.Add(new ArazzoError(outputPath, "An output must be a runtime expression or a Selector Object, not a literal value."));
+                }
+
+                CheckValue(value, outputPath);
+            }
+        }
+
+        void CheckParameters(IList<ArazzoReferenceable<ArazzoParameter>>? parameters, string path)
+        {
+            for (var i = 0; parameters is not null && i < parameters.Count; i++)
+            {
+                CheckValue(parameters[i].Value?.Value, $"{path}/{i}/value");
+            }
+        }
+
+        void CheckFailureActions(IList<ArazzoReferenceable<ArazzoFailureAction>>? actions, string path)
+        {
+            for (var i = 0; actions is not null && i < actions.Count; i++)
+            {
+                CheckParameters(actions[i].Value?.Parameters, $"{path}/{i}/parameters");
+            }
+        }
+
+        if (document.Components is { } components)
+        {
+            foreach (var (name, parameter) in components.Parameters ?? new Dictionary<string, ArazzoParameter>())
+            {
+                CheckValue(parameter.Value, $"/components/parameters/{EscapePointerSegment(name)}/value");
+            }
+
+            foreach (var (name, action) in components.FailureActions ?? new Dictionary<string, ArazzoFailureAction>())
+            {
+                for (var i = 0; action.Parameters is not null && i < action.Parameters.Count; i++)
+                {
+                    CheckValue(action.Parameters[i].Value?.Value, $"/components/failureActions/{EscapePointerSegment(name)}/parameters/{i}/value");
+                }
+            }
+        }
+
+        for (var w = 0; w < document.Workflows.Count; w++)
+        {
+            var workflow = document.Workflows[w];
+            var workflowPath = $"/workflows/{w}";
+            CheckParameters(workflow.Parameters, $"{workflowPath}/parameters");
+            CheckFailureActions(workflow.FailureActions, $"{workflowPath}/failureActions");
+            CheckOutputs(workflow.Outputs, $"{workflowPath}/outputs");
+
+            for (var s = 0; s < workflow.Steps.Count; s++)
+            {
+                var step = workflow.Steps[s];
+                var stepPath = $"{workflowPath}/steps/{s}";
+                CheckParameters(step.Parameters, $"{stepPath}/parameters");
+                CheckFailureActions(step.OnFailure, $"{stepPath}/onFailure");
+                CheckOutputs(step.Outputs, $"{stepPath}/outputs");
+
+                if (step.RequestBody is not { } body)
+                {
+                    continue;
+                }
+
+                CheckValue(body.Payload, $"{stepPath}/requestBody/payload");
+                for (var r = 0; body.Replacements is not null && r < body.Replacements.Count; r++)
+                {
+                    var replacement = body.Replacements[r];
+                    var replacementPath = $"{stepPath}/requestBody/replacements/{r}";
+                    if (replacement.TargetSelectorType is not null && isVersion10)
+                    {
+                        errors.Add(new ArazzoError($"{replacementPath}/targetSelectorType", "targetSelectorType requires Arazzo 1.1.0 or later."));
+                    }
+
+                    CheckValue(replacement.Value, $"{replacementPath}/value");
+                }
+            }
+        }
+    }
+
+    private static string EscapePointerSegment(string segment) => segment.Replace("~", "~0").Replace("/", "~1");
 
     private static void ValidateSourceDescriptions(ArazzoDocument document, List<ArazzoError> errors)
     {

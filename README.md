@@ -233,6 +233,7 @@ dotnet run
 - [xRegistry](https://apidescriptions.bielu.pl/articles/xregistry.html)
 - [MCP server for API descriptions](https://apidescriptions.bielu.pl/articles/mcp.html) (experimental)
 - [Merger and API gateway](https://apidescriptions.bielu.pl/articles/merger-gateway.html)
+- [Migrating to 3.0](https://apidescriptions.bielu.pl/articles/migration-to-3.0.html)
 - [Migrating to 2.0](https://apidescriptions.bielu.pl/articles/migration-to-2.0.html)
 - [Migration from Saunter](https://apidescriptions.bielu.pl/articles/migration-from-saunter.html)
 

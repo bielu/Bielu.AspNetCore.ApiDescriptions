@@ -13,6 +13,7 @@ public sealed class ArazzoStepBuilder
     private readonly List<ArazzoReferenceable<ArazzoSuccessAction>> _onSuccess = [];
     private readonly List<ArazzoReferenceable<ArazzoFailureAction>> _onFailure = [];
     private readonly Dictionary<string, ArazzoValue> _outputs = new(StringComparer.Ordinal);
+    private readonly List<ArazzoPayloadReplacement> _replacements = [];
 
     internal ArazzoStepBuilder(string stepId) => _stepId = stepId;
 
@@ -30,7 +31,9 @@ public sealed class ArazzoStepBuilder
 
     private string? CorrelationIdValue { get; set; }
 
-    private ArazzoRequestBody? RequestBody { get; set; }
+    private ArazzoValue? PayloadValue { get; set; }
+
+    private string? PayloadContentType { get; set; }
 
     private int? TimeoutValue { get; set; }
 
@@ -143,20 +146,91 @@ public sealed class ArazzoStepBuilder
     /// <typeparam name="TStep">The marker type naming the step depended on.</typeparam>
     public ArazzoStepBuilder DependsOn<TStep>() => DependsOn(ArazzoId.FromType<TStep>());
 
-    /// <summary>Sets the step's request body payload from a literal JSON value.</summary>
+    /// <summary>
+    /// Sets the step's request body payload from a literal JSON value. Calling it again, or another
+    /// <c>Payload*</c> method, replaces the payload and content type; replacements added with
+    /// <see cref="Replacement"/> are kept, whichever is called first.
+    /// </summary>
     public ArazzoStepBuilder Payload(JsonNode payload, string? contentType = null)
     {
         ArgumentNullException.ThrowIfNull(payload);
-        RequestBody = new ArazzoRequestBody { Payload = ArazzoValue.FromLiteral(payload), ContentType = contentType };
+        SetPayload(ArazzoValue.FromLiteral(payload), contentType);
         return this;
     }
 
-    /// <summary>Sets the step's request body payload to a runtime expression, e.g. <c>$inputs.body</c>.</summary>
+    /// <summary>
+    /// Sets the step's request body payload to a runtime expression, e.g. <c>$inputs.body</c>. Replacements
+    /// added with <see cref="Replacement"/> are kept, whichever is called first.
+    /// </summary>
     public ArazzoStepBuilder PayloadExpression(string expression, string? contentType = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(expression);
-        RequestBody =
-            new ArazzoRequestBody { Payload = ArazzoValue.FromExpression(expression), ContentType = contentType };
+        SetPayload(ArazzoValue.FromExpression(expression), contentType);
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the step's request body payload to the data a Selector Object picks out (Arazzo 1.1), e.g. the
+    /// <c>$.order</c> part of an earlier step's response. Replacements added with <see cref="Replacement"/>
+    /// are kept, whichever is called first.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// step.PayloadSelector(new ArazzoSelector
+    /// {
+    ///     Context = "$steps.getCart.outputs.cart",
+    ///     Selector = "$.order",
+    ///     Type = "jsonpath",
+    /// });
+    /// </code>
+    /// </example>
+    public ArazzoStepBuilder PayloadSelector(ArazzoSelector selector, string? contentType = null)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        SetPayload(ArazzoValue.FromSelector(selector), contentType);
+        return this;
+    }
+
+    private void SetPayload(ArazzoValue payload, string? contentType)
+    {
+        PayloadValue = payload;
+        PayloadContentType = contentType;
+    }
+
+    /// <summary>
+    /// Adds a Payload Replacement Object: before the request is sent, the location <paramref name="target"/>
+    /// picks out of the payload is set to <paramref name="value"/>. Replacements apply in the order they
+    /// are added, and are independent of when the payload itself is set.
+    /// </summary>
+    /// <param name="target">
+    /// A JSON Pointer (e.g. <c>/customer/id</c>), JSONPath or XPath expression locating the value to replace.
+    /// </param>
+    /// <param name="value">
+    /// The value to set: a runtime expression (a plain string converts to one), a literal from
+    /// <see cref="ArazzoValue.FromLiteral"/>, or a Selector Object from <see cref="ArazzoValue.FromSelector"/>
+    /// (Arazzo 1.1).
+    /// </param>
+    /// <param name="targetSelectorType">
+    /// The selector engine for <paramref name="target"/> (Arazzo 1.1). When omitted, a <c>/</c>-prefixed
+    /// target is read as a JSON Pointer and any other as JSONPath.
+    /// </param>
+    /// <example>
+    /// <code>
+    /// step.Payload(JsonNode.Parse("""{ "customer": { "id": null }, "quantity": 1 }""")!)
+    ///     .Replacement("/customer/id", "$inputs.customerId")
+    ///     .Replacement("$.quantity", ArazzoValue.FromLiteral(3), "jsonpath");
+    /// </code>
+    /// </example>
+    public ArazzoStepBuilder Replacement(string target, ArazzoValue value, ArazzoSelectorType? targetSelectorType = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(target);
+        ArgumentNullException.ThrowIfNull(value);
+        _replacements.Add(new ArazzoPayloadReplacement
+        {
+            Target = target,
+            Value = value,
+            TargetSelectorType = targetSelectorType,
+        });
         return this;
     }
 
@@ -177,6 +251,28 @@ public sealed class ArazzoStepBuilder
         return this;
     }
 
+    /// <summary>
+    /// Declares a named output whose value is the data a Selector Object picks out (Arazzo 1.1), e.g. one
+    /// item of a JSON array in the response. Outputs cannot be literal values, so there is no literal overload.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// step.Output("firstItemId", new ArazzoSelector
+    /// {
+    ///     Context = "$response.body",
+    ///     Selector = "$.items[0].id",
+    ///     Type = "jsonpath",
+    /// });
+    /// </code>
+    /// </example>
+    public ArazzoStepBuilder Output(string name, ArazzoSelector selector)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentNullException.ThrowIfNull(selector);
+        _outputs[name] = ArazzoValue.FromSelector(selector);
+        return this;
+    }
+
     /// <summary>Adds a parameter whose value is the given runtime expression.</summary>
     public ArazzoStepBuilder Parameter(string name, string valueExpression, string? location = null)
     {
@@ -188,6 +284,42 @@ public sealed class ArazzoStepBuilder
             In = location,
             Value = ArazzoValue.FromExpression(valueExpression)
         }));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a parameter given as a Parameter Object, whose value can be a literal
+    /// (<see cref="ArazzoValue.FromLiteral"/>), a runtime expression (<see cref="ArazzoValue.FromExpression"/>),
+    /// or a Selector Object (<see cref="ArazzoValue.FromSelector"/>, Arazzo 1.1). Leave
+    /// <see cref="ArazzoParameter.In"/> unset when the step targets a workflow, whose parameters map to that
+    /// workflow's inputs.
+    /// </summary>
+    /// <param name="parameter">The parameter to add.</param>
+    /// <example>
+    /// <code>
+    /// step.Parameter(new ArazzoParameter
+    ///     {
+    ///         Name = "limit",
+    ///         In = ArazzoParameterLocation.Query,
+    ///         Value = ArazzoValue.FromLiteral(10),
+    ///     })
+    ///     .Parameter(new ArazzoParameter
+    ///     {
+    ///         Name = "orderId",
+    ///         In = ArazzoParameterLocation.Path,
+    ///         Value = ArazzoValue.FromSelector(new ArazzoSelector
+    ///         {
+    ///             Context = "$steps.listOrders.outputs.orders",
+    ///             Selector = "/0/id",
+    ///             Type = "jsonpointer",
+    ///         }),
+    ///     });
+    /// </code>
+    /// </example>
+    public ArazzoStepBuilder Parameter(ArazzoParameter parameter)
+    {
+        ArazzoParameterGuard.Validate(parameter);
+        _parameters.Add(ArazzoReferenceable<ArazzoParameter>.Of(parameter));
         return this;
     }
 
@@ -217,6 +349,16 @@ public sealed class ArazzoStepBuilder
 
     private static string EscapePointerSegment(string segment) => segment.Replace("~", "~0").Replace("/", "~1");
 
+    private ArazzoRequestBody? BuildRequestBody()
+        => PayloadValue is null && PayloadContentType is null && _replacements.Count == 0
+            ? null
+            : new ArazzoRequestBody
+            {
+                ContentType = PayloadContentType,
+                Payload = PayloadValue,
+                Replacements = _replacements.Count > 0 ? [.. _replacements] : null,
+            };
+
     internal ArazzoStep Build() => new()
     {
         StepId = _stepId,
@@ -227,7 +369,7 @@ public sealed class ArazzoStepBuilder
         WorkflowId = WorkflowIdValue,
         Action = ActionValue,
         CorrelationId = CorrelationIdValue,
-        RequestBody = RequestBody,
+        RequestBody = BuildRequestBody(),
         SuccessCriteria = _successCriteria.Count > 0 ? _successCriteria : null,
         Outputs = _outputs.Count > 0 ? _outputs : null,
         DependsOn = _dependsOn.Count > 0 ? _dependsOn : null,
