@@ -4,9 +4,10 @@
 Reference, on the same page as the OpenAPI and AsyncAPI documents their steps call.
 
 > [!IMPORTANT]
-> The plugin uses Scalar's plugin `documentTypes`, added in
-> [scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816). Scalar versions without it
-> ignore the plugin and show an Arazzo source as an empty OpenAPI document.
+> The plugin uses Scalar's plugin `documentTypes` API, first released in `@scalar/api-reference` 1.80.0
+> ([scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816)). `Scalar.AspNetCore` bundles that version from
+> 3.0.1 on, and this package depends on it. Older Scalar versions ignore the plugin and show an Arazzo source as an
+> empty OpenAPI document.
 
 ## Setup
 
@@ -57,6 +58,9 @@ A step's target is looked up in the documents loaded in the same Scalar page. Th
 source description URL is matched against the URL each Scalar source was loaded from, so a
 generated `/openapi/v1.json` source description finds the `/openapi/v1.json` Scalar source. When
 the target's document is not loaded, the step still shows the raw `operationId` or path.
+
+The [`ArazzoScalar` example](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/ArazzoScalar)
+puts this together: two workflows mixing HTTP operations and messages, rendered at `/scalar`.
 
 ## Without ASP.NET Core
 

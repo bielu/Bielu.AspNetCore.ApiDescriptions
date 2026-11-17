@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
         <RootNamespace>Bielu.AspNetCore.Arazzo.Scalar</RootNamespace>
         <Description>Arazzo workflows in the Scalar API Reference for ASP.NET Core. Serves a Scalar plugin that renders Arazzo documents next to the OpenAPI and AsyncAPI documents their steps call.</Description>
         <PackageTags>scalar;arazzo;workflows;openapi;asyncapi;aspnetcore;api-reference</PackageTags>

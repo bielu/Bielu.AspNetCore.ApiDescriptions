@@ -6,7 +6,7 @@ lists its workflows and steps in the sidebar, and renders them. Each step's targ
 (`operationId`, `operationPath`, `channelPath` or `workflowId`) is resolved in the OpenAPI and
 AsyncAPI documents loaded in the same Scalar page.
 
-Requires a Scalar version with plugin `documentTypes`
+Requires `@scalar/api-reference` 1.80.0 or later, the first version with plugin `documentTypes`
 ([scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816)).
 
 ## Usage

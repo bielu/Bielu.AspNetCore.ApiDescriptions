@@ -25,9 +25,9 @@ public static class ScalarArazzoOptionsExtensions
     /// loaded next to it. Add the Arazzo documents themselves with
     /// <see cref="AddArazzoDocument" />.
     /// <para>
-    /// Plugin document types need a Scalar version that includes
-    /// <see href="https://github.com/scalar/scalar/pull/10816">scalar/scalar#10816</see>. Older
-    /// versions ignore the plugin and render an Arazzo source as an empty OpenAPI document.
+    /// Plugin document types need <c>Scalar.AspNetCore</c> 3.0.1 or later, which bundles
+    /// <c>@scalar/api-reference</c> 1.80.0 (<see href="https://github.com/scalar/scalar/pull/10816">scalar/scalar#10816</see>).
+    /// Older versions ignore the plugin and render an Arazzo source as an empty OpenAPI document.
     /// </para>
     /// </remarks>
     /// <param name="options">The Scalar options being configured.</param>

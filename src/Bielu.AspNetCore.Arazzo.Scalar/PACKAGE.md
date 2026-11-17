@@ -28,9 +28,9 @@ app.MapScalarApiReference(options =>
 });
 ```
 
-> **Requires a Scalar version with plugin document types**
-> ([scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816)). Older versions ignore the
-> plugin and show an Arazzo source as an empty OpenAPI document.
+> **Requires `Scalar.AspNetCore` 3.0.1 or later**, the first release bundling plugin document types
+> (`@scalar/api-reference` 1.80.0, [scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816)). Older
+> versions ignore the plugin and show an Arazzo source as an empty OpenAPI document.
 
 ## Documentation
 

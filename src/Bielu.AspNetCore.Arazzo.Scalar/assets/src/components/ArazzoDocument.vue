@@ -7,7 +7,7 @@ import ArazzoWorkflow from './ArazzoWorkflow.vue'
 
 /**
  * The content of an Arazzo document in Scalar. Scalar renders it in place of its own introduction
- * and content tree, and hands it the props below (see `documentTypes` in scalar/scalar#10816).
+ * and content tree, and hands it the props below (see `PluginDocumentType.content` in `@scalar/types`).
  */
 const props = defineProps<{
   document?: ArazzoDocument

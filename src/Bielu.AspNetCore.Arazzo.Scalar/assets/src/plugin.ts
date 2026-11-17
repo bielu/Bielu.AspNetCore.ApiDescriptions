@@ -18,7 +18,7 @@ export const ARAZZO_ELEMENT_SPEC = {
   stylesId: 'bielu-arazzo-styles',
 } as const
 
-/** A document type, structurally matching `PluginDocumentType` in `@scalar/types` (scalar/scalar#10816). */
+/** A document type, structurally matching `PluginDocumentType` in `@scalar/types` (checked by `test/scalar-contract.ts`). */
 export type ArazzoDocumentType = {
   type: string
   detect: (document: Record<string, unknown>) => boolean
@@ -37,7 +37,8 @@ export type ArazzoDocumentType = {
  */
 export type ApiReferencePlugin = () => {
   name: string
-  extensions: unknown[]
+  /** Always empty: the plugin contributes a document type, not OpenAPI extensions. */
+  extensions: never[]
   documentTypes: ArazzoDocumentType[]
 }
 
@@ -52,8 +53,8 @@ export const arazzoDocumentType: ArazzoDocumentType = {
 }
 
 /**
- * Creates the Arazzo plugin for the Scalar API Reference. It needs a Scalar version with plugin
- * `documentTypes` (scalar/scalar#10816); older versions ignore the field, and would then render an
+ * Creates the Arazzo plugin for the Scalar API Reference. It needs `@scalar/api-reference` 1.80.0 or later
+ * (plugin `documentTypes`, scalar/scalar#10816); older versions ignore the field, and would then render an
  * Arazzo source as an empty OpenAPI document.
  */
 export const createArazzoPlugin = (): ApiReferencePlugin => {
