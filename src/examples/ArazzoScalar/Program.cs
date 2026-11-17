@@ -27,6 +27,9 @@ builder.Services.AddArazzo(options =>
     options.AddOpenApiSource("orders", "v1");
     options.AddAsyncApiSource("events", "v1");
 
+    // A reusable failure action, referred to below with OnFailureReference.
+    options.AddComponentFailureAction("unavailable", new ArazzoFailureAction { Name = "unavailable", Type = "end" });
+
     options.AddWorkflow("placeOrder", workflow => workflow
         .WithSummary("Place an order and announce it")
         .WithDescription(
@@ -38,7 +41,10 @@ builder.Services.AddArazzo(options =>
         .Step("create", step => step
             .Operation("createOrder")
             .WithDescription("Create the order.")
-            .Payload(new JsonObject { ["sku"] = "$inputs.sku", ["quantity"] = "$inputs.quantity" }, "application/json")
+            // A payload template whose values are filled in from the inputs before the request is sent.
+            .Payload(new JsonObject { ["sku"] = null, ["quantity"] = 1 }, "application/json")
+            .Replacement("/sku", "$inputs.sku")
+            .Replacement("/quantity", "$inputs.quantity")
             .SuccessCriteria("$statusCode == 201")
             .OnFailure(new ArazzoFailureAction
             {
@@ -47,7 +53,8 @@ builder.Services.AddArazzo(options =>
                 Criteria = [new ArazzoCriterion { Condition = "$statusCode == 400" }],
             })
             .Output("orderId", "$response.body#/id")
-            .Output("total", "$response.body#/total"))
+            // A Selector Object output (Arazzo 1.1): JSONPath over the response body.
+            .Output("total", new ArazzoSelector { Context = "$response.body", Selector = "$.total", Type = "jsonpath" }))
         .Step("announce", step => step
             .Channel("events", "orderPlaced", ArazzoStepAction.Send)
             .WithDescription("Tell the rest of the system about the new order.")
@@ -56,12 +63,9 @@ builder.Services.AddArazzo(options =>
         .Step("requestPayment", step => step
             .Channel("events", "paymentRequested", ArazzoStepAction.Send)
             .WithDescription("Ask the payment service to charge the order total.")
-            .Payload(new JsonObject
-            {
-                ["orderId"] = "$steps.create.outputs.orderId",
-                ["amount"] = "$steps.create.outputs.total",
-                ["currency"] = "EUR",
-            }, "application/json")
+            .Payload(new JsonObject { ["orderId"] = null, ["amount"] = 0, ["currency"] = "EUR" }, "application/json")
+            .Replacement("/orderId", "$steps.create.outputs.orderId")
+            .Replacement("/amount", "$steps.create.outputs.total")
             .DependsOn("announce"))
         .Step("paymentCompleted", step => step
             .Channel("events", "paymentCompleted", ArazzoStepAction.Receive)
@@ -86,17 +90,32 @@ builder.Services.AddArazzo(options =>
             .WithCorrelationId("$steps.create.outputs.orderId")
             .WithTimeout(120_000)
             .Output("reservationExpiresAt", "$message.payload.expiresAt")
-            .DependsOn("paymentCompleted")));
+            .DependsOn("paymentCompleted"))
+        // Workflow outputs: what trackOrder reads back as $workflows.placeOrder.outputs.*.
+        .Output("orderId", "$steps.create.outputs.orderId")
+        .Output("paymentId", "$steps.paymentCompleted.outputs.paymentId"));
 
     options.AddWorkflow("trackOrder", workflow => workflow
         .WithSummary("Follow an order to shipment")
         .Step("place", step => step
             .Workflow("placeOrder")
-            .WithDescription("Reuse the placeOrder workflow."))
+            .WithDescription("Reuse the placeOrder workflow.")
+            .Output("orderId", "$workflows.placeOrder.outputs.orderId"))
         .Step("status", step => step
             .Operation("getOrder")
             .WithDescription("Check the order status.")
-            .Parameter("id", "$steps.place.outputs.orderId", "path")
+            // A Selector Object parameter: JSON Pointer into the outputs of the reused workflow.
+            .Parameter(new ArazzoParameter
+            {
+                Name = "id",
+                In = ArazzoParameterLocation.Path,
+                Value = ArazzoValue.FromSelector(new ArazzoSelector
+                {
+                    Context = "$workflows.placeOrder.outputs",
+                    Selector = "/orderId",
+                    Type = "jsonpointer",
+                }),
+            })
             .SuccessCriteria("$statusCode == 200")
             // A JSONPath criterion (RFC 9535): only a live order counts as found.
             .SuccessCriteria(
@@ -128,7 +147,7 @@ builder.Services.AddArazzo(options =>
                     },
                 ],
             })
-            .OnFailure(new ArazzoFailureAction { Name = "unavailable", Type = "end" }))
+            .OnFailureReference("unavailable"))
         .Step("shipped", step => step
             .Channel("events", "orderShipped", ArazzoStepAction.Receive)
             .WithDescription("Wait for the shipment notification.")
