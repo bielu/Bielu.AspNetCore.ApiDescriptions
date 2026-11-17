@@ -4,8 +4,10 @@ import { formatValue } from '../helpers/format'
 import { renderMarkdown } from '../helpers/markdown'
 import { resolveReusables } from '../helpers/reusable'
 import { resolveStepTarget, targetDescription, targetParameters } from '../helpers/resolve-target'
-import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction } from '../types'
+import { stepHeading } from '../helpers/heading'
+import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
+import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
 
 const props = defineProps<{
@@ -13,9 +15,13 @@ const props = defineProps<{
   step: ArazzoStep
   document: ArazzoDocument
   documents: Record<string, unknown>
+  eventBus?: PluginEventBus
 }>()
 
 const target = computed(() => resolveStepTarget(props.document, props.step, props.documents))
+
+/** A one-line description reads as the step's title, as in Scalar's own POC; anything longer stays a description. */
+const heading = computed(() => stepHeading(props.step))
 
 /** The target's longer description, when it says more than the summary line above it. */
 const targetDetails = computed(() => {
@@ -86,7 +92,7 @@ const onSuccess = computed(() => resolveReusables<ArazzoSuccessAction>(props.doc
 
 const onFailure = computed(() => resolveReusables<ArazzoFailureAction>(props.document, props.step.onFailure))
 
-const description = computed(() => renderMarkdown(props.step.description))
+const description = computed(() => renderMarkdown(heading.value.description))
 </script>
 
 <template>
@@ -94,8 +100,16 @@ const description = computed(() => renderMarkdown(props.step.description))
     :id="id"
     class="ba-step"
     :data-nav-id="id">
-    <div class="ba-kicker">Step</div>
-    <h3 class="ba-step-title">{{ step.stepId }}</h3>
+    <div class="ba-kicker">Step · {{ step.stepId }}</div>
+    <ArazzoAnchor
+      :eventBus="eventBus"
+      :navId="id">
+      <h3
+        class="ba-step-title"
+        :class="{ 'ba-step-title-id': heading.title === step.stepId }">
+        {{ heading.title }}
+      </h3>
+    </ArazzoAnchor>
 
     <div
       v-if="step.dependsOn?.length"
