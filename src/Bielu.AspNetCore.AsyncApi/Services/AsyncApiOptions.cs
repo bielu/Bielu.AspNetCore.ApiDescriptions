@@ -484,6 +484,14 @@ public sealed class AsyncApiOptions
     }
 
     /// <summary>
+    /// Predicates an integration (such as API versioning) uses to leave declared members out of this document.
+    /// A member is used only when every predicate returns <see langword="true"/>. They run on the metadata
+    /// provider's output, before any channel, message, schema or operation is created, so they apply to the
+    /// reflection-based and source-generated providers alike.
+    /// </summary>
+    internal List<Func<Models.Metadata.AsyncApiTypeMetadata, Models.Metadata.AsyncApiMemberMetadata, bool>> MemberFilters { get; } = [];
+
+    /// <summary>
     /// Adds an operation binding.
     /// </summary>
     public AsyncApiOptions AddOperationBinding(string name, IOperationBinding binding)

@@ -8,7 +8,10 @@ using Microsoft.Extensions.Options;
 
 namespace Bielu.AspNetCore.AsyncApi.Versioning;
 
-internal sealed class ConfigureVersioningOptions(IApiVersionDescriptionProvider provider, Action<AsyncApiOptions, ApiVersionDescription>? configure)
+internal sealed class ConfigureVersioningOptions(
+    IApiVersionDescriptionProvider provider,
+    ApiVersionEndpointLookup endpoints,
+    Action<AsyncApiOptions, ApiVersionDescription>? configure)
     : IConfigureNamedOptions<AsyncApiOptions>
 {
     public void Configure(string? name, AsyncApiOptions options)
@@ -30,6 +33,8 @@ internal sealed class ConfigureVersioningOptions(IApiVersionDescriptionProvider 
                     info.Description = (info.Description ?? "") + " (deprecated)";
                 }
             });
+            // Leave out the declarations of other versions before any channel or message is built.
+            options.MemberFilters.Add(new ApiVersionMemberFilter(description.ApiVersion, endpoints).Includes);
             configure?.Invoke(options, description);
         }
     }

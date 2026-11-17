@@ -26,7 +26,10 @@ app.MapAsyncApi();   // -> /asyncapi/v1.json, /asyncapi/v2.json, ...
 ```
 
 Every version the API explorer reports gets its own document, and versions marked deprecated are
-flagged as deprecated in the generated output.
+flagged as deprecated in the generated output. Each document holds only the channels, messages and
+operations of its version, following `[ApiVersion]`, `[MapToApiVersion]` and `[ApiVersionNeutral]` and,
+for controller actions and minimal APIs, the versioning conventions applied to their endpoints.
+Version-neutral and unversioned declarations appear in every version.
 
 ## Documentation
 

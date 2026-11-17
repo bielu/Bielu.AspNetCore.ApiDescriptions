@@ -188,6 +188,9 @@ internal sealed class AsyncApiDocumentService(
                 if (_options.IncludeOnlyChannels.Count > 0 && !_options.IncludeOnlyChannels.Contains(channelKey))
                     continue;
 
+                if (!IncludedByMemberFilters(typeMetadata, memberMetadata))
+                    continue;
+
                 var channel = GetOrCreateChannel(document, channelAttr, channelKey, memberMetadata.Member);
 
                 ApplyChannelParametersFromMetadata(channel, memberMetadata);
@@ -202,6 +205,19 @@ internal sealed class AsyncApiDocumentService(
                     operationTransformers, messageKeyOwners, operationKeyOwners, cancellationToken);
             }
         }
+    }
+
+    private bool IncludedByMemberFilters(AsyncApiTypeMetadata typeMetadata, AsyncApiMemberMetadata memberMetadata)
+    {
+        foreach (var filter in _options.MemberFilters)
+        {
+            if (!filter(typeMetadata, memberMetadata))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private AsyncApiChannel GetOrCreateChannel(AsyncApiDocument document, ChannelAttribute channelAttr,

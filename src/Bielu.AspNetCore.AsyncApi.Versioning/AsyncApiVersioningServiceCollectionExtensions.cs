@@ -28,10 +28,22 @@ public static class AsyncApiVersioningServiceCollectionExtensions
     /// <param name="configure">Optional callback to configure version-specific options.</param>
     /// <returns>The specified <see cref="IServiceCollection"/>.</returns>
     /// <remarks>
-    /// Each API version gets its own document, with that version's <c>info</c> and deprecation flag. The documents
-    /// are not filtered by version: each one contains every channel. Use <paramref name="configure"/> to call
-    /// <see cref="AsyncApiOptions.AddIncludedChannel(string)"/> per version if a document should only list some of them.
-    /// The API versions come from Asp.Versioning's <c>AddApiExplorer()</c>, which must be called too.
+    /// <para>
+    /// Each API version gets its own document, with that version's <c>info</c> and deprecation flag, holding
+    /// only the declarations that belong to that version. A versioned controller action or minimal API
+    /// handler follows the <c>ApiVersionMetadata</c> Asp.Versioning gives its endpoint, conventions included;
+    /// any other <c>[AsyncApi]</c> class or method follows its <c>[ApiVersion]</c>, <c>[MapToApiVersion]</c>
+    /// and <c>[ApiVersionNeutral]</c> attributes, a method's own taking precedence over its class's.
+    /// Version-neutral declarations, and those with no version information at all, are in every document.
+    /// Declarations are filtered before their channels, messages, schemas and operations are built, so a
+    /// channel name shared by several versions only carries each version's own messages and operations.
+    /// </para>
+    /// <para>
+    /// <see cref="Bielu.AspNetCore.AsyncApi.Attributes.AsyncApiAttribute.DocumentName"/> and <see cref="AsyncApiOptions.AddIncludedChannel(string)"/>
+    /// still apply on top. Channels that document transformers or other integrations (such as Wolverine) add
+    /// are not filtered by version. The API versions come from Asp.Versioning's <c>AddApiExplorer()</c>, which
+    /// must be called too.
+    /// </para>
     /// </remarks>
     public static IServiceCollection AddAsyncApiForApiVersions(this IServiceCollection services, Action<AsyncApiOptions, ApiVersionDescription>? configure = null)
     {
@@ -44,10 +56,11 @@ public static class AsyncApiVersioningServiceCollectionExtensions
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IAsyncApiDocumentNamesProvider, ApiVersionDocumentNamesProvider>());
 
         // Configure options for each version
+        services.TryAddSingleton<ApiVersionEndpointLookup>();
         services.AddTransient<IConfigureOptions<AsyncApiOptions>>(sp =>
         {
             var provider = sp.GetRequiredService<IApiVersionDescriptionProvider>();
-            return new ConfigureVersioningOptions(provider, configure);
+            return new ConfigureVersioningOptions(provider, sp.GetRequiredService<ApiVersionEndpointLookup>(), configure);
         });
 
         return services;
