@@ -1,4 +1,4 @@
-import type { ArazzoCriterion } from '../types'
+import type { ArazzoCriterion, ArazzoSelector } from '../types'
 import { parseJsonPointer } from './resolve-target'
 
 /** Shows a constant, Runtime Expression or Selector Object as text: strings verbatim, the rest as JSON. */
@@ -176,4 +176,19 @@ export const formatDuration = (milliseconds: number): string => {
   const minutes = Math.floor(seconds / 60)
   const rest = Math.round(seconds - minutes * 60)
   return rest ? `${minutes} min ${rest} s` : `${minutes} min`
+}
+
+/**
+ * A Selector Object (`{ context, selector, type }`, Arazzo 1.1), or `undefined` for any other value.
+ * Recognized by shape, since a selector can stand wherever a constant or Runtime Expression can.
+ */
+export const asSelector = (value: unknown): ArazzoSelector | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+  const candidate = value as Partial<ArazzoSelector>
+  const typed = typeof candidate.type === 'string' || (!!candidate.type && typeof candidate.type === 'object')
+  return typeof candidate.context === 'string' && typeof candidate.selector === 'string' && typed
+    ? (candidate as ArazzoSelector)
+    : undefined
 }

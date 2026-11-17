@@ -62,7 +62,10 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
   `onSuccess`/`onFailure` actions and outputs. Arazzo 1.1 steps also show their `timeout` and
   `correlationId`. A criterion that isn't a simple condition is labeled with its language
   (`regex`, `jsonpath`, `xpath`, plus the version when given) and the context it reads, and an
-  action that starts a workflow lists the `parameters` it passes. Reusable objects (`$components.parameters.*` and the
+  action that starts a workflow lists the `parameters` it passes. A request body lists its
+  `replacements` (target, its selector type, and the value written there). Wherever a value can be
+  an Arazzo 1.1 Selector Object (outputs, parameters, replacements), it reads as
+  "`$.lines[0]` on `$response.body`" with its language as a badge, rather than as raw JSON. Reusable objects (`$components.parameters.*` and the
   like) are resolved.
 - Each step target is labeled with its spec: `OpenAPI 3.1.1`, `AsyncAPI 3.0.0` or `Workflow`. Channel
   steps also say whether they send or receive. See [Which spec a step targets](#which-spec-a-step-targets).
@@ -75,7 +78,10 @@ generated `/openapi/v1.json` source description finds the `/openapi/v1.json` Sca
 the target's document is not loaded, the step still shows the raw `operationId` or path.
 
 The [`ArazzoScalar` example](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/ArazzoScalar)
-puts this together: two workflows mixing HTTP operations and messages, rendered at `/scalar`.
+puts this together: two workflows mixing HTTP operations and messages, rendered at `/scalar`. It
+also serves a hand-written "Arazzo field reference" document (`wwwroot/fixtures`) that uses every
+field of Arazzo 1.1, including ones the workflow builder doesn't emit yet, such as replacements and
+Selector Objects.
 
 ## Which spec a step targets
 
