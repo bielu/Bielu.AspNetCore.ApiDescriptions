@@ -106,10 +106,15 @@ app.MapAsyncApi();
 app.MapArazzo();
 app.MapScalarArazzoAssets();
 
+// A hand-written Arazzo document that uses every field of the 1.1 specification (wwwroot/fixtures),
+// so the Scalar view can be checked against all of them, not only what the workflow builder emits.
+app.UseStaticFiles();
+
 app.MapScalarApiReference(options => options
     .AddDocument("v1", "Orders")
     .AddAsyncApiDocument("v1", "Events")
     .AddArazzoDocument("v1", "Workflows")
+    .AddDocument("field-reference", "Arazzo field reference", "/fixtures/field-reference.arazzo.json")
     .WithArazzo());
 
 app.MapPost("/orders", (OrderRequest request) =>

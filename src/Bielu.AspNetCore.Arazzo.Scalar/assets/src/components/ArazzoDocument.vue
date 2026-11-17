@@ -484,6 +484,23 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-criteria-inline .ba-condition {
   color: var(--scalar-color-2);
 }
+.bielu-arazzo .ba-subtitle {
+  margin: 10px 0 4px;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-mini, 12px);
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-replacements td:nth-child(2) {
+  width: 1.5em;
+  text-align: center;
+}
+.bielu-arazzo .ba-selector {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 4px;
+  white-space: normal;
+}
 .bielu-arazzo .ba-criterion-type {
   margin-right: 6px;
   font-family: var(--scalar-font-code);
