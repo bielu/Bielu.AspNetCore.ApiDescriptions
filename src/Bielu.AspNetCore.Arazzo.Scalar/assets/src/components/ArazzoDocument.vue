@@ -468,6 +468,42 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-condition {
   color: var(--scalar-color-2);
 }
+.bielu-arazzo .ba-criteria li {
+  margin-bottom: 2px;
+}
+.bielu-arazzo .ba-criteria .ba-condition {
+  color: var(--scalar-color-1);
+}
+.bielu-arazzo .ba-criteria-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 0;
+  list-style: none;
+}
+.bielu-arazzo .ba-criteria-inline .ba-condition {
+  color: var(--scalar-color-2);
+}
+.bielu-arazzo .ba-criterion-type {
+  margin-right: 6px;
+  font-family: var(--scalar-font-code);
+}
+.bielu-arazzo .ba-action-parameters {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  flex-basis: 100%;
+  margin: 2px 0 4px 12px;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-action-parameters dd {
+  margin: 0;
+  word-break: break-all;
+}
+.bielu-arazzo .ba-badge code {
+  font-size: inherit;
+}
 .bielu-arazzo .ba-code {
   margin: 0;
   padding: 10px 12px;

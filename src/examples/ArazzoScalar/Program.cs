@@ -61,6 +61,11 @@ builder.Services.AddArazzo(options =>
             .WithDescription("Check the order status.")
             .Parameter("id", "$steps.place.outputs.orderId", "path")
             .SuccessCriteria("$statusCode == 200")
+            // A JSONPath criterion (RFC 9535): only a live order counts as found.
+            .SuccessCriteria(
+                "$[?@.status != 'cancelled']",
+                "$response.body",
+                new ArazzoSelectorType { Type = "jsonpath", Version = "rfc9535" })
             // Freshly placed orders can take a moment to appear: retry a 404 a few times before giving up.
             .OnFailure(new ArazzoFailureAction
             {
@@ -71,10 +76,26 @@ builder.Services.AddArazzo(options =>
                 RetryLimit = 3,
                 Criteria = [new ArazzoCriterion { Condition = "$statusCode == 404" }],
             })
+            // A cancelled order is placed again: the action passes parameters to the workflow it starts.
+            .OnFailure(new ArazzoFailureAction
+            {
+                Name = "cancelled",
+                Type = "goto",
+                WorkflowId = "placeOrder",
+                Criteria = [new ArazzoCriterion { Condition = "$statusCode == 410" }],
+                Parameters =
+                [
+                    new ArazzoReferenceable<ArazzoParameter>
+                    {
+                        Value = new ArazzoParameter { Name = "sku", Value = "$steps.status.outputs.sku" },
+                    },
+                ],
+            })
             .OnFailure(new ArazzoFailureAction { Name = "unavailable", Type = "end" }))
         .Step("shipped", step => step
             .Channel("events", "orderShipped", ArazzoStepAction.Receive)
             .WithDescription("Wait for the shipment notification.")
+            .WithCorrelationId("$message.header.orderId")
             .WithTimeout(30_000)));
 });
 

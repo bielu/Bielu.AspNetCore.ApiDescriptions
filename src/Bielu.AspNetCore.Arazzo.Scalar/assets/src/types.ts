@@ -23,10 +23,13 @@ export type ArazzoSourceDescription = {
   type?: string
 }
 
+/** How a criterion's condition is read: `simple` (the default), `regex`, `jsonpath` or `xpath`. */
+export type ArazzoCriterionExpressionType = { type?: string; version?: string }
+
 export type ArazzoCriterion = {
   condition: string
   context?: string
-  type?: string | { type?: string; version?: string }
+  type?: string | ArazzoCriterionExpressionType
 }
 
 export type ArazzoParameter = {
@@ -41,6 +44,8 @@ export type ArazzoSuccessAction = {
   workflowId?: string
   stepId?: string
   criteria?: ArazzoCriterion[]
+  /** Parameters for the workflow a `goto` action invokes. */
+  parameters?: (ArazzoParameter | ArazzoReusableObject)[]
 }
 
 export type ArazzoFailureAction = {
@@ -51,6 +56,8 @@ export type ArazzoFailureAction = {
   retryAfter?: number
   retryLimit?: number
   criteria?: ArazzoCriterion[]
+  /** Parameters for the workflow a `goto` or `retry` action invokes. */
+  parameters?: (ArazzoParameter | ArazzoReusableObject)[]
 }
 
 export type ArazzoRequestBody = {
@@ -68,6 +75,10 @@ export type ArazzoStep = {
   channelPath?: string
   /** What the step does on its channel target: `send` or `receive` (Arazzo 1.1). */
   action?: string
+  /** How long to wait for the step, in milliseconds, before it fails (Arazzo 1.1). */
+  timeout?: number
+  /** Links a received message to the request it answers (Arazzo 1.1, `receive` steps). */
+  correlationId?: string
   workflowId?: string
   dependsOn?: string[]
   parameters?: (ArazzoParameter | ArazzoReusableObject)[]

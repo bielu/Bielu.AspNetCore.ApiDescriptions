@@ -167,10 +167,12 @@ const closeOnBackdrop = (event: MouseEvent) => {
         <ArazzoActions
           v-if="successActions.length"
           :actions="successActions"
+          :document="document"
           title="Success actions (all steps)" />
         <ArazzoActions
           v-if="failureActions.length"
           :actions="failureActions"
+          :document="document"
           title="Failure actions (all steps)" />
 
         <ArazzoKeyValues

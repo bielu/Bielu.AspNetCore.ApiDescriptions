@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import type { ArazzoFailureAction, ArazzoSuccessAction } from '../types'
+import { formatValue } from '../helpers/format'
+import { resolveReusables } from '../helpers/reusable'
+import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction } from '../types'
+import ArazzoCriteria from './ArazzoCriteria.vue'
 
-defineProps<{
+const props = defineProps<{
   title: string
   actions: (ArazzoSuccessAction | ArazzoFailureAction)[]
+  /** The Arazzo document, so an action's Reusable Object parameters resolve against its components. */
+  document?: ArazzoDocument
 }>()
 
 /** "goto step x", "retry (≤ 3×, after 2s)", "end" — the part of an action a reader scans for. */
@@ -16,6 +21,12 @@ const describe = (action: ArazzoSuccessAction | ArazzoFailureAction): string => 
   ].filter(Boolean)
   return [action.type, target, limits.length ? `(${limits.join(', ')})` : ''].filter(Boolean).join(' ')
 }
+
+/** The parameters an action passes to the workflow it invokes, Reusable Objects resolved. */
+const parametersOf = (action: ArazzoSuccessAction | ArazzoFailureAction): ArazzoParameter[] =>
+  props.document
+    ? resolveReusables<ArazzoParameter>(props.document, action.parameters)
+    : ((action.parameters ?? []).filter((entry) => 'name' in entry) as ArazzoParameter[])
 </script>
 
 <template>
@@ -27,12 +38,20 @@ const describe = (action: ArazzoSuccessAction | ArazzoFailureAction): string => 
         :key="action.name">
         <span class="ba-action-name">{{ action.name }}</span>
         <span class="ba-badge">{{ describe(action) }}</span>
-        <code
-          v-for="(criterion, index) in action.criteria ?? []"
-          :key="index"
-          class="ba-condition">
-          {{ criterion.condition }}
-        </code>
+        <ArazzoCriteria
+          v-if="action.criteria?.length"
+          :criteria="action.criteria"
+          inline />
+        <dl
+          v-if="parametersOf(action).length"
+          class="ba-action-parameters">
+          <template
+            v-for="parameter in parametersOf(action)"
+            :key="parameter.name">
+            <dt><code>{{ parameter.name }}</code></dt>
+            <dd><code>{{ formatValue(parameter.value) }}</code></dd>
+          </template>
+        </dl>
       </li>
     </ul>
   </div>
