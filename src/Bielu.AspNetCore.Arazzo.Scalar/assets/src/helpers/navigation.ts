@@ -1,4 +1,5 @@
 import type { ArazzoDocument, ArazzoStep, ArazzoWorkflow, PluginNavigationEntry } from '../types'
+import { normalizeArazzoDocument } from './normalize'
 
 /** `PluginNavigationEntry.kind` of a workflow entry. */
 export const WORKFLOW_KIND = 'workflow'
@@ -34,7 +35,10 @@ export const traverseArazzoDocument = ({
   documentId: string
   document: Record<string, unknown>
 }): PluginNavigationEntry[] => {
-  const arazzo = document as ArazzoDocument
+  const arazzo = normalizeArazzoDocument(document)
+  if (!arazzo) {
+    return []
+  }
   const entries: PluginNavigationEntry[] = (arazzo.workflows ?? []).map((workflow) => {
     const workflowEntryId = `${documentId}/workflow/${workflow.workflowId}`
     return {
