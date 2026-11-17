@@ -58,6 +58,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `src/examples/GrpcGreeter` | gRPC example with the interactive Scalar console (gRPC-Web) |
 | `src/examples/aspire` | Distributed .NET Aspire microservices demo |
 | `src/examples/OverlayDemo` | Applies an OpenAPI Overlay to an AsyncAPI document and to an Arazzo one, showing map-keyed vs array-keyed targeting (console) |
+| `src/examples/ArazzoScalar` | Arazzo workflows rendered in the Scalar API Reference next to the OpenAPI and AsyncAPI documents their steps call (`Bielu.AspNetCore.Arazzo.Scalar`) |
 | `src/examples/AotStreetlights` | `PublishAot` example using the source-generated metadata provider; `scripts/verify-aot.sh` publishes it and compares its document against the reflection-based build |
 | `src/examples/BuildTimeDocuments` | One `dotnet getdocument` run writing the OpenAPI, AsyncAPI and Arazzo documents of one app; `scripts/verify-build-time-documents.sh` builds it and proves a stale Arazzo reference fails the build |
 

@@ -157,7 +157,7 @@ jobs:
             11.0.x
       - name: Build the examples for net11.0
         run: |
-          for example in StreetlightsAPI SignalRChat GrpcGreeter AotStreetlights BuildTimeDocuments OverlayDemo; do
+          for example in StreetlightsAPI SignalRChat GrpcGreeter AotStreetlights BuildTimeDocuments OverlayDemo ArazzoScalar; do
             dotnet build "src/examples/$example" -c Release -p:BieluExampleTargetFramework=net11.0
           done
 
