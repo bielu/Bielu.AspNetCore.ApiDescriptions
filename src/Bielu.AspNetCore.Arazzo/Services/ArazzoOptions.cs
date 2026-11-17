@@ -1,4 +1,7 @@
-﻿using Bielu.Arazzo;
+﻿using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
+using System.Text.Json.Serialization.Metadata;
+using Bielu.Arazzo;
 using Bielu.Arazzo.Models;
 using Bielu.AspNetCore.Arazzo.Transformers;
 
@@ -62,6 +65,129 @@ public sealed class ArazzoOptions
     internal List<ArazzoWorkflow> Workflows { get; } = [];
 
     internal List<SourceWiring> SourceWirings { get; } = [];
+
+    internal string? Self { get; private set; }
+
+    internal ArazzoComponents? Components { get; private set; }
+
+    internal Dictionary<string, JsonNode?>? Extensions { get; private set; }
+
+    /// <summary>
+    /// Sets the document's <c>$self</c> (Arazzo 1.1): the URI the document identifies itself by, which is also
+    /// the base URI relative references in it resolve against.
+    /// </summary>
+    /// <param name="uri">An absolute or relative URI reference with no fragment.</param>
+    public ArazzoOptions WithSelf(string uri)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(uri);
+        if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out _) || uri.Contains('#', StringComparison.Ordinal))
+        {
+            throw new ArgumentException($"'{uri}' is not a URI reference without a fragment, as $self requires.", nameof(uri));
+        }
+
+        Self = uri;
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a Specification Extension (<c>x-*</c>) to the document root. Setting the same name again replaces
+    /// its value.
+    /// </summary>
+    /// <param name="name">The extension name, which must start with <c>x-</c>.</param>
+    /// <param name="value">The extension value; any JSON, including <c>null</c>.</param>
+    public ArazzoOptions WithExtension(string name, JsonNode? value)
+    {
+        ArazzoExtensions.Set(Extensions ??= new Dictionary<string, JsonNode?>(StringComparer.Ordinal), name, value);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a reusable JSON Schema to <c>components.inputs</c>, which workflows refer to with
+    /// <see cref="ArazzoWorkflowBuilder.WithInputsReference"/>.
+    /// </summary>
+    /// <param name="name">The component name; one matching <c>^[a-zA-Z0-9\.\-_]+$</c>, unique among the inputs.</param>
+    /// <param name="schema">The JSON Schema.</param>
+    public ArazzoOptions AddComponentInputs(string name, JsonNode schema)
+    {
+        ArgumentNullException.ThrowIfNull(schema);
+        AddComponent(GetComponents().Inputs ??= new Dictionary<string, JsonNode?>(StringComparer.Ordinal), name, schema, "inputs");
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a reusable JSON Schema to <c>components.inputs</c> from a source-generated <see cref="JsonTypeInfo"/>,
+    /// avoiding reflection so the overload stays trim/AOT-safe.
+    /// </summary>
+    /// <param name="name">The component name, unique among the inputs.</param>
+    /// <param name="typeInfo">The type whose JSON Schema is added.</param>
+    public ArazzoOptions AddComponentInputs(string name, JsonTypeInfo typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return AddComponentInputs(name, JsonSchemaExporter.GetJsonSchemaAsNode(typeInfo));
+    }
+
+    /// <summary>
+    /// Adds a reusable Parameter Object to <c>components.parameters</c>, which workflows, steps and failure
+    /// actions refer to with <c>ParameterReference</c>.
+    /// </summary>
+    /// <param name="name">The component name, unique among the parameters.</param>
+    /// <param name="parameter">The parameter.</param>
+    /// <example>
+    /// <code>
+    /// options.AddComponentParameter("page", new ArazzoParameter
+    /// {
+    ///     Name = "page",
+    ///     In = ArazzoParameterLocation.Query,
+    ///     Value = ArazzoValue.FromLiteral(1),
+    /// });
+    /// options.AddWorkflow("listOrders", wf => wf.Step("list", s => s
+    ///     .Operation("listOrders")
+    ///     .ParameterReference("page", "2")));
+    /// </code>
+    /// </example>
+    public ArazzoOptions AddComponentParameter(string name, ArazzoParameter parameter)
+    {
+        ArazzoParameterGuard.Validate(parameter);
+        AddComponent(GetComponents().Parameters ??= new Dictionary<string, ArazzoParameter>(StringComparer.Ordinal), name, parameter, "parameters");
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a reusable Success Action Object to <c>components.successActions</c>, which workflows and steps
+    /// refer to with <c>OnSuccessReference</c>.
+    /// </summary>
+    /// <param name="name">The component name, unique among the success actions.</param>
+    /// <param name="action">The success action.</param>
+    public ArazzoOptions AddComponentSuccessAction(string name, ArazzoSuccessAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        AddComponent(GetComponents().SuccessActions ??= new Dictionary<string, ArazzoSuccessAction>(StringComparer.Ordinal), name, action, "successActions");
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a reusable Failure Action Object to <c>components.failureActions</c>, which workflows and steps
+    /// refer to with <c>OnFailureReference</c>.
+    /// </summary>
+    /// <param name="name">The component name, unique among the failure actions.</param>
+    /// <param name="action">The failure action.</param>
+    public ArazzoOptions AddComponentFailureAction(string name, ArazzoFailureAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        AddComponent(GetComponents().FailureActions ??= new Dictionary<string, ArazzoFailureAction>(StringComparer.Ordinal), name, action, "failureActions");
+        return this;
+    }
+
+    private ArazzoComponents GetComponents() => Components ??= new ArazzoComponents();
+
+    private static void AddComponent<T>(IDictionary<string, T> components, string name, T value, string kind)
+    {
+        ArazzoIdentifier.ValidateKey(name, nameof(name));
+        if (!components.TryAdd(name, value))
+        {
+            throw new ArgumentException($"A component named '{name}' is already in components.{kind}.", nameof(name));
+        }
+    }
 
     /// <summary>Sets the document's title and version.</summary>
     public ArazzoOptions WithInfo(string title, string version)
