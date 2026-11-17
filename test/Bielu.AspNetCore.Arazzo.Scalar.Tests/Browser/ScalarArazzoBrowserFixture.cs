@@ -1,6 +1,11 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System.Text.Json.Nodes;
+using Bielu.Arazzo.Models;
+using Bielu.AspNetCore.Arazzo.Extensions;
+using Bielu.AspNetCore.Arazzo.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Playwright;
 using Scalar.AspNetCore;
 using Xunit;
@@ -11,7 +16,8 @@ namespace Bielu.AspNetCore.Arazzo.Scalar.Tests.Browser;
 /// A Scalar page on a real port, with an OpenAPI, an AsyncAPI and an Arazzo document, and a headless
 /// Chromium to drive it. The Arazzo document is the <c>ArazzoScalar</c> example's field reference, which
 /// uses every Arazzo 1.1 field; the OpenAPI and AsyncAPI documents are static fixtures holding the
-/// operations and channels its steps target.
+/// operations and channels its steps target. A second Arazzo document is built with the fluent API, so the
+/// authoring path is checked end to end as well.
 /// </summary>
 public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
 {
@@ -31,16 +37,19 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
 
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Services.AddArazzo(GeneratedDocumentName, ConfigureGeneratedDocument);
         var app = builder.Build();
 
         MapFixture(app, "/openapi/v1.json", "orders.openapi.json");
         MapFixture(app, "/asyncapi/v1.json", "orders.asyncapi.json");
         MapFixture(app, "/fixtures/field-reference.arazzo.json", "field-reference.arazzo.json");
+        app.MapArazzo();
         app.MapScalarArazzoAssets();
         app.MapScalarApiReference(options => options
             .AddDocument("orders", "Orders", "/openapi/v1.json")
             .AddDocument("events", "Events", "/asyncapi/v1.json")
             .AddDocument("field-reference", "Arazzo field reference", "/fixtures/field-reference.arazzo.json")
+            .AddArazzoDocument(GeneratedDocumentName, "Generated workflows")
             .WithArazzo());
 
         await app.StartAsync();
@@ -66,8 +75,60 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
         }
     }
 
-    /// <summary>A fresh page on the Arazzo document, once its workflows have rendered.</summary>
-    public async Task<IPage> OpenArazzoDocumentAsync(IList<string>? consoleErrors = null)
+    /// <summary>The name of the Arazzo document built with the fluent API, served by <c>MapArazzo</c>.</summary>
+    public const string GeneratedDocumentName = "generated";
+
+    /// <summary>Scalar's hash slug for <see cref="GeneratedDocumentName"/>, from its title.</summary>
+    public const string GeneratedDocumentSlug = "generated-workflows";
+
+    /// <summary>
+    /// A document built with <c>AddArazzo</c>'s fluent API rather than written by hand, so the tests cover the
+    /// path from authoring to rendering: payload replacements, selector-valued parameters and outputs, and a
+    /// workflow output a later workflow consumes.
+    /// </summary>
+    private static void ConfigureGeneratedDocument(ArazzoOptions options)
+    {
+        // The sources are the static fixtures, which are not documents this app generates.
+        options.ValidateSourceReferencesOnStartup = false;
+        options.WithInfo("Generated workflows", "1.0.0")
+            .AddSourceDescription("orders", "/openapi/v1.json", ArazzoSourceDescriptionType.OpenApi)
+            .AddSourceDescription("events", "/asyncapi/v1.json", ArazzoSourceDescriptionType.AsyncApi)
+            .AddComponentFailureAction("giveUp", new ArazzoFailureAction { Name = "giveUp", Type = ArazzoFailureActionType.End });
+
+        options.AddWorkflow("placeOrder", workflow => workflow
+            .Step("create", step => step
+                .Operation("createOrder")
+                .Payload(new JsonObject { ["sku"] = null, ["quantity"] = 1 }, "application/json")
+                .Replacement("/sku", "$inputs.sku")
+                .Replacement("$.quantity", ArazzoValue.FromSelector(new ArazzoSelector
+                {
+                    Context = "$inputs.cart",
+                    Selector = "$.lines[0].quantity",
+                    Type = "jsonpath",
+                }), "jsonpath")
+                .Output("orderId", new ArazzoSelector { Context = "$response.body", Selector = "/id", Type = "jsonpointer" })
+                .OnFailureReference("giveUp"))
+            .Output("orderId", "$steps.create.outputs.orderId"));
+
+        options.AddWorkflow("trackOrder", workflow => workflow
+            .DependsOn("placeOrder")
+            .Step("status", step => step
+                .Operation("getOrder")
+                .Parameter(new ArazzoParameter
+                {
+                    Name = "id",
+                    In = ArazzoParameterLocation.Path,
+                    Value = ArazzoValue.FromSelector(new ArazzoSelector
+                    {
+                        Context = "$workflows.placeOrder.outputs",
+                        Selector = "$.orderId",
+                        Type = "jsonpath",
+                    }),
+                })));
+    }
+
+    /// <summary>A fresh page on an Arazzo document, by default the field reference, once its workflows have rendered.</summary>
+    public async Task<IPage> OpenArazzoDocumentAsync(IList<string>? consoleErrors = null, string documentSlug = "arazzo-field-reference")
     {
         var page = await Browser.NewPageAsync(new() { ViewportSize = new() { Width = 1400, Height = 900 } });
         page.Console += (_, message) =>
@@ -85,7 +146,7 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
         page.RequestFailed += (_, request) => log.Add($"failed: {request.Url} {request.Failure}");
 
         // Scalar picks the document from the first hash segment: the slug of the source's title.
-        await page.GotoAsync($"{BaseAddress}/scalar/#arazzo-field-reference");
+        await page.GotoAsync($"{BaseAddress}/scalar/#{documentSlug}");
         try
         {
             // Step targets resolve once Scalar has also loaded the OpenAPI and AsyncAPI documents, which

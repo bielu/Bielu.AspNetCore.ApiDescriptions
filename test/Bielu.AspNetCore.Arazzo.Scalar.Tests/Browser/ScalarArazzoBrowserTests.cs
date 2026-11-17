@@ -148,5 +148,34 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         (await workflow.Locator(".ba-step-body").First.IsVisibleAsync()).ShouldBeTrue();
     }
 
+    [BrowserFact]
+    public async Task GeneratedDocument_ShowsBuilderAuthoredReplacementsSelectorsAndWorkflowOutputs()
+    {
+        // Arrange
+        var errors = new List<string>();
+        var page = await fixture.OpenArazzoDocumentAsync(errors, ScalarArazzoBrowserFixture.GeneratedDocumentSlug);
+
+        // Act
+        var text = Normalize(await page.Locator(".bielu-arazzo").InnerTextAsync());
+        var replacements = (await page.Locator(".bielu-arazzo .ba-replacements tr").AllInnerTextsAsync())
+            .Select(Normalize).ToList();
+
+        // Assert
+        (await page.Locator(".bielu-arazzo h1").TextContentAsync()).ShouldBe("Generated workflows");
+        (await page.Locator(".bielu-arazzo .ba-workflow").CountAsync()).ShouldBe(2);
+        replacements.Count.ShouldBe(2);
+        replacements[0].ShouldContain("/sku");
+        replacements[0].ShouldContain("$inputs.sku");
+        replacements[1].ShouldContain("$.quantity");
+        replacements[1].ShouldContain("$.lines[0].quantity on $inputs.cart");
+        text.ShouldSatisfyAllConditions(
+            () => text.ShouldContain("/id on $response.body"),
+            () => text.ShouldContain("$.orderId on $workflows.placeOrder.outputs"),
+            () => text.ShouldContain("$steps.create.outputs.orderId"),
+            () => text.ShouldContain("giveUp"));
+        (await page.Locator(".bielu-arazzo .ba-selector").CountAsync()).ShouldBeGreaterThanOrEqualTo(3);
+        errors.ShouldBeEmpty();
+    }
+
     private static string Normalize(string? text) => string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 }
