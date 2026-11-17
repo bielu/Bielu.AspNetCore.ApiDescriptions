@@ -27,6 +27,8 @@ const props = defineProps<{
   layout?: string
   /** workflowId → the sidebar id of that workflow's section. */
   workflowNavIds?: Record<string, string>
+  /** The steps a filter leaves on screen, by sidebar id; every step when absent. */
+  visibleSteps?: Set<string>
 }>()
 
 const workflow = computed(() => props.view.workflow)
@@ -161,8 +163,10 @@ const closeOnBackdrop = (event: MouseEvent) => {
 
         <ol class="ba-steps">
           <li
-            v-for="entry in view.steps"
-            :key="entry.id">
+            v-for="(entry, index) in view.steps"
+            v-show="!visibleSteps || visibleSteps.has(entry.id)"
+            :key="entry.id"
+            :data-step-number="index + 1">
             <ArazzoStep
               :id="entry.id"
               :document="document"
