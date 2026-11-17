@@ -2,9 +2,9 @@
 
 Renders [Arazzo](https://spec.openapis.org/arazzo/latest.html) workflows in the
 [Scalar](https://scalar.com/) API Reference in ASP.NET Core. Each workflow is listed in the sidebar
-with its steps. Every step shows the operation or channel it calls, resolved in the OpenAPI and
-AsyncAPI documents loaded next to it, along with its parameters, success criteria, actions and
-outputs.
+with its steps, next to a flowchart of how the steps connect. Every step shows the operation or
+channel it calls, resolved in the OpenAPI and AsyncAPI documents loaded next to it, along with its
+parameters, success criteria, actions and outputs.
 
 ## Installation
 
