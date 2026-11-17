@@ -49,7 +49,8 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 - The document's `info` and its `sourceDescriptions`.
 - One sidebar entry per workflow, with one child entry per step. Sidebar clicks, deep links and
   scroll position stay in sync, as they do for operations.
-- For each workflow: its inputs, shared parameters, steps, success and failure actions, and outputs.
+- For each workflow: its inputs (nested properties fold out, with their format, allowed values,
+  default and bounds), shared parameters, steps, success and failure actions, and outputs.
 - For each step: the operation, channel or workflow it targets, its parameters, request body,
   success criteria, `onSuccess`/`onFailure` actions and outputs. Reusable objects
   (`$components.parameters.*` and the like) are resolved.

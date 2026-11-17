@@ -383,4 +383,61 @@ onBeforeUnmount(() => {
   border-radius: var(--scalar-radius, 4px);
   background: var(--scalar-background-2);
 }
+.bielu-arazzo .ba-schema {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bielu-arazzo .ba-schema-property {
+  padding: 8px 0;
+  border-bottom: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-schema-property:last-child {
+  border-bottom: none;
+}
+.bielu-arazzo .ba-schema-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+.bielu-arazzo .ba-schema-name {
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-schema-type,
+.bielu-arazzo .ba-schema-detail {
+  color: var(--scalar-color-3);
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-schema-heading .ba-required {
+  margin-left: 0;
+}
+.bielu-arazzo .ba-schema-description {
+  margin-top: 4px;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-schema-children {
+  margin-top: 8px;
+}
+.bielu-arazzo .ba-schema-children > summary {
+  display: inline-block;
+  padding: 2px 10px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: 999px;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-mini, 12px);
+  cursor: pointer;
+  list-style: none;
+}
+.bielu-arazzo .ba-schema-children > summary::-webkit-details-marker {
+  display: none;
+}
+.bielu-arazzo .ba-schema-children[open] > summary {
+  margin-bottom: 4px;
+}
+.bielu-arazzo .ba-schema-children > .ba-schema {
+  margin-left: 6px;
+  padding-left: 12px;
+  border-left: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
 </style>

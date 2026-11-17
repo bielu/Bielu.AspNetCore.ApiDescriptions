@@ -84,7 +84,9 @@ app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 
 app.Run();
 
-internal sealed record PlaceOrderInputs(string Sku, int Quantity);
+internal sealed record PlaceOrderInputs(string Sku, int Quantity, ShippingAddress ShipTo);
+
+internal sealed record ShippingAddress(string Street, string City, string PostalCode);
 
 internal sealed record OrderRequest(string Sku, int Quantity);
 
