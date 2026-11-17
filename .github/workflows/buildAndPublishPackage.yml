@@ -70,6 +70,20 @@ jobs:
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
       artifact-name: npm-scalar-broker
 
+  # Pull request: build the fourth npm package (@bielu/scalar-arazzo), the Arazzo document type.
+  # Build-only for now: the package stays private until its release jobs are added.
+  ciArazzoNpm:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
+    with:
+      suffix: "pr"
+      build-nuget: false
+      working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
+      artifact-name: npm-scalar-arazzo
+
   # Pull request: require a changeset so the version bump + changelog are recorded.
   changeset-check:
     if: github.event_name == 'pull_request'
