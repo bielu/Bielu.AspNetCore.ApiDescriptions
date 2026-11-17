@@ -607,6 +607,12 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-criteria-inline .ba-condition {
   color: var(--scalar-color-2);
 }
+.bielu-arazzo .ba-target-message {
+  margin-top: 12px;
+}
+.bielu-arazzo .ba-target-message .ba-block-title code {
+  margin: 0 4px;
+}
 .bielu-arazzo .ba-subtitle {
   margin: 10px 0 4px;
   color: var(--scalar-color-2);
