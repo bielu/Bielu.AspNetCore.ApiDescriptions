@@ -38,9 +38,13 @@
   },
   "scripts": {
     "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm run build",
+    "prebuild": "npm run build:core",
+    "build": "vite build && npm run build:module && vue-tsc -p tsconfig.json",
+    "build:module": "vite build --config vite.config.module.ts",
     "pretypecheck": "npm run build:core",
     "typecheck": "vue-tsc --noEmit && vue-tsc -p tsconfig.contract.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev": "vite build --watch"
   },
   "dependencies": {
     "dompurify": "^3.2.6",
