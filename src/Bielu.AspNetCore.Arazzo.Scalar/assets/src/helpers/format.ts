@@ -1,3 +1,4 @@
+import type { ArazzoCriterion } from '../types'
 import { parseJsonPointer } from './resolve-target'
 
 /** Shows a constant, Runtime Expression or Selector Object as text: strings verbatim, the rest as JSON. */
@@ -147,3 +148,32 @@ const propertyRows = (root: Schema, schema: Schema, depth: number, seen: Set<str
  */
 export const schemaPropertyRows = (schema: unknown): SchemaPropertyRow[] | undefined =>
   isSchema(schema) ? propertyRows(schema, schema, 0, new Set()) : undefined
+
+/**
+ * The expression language a criterion is written in, for a badge next to its condition: `regex`,
+ * `jsonpath` or `xpath`, with the version when the Criterion Expression Type Object names one.
+ * `undefined` for a simple condition (the default, whether or not `type: simple` is written out),
+ * since every condition without a badge reads as one.
+ */
+export const criterionTypeLabel = (type: ArazzoCriterion['type']): string | undefined => {
+  const name = typeof type === 'string' ? type : type?.type
+  if (!name || name === 'simple') {
+    return undefined
+  }
+  const version = typeof type === 'object' && type.version ? ` ${type.version}` : ''
+  return `${name}${version}`
+}
+
+/** `500 ms`, `30 s`, `2 min 30 s`: a Step Object `timeout` (milliseconds) in the largest units that fit. */
+export const formatDuration = (milliseconds: number): string => {
+  if (!Number.isFinite(milliseconds) || milliseconds < 1000) {
+    return `${milliseconds} ms`
+  }
+  const seconds = milliseconds / 1000
+  if (seconds < 60) {
+    return `${Number.isInteger(seconds) ? seconds : seconds.toFixed(1)} s`
+  }
+  const minutes = Math.floor(seconds / 60)
+  const rest = Math.round(seconds - minutes * 60)
+  return rest ? `${minutes} min ${rest} s` : `${minutes} min`
+}

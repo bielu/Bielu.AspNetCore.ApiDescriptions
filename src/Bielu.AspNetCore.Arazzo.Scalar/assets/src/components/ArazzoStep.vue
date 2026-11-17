@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatValue } from '../helpers/format'
+import { formatDuration, formatValue } from '../helpers/format'
 import { renderMarkdown } from '../helpers/markdown'
 import { resolveReusables } from '../helpers/reusable'
 import { resolveStepTarget, targetDescription, targetParameters } from '../helpers/resolve-target'
@@ -9,6 +9,7 @@ import { specLabel, targetSpec } from '../helpers/target-spec'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
+import ArazzoCriteria from './ArazzoCriteria.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
 
 const props = defineProps<{
@@ -141,13 +142,25 @@ const description = computed(() => renderMarkdown(heading.value.description))
     </ArazzoAnchor>
 
     <div
-      v-if="step.dependsOn?.length"
+      v-if="step.dependsOn?.length || typeof step.timeout === 'number' || step.correlationId"
       class="ba-badges">
       <span
         v-for="dependency in step.dependsOn"
         :key="dependency"
         class="ba-badge">
         Depends on: {{ dependency }}
+      </span>
+      <span
+        v-if="typeof step.timeout === 'number'"
+        class="ba-badge"
+        :title="`Fails when the step takes longer than ${step.timeout} ms`">
+        Timeout: {{ formatDuration(step.timeout) }}
+      </span>
+      <span
+        v-if="step.correlationId"
+        class="ba-badge"
+        title="Links the received message to the request it answers">
+        Correlation ID: <code>{{ step.correlationId }}</code>
       </span>
     </div>
 
@@ -238,27 +251,18 @@ const description = computed(() => renderMarkdown(heading.value.description))
       v-if="step.successCriteria?.length"
       class="ba-block">
       <div class="ba-block-title">Success criteria</div>
-      <ul class="ba-criteria">
-        <li
-          v-for="(criterion, index) in step.successCriteria"
-          :key="index">
-          <code>{{ criterion.condition }}</code>
-          <span
-            v-if="criterion.context"
-            class="ba-muted">
-            on {{ criterion.context }}
-          </span>
-        </li>
-      </ul>
+      <ArazzoCriteria :criteria="step.successCriteria" />
     </div>
 
     <ArazzoActions
       v-if="onSuccess.length"
       :actions="onSuccess"
+      :document="document"
       title="On success" />
     <ArazzoActions
       v-if="onFailure.length"
       :actions="onFailure"
+      :document="document"
       title="On failure" />
 
     <ArazzoKeyValues

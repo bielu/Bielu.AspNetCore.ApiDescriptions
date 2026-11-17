@@ -59,7 +59,10 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
   colored marker for the spec its target is described in, explained by a legend in the corner.
 - For each step: the operation, channel or workflow it targets, with that target's description and
   its own parameters, then the step's parameters, request body, success criteria,
-  `onSuccess`/`onFailure` actions and outputs. Reusable objects (`$components.parameters.*` and the
+  `onSuccess`/`onFailure` actions and outputs. Arazzo 1.1 steps also show their `timeout` and
+  `correlationId`. A criterion that isn't a simple condition is labeled with its language
+  (`regex`, `jsonpath`, `xpath`, plus the version when given) and the context it reads, and an
+  action that starts a workflow lists the `parameters` it passes. Reusable objects (`$components.parameters.*` and the
   like) are resolved.
 - Each step target is labeled with its spec: `OpenAPI 3.1.1`, `AsyncAPI 3.0.0` or `Workflow`. Channel
   steps also say whether they send or receive. See [Which spec a step targets](#which-spec-a-step-targets).
