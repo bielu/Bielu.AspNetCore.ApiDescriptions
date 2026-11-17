@@ -5,6 +5,7 @@ import { renderMarkdown } from '../helpers/markdown'
 import { resolveReusables } from '../helpers/reusable'
 import { resolveStepTarget, targetDescription, targetParameters } from '../helpers/resolve-target'
 import { stepHeading } from '../helpers/heading'
+import { navigationHref, openInOtherDocument, targetDisplayName, targetNavigationId } from '../helpers/target-link'
 import { specLabel, targetSpec } from '../helpers/target-spec'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
@@ -20,9 +21,43 @@ const props = defineProps<{
   document: ArazzoDocument
   documents: Record<string, unknown>
   eventBus?: PluginEventBus
+  /** workflowId → the sidebar id of that workflow's section, so a step that invokes one can link to it. */
+  workflowNavIds?: Record<string, string>
 }>()
 
 const target = computed(() => resolveStepTarget(props.document, props.step, props.documents))
+
+/** What the target is called: its operationId or AsyncAPI name rather than the raw reference. */
+const targetName = computed(() => (target.value ? targetDisplayName(target.value) : ''))
+
+/**
+ * Where the target link goes: the operation or channel in its own document (a page load, since
+ * Scalar picks the document on load), or the invoked workflow's section in this one.
+ */
+const targetLink = computed((): { href: string; external: boolean; navId: string } | undefined => {
+  const value = target.value
+  if (value?.kind === 'workflow') {
+    const navId = props.workflowNavIds?.[value.identifier]
+    return navId ? { href: `#${navId}`, external: false, navId } : undefined
+  }
+  const navId = targetNavigationId(value, props.documents)
+  return navId && typeof window !== 'undefined'
+    ? { href: navigationHref(navId, window.location), external: true, navId }
+    : undefined
+})
+
+const followTargetLink = (event: MouseEvent) => {
+  const link = targetLink.value
+  if (!link) {
+    return
+  }
+  if (link.external) {
+    openInOtherDocument(event, link.href)
+  } else if (!event.ctrlKey && !event.metaKey && !event.shiftKey && event.button === 0) {
+    event.preventDefault()
+    props.eventBus?.emit('scroll-to:nav-item', { id: link.navId })
+  }
+}
 
 /** Which spec the target is described in, so HTTP calls and messages can be told apart in a mixed workflow. */
 const spec = computed(() => targetSpec(props.document, props.step, target.value, props.documents))
@@ -184,12 +219,41 @@ const description = computed(() => renderMarkdown(heading.value.description))
         <template v-if="!spec.resolved">· not loaded</template>
       </span>
       <span class="ba-target-label">{{ targetLabel }}</span>
-      <code class="ba-target-id">{{ target.identifier }}</code>
-      <span
-        v-if="targetSignature"
-        class="ba-target-signature">
-        {{ targetSignature }}
-      </span>
+      <a
+        v-if="targetLink"
+        class="ba-target-link"
+        :href="targetLink.href"
+        :title="targetLink.external ? `Open in ${targetDocumentTitle ?? 'its document'}` : 'Go to the workflow'"
+        @click="followTargetLink">
+        <code
+          v-if="targetName"
+          class="ba-target-id">
+          {{ targetName }}
+        </code>
+        <span
+          v-if="targetSignature && targetSignature !== targetName"
+          class="ba-target-signature">
+          {{ targetSignature }}
+        </span>
+        <span
+          aria-hidden="true"
+          class="ba-target-arrow">
+          {{ targetLink.external ? '↗' : '↓' }}
+        </span>
+      </a>
+      <template v-else>
+        <code
+          v-if="targetName"
+          class="ba-target-id"
+          :title="target.identifier">
+          {{ targetName }}
+        </code>
+        <span
+          v-if="targetSignature && targetSignature !== targetName"
+          class="ba-target-signature">
+          {{ targetSignature }}
+        </span>
+      </template>
       <span
         v-if="targetDocumentTitle"
         class="ba-muted">
