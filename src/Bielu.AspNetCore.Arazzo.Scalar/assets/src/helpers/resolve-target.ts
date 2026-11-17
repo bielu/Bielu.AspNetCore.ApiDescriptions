@@ -30,6 +30,8 @@ export type ChannelTarget = {
   documentName: string | undefined
   channelName: string | undefined
   channel: AnyRecord | undefined
+  /** The key of the AsyncAPI operation on `operations`, when the step targets an operation rather than a channel. */
+  operationName?: string
   operation: AnyRecord | undefined
 }
 
@@ -136,6 +138,7 @@ const channelNameOf = (operation: AnyRecord | undefined): string | undefined => 
 const asyncApiOperationTarget = (
   loaded: LoadedDocument,
   identifier: string,
+  operationName: string,
   operationNode: unknown,
 ): ChannelTarget => {
   const operation = deref(loaded.document, operationNode) as AnyRecord | undefined
@@ -147,6 +150,7 @@ const asyncApiOperationTarget = (
     documentName: loaded.name,
     channelName,
     channel: channelName ? (deref(loaded.document, loaded.document.channels?.[channelName]) as AnyRecord) : undefined,
+    operationName,
     operation,
   }
 }
@@ -198,7 +202,7 @@ const findByOperationId = (
     // Own keys only: an inherited name such as `constructor` is not a declared operation.
     const operations = isAsyncApi(loaded.document) ? loaded.document.operations : undefined
     if (operations && Object.prototype.hasOwnProperty.call(operations, id)) {
-      return asyncApiOperationTarget(loaded, operationId, operations[id])
+      return asyncApiOperationTarget(loaded, operationId, id, operations[id])
     }
   }
 
@@ -258,7 +262,7 @@ const findByPointer = (
   }
   // /operations/<id>
   if (segments[0] === 'operations' && segments.length === 2) {
-    return asyncApiOperationTarget(loaded, value, node)
+    return asyncApiOperationTarget(loaded, value, segments[1]!, node)
   }
   return undefined
 }

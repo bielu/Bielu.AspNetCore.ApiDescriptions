@@ -82,6 +82,15 @@ source description URL is matched against the URL each Scalar source was loaded 
 generated `/openapi/v1.json` source description finds the `/openapi/v1.json` Scalar source. When
 the target's document is not loaded, the step still shows the raw `operationId` or path.
 
+A resolved target is a link. It names the target (its `operationId`, or the AsyncAPI operation or
+channel name) rather than the raw `{$sourceDescriptions.…}` reference, and opens it in its own
+document: the OpenAPI operation, the AsyncAPI operation, or the channel. Scalar picks the document it
+shows when the page loads, so following the link reloads the page at the target's deep link. Back
+and Forward switch documents the same way, and Ctrl-click opens the target in a new tab. A step that
+invokes another workflow links to that workflow's section. The links use the ids of Scalar's own
+sidebar, so they follow any `generateOperationSlug` the page sets; they assume Scalar's default hash
+routing.
+
 The [`ArazzoScalar` example](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/ArazzoScalar)
 puts this together: two workflows mixing HTTP operations and messages, rendered at `/scalar`. It
 also serves a hand-written "Arazzo field reference" document (`wwwroot/fixtures`) that uses every
