@@ -34,3 +34,38 @@ export const panBy = (state: PanZoomState, dx: number, dy: number): PanZoomState
   x: state.x + dx,
   y: state.y + dy,
 })
+
+/** How far one arrow key press pans the diagram, in pixels. */
+export const KEYBOARD_PAN_STEP = 40
+
+/**
+ * The keyboard equivalent of drag, wheel and double-click, for a focused diagram: the arrow keys
+ * look around (the view moves the way the arrow points), `+`/`-` zoom around `center`, and `0`
+ * resets. `undefined` for any other key, which is left to the page.
+ */
+export const panZoomForKey = (
+  state: PanZoomState,
+  key: string,
+  center: { x: number; y: number },
+): PanZoomState | undefined => {
+  switch (key) {
+    case 'ArrowLeft':
+      return panBy(state, KEYBOARD_PAN_STEP, 0)
+    case 'ArrowRight':
+      return panBy(state, -KEYBOARD_PAN_STEP, 0)
+    case 'ArrowUp':
+      return panBy(state, 0, KEYBOARD_PAN_STEP)
+    case 'ArrowDown':
+      return panBy(state, 0, -KEYBOARD_PAN_STEP)
+    case '+':
+    case '=':
+      return zoomAt(state, 'in', center)
+    case '-':
+    case '_':
+      return zoomAt(state, 'out', center)
+    case '0':
+      return { ...INITIAL_PAN_ZOOM }
+    default:
+      return undefined
+  }
+}

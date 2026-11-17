@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { renderMarkdown } from '../helpers/markdown'
 import { type DocumentWatch, watchDocuments } from '../helpers/document-watch'
 import { componentsEntryId, toWorkflowViews } from '../helpers/navigation'
+import { normalizeArazzoDocument } from '../helpers/normalize'
 import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
 import type { ArazzoDocument, PluginEventBus, PluginNavigationEntry } from '../types'
 import ArazzoComponents from './ArazzoComponents.vue'
@@ -30,14 +31,31 @@ const root = ref<HTMLElement>()
 
 const layout = computed(() => (typeof props.options?.layout === 'string' ? props.options.layout : 'modern'))
 
-const info = computed(() => props.document?.info ?? {})
+/**
+ * The document as the view reads it: malformed entries dropped, so a broken document renders what it
+ * can instead of failing. The same (cached) copy the sidebar was built from.
+ */
+const arazzo = computed(() => normalizeArazzoDocument(props.document))
+
+const info = computed(() => arazzo.value?.info ?? {})
+
+/**
+ * A part of the document that failed to render. The error stops at this boundary, so the rest of the
+ * document still shows, with a note saying what is missing, instead of an empty page.
+ */
+const renderError = ref<string>()
+onErrorCaptured((error) => {
+  renderError.value = error instanceof Error ? error.message : String(error)
+  console.error('[bielu-arazzo] Part of the Arazzo document could not be rendered.', error)
+  return false
+})
 
 const description = computed(() => renderMarkdown(info.value.description))
 
-const workflows = computed(() => (props.document ? toWorkflowViews(props.document, props.navigation ?? []) : []))
+const workflows = computed(() => (arazzo.value ? toWorkflowViews(arazzo.value, props.navigation ?? []) : []))
 
 /** The document's own extensions and its `info`'s, shown together in the header (the root's win on a clash). */
-const documentExtensions = computed(() => ({ ...info.value, ...props.document }))
+const documentExtensions = computed(() => ({ ...info.value, ...arazzo.value }))
 
 /** workflowId → its section's sidebar id, so a step that invokes a workflow links to it. */
 const workflowNavIds = computed(() => Object.fromEntries(workflows.value.map((view) => [view.workflow.workflowId, view.id])))
@@ -46,10 +64,10 @@ const workflowNavIds = computed(() => Object.fromEntries(workflows.value.map((vi
 const componentsId = computed(() => componentsEntryId(props.navigation ?? []))
 
 /** Each source description with its spec, whether it is loaded, and how many steps use it. */
-const sources = computed(() => (props.document ? summarizeSources(props.document, loadedDocuments.value) : []))
+const sources = computed(() => (arazzo.value ? summarizeSources(arazzo.value, loadedDocuments.value) : []))
 
 /** "3 OpenAPI steps · 2 AsyncAPI steps": how the workflows split between the specs. */
-const stepsBySpec = computed(() => (props.document ? countStepsBySpec(props.document, loadedDocuments.value) : []))
+const stepsBySpec = computed(() => (arazzo.value ? countStepsBySpec(arazzo.value, loadedDocuments.value) : []))
 
 /**
  * The workspace documents, re-read whenever one is added. Scalar loads the sibling documents after
@@ -142,19 +160,25 @@ onBeforeUnmount(() => {
     class="bielu-arazzo">
     <header class="ba-header">
       <div class="ba-kicker">
-        Arazzo {{ document?.arazzo }}
+        Arazzo {{ arazzo?.arazzo }}
         <template v-if="info.version">· v{{ info.version }}</template>
       </div>
       <h1 class="ba-title">{{ info.title || documentName }}</h1>
+      <p
+        v-if="renderError"
+        class="ba-render-error"
+        role="alert">
+        Part of this document could not be shown: {{ renderError }}
+      </p>
       <div
-        v-if="document?.$self"
+        v-if="arazzo?.$self"
         class="ba-self ba-muted">
         Canonical URL
         <a
-          :href="document.$self"
+          :href="arazzo.$self"
           rel="noopener"
           target="_blank">
-          {{ document.$self }}
+          {{ arazzo.$self }}
         </a>
       </div>
       <p
@@ -169,7 +193,7 @@ onBeforeUnmount(() => {
       <ArazzoExtensions :of="documentExtensions" />
 
       <div
-        v-if="document?.sourceDescriptions?.length"
+        v-if="arazzo?.sourceDescriptions?.length"
         class="ba-block">
         <div class="ba-block-title ba-sources-title">
           Source descriptions
@@ -227,7 +251,7 @@ onBeforeUnmount(() => {
     <ArazzoWorkflow
       v-for="view in workflows"
       :key="view.id"
-      :document="document!"
+      :document="arazzo!"
       :documents="loadedDocuments"
       :eventBus="eventBus"
       :layout="layout"
@@ -235,10 +259,10 @@ onBeforeUnmount(() => {
       :workflowNavIds="workflowNavIds" />
 
     <ArazzoComponents
-      v-if="document?.components && componentsId"
+      v-if="arazzo?.components && componentsId"
       :id="componentsId"
-      :components="document.components"
-      :document="document"
+      :components="arazzo.components"
+      :document="arazzo"
       :eventBus="eventBus" />
 
     <p
@@ -571,6 +595,59 @@ onBeforeUnmount(() => {
   align-items: baseline;
   gap: 0 4px;
   white-space: normal;
+}
+/*
+ * Phone width: a table row's cells wrap onto more lines instead of squeezing each column down to a
+ * few characters (a source URL broken mid-word, a parameter description one word per line).
+ */
+@container bielu-arazzo (max-width: 560px) {
+  .bielu-arazzo .ba-table,
+  .bielu-arazzo .ba-table tbody {
+    display: block;
+  }
+  .bielu-arazzo .ba-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    padding: 6px 0;
+    border-bottom: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  }
+  .bielu-arazzo .ba-table td {
+    padding: 0;
+    border-bottom: none;
+  }
+  .bielu-arazzo .ba-table td:last-child:not(:first-child) {
+    flex-basis: 100%;
+  }
+  .bielu-arazzo .ba-replacements td:last-child {
+    flex-basis: auto;
+  }
+  .bielu-arazzo .ba-key-values {
+    grid-template-columns: 1fr;
+  }
+  .bielu-arazzo .ba-key-values dd {
+    margin-bottom: 4px;
+  }
+}
+.bielu-arazzo .ba-render-error {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-color-red, #d4413b);
+  border-radius: var(--scalar-radius, 4px);
+  background: color-mix(in srgb, var(--scalar-color-red, #d4413b) 10%, transparent);
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-diagram:focus-visible {
+  outline: 2px solid var(--scalar-color-accent);
+  outline-offset: 2px;
+}
+.bielu-arazzo .ba-diagram-node:focus {
+  outline: none;
+}
+.bielu-arazzo .ba-diagram-node:focus-visible rect {
+  stroke: var(--scalar-color-accent);
+  stroke-width: 2.5;
 }
 .bielu-arazzo .ba-self {
   margin: -4px 0 8px;
