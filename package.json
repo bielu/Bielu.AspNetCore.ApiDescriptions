@@ -8,7 +8,8 @@
     "src/Bielu.AspNetCore.AsyncApi.Scalar/assets",
     "src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets",
     "src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets",
-    "src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets"
+    "src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets",
+    "src/Bielu.AspNetCore.Arazzo.Scalar/assets"
   ],
   "scripts": {
     "changeset": "changeset",
