@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { renderMarkdown } from '../helpers/markdown'
+import { type DocumentWatch, watchDocuments } from '../helpers/document-watch'
 import { componentsEntryId, toWorkflowViews } from '../helpers/navigation'
 import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
 import type { ArazzoDocument, PluginEventBus, PluginNavigationEntry } from '../types'
@@ -53,27 +54,36 @@ const stepsBySpec = computed(() => (props.document ? countStepsBySpec(props.docu
 /**
  * The workspace documents, re-read whenever one is added. Scalar loads the sibling documents after
  * this one renders and adds them to the same object in place; that object is reactive in Scalar's
- * Vue, not in this element's own Vue, so nothing re-renders on its own. Comparing the document names
- * once a second is cheap and catches documents added at any time (e.g. after a config change).
+ * Vue, not in this element's own Vue, so nothing re-renders on its own. `watchDocuments` compares
+ * the document names with a back-off, and stops once every source description is loaded.
  */
 const loadedDocuments = ref<Record<string, unknown>>({ ...props.documents })
 const documentNames = () => Object.keys(props.documents ?? {}).join('\n')
 let lastDocumentNames = documentNames()
-const refreshDocuments = () => {
+const refreshDocuments = (): boolean => {
   const names = documentNames()
-  if (names !== lastDocumentNames) {
-    lastDocumentNames = names
-    loadedDocuments.value = { ...props.documents }
+  if (names === lastDocumentNames) {
+    return false
   }
+  lastDocumentNames = names
+  loadedDocuments.value = { ...props.documents }
+  return true
 }
+
+/** Every source description (other than another Arazzo document) has a loaded document to resolve into. */
+const allSourcesLoaded = () =>
+  sources.value.every((summary) => summary.family === 'arazzo' || summary.documentName !== undefined)
 watch(
   () => props.documents,
   () => {
     lastDocumentNames = documentNames()
     loadedDocuments.value = { ...props.documents }
+    // A new workspace object (a configuration change) may still be filling up: look again soon.
+    documentsWatch?.poke()
   },
 )
-let documentsTimer: ReturnType<typeof setInterval> | undefined
+let documentsWatch: DocumentWatch | undefined
+const onVisibilityChange = () => documentsWatch?.poke()
 
 /**
  * Keeps the sidebar and URL in sync while scrolling, which Scalar leaves to the plugin: the active
@@ -111,12 +121,18 @@ const observeSections = () => {
 
 onMounted(() => {
   observeSections()
-  documentsTimer = setInterval(refreshDocuments, 1000)
+  documentsWatch = watchDocuments({
+    check: refreshDocuments,
+    isComplete: allSourcesLoaded,
+    isHidden: () => typeof document !== 'undefined' && document.visibilityState === 'hidden',
+  })
+  document.addEventListener('visibilitychange', onVisibilityChange)
 })
 watch(workflows, () => nextTick(observeSections))
 onBeforeUnmount(() => {
   observer?.disconnect()
-  clearInterval(documentsTimer)
+  documentsWatch?.stop()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 </script>
 
