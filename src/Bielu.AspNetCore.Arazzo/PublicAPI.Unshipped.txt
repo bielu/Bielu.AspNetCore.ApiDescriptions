@@ -4,6 +4,9 @@ Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddComponentInputs(string! name, 
 Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddComponentInputs(string! name, System.Text.Json.Serialization.Metadata.JsonTypeInfo! typeInfo) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
 Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddComponentParameter(string! name, Bielu.Arazzo.Models.ArazzoParameter! parameter) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
 Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddComponentSuccessAction(string! name, Bielu.Arazzo.Models.ArazzoSuccessAction! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddDocumentTransformer(Bielu.AspNetCore.Arazzo.Transformers.IArazzoDocumentTransformer! transformer) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddDocumentTransformer(System.Func<Bielu.Arazzo.Models.ArazzoDocument!, Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentTransformerContext!, System.Threading.CancellationToken, System.Threading.Tasks.Task!>! transformer) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddDocumentTransformer<TTransformer>() -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
 Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.WithExtension(string! name, System.Text.Json.Nodes.JsonNode? value) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
 Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.WithSelf(string! uri) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
 Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.OnFailureReference(string! componentName) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
@@ -25,6 +28,14 @@ Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.Parameter(string! name, s
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.ParameterReference(string! componentName, string? value = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.WithExtension(string! name, System.Text.Json.Nodes.JsonNode? value) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.WithInputsReference(string! componentName) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentTransformerContext
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentTransformerContext.ApplicationServices.get -> System.IServiceProvider!
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentTransformerContext.ApplicationServices.init -> void
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentTransformerContext.ArazzoDocumentTransformerContext() -> void
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentTransformerContext.DocumentName.get -> string!
+Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentTransformerContext.DocumentName.init -> void
+Bielu.AspNetCore.Arazzo.Transformers.IArazzoDocumentTransformer
+Bielu.AspNetCore.Arazzo.Transformers.IArazzoDocumentTransformer.TransformAsync(Bielu.Arazzo.Models.ArazzoDocument! document, Bielu.AspNetCore.Arazzo.Transformers.ArazzoDocumentTransformerContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 override Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver.SourceType.get -> string!
 override Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver.TryResolveChannelPath(ByteBard.AsyncAPI.Models.AsyncApiDocument! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
 override Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver.TryResolveOperation(ByteBard.AsyncAPI.Models.AsyncApiDocument! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool

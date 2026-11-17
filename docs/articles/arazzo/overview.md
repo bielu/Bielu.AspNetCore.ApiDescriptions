@@ -243,6 +243,22 @@ All of this reaches the document before it is validated, so a reference to a mis
 literal output, or a 1.1 feature in a document whose `Version` is `ArazzoVersion.V1_0` fails when the
 document is first built, at startup or `dotnet getdocument`, not after serialization.
 
+### Transforming the document
+
+`AddDocumentTransformer` registers an `IArazzoDocumentTransformer` (an instance, a type created from the
+application services, or a delegate) that changes the document's object model once it is built and
+*before* it is validated, as `AsyncApiOptions.AddDocumentTransformer` does for AsyncAPI documents.
+Transformers run in registration order, once, and the result is cached. To rewrite the serialized
+text instead, for example with an OpenAPI Overlay, use `AddSerializedDocumentTransformer`.
+
+```csharp
+options.AddDocumentTransformer((document, context, cancellationToken) =>
+{
+    document.Info.Description = $"Workflows served by {context.DocumentName}";
+    return Task.CompletedTask;
+});
+```
+
 ### Authoring coverage
 
 The Scalar plugin renders every field of Arazzo 1.1 (see [What is rendered](scalar.md#what-is-rendered)),
