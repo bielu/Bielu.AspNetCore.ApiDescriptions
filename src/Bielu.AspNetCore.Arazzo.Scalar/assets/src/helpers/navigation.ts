@@ -7,6 +7,12 @@ export const WORKFLOW_KIND = 'workflow'
 /** `PluginNavigationEntry.kind` of a step entry. */
 export const STEP_KIND = 'step'
 
+/**
+ * The DOM event a step's section listens for to open itself, sent before something scrolls to the
+ * step (the overview diagram), so a collapsed step is not landed on folded.
+ */
+export const STEP_EXPAND_EVENT = 'bielu-arazzo:expand-step'
+
 /** `PluginNavigationEntry.kind` of the entry for the document's reusable components. */
 export const COMPONENTS_KIND = 'components'
 

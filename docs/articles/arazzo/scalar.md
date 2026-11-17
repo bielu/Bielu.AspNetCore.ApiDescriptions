@@ -82,6 +82,9 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 - Specification Extensions (`x-*` fields) on the document, `info`, source descriptions, workflows,
   steps, request bodies, actions and components, in a collapsed "Extensions" list. Scalar's own
   `x-scalar-*` fields are left out.
+- Each step can be collapsed with the chevron beside its heading, and a workflow's "Collapse steps"
+  button folds all of its steps at once. A collapsed step still shows a one-line summary of what it
+  targets (spec, action and target), and clicking a step in the overview opens it.
 - Each workflow and step heading has a copy-link button. With Scalar's `classic` layout, each
   workflow can be collapsed.
 

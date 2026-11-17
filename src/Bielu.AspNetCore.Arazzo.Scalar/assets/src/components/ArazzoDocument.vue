@@ -801,6 +801,68 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-workflow-heading {
   min-width: 0;
 }
+.bielu-arazzo .ba-workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.bielu-arazzo .ba-step-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.bielu-arazzo .ba-step-heading {
+  min-width: 0;
+  flex: 1;
+}
+.bielu-arazzo .ba-step-toggle {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  padding: 4px;
+  border: none;
+  border-radius: var(--scalar-radius, 4px);
+  background: none;
+  color: var(--scalar-color-3);
+  cursor: pointer;
+}
+.bielu-arazzo .ba-step-toggle:hover,
+.bielu-arazzo .ba-step-toggle:focus-visible {
+  color: var(--scalar-color-1);
+  background: var(--scalar-background-2);
+}
+.bielu-arazzo .ba-step-toggle:focus-visible {
+  outline: 2px solid var(--scalar-color-accent);
+  outline-offset: 1px;
+}
+.bielu-arazzo .ba-chevron {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: rotate(90deg);
+  transition: transform 0.15s ease;
+}
+.bielu-arazzo .ba-step-closed .ba-chevron {
+  transform: none;
+}
+.bielu-arazzo .ba-step-collapsed-summary {
+  margin-top: 4px;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-small, 13px);
+  overflow-wrap: anywhere;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bielu-arazzo .ba-chevron {
+    transition: none;
+  }
+}
 .bielu-arazzo .ba-toggle {
   flex-shrink: 0;
   padding: 4px 10px;
