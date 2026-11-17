@@ -1,1 +1,9 @@
 #nullable enable
+*REMOVED*Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute
+*REMOVED*Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute.PublishOperationAttribute() -> void
+*REMOVED*Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute.PublishOperationAttribute(System.Type! messagePayloadType) -> void
+*REMOVED*Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute.PublishOperationAttribute(System.Type! messagePayloadType, params string![]! tags) -> void
+*REMOVED*Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute
+*REMOVED*Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute.SubscribeOperationAttribute() -> void
+*REMOVED*Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute.SubscribeOperationAttribute(System.Type! messagePayloadType) -> void
+*REMOVED*Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute.SubscribeOperationAttribute(System.Type! messagePayloadType, params string![]! tags) -> void

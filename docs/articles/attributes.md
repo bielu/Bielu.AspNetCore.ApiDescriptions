@@ -14,7 +14,7 @@ Bielu.AspNetCore.AsyncApi uses attributes to discover and describe your AsyncAPI
 | `[MessageExample]` | Defines an example for a message. |
 | `[ChannelParameter]` | Defines a parameter in a channel path (e.g., `{id}`). |
 
-`[PublishOperation]` and `[SubscribeOperation]` still work but are obsolete. They were named the AsyncAPI 2.x way, from the client's point of view, so they read backwards next to AsyncAPI 3 output: `[PublishOperation]` is replaced by `[ReceiveOperation]`, and `[SubscribeOperation]` by `[SendOperation]`.
+`[PublishOperation]` and `[SubscribeOperation]`, obsolete since 2.0, were removed in 3.0. They were named the AsyncAPI 2.x way, from the client's point of view, so they read backwards next to AsyncAPI 3 output: use `[ReceiveOperation]` instead of `[PublishOperation]`, and `[SendOperation]` instead of `[SubscribeOperation]`.
 
 ## Usage Examples
 

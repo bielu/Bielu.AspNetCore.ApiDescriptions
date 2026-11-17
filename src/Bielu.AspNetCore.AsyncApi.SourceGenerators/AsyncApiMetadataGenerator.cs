@@ -372,14 +372,10 @@ namespace Bielu.AspNetCore.AsyncApi.SourceGenerators
             }
         }
 
-        // The obsolete 2.x-named attributes are emitted as their Send/Receive equivalents, which build the same
-        // operation, so the generated code doesn't raise the obsolete warning in the consuming project.
         private static string? GetGeneratedOperationAttribute(string? attributeName) => attributeName switch
         {
             "Bielu.AspNetCore.AsyncApi.Attributes.SendOperationAttribute" => "SendOperationAttribute",
             "Bielu.AspNetCore.AsyncApi.Attributes.ReceiveOperationAttribute" => "ReceiveOperationAttribute",
-            "Bielu.AspNetCore.AsyncApi.Attributes.SubscribeOperationAttribute" => "SendOperationAttribute",
-            "Bielu.AspNetCore.AsyncApi.Attributes.PublishOperationAttribute" => "ReceiveOperationAttribute",
             _ => null
         };
 
