@@ -55,7 +55,9 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 - A workflow overview beside the steps: a flowchart of the steps, with arrows for `dependsOn` (or
   document order) and labeled success and failure branches for `onSuccess`/`onFailure`, ending in
   Success or Failed for `end` actions. Drag to pan, scroll to zoom, click a step to jump to it, or
-  expand it to fill the window. It follows Scalar's light and dark themes. Each step box has a
+  expand it to fill the window. It follows Scalar's light and dark themes. From the keyboard, the
+  focused overview pans with the arrow keys, zooms with `+`/`-` and resets with `0`; Tab reaches
+  each step box, and Enter opens the step. Each step box has a
   colored marker for the spec its target is described in, explained by a legend in the corner.
 - For each step: the operation, channel or workflow it targets, with that target's description and
   its own parameters, then the step's parameters, request body, success criteria,

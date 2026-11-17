@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
-import { INITIAL_PAN_ZOOM, panBy, type PanZoomState, zoomAt } from '../helpers/pan-zoom'
+import { INITIAL_PAN_ZOOM, panBy, panZoomForKey, type PanZoomState, zoomAt } from '../helpers/pan-zoom'
 import { specLabel } from '../helpers/target-spec'
 import { type LaidOutEdge, type LaidOutNode, SPEC_MARKER_WIDTH, type WorkflowLayout } from '../helpers/workflow-graph'
 
@@ -81,6 +81,29 @@ const stopDragging = (event: PointerEvent) => {
   }
 }
 
+/** Arrow keys pan, `+`/`-` zoom around the middle, `0` resets; Enter on a step box opens that step. */
+const onKeydown = (event: KeyboardEvent) => {
+  if (event.altKey || event.ctrlKey || event.metaKey) {
+    return
+  }
+  const bounds = viewport.value?.getBoundingClientRect()
+  const center = bounds ? { x: bounds.width / 2, y: bounds.height / 2 } : { x: 0, y: 0 }
+  const next = panZoomForKey(panZoom.value, event.key, center)
+  if (next) {
+    event.preventDefault()
+    panZoom.value = next
+  }
+}
+
+const onNodeKeydown = (event: KeyboardEvent, node: LaidOutNode) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    event.stopPropagation()
+    moved = false
+    openStep(node)
+  }
+}
+
 const openStep = (node: LaidOutNode) => {
   const id = props.stepSectionIds[node.id]
   if (node.kind === 'step' && id && !moved) {
@@ -124,9 +147,13 @@ const label = computed(() =>
 <template>
   <div
     ref="viewport"
+    aria-label="Workflow overview. Arrow keys pan, plus and minus zoom, 0 resets."
     class="ba-diagram"
+    role="group"
+    tabindex="0"
     :class="{ 'ba-diagram-dragging': dragging }"
     @dblclick="resetView"
+    @keydown="onKeydown"
     @pointercancel="stopDragging"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
@@ -138,7 +165,7 @@ const label = computed(() =>
       :style="{ transform: `translate(${panZoom.x}px, ${panZoom.y}px) scale(${panZoom.scale})` }">
       <svg
         :aria-label="label"
-        role="img"
+        role="group"
         :style="fitStyle"
         :viewBox="viewBox"
         :width="layout.width"
@@ -189,8 +216,12 @@ const label = computed(() =>
         <g
           v-for="node in layout.nodes"
           :key="node.id"
+          :aria-label="node.kind === 'step' && stepSectionIds[node.id] ? `Go to step ${node.label}${node.spec ? ` (${specName(node.spec)})` : ''}` : undefined"
           :class="[`ba-diagram-node ba-diagram-node-${node.kind}`, { 'ba-diagram-link': node.kind === 'step' && stepSectionIds[node.id] }]"
-          @click="openStep(node)">
+          :role="node.kind === 'step' && stepSectionIds[node.id] ? 'link' : undefined"
+          :tabindex="node.kind === 'step' && stepSectionIds[node.id] ? 0 : undefined"
+          @click="openStep(node)"
+          @keydown="onNodeKeydown($event, node)">
           <title v-if="node.kind === 'step'">
             Go to step {{ node.label }}<template v-if="node.spec"> ({{ specName(node.spec) }})</template>
           </title>
