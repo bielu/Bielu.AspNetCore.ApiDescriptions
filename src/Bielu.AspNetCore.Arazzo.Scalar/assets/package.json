@@ -1,7 +1,6 @@
 {
   "name": "@bielu/scalar-arazzo",
   "version": "0.1.0",
-  "private": true,
   "description": "Arazzo document type for the Scalar API Reference. Renders Arazzo workflows and steps, and resolves each step's target in the OpenAPI/AsyncAPI documents loaded next to it.",
   "license": "MIT",
   "author": "Arkadiusz Biel",
