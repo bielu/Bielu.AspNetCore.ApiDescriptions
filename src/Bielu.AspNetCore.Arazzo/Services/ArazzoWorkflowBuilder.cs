@@ -13,6 +13,10 @@ public sealed class ArazzoWorkflowBuilder
     private readonly string _workflowId;
     private readonly List<ArazzoStep> _steps = [];
     private readonly List<string> _dependsOn = [];
+    private readonly List<ArazzoReferenceable<ArazzoParameter>> _parameters = [];
+    private readonly List<ArazzoReferenceable<ArazzoSuccessAction>> _successActions = [];
+    private readonly List<ArazzoReferenceable<ArazzoFailureAction>> _failureActions = [];
+    private readonly Dictionary<string, ArazzoValue> _outputs = new(StringComparer.Ordinal);
 
     internal ArazzoWorkflowBuilder(string workflowId) => _workflowId = workflowId;
 
@@ -100,6 +104,102 @@ public sealed class ArazzoWorkflowBuilder
     /// <typeparam name="TWorkflow">The marker type naming the workflow depended on.</typeparam>
     public ArazzoWorkflowBuilder DependsOn<TWorkflow>() => DependsOn(ArazzoId.FromType<TWorkflow>());
 
+    /// <summary>
+    /// Declares a named workflow output whose value is the given runtime expression, usually an output of one
+    /// of this workflow's steps, e.g. <c>$steps.placeOrder.outputs.orderId</c>. Other workflows read it as
+    /// <c>$workflows.{workflowId}.outputs.{name}</c>.
+    /// </summary>
+    /// <param name="name">The output name; one matching <c>^[a-zA-Z0-9\.\-_]+$</c>.</param>
+    /// <param name="expression">The runtime expression that produces the value.</param>
+    public ArazzoWorkflowBuilder Output(string name, string expression)
+    {
+        ArazzoIdentifier.ValidateKey(name, nameof(name));
+        ArgumentException.ThrowIfNullOrEmpty(expression);
+        _outputs[name] = ArazzoValue.FromExpression(expression);
+        return this;
+    }
+
+    /// <summary>
+    /// Declares a named workflow output whose value is the data a Selector Object picks out (Arazzo 1.1).
+    /// Outputs cannot be literal values, so there is no literal overload.
+    /// </summary>
+    /// <param name="name">The output name.</param>
+    /// <param name="selector">The selector that produces the value.</param>
+    public ArazzoWorkflowBuilder Output(string name, ArazzoSelector selector)
+    {
+        ArazzoIdentifier.ValidateKey(name, nameof(name));
+        ArgumentNullException.ThrowIfNull(selector);
+        _outputs[name] = ArazzoValue.FromSelector(selector);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a parameter that applies to every step of this workflow whose target accepts it, with a runtime
+    /// expression value. A step may override it with a parameter of the same name and location, but not remove it.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <param name="valueExpression">The runtime expression producing the value, e.g. <c>$inputs.tenant</c>.</param>
+    /// <param name="location">Where the parameter goes (see <see cref="ArazzoParameterLocation"/>).</param>
+    public ArazzoWorkflowBuilder Parameter(string name, string valueExpression, string? location = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentException.ThrowIfNullOrEmpty(valueExpression);
+        return Parameter(new ArazzoParameter
+        {
+            Name = name,
+            In = location,
+            Value = ArazzoValue.FromExpression(valueExpression),
+        });
+    }
+
+    /// <summary>
+    /// Adds a parameter that applies to every step of this workflow, given as a Parameter Object whose value
+    /// can be a literal, a runtime expression, or a Selector Object (Arazzo 1.1).
+    /// </summary>
+    /// <param name="parameter">The parameter to add.</param>
+    public ArazzoWorkflowBuilder Parameter(ArazzoParameter parameter)
+    {
+        ArazzoParameterGuard.Validate(parameter);
+        _parameters.Add(ArazzoReferenceable<ArazzoParameter>.Of(parameter));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a success action (the workflow's <c>successActions</c>) that applies to every step of this
+    /// workflow. A step's own <c>onSuccess</c> action of the same name overrides it.
+    /// </summary>
+    /// <param name="action">The success action to add.</param>
+    public ArazzoWorkflowBuilder OnSuccess(ArazzoSuccessAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        _successActions.Add(ArazzoReferenceable<ArazzoSuccessAction>.Of(action));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a failure action (the workflow's <c>failureActions</c>) that applies to every step of this
+    /// workflow. A step's own <c>onFailure</c> action of the same name overrides it.
+    /// </summary>
+    /// <param name="action">The failure action to add.</param>
+    /// <example>
+    /// <code>
+    /// workflow.OnFailure(new ArazzoFailureAction
+    /// {
+    ///     Name = "retryOnTimeout",
+    ///     Type = ArazzoFailureActionType.Retry,
+    ///     RetryAfter = 2,
+    ///     RetryLimit = 3,
+    ///     Criteria = [new ArazzoCriterion { Condition = "$statusCode == 504" }],
+    /// });
+    /// </code>
+    /// </example>
+    public ArazzoWorkflowBuilder OnFailure(ArazzoFailureAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        _failureActions.Add(ArazzoReferenceable<ArazzoFailureAction>.Of(action));
+        return this;
+    }
+
     /// <summary>Adds a step to the workflow, in execution order.</summary>
     public ArazzoWorkflowBuilder Step(string stepId, Action<ArazzoStepBuilder> configure)
     {
@@ -135,6 +235,10 @@ public sealed class ArazzoWorkflowBuilder
             Description = Description,
             Inputs = Inputs,
             DependsOn = _dependsOn.Count > 0 ? _dependsOn : null,
+            Parameters = _parameters.Count > 0 ? _parameters : null,
+            SuccessActions = _successActions.Count > 0 ? _successActions : null,
+            FailureActions = _failureActions.Count > 0 ? _failureActions : null,
+            Outputs = _outputs.Count > 0 ? _outputs : null,
             Steps = _steps,
         };
     }
