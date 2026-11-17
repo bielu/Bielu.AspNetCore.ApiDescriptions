@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Bielu.Arazzo.Models;
 using Bielu.AspNetCore.Arazzo.Extensions;
@@ -28,7 +29,8 @@ builder.Services.AddArazzo(options =>
 
     options.AddWorkflow("placeOrder", workflow => workflow
         .WithSummary("Place an order and announce it")
-        .WithDescription("Creates the order over HTTP, then publishes `orderPlaced` so fulfilment can start.")
+        .WithDescription(
+            "Creates the order over HTTP, publishes `orderPlaced`, asks for payment, and waits for the payment and the stock reservation to come back as messages.")
         .WithInputs<PlaceOrderInputs>(new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
             TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
@@ -44,12 +46,47 @@ builder.Services.AddArazzo(options =>
                 Type = "end",
                 Criteria = [new ArazzoCriterion { Condition = "$statusCode == 400" }],
             })
-            .Output("orderId", "$response.body#/id"))
+            .Output("orderId", "$response.body#/id")
+            .Output("total", "$response.body#/total"))
         .Step("announce", step => step
             .Channel("events", "orderPlaced", ArazzoStepAction.Send)
             .WithDescription("Tell the rest of the system about the new order.")
             .PayloadExpression("$steps.create.outputs")
-            .DependsOn("create")));
+            .DependsOn("create"))
+        .Step("requestPayment", step => step
+            .Channel("events", "paymentRequested", ArazzoStepAction.Send)
+            .WithDescription("Ask the payment service to charge the order total.")
+            .Payload(new JsonObject
+            {
+                ["orderId"] = "$steps.create.outputs.orderId",
+                ["amount"] = "$steps.create.outputs.total",
+                ["currency"] = "EUR",
+            }, "application/json")
+            .DependsOn("announce"))
+        .Step("paymentCompleted", step => step
+            .Channel("events", "paymentCompleted", ArazzoStepAction.Receive)
+            .WithDescription("Wait for the payment result for this order.")
+            .WithCorrelationId("$steps.create.outputs.orderId")
+            .WithTimeout(60_000)
+            .SuccessCriteria(
+                "$[?@.status == 'Succeeded']",
+                "$message.payload",
+                new ArazzoSelectorType { Type = "jsonpath", Version = "rfc9535" })
+            .OnFailure(new ArazzoFailureAction
+            {
+                Name = "declined",
+                Type = "end",
+                Criteria = [new ArazzoCriterion { Condition = "$message.payload.status == 'Declined'" }],
+            })
+            .Output("paymentId", "$message.payload.paymentId")
+            .DependsOn("requestPayment"))
+        .Step("stockReserved", step => step
+            .Channel("events", "inventoryReserved", ArazzoStepAction.Receive)
+            .WithDescription("Wait until the warehouse has reserved the stock.")
+            .WithCorrelationId("$steps.create.outputs.orderId")
+            .WithTimeout(120_000)
+            .Output("reservationExpiresAt", "$message.payload.expiresAt")
+            .DependsOn("paymentCompleted")));
 
     options.AddWorkflow("trackOrder", workflow => workflow
         .WithSummary("Follow an order to shipment")
@@ -118,10 +155,10 @@ app.MapScalarApiReference(options => options
     .WithArazzo());
 
 app.MapPost("/orders", (OrderRequest request) =>
-        Results.Created($"/orders/{Guid.NewGuid()}", new Order(Guid.NewGuid(), request.Sku, request.Quantity)))
+        Results.Created($"/orders/{Guid.NewGuid()}", new Order(Guid.NewGuid(), request.Sku, request.Quantity, request.Quantity * 9.99m)))
     .WithName("createOrder");
 
-app.MapGet("/orders/{id:guid}", (Guid id) => Results.Ok(new Order(id, "SKU-1", 1)))
+app.MapGet("/orders/{id:guid}", (Guid id) => Results.Ok(new Order(id, "SKU-1", 1, 9.99m)))
     .WithName("getOrder");
 
 app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
@@ -134,24 +171,72 @@ internal sealed record ShippingAddress(string Street, string City, string Postal
 
 internal sealed record OrderRequest(string Sku, int Quantity);
 
-internal sealed record Order(Guid Id, string Sku, int Quantity);
+internal sealed record Order(Guid Id, string Sku, int Quantity, decimal Total);
 
-internal sealed record OrderPlaced(Guid Id, string Sku, int Quantity);
+internal sealed record OrderPlaced(
+    Guid Id,
+    string Sku,
+    int Quantity,
+    IReadOnlyList<OrderLine> Lines,
+    decimal Total,
+    string Currency,
+    ShippingAddress ShipTo,
+    DateTimeOffset PlacedAt);
 
-internal sealed record OrderShipped(Guid Id, DateTimeOffset ShippedAt);
+internal sealed record OrderLine(string Sku, string Name, int Quantity, decimal UnitPrice);
+
+internal sealed record OrderShipped(Guid Id, string Carrier, string TrackingNumber, ShippingAddress ShipTo, DateTimeOffset ShippedAt);
+
+internal sealed record PaymentRequested(Guid OrderId, decimal Amount, string Currency, string? CustomerReference);
+
+// Sent as text, so the workflow's criteria can compare it with 'Succeeded'.
+[JsonConverter(typeof(JsonStringEnumConverter<PaymentStatus>))]
+internal enum PaymentStatus
+{
+    Succeeded,
+    Declined,
+    Pending,
+}
+
+internal sealed record PaymentCompleted(Guid OrderId, string PaymentId, PaymentStatus Status, decimal Amount, DateTimeOffset CompletedAt);
+
+internal sealed record ReservedItem(string Sku, int Quantity, string Warehouse);
+
+internal sealed record InventoryReserved(Guid OrderId, IReadOnlyList<ReservedItem> Items, DateTimeOffset ExpiresAt);
 
 [AsyncApi]
 internal sealed class OrderEvents
 {
-    [Channel("orderPlaced")]
-    [Message(typeof(OrderPlaced))]
+    [Channel("orderPlaced", Description = "Orders accepted by the shop.")]
+    [Message(typeof(OrderPlaced), Title = "Order placed", Summary = "An order was accepted, with its lines, total and shipping address.", ContentType = "application/json")]
     [SendOperation(typeof(OrderPlaced), OperationId = "onOrderPlaced")]
     public void OrderPlacedEvent()
     {
     }
 
-    [Channel("orderShipped")]
-    [Message(typeof(OrderShipped))]
+    [Channel("paymentRequested", Description = "Payment requests for the payment service.")]
+    [Message(typeof(PaymentRequested), Title = "Payment requested", Summary = "Charge an order total.", ContentType = "application/json")]
+    [SendOperation(typeof(PaymentRequested), OperationId = "requestPayment")]
+    public void PaymentRequestedEvent()
+    {
+    }
+
+    [Channel("paymentCompleted", Description = "Payment results, one per request.")]
+    [Message(typeof(PaymentCompleted), Title = "Payment completed", Summary = "The outcome of a payment request.", ContentType = "application/json")]
+    [ReceiveOperation(typeof(PaymentCompleted), OperationId = "onPaymentCompleted")]
+    public void PaymentCompletedEvent()
+    {
+    }
+
+    [Channel("inventoryReserved", Description = "Stock reservations made by the warehouse.")]
+    [Message(typeof(InventoryReserved), Title = "Inventory reserved", Summary = "Stock was set aside for an order until it expires.", ContentType = "application/json")]
+    [ReceiveOperation(typeof(InventoryReserved), OperationId = "onInventoryReserved")]
+    public void InventoryReservedEvent()
+    {
+    }
+
+    [Channel("orderShipped", Description = "Shipments handed to a carrier.")]
+    [Message(typeof(OrderShipped), Title = "Order shipped", Summary = "An order left the warehouse.", ContentType = "application/json")]
     [ReceiveOperation(typeof(OrderShipped), OperationId = "onOrderShipped")]
     public void OrderShippedEvent()
     {
