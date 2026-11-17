@@ -58,3 +58,21 @@ A step's target is looked up in the documents loaded in the same Scalar page. Th
 source description URL is matched against the URL each Scalar source was loaded from, so a
 generated `/openapi/v1.json` source description finds the `/openapi/v1.json` Scalar source. When
 the target's document is not loaded, the step still shows the raw `operationId` or path.
+
+## Without ASP.NET Core
+
+The bundle is also published to npm as `@bielu/scalar-arazzo`:
+
+```ts
+import { createArazzoPlugin } from '@bielu/scalar-arazzo'
+
+Scalar.createApiReference('#app', {
+  sources: [
+    { title: 'Pets', url: '/openapi/v1.json' },
+    { title: 'Workflows', url: '/arazzo/v1.json' },
+  ],
+  plugins: [createArazzoPlugin()],
+})
+```
+
+`dist/scalar-plugin.mjs` can be passed to Scalar's `pluginUrls` instead.
