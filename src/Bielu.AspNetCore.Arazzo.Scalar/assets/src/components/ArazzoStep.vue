@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatDuration, formatValue } from '../helpers/format'
+import { criterionTypeLabel, formatDuration, formatValue } from '../helpers/format'
 import { renderMarkdown } from '../helpers/markdown'
 import { resolveReusables } from '../helpers/reusable'
 import { resolveStepTarget, targetDescription, targetParameters } from '../helpers/resolve-target'
@@ -11,6 +11,7 @@ import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoCriteria from './ArazzoCriteria.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
+import ArazzoValue from './ArazzoValue.vue'
 
 const props = defineProps<{
   id: string
@@ -244,7 +245,34 @@ const description = computed(() => renderMarkdown(heading.value.description))
           {{ step.requestBody.contentType }}
         </span>
       </div>
-      <pre class="ba-code"><code>{{ formatValue(step.requestBody.payload) }}</code></pre>
+      <pre
+        v-if="step.requestBody.payload !== undefined"
+        class="ba-code"><code>{{ formatValue(step.requestBody.payload) }}</code></pre>
+      <template v-if="step.requestBody.replacements?.length">
+        <div class="ba-subtitle">Replacements</div>
+        <table class="ba-table ba-replacements">
+          <tbody>
+            <tr
+              v-for="(replacement, index) in step.requestBody.replacements"
+              :key="index">
+              <td>
+                <span
+                  v-if="criterionTypeLabel(replacement.targetSelectorType)"
+                  class="ba-badge ba-criterion-type">
+                  {{ criterionTypeLabel(replacement.targetSelectorType) }}
+                </span>
+                <code>{{ replacement.target }}</code>
+              </td>
+              <td
+                aria-hidden="true"
+                class="ba-muted">
+                ←
+              </td>
+              <td><ArazzoValue :value="replacement.value" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </template>
     </div>
 
     <div

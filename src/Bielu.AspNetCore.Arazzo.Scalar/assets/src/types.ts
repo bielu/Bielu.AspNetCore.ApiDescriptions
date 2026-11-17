@@ -60,10 +60,29 @@ export type ArazzoFailureAction = {
   parameters?: (ArazzoParameter | ArazzoReusableObject)[]
 }
 
+/**
+ * A Selector Object (Arazzo 1.1): picks a value out of a Runtime Expression's result with JSONPath,
+ * XPath or a JSON Pointer. It can stand wherever a value can: outputs, parameter values, replacements.
+ */
+export type ArazzoSelector = {
+  context: string
+  selector: string
+  type: string | ArazzoCriterionExpressionType
+}
+
+/** Replaces one location of a request body payload before the step runs. */
+export type ArazzoPayloadReplacement = {
+  /** A JSON Pointer, or (Arazzo 1.1) a JSONPath or XPath expression, into the payload. */
+  target: string
+  /** How `target` is written, when it is not a JSON Pointer (Arazzo 1.1). */
+  targetSelectorType?: string | ArazzoCriterionExpressionType
+  value: unknown
+}
+
 export type ArazzoRequestBody = {
   contentType?: string
   payload?: unknown
-  replacements?: { target: string; value: unknown }[]
+  replacements?: ArazzoPayloadReplacement[]
 }
 
 export type ArazzoStep = {

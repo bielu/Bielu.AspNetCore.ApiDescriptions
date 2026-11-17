@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { formatValue } from '../helpers/format'
+import ArazzoValue from './ArazzoValue.vue'
 
-/** One row: a name, its constant or Runtime Expression value, and optionally where it goes (`in`). */
+/** One row: a name, its constant, Runtime Expression or Selector Object, and optionally where it goes (`in`). */
 export type KeyValueRow = {
   name: string
   value: unknown
@@ -29,7 +29,7 @@ defineProps<{
             {{ row.location }}
           </span>
         </dt>
-        <dd><code>{{ formatValue(row.value) }}</code></dd>
+        <dd><ArazzoValue :value="row.value" /></dd>
       </template>
     </dl>
   </div>

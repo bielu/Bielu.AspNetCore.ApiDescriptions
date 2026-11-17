@@ -1,0 +1,149 @@
+{
+  "arazzo": "1.1.0",
+  "$self": "https://example.test/fixtures/field-reference.arazzo.json",
+  "info": {
+    "title": "Arazzo field reference",
+    "summary": "Every Arazzo 1.1 field, in one document.",
+    "description": "A hand-written document that uses **every** field of the Arazzo 1.1 specification, so the Scalar view can be checked against all of them. It targets the same `orders` and `events` documents as the generated workflows.",
+    "version": "1.0.0",
+    "x-audience": "plugin developers"
+  },
+  "sourceDescriptions": [
+    { "name": "orders", "url": "/openapi/v1.json", "type": "openapi", "x-owner": "orders team" },
+    { "name": "events", "url": "/asyncapi/v1.json", "type": "asyncapi" }
+  ],
+  "workflows": [
+    {
+      "workflowId": "everyField",
+      "summary": "Order with every step field",
+      "description": "Places an order, waits for the confirmation message and reads the order back.",
+      "inputs": { "$ref": "#/components/inputs/orderInput" },
+      "parameters": [
+        { "name": "X-Request-Id", "in": "header", "value": "$inputs.requestId" },
+        { "reference": "$components.parameters.tenant", "value": "acme" }
+      ],
+      "steps": [
+        {
+          "stepId": "create",
+          "description": "Create the order.",
+          "operationPath": "{$sourceDescriptions.orders.url}#/paths/~1orders/post",
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": { "sku": "placeholder", "quantity": 1, "lines": [{ "sku": "placeholder" }] },
+            "replacements": [
+              { "target": "/sku", "value": "$inputs.sku" },
+              { "target": "$.lines[0].sku", "targetSelectorType": "jsonpath", "value": "$inputs.sku" },
+              {
+                "target": "/quantity",
+                "value": { "context": "$inputs", "selector": "$.quantity", "type": { "type": "jsonpath", "version": "rfc9535" } }
+              }
+            ],
+            "x-note": "replacements run in order"
+          },
+          "successCriteria": [
+            { "condition": "$statusCode == 201" },
+            { "context": "$response.header.Location", "condition": "^/orders/[0-9a-f-]+$", "type": "regex" }
+          ],
+          "onSuccess": [{ "reference": "$components.successActions.done" }],
+          "onFailure": [
+            { "name": "throttled", "type": "retry", "retryAfter": 1.5, "retryLimit": 5, "criteria": [{ "condition": "$statusCode == 429" }] },
+            { "reference": "$components.failureActions.giveUp" }
+          ],
+          "outputs": {
+            "orderId": "$response.body#/id",
+            "firstLine": { "context": "$response.body", "selector": "$.lines[0]", "type": "jsonpath" }
+          },
+          "x-cost": "1 request"
+        },
+        {
+          "stepId": "confirmed",
+          "description": "Wait for the order to be announced.",
+          "channelPath": "{$sourceDescriptions.events.url}#/channels/orderPlaced",
+          "action": "receive",
+          "correlationId": "$steps.create.outputs.orderId",
+          "timeout": 15000,
+          "dependsOn": ["create"],
+          "successCriteria": [
+            { "context": "$message.payload", "condition": "$[?@.status == 'placed']", "type": { "type": "jsonpath", "version": "rfc9535" } },
+            { "context": "$message.payload", "condition": "/order/status", "type": { "type": "xpath", "version": "xpath-30" } }
+          ],
+          "outputs": { "status": "$message.payload#/status" }
+        },
+        {
+          "stepId": "read",
+          "description": "Read the order back.",
+          "operationId": "$sourceDescriptions.orders.getOrder",
+          "dependsOn": ["confirmed"],
+          "parameters": [{ "name": "id", "in": "path", "value": "$steps.create.outputs.orderId" }],
+          "successCriteria": [{ "condition": "$statusCode == 200", "type": "simple" }],
+          "onSuccess": [{ "name": "finished", "type": "end" }],
+          "onFailure": [
+            {
+              "name": "reorder",
+              "type": "goto",
+              "workflowId": "placeAgain",
+              "criteria": [{ "condition": "$statusCode == 410" }],
+              "parameters": [
+                { "name": "sku", "value": "$inputs.sku" },
+                { "reference": "$components.parameters.tenant" }
+              ]
+            }
+          ]
+        }
+      ],
+      "successActions": [{ "name": "notify", "type": "end", "x-channel": "email" }],
+      "failureActions": [{ "reference": "$components.failureActions.giveUp" }],
+      "outputs": {
+        "orderId": "$steps.create.outputs.orderId",
+        "status": { "context": "$steps.confirmed.outputs", "selector": "/status", "type": "jsonpointer" }
+      },
+      "x-owner": "checkout"
+    },
+    {
+      "workflowId": "placeAgain",
+      "summary": "Place the order again",
+      "dependsOn": ["everyField"],
+      "inputs": { "type": "object", "properties": { "sku": { "type": "string" } } },
+      "steps": [
+        {
+          "stepId": "retryCreate",
+          "operationId": "createOrder",
+          "requestBody": { "contentType": "application/json", "payload": "$inputs" }
+        },
+        {
+          "stepId": "announce",
+          "operationId": "$sourceDescriptions.events.onOrderPlaced"
+        },
+        {
+          "stepId": "nested",
+          "workflowId": "everyField",
+          "parameters": [{ "name": "sku", "value": "$inputs.sku" }]
+        }
+      ]
+    }
+  ],
+  "components": {
+    "inputs": {
+      "orderInput": {
+        "type": "object",
+        "required": ["sku", "quantity"],
+        "properties": {
+          "sku": { "type": "string", "description": "Stock keeping unit." },
+          "quantity": { "type": "integer", "minimum": 1, "default": 1 },
+          "requestId": { "type": "string", "format": "uuid" }
+        }
+      }
+    },
+    "parameters": {
+      "tenant": { "name": "X-Tenant", "in": "header", "value": "default" }
+    },
+    "successActions": {
+      "done": { "name": "done", "type": "end" }
+    },
+    "failureActions": {
+      "giveUp": { "name": "giveUp", "type": "end", "criteria": [{ "condition": "$statusCode >= 500" }] }
+    },
+    "x-generated": false
+  },
+  "x-documentation": "https://spec.openapis.org/arazzo/v1.1.0.html"
+}

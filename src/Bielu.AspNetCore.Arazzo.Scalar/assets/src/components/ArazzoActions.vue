@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { formatValue } from '../helpers/format'
 import { resolveReusables } from '../helpers/reusable'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction } from '../types'
 import ArazzoCriteria from './ArazzoCriteria.vue'
+import ArazzoValue from './ArazzoValue.vue'
 
 const props = defineProps<{
   title: string
@@ -49,7 +49,7 @@ const parametersOf = (action: ArazzoSuccessAction | ArazzoFailureAction): Arazzo
             v-for="parameter in parametersOf(action)"
             :key="parameter.name">
             <dt><code>{{ parameter.name }}</code></dt>
-            <dd><code>{{ formatValue(parameter.value) }}</code></dd>
+            <dd><ArazzoValue :value="parameter.value" /></dd>
           </template>
         </dl>
       </li>
