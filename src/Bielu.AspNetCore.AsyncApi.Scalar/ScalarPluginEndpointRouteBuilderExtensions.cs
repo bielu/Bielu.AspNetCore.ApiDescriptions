@@ -1,7 +1,9 @@
 ﻿using System.Reflection;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Net.Http.Headers;
 
 namespace Bielu.AspNetCore.AsyncApi.Scalar;
 
@@ -15,6 +17,11 @@ public static class ScalarPluginEndpointRouteBuilderExtensions
     /// Serves an embedded console bundle at <c>{path}/plugin.js</c>. Protocol packages call this
     /// from their own <c>MapScalar*Assets</c> extension with their assembly and resource name.
     /// </summary>
+    /// <remarks>
+    /// The response carries an <c>ETag</c> derived from the bundle's content and
+    /// <c>Cache-Control: no-cache</c>, so the browser revalidates on every page load and gets a
+    /// <c>304 Not Modified</c> until the bundle changes, instead of downloading it again each time.
+    /// </remarks>
     /// <param name="endpoints">The endpoint route builder.</param>
     /// <param name="path">The base path to serve the bundle from.</param>
     /// <param name="assembly">The assembly the bundle is embedded in.</param>
@@ -35,10 +42,13 @@ public static class ScalarPluginEndpointRouteBuilderExtensions
         ArgumentException.ThrowIfNullOrEmpty(missingBundleMessage);
 
         var basePath = path.TrimEnd('/');
+        // The bundle is embedded, so it cannot change while the app runs: hash it once, on first use.
+        var entityTag = new Lazy<EntityTagHeaderValue?>(() => ComputeEntityTag(assembly, resourceName));
 
         endpoints.MapGet($"{basePath}/plugin.js", async (HttpContext context) =>
         {
-            await using var stream = assembly.GetManifestResourceStream(resourceName);
+            var tag = entityTag.Value;
+            await using var stream = tag is null ? null : assembly.GetManifestResourceStream(resourceName);
             if (stream is null)
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -46,12 +56,42 @@ public static class ScalarPluginEndpointRouteBuilderExtensions
                 return;
             }
 
-            context.Response.ContentType = "text/javascript; charset=utf-8";
-            // Revalidate on each load so a redeployed bundle is never masked by a stale browser cache.
+            // Revalidate on each load so a redeployed bundle is never masked by a stale browser cache;
+            // the ETag turns that revalidation into a 304 while the bundle is unchanged.
             context.Response.Headers.CacheControl = "no-cache";
+            context.Response.Headers.ETag = tag!.ToString();
+            if (IsNotModified(context.Request, tag))
+            {
+                context.Response.StatusCode = StatusCodes.Status304NotModified;
+                return;
+            }
+
+            context.Response.ContentType = "text/javascript; charset=utf-8";
+            context.Response.ContentLength = stream.Length;
             await stream.CopyToAsync(context.Response.Body);
         }).ExcludeFromDescription();
 
         return endpoints;
+    }
+
+    /// <summary>A strong ETag from the first 16 bytes of the bundle's SHA-256, or <see langword="null"/> when it is not embedded.</summary>
+    private static EntityTagHeaderValue? ComputeEntityTag(Assembly assembly, string resourceName)
+    {
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream is null)
+        {
+            return null;
+        }
+
+        var hash = SHA256.HashData(stream);
+        return new EntityTagHeaderValue($"\"{Convert.ToHexStringLower(hash, 0, 16)}\"");
+    }
+
+    /// <summary>Whether the request's <c>If-None-Match</c> names <paramref name="tag"/> (or is <c>*</c>).</summary>
+    private static bool IsNotModified(HttpRequest request, EntityTagHeaderValue tag)
+    {
+        var ifNoneMatch = request.GetTypedHeaders().IfNoneMatch;
+        return ifNoneMatch.Count > 0
+            && ifNoneMatch.Any(candidate => candidate.Equals(EntityTagHeaderValue.Any) || candidate.Compare(tag, useStrongComparison: false));
     }
 }
