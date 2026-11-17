@@ -59,6 +59,9 @@ source description URL is matched against the URL each Scalar source was loaded 
 generated `/openapi/v1.json` source description finds the `/openapi/v1.json` Scalar source. When
 the target's document is not loaded, the step still shows the raw `operationId` or path.
 
+The [`ArazzoScalar` example](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/ArazzoScalar)
+puts this together: two workflows mixing HTTP operations and messages, rendered at `/scalar`.
+
 ## Without ASP.NET Core
 
 The bundle is also published to npm as `@bielu/scalar-arazzo`:

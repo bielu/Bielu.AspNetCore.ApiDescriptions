@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Renders an Arazzo document in the Scalar API Reference, next to the OpenAPI and AsyncAPI documents its steps call. -->
+  <PropertyGroup>
+    <TargetFramework>$(BieluExampleTargetFramework)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
+    <ProjectReference Include="..\..\Bielu.AspNetCore.Arazzo\Bielu.AspNetCore.Arazzo.csproj" />
+    <ProjectReference Include="..\..\Bielu.AspNetCore.Arazzo.Scalar\Bielu.AspNetCore.Arazzo.Scalar.csproj" />
+  </ItemGroup>
+
+</Project>
