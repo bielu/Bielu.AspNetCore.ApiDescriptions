@@ -118,10 +118,12 @@ sidebar, so they follow any `generateOperationSlug` the page sets; they assume S
 routing.
 
 The [`ArazzoScalar` example](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/ArazzoScalar)
-puts this together: two workflows mixing HTTP operations and messages, rendered at `/scalar`. It
-also serves a hand-written "Arazzo field reference" document (`wwwroot/fixtures`) that uses every
-field of Arazzo 1.1, including ones the workflow builder doesn't emit yet, such as replacements and
-Selector Objects.
+puts this together: two workflows mixing HTTP operations and messages, rendered at `/scalar`. They
+are built with the fluent API, including payload replacements, Selector Object parameters and
+outputs, workflow outputs a later workflow reads, and a reusable failure action. The example also
+serves a hand-written "Arazzo field reference" document (`wwwroot/fixtures`) that uses every field of
+Arazzo 1.1, so the view is checked against fields the example's workflows don't use. For what the
+builders can and cannot produce, see [Authoring coverage](overview.md#authoring-coverage).
 
 ## Which spec a step targets
 
