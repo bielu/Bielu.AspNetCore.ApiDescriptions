@@ -15,6 +15,24 @@ internal static partial class ArazzoIdentifier
     [GeneratedRegex(@"^[A-Za-z0-9_-]+$")]
     private static partial Regex StrictPattern();
 
+    [GeneratedRegex(@"^[a-zA-Z0-9\.\-_]+$")]
+    private static partial Regex KeyPattern();
+
+    /// <summary>
+    /// Throws <see cref="ArgumentException"/> if <paramref name="value"/> is null, empty, or not a valid map key
+    /// for workflow outputs and the Components Object, which the spec restricts to <c>^[a-zA-Z0-9\.\-_]+$</c>.
+    /// </summary>
+    public static void ValidateKey(string value, string paramName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(value, paramName);
+        if (!KeyPattern().IsMatch(value))
+        {
+            throw new ArgumentException(
+                $"'{value}' is not a valid Arazzo key; it must match '^[a-zA-Z0-9\\.\\-_]+$' (letters, digits, '.', '-', and '_' only).",
+                paramName);
+        }
+    }
+
     /// <summary>Throws <see cref="ArgumentException"/> if <paramref name="value"/> is null, empty, or does not match the identifier-strict grammar.</summary>
     public static void Validate(string value, string paramName)
     {
