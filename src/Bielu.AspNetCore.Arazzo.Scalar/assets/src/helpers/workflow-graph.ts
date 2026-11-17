@@ -1,12 +1,15 @@
 import dagre from '@dagrejs/dagre'
 import type { ArazzoCriterion, ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoSuccessAction, ArazzoWorkflow } from '../types'
 import { resolveReusables } from './reusable'
+import type { SpecFamily } from './target-spec'
 
 /** A box in the workflow overview: a step, or the synthetic end node an `end` action leads to. */
 export type WorkflowGraphNode = {
   id: string
   label: string
   kind: 'step' | 'success' | 'failure'
+  /** For a step: the spec its target is described in, drawn as a colored marker. */
+  spec?: SpecFamily
 }
 
 /** An arrow between two nodes. `kind` says why it is drawn, so success and failure paths can be told apart. */
@@ -56,13 +59,21 @@ const hasActions = (step: ArazzoStep): boolean => Boolean(step.onSuccess?.length
  * A retry with neither `stepId` nor `workflowId` retries the step itself; a self-loop on the box adds
  * nothing its label would not say, so none is drawn.
  */
-export const buildWorkflowGraph = (document: ArazzoDocument, workflow: ArazzoWorkflow | undefined): WorkflowGraph => {
+export const buildWorkflowGraph = (
+  document: ArazzoDocument,
+  workflow: ArazzoWorkflow | undefined,
+  specOf?: (step: ArazzoStep) => SpecFamily | undefined,
+): WorkflowGraph => {
   const steps = workflow?.steps ?? []
   if (steps.length === 0) {
     return { nodes: [], edges: [] }
   }
 
-  const nodes: WorkflowGraphNode[] = steps.map((step) => ({ id: step.stepId, label: step.stepId, kind: 'step' }))
+  const nodes: WorkflowGraphNode[] = steps.map((step) => {
+    const spec = specOf?.(step)
+    const node: WorkflowGraphNode = { id: step.stepId, label: step.stepId, kind: 'step' }
+    return spec ? { ...node, spec } : node
+  })
   const stepIds = new Set(steps.map((step) => step.stepId))
   const explicit = new Set<string>()
   const actionEdges: WorkflowGraphEdge[] = []
@@ -135,6 +146,8 @@ export type WorkflowLayout = {
 const NODE_CHAR_WIDTH = 7.4
 const LABEL_CHAR_WIDTH = 6.2
 const NODE_HEIGHT = 36
+/** The colored strip on the left of a step box that says which spec it targets. */
+export const SPEC_MARKER_WIDTH = 6
 const LABEL_HEIGHT = 18
 /** Long conditions are cut, so a single arrow cannot stretch the whole diagram sideways. */
 export const MAX_EDGE_LABEL_LENGTH = 48
@@ -149,7 +162,10 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
   layout.setDefaultEdgeLabel(() => ({}))
 
   for (const node of graph.nodes) {
-    const width = node.kind === 'step' ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) : 84
+    const width =
+      node.kind === 'step'
+        ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) + (node.spec ? SPEC_MARKER_WIDTH : 0)
+        : 84
     layout.setNode(node.id, { width, height: NODE_HEIGHT })
   }
   graph.edges.forEach((edge, index) => {
