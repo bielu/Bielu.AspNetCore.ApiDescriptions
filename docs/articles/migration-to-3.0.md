@@ -44,3 +44,10 @@ What to check:
 | `AsyncApiOptions.DocumentRoutePattern` (obsolete since 2.0; nothing read it) | Nothing: the route is the pattern passed to `MapAsyncApi(pattern)` |
 | `[PublishOperation]` (obsolete since 2.0) | `[ReceiveOperation]`: a 2.x publish operation is one where the application receives |
 | `[SubscribeOperation]` (obsolete since 2.0) | `[SendOperation]`: a 2.x subscribe operation is one where the application sends |
+
+## Typed Arazzo source resolvers
+
+`IArazzoSourceResolver` gains `DocumentType`, and the new `ArazzoSourceResolver<TDocument>` base class implements the interface for one document type: override `SourceType` and the typed `TryResolve*` methods, and the base class checks the document's type for you. A document of the wrong type now throws `ArgumentException` naming both types, instead of quietly resolving nothing.
+
+- A custom resolver: derive from `ArazzoSourceResolver<TDocument>` instead of implementing `IArazzoSourceResolver` directly. `TryResolveOperationPath` and `TryResolveChannelPath` are virtual and return `false` unless overridden.
+- Code that calls `AsyncApiSourceResolver` or `OpenApiSourceResolver` directly: their methods now take an `AsyncApiDocument` or an `OpenApiDocument` rather than `object`. `ArazzoWorkspace` is unchanged.

@@ -1,1 +1,9 @@
 ﻿#nullable enable
+abstract Bielu.Arazzo.ArazzoSourceResolver<TDocument>.SourceType.get -> string!
+abstract Bielu.Arazzo.ArazzoSourceResolver<TDocument>.TryResolveOperation(TDocument! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.Arazzo.ArazzoSourceResolver<TDocument>
+Bielu.Arazzo.ArazzoSourceResolver<TDocument>.ArazzoSourceResolver() -> void
+Bielu.Arazzo.ArazzoSourceResolver<TDocument>.DocumentType.get -> System.Type!
+Bielu.Arazzo.IArazzoSourceResolver.DocumentType.get -> System.Type!
+virtual Bielu.Arazzo.ArazzoSourceResolver<TDocument>.TryResolveChannelPath(TDocument! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
+virtual Bielu.Arazzo.ArazzoSourceResolver<TDocument>.TryResolveOperationPath(TDocument! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
