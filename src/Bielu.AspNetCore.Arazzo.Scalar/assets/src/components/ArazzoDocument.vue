@@ -172,13 +172,15 @@ onBeforeUnmount(() => {
  */
 .bielu-arazzo {
   display: block;
-  max-width: 1120px;
+  max-width: 1360px;
   margin: 0 auto;
   padding: 48px 60px 96px;
   color: var(--scalar-color-1);
   font-family: var(--scalar-font);
   font-size: var(--scalar-paragraph, 16px);
   line-height: 1.5;
+  /* The workflow layout switches to two columns on the element's own width, not the viewport's. */
+  container: bielu-arazzo / inline-size;
 }
 @media (max-width: 1000px) {
   .bielu-arazzo {
@@ -433,6 +435,192 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-toggle:hover {
   color: var(--scalar-color-1);
   background: var(--scalar-background-2);
+}
+.bielu-arazzo .ba-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: var(--scalar-radius, 4px);
+  background: none;
+  color: var(--scalar-color-2);
+  cursor: pointer;
+}
+.bielu-arazzo .ba-icon-button:hover {
+  background: var(--scalar-background-2);
+  color: var(--scalar-color-1);
+}
+/* Steps on the left and the overview beside them once there is room for both, as in the POC. */
+.bielu-arazzo .ba-workflow-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+}
+@container bielu-arazzo (min-width: 960px) {
+  .bielu-arazzo .ba-workflow-content {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  .bielu-arazzo .ba-overview {
+    position: sticky;
+    top: calc(var(--refs-viewport-offset, 0px) + 24px);
+  }
+}
+.bielu-arazzo .ba-workflow-aside {
+  min-width: 0;
+  margin-top: 16px;
+}
+.bielu-arazzo .ba-overview {
+  padding: 12px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius-lg, 8px);
+  background: var(--scalar-background-1);
+}
+.bielu-arazzo .ba-overview-header,
+.bielu-arazzo .ba-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.bielu-arazzo .ba-overview-title {
+  font-size: var(--scalar-mini, 12px);
+  font-weight: var(--scalar-bold, 700);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--scalar-color-2);
+}
+.bielu-arazzo .ba-overview-hint {
+  margin-top: 6px;
+  font-size: var(--scalar-mini, 12px);
+}
+.bielu-arazzo .ba-diagram {
+  display: flex;
+  justify-content: center;
+  max-height: min(560px, calc(var(--refs-viewport-height, 100vh) - 140px));
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.bielu-arazzo .ba-diagram-dragging {
+  cursor: grabbing;
+}
+.bielu-arazzo .ba-diagram-canvas {
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.bielu-arazzo .ba-diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.bielu-arazzo .ba-diagram-node rect {
+  fill: var(--scalar-background-2);
+  stroke: var(--scalar-border-color);
+  stroke-width: 1;
+}
+.bielu-arazzo .ba-diagram-node text {
+  fill: var(--scalar-color-1);
+  font-family: var(--scalar-font-code);
+  font-size: 12px;
+}
+.bielu-arazzo .ba-diagram-link {
+  cursor: pointer;
+}
+.bielu-arazzo .ba-diagram-link:hover rect {
+  stroke: var(--scalar-color-accent);
+}
+.bielu-arazzo .ba-diagram-node-success rect {
+  fill: color-mix(in srgb, var(--scalar-color-green, #2e9d4d) 14%, var(--scalar-background-1));
+  stroke: var(--scalar-color-green, #2e9d4d);
+}
+.bielu-arazzo .ba-diagram-node-failure rect {
+  fill: color-mix(in srgb, var(--scalar-color-red, #d4413b) 14%, var(--scalar-background-1));
+  stroke: var(--scalar-color-red, #d4413b);
+}
+.bielu-arazzo .ba-diagram-node-success text,
+.bielu-arazzo .ba-diagram-node-failure text {
+  font-family: var(--scalar-font);
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-diagram-edge {
+  fill: none;
+  stroke: var(--scalar-color-3);
+  stroke-width: 1.4;
+}
+.bielu-arazzo .ba-diagram-arrow {
+  fill: var(--scalar-color-3);
+}
+.bielu-arazzo .ba-diagram-edge.ba-diagram-success {
+  stroke: var(--scalar-color-green, #2e9d4d);
+}
+.bielu-arazzo .ba-diagram-arrow.ba-diagram-success {
+  fill: var(--scalar-color-green, #2e9d4d);
+}
+.bielu-arazzo .ba-diagram-edge.ba-diagram-failure {
+  stroke: var(--scalar-color-red, #d4413b);
+  stroke-dasharray: 5 3;
+}
+.bielu-arazzo .ba-diagram-arrow.ba-diagram-failure {
+  fill: var(--scalar-color-red, #d4413b);
+}
+.bielu-arazzo .ba-diagram-edge-label rect {
+  fill: var(--scalar-background-1);
+  stroke: var(--scalar-border-color);
+  stroke-width: 0.5;
+}
+.bielu-arazzo .ba-diagram-edge-label text {
+  fill: var(--scalar-color-2);
+  font-family: var(--scalar-font-code);
+  font-size: 10.5px;
+}
+.bielu-arazzo .ba-dialog {
+  /* Scalar's CSS reset zeroes the margin a dialog centers itself with. */
+  margin: auto;
+  width: min(1440px, 94vw);
+  height: min(900px, 88vh);
+  max-width: none;
+  max-height: none;
+  padding: 16px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius-lg, 8px);
+  background: var(--scalar-background-1);
+  color: var(--scalar-color-1);
+  box-shadow: var(--scalar-shadow-2, 0 10px 30px rgb(0 0 0 / 0.25));
+}
+.bielu-arazzo .ba-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.bielu-arazzo .ba-dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+.bielu-arazzo .ba-dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bielu-arazzo .ba-diagram.ba-diagram-large {
+  flex: 1;
+  align-items: center;
+  max-height: none;
+  min-height: 0;
+}
+.bielu-arazzo .ba-diagram-large {
+  padding: 24px;
+}
+.bielu-arazzo .ba-diagram-canvas-fit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 .bielu-arazzo .ba-target-parameters {
   margin-top: 12px;

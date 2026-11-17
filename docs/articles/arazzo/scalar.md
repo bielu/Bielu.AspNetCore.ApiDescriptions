@@ -49,16 +49,18 @@ serves from `/bielu/scalar/arazzo/plugin.js`.
 - The document's `info` and its `sourceDescriptions`.
 - One sidebar entry per workflow, with one child entry per step. Sidebar clicks, deep links and
   scroll position stay in sync, as they do for operations.
-- For each workflow: its inputs (nested properties fold out, with their format, allowed values,
-  default and bounds), shared parameters, steps, success and failure actions, and outputs.
+- For each workflow: its inputs (nested properties fold out), shared parameters, steps, success
+  and failure actions, and outputs.
+- A workflow overview beside the steps: a flowchart of the steps, with arrows for `dependsOn` (or
+  document order) and labeled success and failure branches for `onSuccess`/`onFailure`, ending in
+  Success or Failed for `end` actions. Drag to pan, scroll to zoom, click a step to jump to it, or
+  expand it to fill the window. It follows Scalar's light and dark themes.
 - For each step: the operation, channel or workflow it targets, with that target's description and
-  its own parameters (path item and operation parameters for OpenAPI, channel address parameters for
-  AsyncAPI), then the step's parameters, request body, success criteria, `onSuccess`/`onFailure`
-  actions and outputs. A one-line step description reads as the step's heading, under a
-  `Step · id` label.
+  its own parameters, then the step's parameters, request body, success criteria,
+  `onSuccess`/`onFailure` actions and outputs. Reusable objects (`$components.parameters.*` and the
+  like) are resolved.
 - Each workflow and step heading has a copy-link button. With Scalar's `classic` layout, each
-  workflow can be collapsed. Reusable objects
-  (`$components.parameters.*` and the like) are resolved.
+  workflow can be collapsed.
 
 A step's target is looked up in the documents loaded in the same Scalar page. The step's
 source description URL is matched against the URL each Scalar source was loaded from, so a
