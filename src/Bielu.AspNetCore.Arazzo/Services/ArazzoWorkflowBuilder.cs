@@ -17,6 +17,7 @@ public sealed class ArazzoWorkflowBuilder
     private readonly List<ArazzoReferenceable<ArazzoSuccessAction>> _successActions = [];
     private readonly List<ArazzoReferenceable<ArazzoFailureAction>> _failureActions = [];
     private readonly Dictionary<string, ArazzoValue> _outputs = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, JsonNode?> _extensions = new(StringComparer.Ordinal);
 
     internal ArazzoWorkflowBuilder(string workflowId) => _workflowId = workflowId;
 
@@ -200,6 +201,63 @@ public sealed class ArazzoWorkflowBuilder
         return this;
     }
 
+    /// <summary>
+    /// Sets the workflow's <c>inputs</c> to a <c>$ref</c> to a schema in <c>components.inputs</c>, added with
+    /// <see cref="ArazzoOptions.AddComponentInputs(string, JsonNode)"/>, so several workflows can share one schema.
+    /// </summary>
+    /// <param name="componentName">The component's name.</param>
+    public ArazzoWorkflowBuilder WithInputsReference(string componentName)
+    {
+        ArazzoIdentifier.ValidateKey(componentName, nameof(componentName));
+        Inputs = new JsonObject { ["$ref"] = $"#/components/inputs/{componentName}" };
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a workflow-wide parameter that refers to one in <c>components.parameters</c>, added with
+    /// <see cref="ArazzoOptions.AddComponentParameter"/>.
+    /// </summary>
+    /// <param name="componentName">The component's name.</param>
+    /// <param name="value">A value that overrides the referenced parameter's own value, if any.</param>
+    public ArazzoWorkflowBuilder ParameterReference(string componentName, string? value = null)
+    {
+        _parameters.Add(ArazzoComponentReference.Parameter(componentName, value));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a workflow-wide success action that refers to one in <c>components.successActions</c>, added with
+    /// <see cref="ArazzoOptions.AddComponentSuccessAction"/>.
+    /// </summary>
+    /// <param name="componentName">The component's name.</param>
+    public ArazzoWorkflowBuilder OnSuccessReference(string componentName)
+    {
+        _successActions.Add(ArazzoComponentReference.SuccessAction(componentName));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a workflow-wide failure action that refers to one in <c>components.failureActions</c>, added with
+    /// <see cref="ArazzoOptions.AddComponentFailureAction"/>.
+    /// </summary>
+    /// <param name="componentName">The component's name.</param>
+    public ArazzoWorkflowBuilder OnFailureReference(string componentName)
+    {
+        _failureActions.Add(ArazzoComponentReference.FailureAction(componentName));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a Specification Extension (<c>x-*</c>) to the workflow. Setting the same name again replaces its value.
+    /// </summary>
+    /// <param name="name">The extension name, which must start with <c>x-</c>.</param>
+    /// <param name="value">The extension value; any JSON, including <c>null</c>.</param>
+    public ArazzoWorkflowBuilder WithExtension(string name, JsonNode? value)
+    {
+        ArazzoExtensions.Set(_extensions, name, value);
+        return this;
+    }
+
     /// <summary>Adds a step to the workflow, in execution order.</summary>
     public ArazzoWorkflowBuilder Step(string stepId, Action<ArazzoStepBuilder> configure)
     {
@@ -239,6 +297,7 @@ public sealed class ArazzoWorkflowBuilder
             SuccessActions = _successActions.Count > 0 ? _successActions : null,
             FailureActions = _failureActions.Count > 0 ? _failureActions : null,
             Outputs = _outputs.Count > 0 ? _outputs : null,
+            Extensions = _extensions.Count > 0 ? _extensions : null,
             Steps = _steps,
         };
     }

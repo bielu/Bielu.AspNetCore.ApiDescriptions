@@ -23,8 +23,136 @@ public static class ArazzoValidator
         ValidateSourceDescriptions(document, errors);
         ValidateWorkflows(document, errors);
         ValidateValues(document, errors);
+        ValidateSelf(document, errors);
+        ValidateComponents(document, errors);
 
         return errors;
+    }
+
+    private static void ValidateSelf(ArazzoDocument document, List<ArazzoError> errors)
+    {
+        if (document.Self is null)
+        {
+            return;
+        }
+
+        if (ArazzoVersionExtensions.TryParse(document.Arazzo, out var version) && version == ArazzoVersion.V1_0)
+        {
+            errors.Add(new ArazzoError("/$self", "$self requires Arazzo 1.1.0 or later."));
+        }
+
+        if (document.Self.Contains('#', StringComparison.Ordinal))
+        {
+            errors.Add(new ArazzoError("/$self", "$self MUST NOT contain a fragment."));
+        }
+    }
+
+    /// <summary>
+    /// Validates the reusable objects in <c>components</c> like their inline counterparts, and checks that every
+    /// Reusable Object (<c>$components.{kind}.{name}</c>) and <c>#/components/inputs/{name}</c> schema reference
+    /// in the document points at an entry of the right kind that exists.
+    /// </summary>
+    private static void ValidateComponents(ArazzoDocument document, List<ArazzoError> errors)
+    {
+        var components = document.Components;
+        foreach (var (name, parameter) in components?.Parameters ?? new Dictionary<string, ArazzoParameter>())
+        {
+            ValidateParameter(parameter, $"/components/parameters/{EscapePointerSegment(name)}", errors);
+        }
+
+        foreach (var (name, action) in components?.SuccessActions ?? new Dictionary<string, ArazzoSuccessAction>())
+        {
+            ValidateSuccessAction(action, $"/components/successActions/{EscapePointerSegment(name)}", errors);
+        }
+
+        foreach (var (name, action) in components?.FailureActions ?? new Dictionary<string, ArazzoFailureAction>())
+        {
+            var path = $"/components/failureActions/{EscapePointerSegment(name)}";
+            ValidateFailureAction(action, path, errors);
+            CheckReferences(action.Parameters, "parameters", components?.Parameters, $"{path}/parameters", errors);
+        }
+
+        for (var w = 0; w < document.Workflows.Count; w++)
+        {
+            var workflow = document.Workflows[w];
+            var workflowPath = $"/workflows/{w}";
+            CheckInputsReference(workflow.Inputs, components?.Inputs, $"{workflowPath}/inputs", errors);
+            CheckReferences(workflow.Parameters, "parameters", components?.Parameters, $"{workflowPath}/parameters", errors);
+            CheckReferences(workflow.SuccessActions, "successActions", components?.SuccessActions, $"{workflowPath}/successActions", errors);
+            CheckReferences(workflow.FailureActions, "failureActions", components?.FailureActions, $"{workflowPath}/failureActions", errors);
+            CheckNestedFailureActionReferences(workflow.FailureActions, components?.Parameters, $"{workflowPath}/failureActions", errors);
+
+            for (var s = 0; s < workflow.Steps.Count; s++)
+            {
+                var step = workflow.Steps[s];
+                var stepPath = $"{workflowPath}/steps/{s}";
+                CheckReferences(step.Parameters, "parameters", components?.Parameters, $"{stepPath}/parameters", errors);
+                CheckReferences(step.OnSuccess, "successActions", components?.SuccessActions, $"{stepPath}/onSuccess", errors);
+                CheckReferences(step.OnFailure, "failureActions", components?.FailureActions, $"{stepPath}/onFailure", errors);
+                CheckNestedFailureActionReferences(step.OnFailure, components?.Parameters, $"{stepPath}/onFailure", errors);
+            }
+        }
+    }
+
+    private static void CheckNestedFailureActionReferences(IList<ArazzoReferenceable<ArazzoFailureAction>>? actions,
+        IDictionary<string, ArazzoParameter>? parameters, string path, List<ArazzoError> errors)
+    {
+        for (var i = 0; actions is not null && i < actions.Count; i++)
+        {
+            CheckReferences(actions[i].Value?.Parameters, "parameters", parameters, $"{path}/{i}/parameters", errors);
+        }
+    }
+
+    private static void CheckReferences<T, TComponent>(IList<ArazzoReferenceable<T>>? items, string kind,
+        IDictionary<string, TComponent>? components, string path, List<ArazzoError> errors)
+        where T : IArazzoSerializable
+    {
+        var prefix = $"$components.{kind}.";
+        for (var i = 0; items is not null && i < items.Count; i++)
+        {
+            if (items[i].Reference is not { } reference)
+            {
+                continue;
+            }
+
+            var referencePath = $"{path}/{i}/reference";
+            if (!reference.Reference.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                errors.Add(new ArazzoError(referencePath, $"'{reference.Reference}' must reference components.{kind} ('{prefix}NAME') in this position."));
+                continue;
+            }
+
+            var name = reference.Reference[prefix.Length..];
+            if (components is null || !components.ContainsKey(name))
+            {
+                errors.Add(new ArazzoError(referencePath, $"'{reference.Reference}' does not resolve; components.{kind} has no '{name}'."));
+            }
+
+            if (reference.Value is not null && kind != "parameters")
+            {
+                errors.Add(new ArazzoError($"{path}/{i}/value", "value only applies to a reference to a parameter."));
+            }
+        }
+    }
+
+    private static void CheckInputsReference(System.Text.Json.Nodes.JsonNode? inputs, IDictionary<string, System.Text.Json.Nodes.JsonNode?>? components,
+        string path, List<ArazzoError> errors)
+    {
+        const string Prefix = "#/components/inputs/";
+        if (inputs is not System.Text.Json.Nodes.JsonObject schema
+            || !schema.TryGetPropertyValue("$ref", out var refNode)
+            || refNode is not System.Text.Json.Nodes.JsonValue refValue
+            || !refValue.TryGetValue<string>(out var reference)
+            || !reference.StartsWith(Prefix, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var name = reference[Prefix.Length..];
+        if (components is null || !components.ContainsKey(name))
+        {
+            errors.Add(new ArazzoError($"{path}/$ref", $"'{reference}' does not resolve; components.inputs has no '{name}'."));
+        }
     }
 
     /// <summary>

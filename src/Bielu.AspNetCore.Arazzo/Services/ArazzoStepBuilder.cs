@@ -14,6 +14,7 @@ public sealed class ArazzoStepBuilder
     private readonly List<ArazzoReferenceable<ArazzoFailureAction>> _onFailure = [];
     private readonly Dictionary<string, ArazzoValue> _outputs = new(StringComparer.Ordinal);
     private readonly List<ArazzoPayloadReplacement> _replacements = [];
+    private readonly Dictionary<string, JsonNode?> _extensions = new(StringComparer.Ordinal);
 
     internal ArazzoStepBuilder(string stepId) => _stepId = stepId;
 
@@ -323,6 +324,51 @@ public sealed class ArazzoStepBuilder
         return this;
     }
 
+    /// <summary>
+    /// Adds a parameter that refers to one in <c>components.parameters</c>, added with
+    /// <see cref="ArazzoOptions.AddComponentParameter"/>.
+    /// </summary>
+    /// <param name="componentName">The component's name.</param>
+    /// <param name="value">A value that overrides the referenced parameter's own value, if any.</param>
+    public ArazzoStepBuilder ParameterReference(string componentName, string? value = null)
+    {
+        _parameters.Add(ArazzoComponentReference.Parameter(componentName, value));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a success action that refers to one in <c>components.successActions</c>, added with
+    /// <see cref="ArazzoOptions.AddComponentSuccessAction"/>.
+    /// </summary>
+    /// <param name="componentName">The component's name.</param>
+    public ArazzoStepBuilder OnSuccessReference(string componentName)
+    {
+        _onSuccess.Add(ArazzoComponentReference.SuccessAction(componentName));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a failure action that refers to one in <c>components.failureActions</c>, added with
+    /// <see cref="ArazzoOptions.AddComponentFailureAction"/>.
+    /// </summary>
+    /// <param name="componentName">The component's name.</param>
+    public ArazzoStepBuilder OnFailureReference(string componentName)
+    {
+        _onFailure.Add(ArazzoComponentReference.FailureAction(componentName));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a Specification Extension (<c>x-*</c>) to the step. Setting the same name again replaces its value.
+    /// </summary>
+    /// <param name="name">The extension name, which must start with <c>x-</c>.</param>
+    /// <param name="value">The extension value; any JSON, including <c>null</c>.</param>
+    public ArazzoStepBuilder WithExtension(string name, JsonNode? value)
+    {
+        ArazzoExtensions.Set(_extensions, name, value);
+        return this;
+    }
+
     /// <summary>Adds a success action to run when this step succeeds.</summary>
     public ArazzoStepBuilder OnSuccess(ArazzoSuccessAction action)
     {
@@ -377,5 +423,6 @@ public sealed class ArazzoStepBuilder
         Parameters = _parameters.Count > 0 ? _parameters : null,
         OnSuccess = _onSuccess.Count > 0 ? _onSuccess : null,
         OnFailure = _onFailure.Count > 0 ? _onFailure : null,
+        Extensions = _extensions.Count > 0 ? _extensions : null,
     };
 }

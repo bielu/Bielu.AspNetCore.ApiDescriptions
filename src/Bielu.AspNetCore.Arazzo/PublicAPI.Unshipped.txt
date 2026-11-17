@@ -1,11 +1,27 @@
 ﻿#nullable enable
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddComponentFailureAction(string! name, Bielu.Arazzo.Models.ArazzoFailureAction! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddComponentInputs(string! name, System.Text.Json.Nodes.JsonNode! schema) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddComponentInputs(string! name, System.Text.Json.Serialization.Metadata.JsonTypeInfo! typeInfo) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddComponentParameter(string! name, Bielu.Arazzo.Models.ArazzoParameter! parameter) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddComponentSuccessAction(string! name, Bielu.Arazzo.Models.ArazzoSuccessAction! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.WithExtension(string! name, System.Text.Json.Nodes.JsonNode? value) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.WithSelf(string! uri) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.OnFailureReference(string! componentName) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.OnSuccessReference(string! componentName) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Output(string! name, Bielu.Arazzo.Models.ArazzoSelector! selector) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.ParameterReference(string! componentName, string? value = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.PayloadSelector(Bielu.Arazzo.Models.ArazzoSelector! selector, string? contentType = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Replacement(string! target, Bielu.Arazzo.Models.ArazzoValue! value, Bielu.Arazzo.Models.ArazzoSelectorType? targetSelectorType = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Parameter(Bielu.Arazzo.Models.ArazzoParameter! parameter) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.WithExtension(string! name, System.Text.Json.Nodes.JsonNode? value) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.OnFailure(Bielu.Arazzo.Models.ArazzoFailureAction! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.OnFailureReference(string! componentName) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.OnSuccess(Bielu.Arazzo.Models.ArazzoSuccessAction! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.OnSuccessReference(string! componentName) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.Output(string! name, Bielu.Arazzo.Models.ArazzoSelector! selector) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.Output(string! name, string! expression) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.Parameter(Bielu.Arazzo.Models.ArazzoParameter! parameter) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.Parameter(string! name, string! valueExpression, string? location = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.ParameterReference(string! componentName, string? value = null) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.WithExtension(string! name, System.Text.Json.Nodes.JsonNode? value) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.WithInputsReference(string! componentName) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!

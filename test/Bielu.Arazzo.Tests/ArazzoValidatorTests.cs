@@ -357,6 +357,85 @@ public class ArazzoValidatorTests
         errors.ShouldContain(e => e.Message.Contains("context is required"));
     }
 
+    [Fact]
+    public void Validate_ReferenceToWrongComponentKind_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Components = new ArazzoComponents
+        {
+            SuccessActions = new Dictionary<string, ArazzoSuccessAction> { ["done"] = new() { Name = "done", Type = "end" } },
+        };
+        document.Workflows[0].Steps[0].OnFailure =
+        [
+            ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoReusableObject { Reference = "$components.successActions.done" }),
+        ];
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldContain(e => e.Path == "/workflows/0/steps/0/onFailure/0/reference" && e.Message.Contains("components.failureActions"));
+    }
+
+    [Fact]
+    public void Validate_ValueOnNonParameterReference_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Components = new ArazzoComponents
+        {
+            SuccessActions = new Dictionary<string, ArazzoSuccessAction> { ["done"] = new() { Name = "done", Type = "end" } },
+        };
+        document.Workflows[0].SuccessActions =
+        [
+            ArazzoReferenceable<ArazzoSuccessAction>.Of(new ArazzoReusableObject { Reference = "$components.successActions.done", Value = "x" }),
+        ];
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldHaveSingleItem().Path.ShouldBe("/workflows/0/successActions/0/value");
+    }
+
+    [Fact]
+    public void Validate_ResolvedReferencesAndInputsRef_ReturnNoErrors()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Components = new ArazzoComponents
+        {
+            Inputs = new Dictionary<string, JsonNode?> { ["in"] = JsonNode.Parse("""{"type":"object"}""") },
+            Parameters = new Dictionary<string, ArazzoParameter> { ["p"] = new() { Name = "p", In = "query", Value = "$inputs.p" } },
+        };
+        document.Workflows[0].Inputs = JsonNode.Parse("""{"$ref":"#/components/inputs/in"}""");
+        document.Workflows[0].Steps[0].Parameters =
+        [
+            ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoReusableObject { Reference = "$components.parameters.p", Value = "1" }),
+        ];
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Validate_SelfWithFragment_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Self = "https://example.com/a.json#x";
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldHaveSingleItem().Message.ShouldContain("fragment");
+    }
+
     private static ArazzoSelector Selector() => new() { Context = "$response.body", Selector = "$.id", Type = "jsonpath" };
 
     [Fact]

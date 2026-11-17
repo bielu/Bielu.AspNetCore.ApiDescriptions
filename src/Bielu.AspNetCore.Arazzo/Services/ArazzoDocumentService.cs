@@ -30,9 +30,12 @@ internal sealed class ArazzoDocumentService([ServiceKey] string documentName, IO
         var document = new ArazzoDocument
         {
             Arazzo = options.Version.ToVersionString(),
+            Self = options.Self,
             Info = options.Info,
             SourceDescriptions = [.. options.SourceDescriptions],
             Workflows = [.. options.Workflows],
+            Components = options.Components,
+            Extensions = options.Extensions,
         };
 
         var errors = ArazzoValidator.Validate(document).Where(e => !e.IsWarning).ToList();
