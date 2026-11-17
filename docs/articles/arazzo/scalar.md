@@ -3,6 +3,8 @@
 `Bielu.AspNetCore.Arazzo.Scalar` renders Arazzo documents in the [Scalar](https://scalar.com/) API
 Reference, on the same page as the OpenAPI and AsyncAPI documents their steps call.
 
+![An Arazzo workflow in Scalar: the source descriptions with their specs, the workflow's inputs and first step, and the workflow overview flowchart with a marker per spec](../../images/arazzo/scalar-workflow-overview.png)
+
 > [!IMPORTANT]
 > The plugin uses Scalar's plugin `documentTypes` API, first released in `@scalar/api-reference` 1.80.0
 > ([scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816)). `Scalar.AspNetCore` bundles that version from
@@ -45,6 +47,15 @@ default) as a Scalar source. `WithArazzo` adds the plugin script, which `MapScal
 serves from `/bielu/scalar/arazzo/plugin.js`.
 
 ## What is rendered
+
+An AsyncAPI step shows the message it receives, with its payload, next to the step's correlation ID,
+timeout, criteria and outputs:
+
+![A step receiving the paymentCompleted message: spec badge, channel link, the message payload's properties, a JSONPath success criterion and a failure branch](../../images/arazzo/scalar-asyncapi-step.png)
+
+With its steps collapsed, a workflow reads as an outline of what each step calls:
+
+![The placeOrder workflow with its five steps collapsed, each showing its spec and target in one line, beside the workflow overview](../../images/arazzo/scalar-collapsed-steps.png)
 
 - The document's `info`, its `$self` URL (Arazzo 1.1) and its `sourceDescriptions`. Each source shows its spec and version, whether
   it is loaded in the page, and how many steps use it, and the header counts the steps per spec.
