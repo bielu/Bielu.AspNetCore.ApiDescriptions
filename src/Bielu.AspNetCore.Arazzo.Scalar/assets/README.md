@@ -14,6 +14,23 @@ the page surface, with consistent disclosures for nested properties, examples an
 Requires `@scalar/api-reference` 1.80.0 or later, the first version with plugin `documentTypes`
 ([scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816)).
 
+## What it shows
+
+- Every field of Arazzo 1.0 and 1.1: workflows, steps, inputs, parameters, request bodies with
+  replacements, success criteria with their expression language, success and failure actions,
+  outputs, Selector Objects, reusable `components`, `$self`, and `x-*` extensions.
+- Which spec each step targets (`OpenAPI 3.1.1`, `AsyncAPI 3.0.0` or `Workflow`, plus send/receive),
+  on the step, on the overview flowchart, and per source description.
+- Links from each step to the operation or channel it calls in its own document.
+- A filter for workflows and steps. The overview can be used from the keyboard, and the layout works
+  at phone width. A malformed document renders what it can instead of failing.
+
+## Versioning
+
+The plugin follows semantic versioning from 1.0.0. Its public surface is `createArazzoPlugin`,
+`arazzoDocumentType`, the `<script>` and `pluginUrls` entry points, and the exported types. The
+rendered markup and its CSS classes are not part of it.
+
 ## Usage
 
 As a plugin:
