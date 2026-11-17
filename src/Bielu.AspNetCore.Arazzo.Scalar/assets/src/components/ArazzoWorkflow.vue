@@ -25,6 +25,8 @@ const props = defineProps<{
   eventBus?: PluginEventBus
   /** Scalar's `layout` option: `classic` folds each workflow into a section that opens and closes. */
   layout?: string
+  /** workflowId → the sidebar id of that workflow's section. */
+  workflowNavIds?: Record<string, string>
 }>()
 
 const workflow = computed(() => props.view.workflow)
@@ -166,7 +168,8 @@ const closeOnBackdrop = (event: MouseEvent) => {
               :document="document"
               :documents="documents"
               :eventBus="eventBus"
-              :step="entry.step" />
+              :step="entry.step"
+              :workflowNavIds="workflowNavIds" />
           </li>
         </ol>
 

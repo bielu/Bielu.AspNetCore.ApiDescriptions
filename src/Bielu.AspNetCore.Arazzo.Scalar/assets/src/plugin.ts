@@ -1,4 +1,5 @@
 import { isArazzoDocument, traverseArazzoDocument } from './helpers/navigation'
+import { installCrossDocumentHistory } from './helpers/target-link'
 import type { PluginNavigationEntry } from './types'
 
 /** The custom element tag the document content is rendered as (registered by the entry points). */
@@ -58,6 +59,11 @@ export const arazzoDocumentType: ArazzoDocumentType = {
  * Arazzo source as an empty OpenAPI document.
  */
 export const createArazzoPlugin = (): ApiReferencePlugin => {
+  // Step targets link into the other documents of the page; Back and Forward across such a link
+  // must reload to switch documents, whichever document is shown when the page loads.
+  if (typeof window !== 'undefined') {
+    installCrossDocumentHistory()
+  }
   const plugin: ApiReferencePlugin = () => ({
     name: ARAZZO_PLUGIN_NAME,
     extensions: [],

@@ -38,6 +38,9 @@ const workflows = computed(() => (props.document ? toWorkflowViews(props.documen
 /** The document's own extensions and its `info`'s, shown together in the header (the root's win on a clash). */
 const documentExtensions = computed(() => ({ ...info.value, ...props.document }))
 
+/** workflowId → its section's sidebar id, so a step that invokes a workflow links to it. */
+const workflowNavIds = computed(() => Object.fromEntries(workflows.value.map((view) => [view.workflow.workflowId, view.id])))
+
 /** The components section's sidebar id; `undefined` when the document declares no components. */
 const componentsId = computed(() => componentsEntryId(props.navigation ?? []))
 
@@ -212,7 +215,8 @@ onBeforeUnmount(() => {
       :documents="loadedDocuments"
       :eventBus="eventBus"
       :layout="layout"
-      :view="view" />
+      :view="view"
+      :workflowNavIds="workflowNavIds" />
 
     <ArazzoComponents
       v-if="document?.components && componentsId"
@@ -429,6 +433,29 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-target-id {
   margin-right: 8px;
   word-break: break-all;
+}
+.bielu-arazzo a.ba-target-link {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  color: inherit;
+  text-decoration: none;
+  word-break: normal;
+}
+.bielu-arazzo a.ba-target-link .ba-target-id,
+.bielu-arazzo a.ba-target-link .ba-target-signature {
+  margin-right: 0;
+}
+.bielu-arazzo a.ba-target-link:hover .ba-target-id,
+.bielu-arazzo a.ba-target-link:hover .ba-target-signature,
+.bielu-arazzo a.ba-target-link:focus-visible .ba-target-id {
+  color: var(--scalar-color-accent);
+  text-decoration: underline;
+}
+.bielu-arazzo .ba-target-arrow {
+  color: var(--scalar-color-accent);
+  font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-target-signature {
   margin-right: 8px;
