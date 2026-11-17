@@ -281,4 +281,16 @@ public class ArazzoStepValueAuthoringTests
         SourceDescriptions = [],
         Workflows = [new ArazzoWorkflow { WorkflowId = "wf", Steps = [step] }],
     };
+
+    [Theory]
+    [InlineData("has space")]
+    [InlineData("a/b")]
+    public void Output_RejectsNamesOutsideTheKeyPattern(string name)
+    {
+        BuildStep(s =>
+        {
+            Should.Throw<ArgumentException>(() => s.Output(name, "$response.body"));
+            Should.Throw<ArgumentException>(() => s.Output(name, JsonPathSelector("$response.body", "$.id")));
+        });
+    }
 }

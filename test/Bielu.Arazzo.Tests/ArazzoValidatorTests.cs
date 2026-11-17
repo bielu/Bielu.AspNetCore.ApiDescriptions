@@ -648,4 +648,31 @@ public class ArazzoValidatorTests
             "/components/failureActions/stop/criteria/0/type",
         ], ignoreOrder: true);
     }
+
+    [Theory]
+    [InlineData("has space")]
+    [InlineData("a/b")]
+    public void Validate_OutputNameOutsideTheKeyPattern_ReturnsError(string name)
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Workflows[0].Steps[0].Outputs = new Dictionary<string, ArazzoValue> { [name] = "$response.body" };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldHaveSingleItem().Message.ShouldContain("must match");
+    }
+
+    [Fact]
+    public void Validate_OutputNameWithDotsDashesAndUnderscores_ReturnsNoErrors()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Workflows[0].Steps[0].Outputs = new Dictionary<string, ArazzoValue> { ["order.id-v2_x"] = "$response.body" };
+
+        // Act & Assert
+        ArazzoValidator.Validate(document).ShouldBeEmpty();
+    }
 }

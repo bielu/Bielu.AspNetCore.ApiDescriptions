@@ -21,6 +21,7 @@
 | In a `1.0.x` document, the other 1.1 additions: an `asyncapi` source description; the `channelPath`, `action`, `correlationId`, `timeout` or `dependsOn` step fields; the `querystring` parameter location; the `jsonpointer` criterion type or the `rfc9535` JSONPath version | Declare `1.1.0`. A document that uses AsyncAPI steps already needs 1.1, which introduced them |
 | `$self` in a `1.0.x` document, or a `$self` with a `#fragment` | Declare `1.1.0`; remove the fragment |
 | A Reusable Object (`$components.{kind}.{name}`) that names no entry, or an entry of another kind (a `successActions` reference in `onFailure`, say), or a workflow `inputs` `$ref` to a missing `#/components/inputs/{name}` | Add the component, or fix the reference |
+| An output name outside `^[a-zA-Z0-9.\-_]+$`, such as one with a space or a `/`. `ArazzoStepBuilder.Output` now throws for one, as the workflow builder already did | Rename the output, and the `$steps.{id}.outputs.{name}` expressions that read it |
 | `value` on a reference to anything but a parameter | Remove `value`; only a parameter reference can override its value |
 | A component parameter or action that is invalid the way an inline one would be (a `goto` action with no target, an unknown parameter `in`) | Fix the component |
 

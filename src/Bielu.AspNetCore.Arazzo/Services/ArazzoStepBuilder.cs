@@ -246,7 +246,7 @@ public sealed class ArazzoStepBuilder
     /// <summary>Declares a named output whose value is the given runtime expression, e.g. <c>$message.payload#/id</c>.</summary>
     public ArazzoStepBuilder Output(string name, string expression)
     {
-        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArazzoIdentifier.ValidateKey(name, nameof(name));
         ArgumentException.ThrowIfNullOrEmpty(expression);
         _outputs[name] = ArazzoValue.FromExpression(expression);
         return this;
@@ -268,7 +268,7 @@ public sealed class ArazzoStepBuilder
     /// </example>
     public ArazzoStepBuilder Output(string name, ArazzoSelector selector)
     {
-        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArazzoIdentifier.ValidateKey(name, nameof(name));
         ArgumentNullException.ThrowIfNull(selector);
         _outputs[name] = ArazzoValue.FromSelector(selector);
         return this;
