@@ -54,8 +54,12 @@ var errors = ArazzoValidator.Validate(document);
 
 `ArazzoValidator` checks the structural invariants a well-formed document must satisfy beyond what the
 type system already enforces — unique `workflowId`/`stepId` values, step target mutual-exclusivity,
-JSON Schema shape checks on `workflow.inputs`, and more. It does **not** resolve references against
-real source documents (does this `operationId` actually exist?) — that is `ArazzoWorkspace`'s job.
+JSON Schema shape checks on `workflow.inputs`, and more. It also checks that every
+`$components.{kind}.{name}` reference and `#/components/inputs/{name}` `$ref` resolves to an entry of
+the right kind, that outputs are expressions or Selector Objects rather than literals, and that a
+document declaring `arazzo: 1.0.x` uses none of the 1.1 additions it knows about: `$self`, the Selector
+Object, and `targetSelectorType`. It does **not** resolve references against real source documents
+(does this `operationId` actually exist?). That is `ArazzoWorkspace`'s job.
 
 ## Writing a document
 
@@ -165,6 +169,100 @@ and fails startup, rather than failing the first time a workflow actually runs i
 The documents can also be written at build time with `dotnet getdocument`, next to the OpenAPI and AsyncAPI ones; see
 [Build-time document generation](../build-time-generation.md#arazzo-documents). The tool starts the app, so the same
 validation fails the build when a step references something that no longer exists.
+
+### Authoring the rest of the document
+
+Beyond targets, criteria and expression outputs, the builders cover the Arazzo fields that take
+values, reusable objects and extensions. Values that can be a literal, a runtime expression or (Arazzo
+1.1) a Selector Object use the model's own `ArazzoValue` and `ArazzoSelector` types:
+
+```csharp
+builder.Services.AddArazzo(options =>
+{
+    options.WithInfo("Order workflows", "1.0.0")
+        .WithSelf("https://example.com/arazzo/orders.json")          // $self (1.1)
+        .WithExtension("x-owner", "orders-team")                       // root x-* extension
+        .AddOpenApiSource("orders", "v1")
+        .AddComponentParameter("tenant", new ArazzoParameter
+        {
+            Name = "X-Tenant",
+            In = ArazzoParameterLocation.Header,
+            Value = "$inputs.tenant",
+        })
+        .AddComponentFailureAction("giveUp", new ArazzoFailureAction { Name = "giveUp", Type = "end" });
+
+    options.AddWorkflow("placeOrder", wf => wf
+        .ParameterReference("tenant")                                  // applies to every step
+        .OnFailureReference("giveUp")
+        .Step("create", s => s
+            .Operation("createOrder")
+            // A payload template, then the values written into it before the request is sent.
+            .Payload(new JsonObject { ["sku"] = null, ["quantity"] = 1 }, "application/json")
+            .Replacement("/sku", "$inputs.sku")
+            .Replacement("$.quantity", ArazzoValue.FromSelector(new ArazzoSelector
+            {
+                Context = "$inputs.cart",
+                Selector = "$.lines[0].quantity",
+                Type = "jsonpath",
+            }), "jsonpath")
+            .Output("orderId", new ArazzoSelector { Context = "$response.body", Selector = "/id", Type = "jsonpointer" }))
+        .Output("orderId", "$steps.create.outputs.orderId"));        // read as $workflows.placeOrder.outputs.orderId
+
+    options.AddWorkflow("trackOrder", wf => wf
+        .DependsOn("placeOrder")
+        .Step("status", s => s
+            .Operation("getOrder")
+            .Parameter(new ArazzoParameter
+            {
+                Name = "id",
+                In = ArazzoParameterLocation.Path,
+                Value = "$workflows.placeOrder.outputs.orderId",
+            })));
+});
+```
+
+- **Request bodies.** `Payload`, `PayloadExpression` and `PayloadSelector` set the payload;
+  `Replacement(target, value, targetSelectorType)` adds Payload Replacement Objects. Replacements
+  are kept in the order they were added, whether they come before or after the payload, and setting
+  the payload again replaces only the payload and its content type.
+- **Values.** `Parameter(ArazzoParameter)` takes a literal (`ArazzoValue.FromLiteral`), an
+  expression, or a Selector Object, at workflow and step level. `Output(name, ArazzoSelector)` adds
+  selector outputs. Outputs have no literal overload because the spec does not allow literal outputs.
+- **Workflows.** `Output`, `Parameter`, `OnSuccess` and `OnFailure` fill the workflow's `outputs`,
+  `parameters`, `successActions` and `failureActions`, which apply to every step.
+- **Components.** `AddComponentInputs`, `AddComponentParameter`, `AddComponentSuccessAction` and
+  `AddComponentFailureAction` fill `components`. `ParameterReference`, `OnSuccessReference` and
+  `OnFailureReference` refer to those entries from workflows and steps, and `WithInputsReference`
+  points a workflow's `inputs` at a shared schema.
+- **Extensions.** `WithExtension(name, value)` adds an `x-*` field to the document, a workflow or a
+  step. Parameters, actions and selectors carry their own `Extensions`, because they are model objects.
+
+All of this reaches the document before it is validated, so a reference to a missing component, a
+literal output, or a 1.1 feature in a document whose `Version` is `ArazzoVersion.V1_0` fails when the
+document is first built, at startup or `dotnet getdocument`, not after serialization.
+
+### Authoring coverage
+
+The Scalar plugin renders every field of Arazzo 1.1 (see [What is rendered](scalar.md#what-is-rendered)),
+but rendering is not the same as authoring. The table shows, for each part of the 1.1 model, whether
+the fluent API can produce it. Every field in the table is read and written by the JSON and YAML
+readers and writers, and rendered by the Scalar plugin.
+
+| Object | Fields the builders author | Not authored by the builders |
+|--------|----------------------------|------------------------------|
+| Document | `arazzo` (`Version`), `$self`, `info` (with its extensions via `WithInfo(Action)`), `sourceDescriptions`, `workflows`, `components`, `x-*` | — |
+| Source Description | `name`, `url`, `type` | `x-*` |
+| Workflow | `workflowId`, `summary`, `description`, `inputs` (schema or `$ref`), `dependsOn`, `steps`, `successActions`, `failureActions`, `outputs`, `parameters`, `x-*` | — |
+| Step | every target (`operationId`, `operationPath`, `channelPath` + `action`, `workflowId`), `description`, `parameters`, `requestBody`, `successCriteria`, `onSuccess`, `onFailure`, `outputs`, `timeout`, `correlationId`, `dependsOn`, `x-*` | `workflowId` of a workflow in another Arazzo source description (`$sourceDescriptions.{name}.{workflowId}`): `Workflow(...)` takes only local ids. `x-*` on success criteria |
+| Request Body | `contentType`, `payload` (literal, expression or selector), `replacements` | `x-*` |
+| Payload Replacement | `target`, `targetSelectorType`, `value` (literal, expression or selector) | `x-*` |
+| Parameter, Success Action, Failure Action, Selector, Criterion | every field, by passing the model object (`Parameter(ArazzoParameter)`, `OnSuccess(ArazzoSuccessAction)`, and so on) | `x-*` on a criterion added with `SuccessCriteria(...)` |
+| Reusable Object | `reference`, and `value` for parameters | — |
+| Components | `inputs`, `parameters`, `successActions`, `failureActions` | `x-*` |
+
+Validation of the version split covers only the 1.1 additions listed under
+[Validating a document](#validating-a-document). A 1.0 document using a `channelPath` step, `action`,
+`correlationId`, `timeout`, step `dependsOn` or an `asyncapi` source description is not rejected yet.
 
 ### Identifying workflows and steps by type
 
