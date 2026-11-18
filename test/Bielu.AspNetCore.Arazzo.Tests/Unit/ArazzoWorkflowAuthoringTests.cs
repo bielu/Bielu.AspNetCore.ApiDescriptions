@@ -186,13 +186,29 @@ public class ArazzoWorkflowAuthoringTests
     }
 
     [Fact]
+    public async Task GeneratedDocument_WithTargetlessRetryFailureAction_Validates()
+    {
+        // Act
+        var document = await BuildDocumentAsync(options => options
+            .AddWorkflow("wf", wf => wf
+                .Step("step", s => s
+                    .Operation("createOrder")
+                    .OnFailure(new ArazzoFailureAction { Name = "retryStep", Type = ArazzoFailureActionType.Retry, RetryAfter = 1, RetryLimit = 5 }))));
+
+        // Assert
+        var action = document.Workflows[0].Steps[0].OnFailure!.ShouldHaveSingleItem().Value!;
+        action.StepId.ShouldBeNull();
+        action.WorkflowId.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task GeneratedDocument_WithInvalidWorkflowFailureAction_FailsValidation()
     {
         // Act
         var exception = await Should.ThrowAsync<ArazzoDocumentValidationException>(() => BuildDocumentAsync(options => options
             .AddWorkflow("wf", wf => wf
                 .Step("step", s => s.Operation("createOrder"))
-                .OnFailure(new ArazzoFailureAction { Name = "retry", Type = ArazzoFailureActionType.Retry }))));
+                .OnFailure(new ArazzoFailureAction { Name = "jump", Type = ArazzoFailureActionType.Goto }))));
 
         // Assert
         exception.Errors.ShouldContain(e => e.Path == "/workflows/0/failureActions/0");

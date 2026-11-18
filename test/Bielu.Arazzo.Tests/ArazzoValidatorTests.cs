@@ -289,21 +289,105 @@ public class ArazzoValidatorTests
         errors.ShouldContain(e => e.Message.Contains("Unknown failure action type"));
     }
 
-    [Fact]
-    public void Validate_RetryFailureActionWithoutTarget_ReturnsError()
+    [Theory]
+    [InlineData("1.0.1")]
+    [InlineData("1.1.0")]
+    public void Validate_InlineRetryFailureActionWithoutTarget_ReturnsNoErrors(string arazzoVersion)
     {
         // Arrange
         var document = MinimalValidDocument();
+        document.Arazzo = arazzoVersion;
         document.Workflows[0].Steps[0].OnFailure =
         [
-            ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoFailureAction { Name = "a", Type = ArazzoFailureActionType.Retry }),
+            ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoFailureAction { Name = "retryStep", Type = ArazzoFailureActionType.Retry, RetryAfter = 1, RetryLimit = 5 }),
+        ];
+        document.Workflows[0].FailureActions =
+        [
+            ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoFailureAction { Name = "retryAny", Type = ArazzoFailureActionType.Retry }),
         ];
 
         // Act
         var errors = ArazzoValidator.Validate(document);
 
         // Assert
-        errors.ShouldContain(e => e.Message.Contains("requires either workflowId or stepId"));
+        errors.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData("1.0.1")]
+    [InlineData("1.1.0")]
+    public void Validate_ReusableRetryFailureActionWithoutTarget_ReturnsNoErrors(string arazzoVersion)
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Arazzo = arazzoVersion;
+        document.Components = new ArazzoComponents
+        {
+            FailureActions = new Dictionary<string, ArazzoFailureAction> { ["retryStep"] = new() { Name = "retryStep", Type = ArazzoFailureActionType.Retry, RetryLimit = 3 } },
+        };
+        document.Workflows[0].Steps[0].OnFailure =
+        [
+            ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoReusableObject { Reference = "$components.failureActions.retryStep" }),
+        ];
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Validate_GotoFailureActionWithoutTarget_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Workflows[0].Steps[0].OnFailure =
+        [
+            ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoFailureAction { Name = "a", Type = ArazzoFailureActionType.Goto }),
+        ];
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldHaveSingleItem().ShouldSatisfyAllConditions(
+            e => e.Path.ShouldBe("/workflows/0/steps/0/onFailure/0"),
+            e => e.Message.ShouldBe("A 'goto' failure action requires either workflowId or stepId."));
+    }
+
+    [Fact]
+    public void Validate_ReusableGotoFailureActionWithoutTarget_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Components = new ArazzoComponents
+        {
+            FailureActions = new Dictionary<string, ArazzoFailureAction> { ["jump"] = new() { Name = "jump", Type = ArazzoFailureActionType.Goto } },
+        };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldContain(e => e.Path == "/components/failureActions/jump" && e.Message.Contains("requires either workflowId or stepId"));
+    }
+
+    [Fact]
+    public void Validate_RetryFailureActionWithBothWorkflowIdAndStepId_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Workflows[0].Steps[0].OnFailure =
+        [
+            ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoFailureAction { Name = "a", Type = ArazzoFailureActionType.Retry, WorkflowId = "wf", StepId = "s1" }),
+        ];
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.ShouldContain(e => e.Message.Contains("mutually exclusive"));
     }
 
     [Fact]
