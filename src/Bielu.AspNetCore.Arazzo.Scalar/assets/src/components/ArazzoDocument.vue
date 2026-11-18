@@ -5,7 +5,7 @@ import { type DocumentWatch, watchDocuments } from '../helpers/document-watch'
 import { componentsEntryId, STEP_REVEAL_EVENT, toWorkflowViews } from '../helpers/navigation'
 import { normalizeArazzoDocument } from '../helpers/normalize'
 import { sourcesLoaded } from '../helpers/resolve-target'
-import { pluginOptions } from '../helpers/plugin-options'
+import type { ArazzoPluginOptions } from '../helpers/plugin-options'
 import { filterWorkflows } from '../helpers/search'
 import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
 import type { ArazzoDocument, PluginEventBus, PluginNavigationEntry } from '../types'
@@ -18,6 +18,7 @@ import ArazzoWorkflow from './ArazzoWorkflow.vue'
  * and content tree, and hands it the props below (see `PluginDocumentType.content` in `@scalar/types`).
  */
 const props = defineProps<{
+  arazzoOptions?: ArazzoPluginOptions
   document?: ArazzoDocument
   /** The workspace document name (the slug of the configured source). */
   documentName?: string
@@ -63,7 +64,7 @@ const documentExtensions = computed(() => ({ ...info.value, ...arazzo.value }))
 /** The text in the filter box; the workflows and steps it leaves are `filter`, everything when empty. */
 const query = ref('')
 const matches = computed(() =>
-  filterWorkflows(workflows.value, query.value, arazzo.value ? { document: arazzo.value, config: pluginOptions() } : undefined),
+  filterWorkflows(workflows.value, query.value, arazzo.value ? { document: arazzo.value, config: props.arazzoOptions ?? {} } : undefined),
 )
 
 /**
@@ -313,6 +314,7 @@ onBeforeUnmount(() => {
     </p>
 
     <ArazzoWorkflow
+      :arazzoOptions="arazzoOptions"
       v-for="view in workflows"
       v-show="!filter || filter.workflows.has(view.id)"
       :key="view.id"

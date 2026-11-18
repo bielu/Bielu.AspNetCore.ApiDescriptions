@@ -376,3 +376,5 @@ Scalar.createApiReference('#app', {
 ```
 
 `dist/scalar-plugin.mjs` can be passed to Scalar's `pluginUrls` instead.
+
+Each Scalar reference keeps its own Arazzo plugin options. Multiple references on the same page can use different extension names. Retry paths show the fallback action reached when the retry limit is exhausted.

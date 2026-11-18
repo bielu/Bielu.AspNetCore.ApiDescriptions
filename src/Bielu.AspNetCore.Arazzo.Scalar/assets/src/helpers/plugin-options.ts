@@ -57,12 +57,3 @@ export const pluginOptionsFromModuleUrl = (moduleUrl: string | undefined): Arazz
 
 export const resolvePluginOptions = (explicit?: unknown, injected?: unknown, moduleUrl?: string): ArazzoPluginOptions =>
   sanitize(explicit) ?? sanitize(injected) ?? pluginOptionsFromModuleUrl(moduleUrl)
-
-let current: ArazzoPluginOptions = {}
-
-/** The options the entry point resolved, read by the document view when it draws the overview. */
-export const pluginOptions = (): ArazzoPluginOptions => current
-
-export const setPluginOptions = (options: ArazzoPluginOptions): void => {
-  current = options
-}

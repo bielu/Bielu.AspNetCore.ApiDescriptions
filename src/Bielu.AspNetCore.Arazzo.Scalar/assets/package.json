@@ -50,7 +50,8 @@
     "typecheck": "vue-tsc --noEmit && vue-tsc -p tsconfig.contract.json",
     "test": "vitest run",
     "dev": "vite build --watch",
-    "build:library": "vite build --config vite.config.library.ts"
+    "build:library": "vite build --config vite.config.library.ts",
+    "postbuild": "node scripts/check-package.mjs"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.8",

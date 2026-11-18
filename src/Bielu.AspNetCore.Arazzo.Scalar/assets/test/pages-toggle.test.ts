@@ -2,7 +2,6 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
-import { setPluginOptions } from '../src/helpers/plugin-options'
 import { resetWorkflowView, VIEW_STORAGE_KEY } from '../src/helpers/view-mode'
 import type { ArazzoDocument, ArazzoWorkflow as Workflow } from '../src/types'
 
@@ -17,6 +16,7 @@ const shop = {
   workflows: [listOrders],
 } as ArazzoDocument
 
+let options = {}
 const mounted: VueWrapper[] = []
 
 const mountWorkflow = (document: ArazzoDocument = shop) => {
@@ -27,6 +27,7 @@ const mountWorkflow = (document: ArazzoDocument = shop) => {
       view: { id: workflow.workflowId, workflow, steps: workflow.steps!.map((step) => ({ id: `${workflow.workflowId}/${step.stepId}`, step })) },
       document,
       documents: {},
+      arazzoOptions: options,
     },
   })
   mounted.push(wrapper)
@@ -39,18 +40,18 @@ const toggle = (wrapper: VueWrapper, name: 'Technical' | 'Pages') =>
 beforeEach(() => {
   localStorage.clear()
   resetWorkflowView()
-  setPluginOptions({ pagesExtension: 'x-shop-pages', pageExtension: 'x-page', labelExtension: 'x-label' })
+  options = { pagesExtension: 'x-shop-pages', pageExtension: 'x-page', labelExtension: 'x-label' }
 })
 
 afterEach(() => {
   mounted.splice(0).forEach((wrapper) => wrapper.unmount())
-  setPluginOptions({})
+  options = {}
 })
 
 describe('the Technical | Pages toggle', () => {
   it('is hidden when the pages options are not configured', () => {
     // Arrange
-    setPluginOptions({})
+    options = {}
 
     // Act
     const wrapper = mountWorkflow()

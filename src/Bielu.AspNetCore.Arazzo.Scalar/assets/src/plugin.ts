@@ -1,5 +1,6 @@
+import { defineComponent, h } from 'vue'
 import { isArazzoDocument, traverseArazzoDocument } from './helpers/navigation'
-import { type ArazzoPluginOptions, PLUGIN_OPTIONS_GLOBAL, resolvePluginOptions, setPluginOptions } from './helpers/plugin-options'
+import { type ArazzoPluginOptions, PLUGIN_OPTIONS_GLOBAL, resolvePluginOptions } from './helpers/plugin-options'
 import { installCrossDocumentHistory } from './helpers/target-link'
 import type { PluginNavigationEntry } from './types'
 
@@ -63,9 +64,7 @@ export const arazzoDocumentType: ArazzoDocumentType = {
  * ones on the `scalar-plugin.mjs` URL; see {@link ArazzoPluginOptions}.
  */
 export const createArazzoPlugin = (options?: ArazzoPluginOptions, moduleUrl?: string): ApiReferencePlugin => {
-  setPluginOptions(
-    resolvePluginOptions(options, typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>)[PLUGIN_OPTIONS_GLOBAL] : undefined, moduleUrl),
-  )
+  const resolvedOptions = resolvePluginOptions(options, typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>)[PLUGIN_OPTIONS_GLOBAL] : undefined, moduleUrl)
   // Step targets link into the other documents of the page; Back and Forward across such a link
   // must reload to switch documents, whichever document is shown when the page loads.
   if (typeof window !== 'undefined') {
@@ -74,7 +73,17 @@ export const createArazzoPlugin = (options?: ArazzoPluginOptions, moduleUrl?: st
   const plugin: ApiReferencePlugin = () => ({
     name: ARAZZO_PLUGIN_NAME,
     extensions: [],
-    documentTypes: [arazzoDocumentType],
+    documentTypes: [{
+      ...arazzoDocumentType,
+      content: {
+        component: defineComponent({
+          inheritAttrs: false,
+          setup(_, { attrs }) {
+            return () => h(ARAZZO_DOCUMENT_TAG, { ...attrs, arazzoOptions: resolvedOptions })
+          },
+        }),
+      },
+    }],
   })
   // Tag the factory so a page-level hook can detect an already-registered plugin without invoking it.
   ;(plugin as { pluginName?: string }).pluginName = ARAZZO_PLUGIN_NAME
