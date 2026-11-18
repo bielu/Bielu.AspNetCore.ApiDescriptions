@@ -3,7 +3,7 @@
 `Bielu.AspNetCore.Arazzo.Scalar` renders Arazzo documents in the [Scalar](https://scalar.com/) API
 Reference, on the same page as the OpenAPI and AsyncAPI documents their steps call.
 
-![An Arazzo workflow in Scalar: the source descriptions with their specs, the workflow's inputs and first step, and the workflow overview flowchart with a marker per spec](../../images/arazzo/scalar-workflow-overview.jpg)
+![An Arazzo workflow in Scalar: the source descriptions with their specs, the workflow's inputs and first step, and the workflow overview flowchart with a marker per spec and an end node per end action](../../images/arazzo/scalar-workflow-overview.jpg)
 
 > [!IMPORTANT]
 > The plugin uses Scalar's plugin `documentTypes` API, first released in `@scalar/api-reference` 1.80.0
@@ -46,6 +46,29 @@ app.MapScalarApiReference(options => options
 default) as a Scalar source. `WithArazzo` adds the plugin script, which `MapScalarArazzoAssets`
 serves from `/bielu/scalar/arazzo/plugin.js`.
 
+### Options
+
+`WithArazzoOptions` enables the view like `WithArazzo`, with options:
+
+```csharp
+app.MapScalarApiReference(options => options
+    .AddArazzoDocument("v1", "Workflows")
+    .WithArazzoOptions(arazzo =>
+    {
+        arazzo.EndLabelExtension = "x-page";   // name end nodes after this extension of the end action
+        arazzo.AssetsPath = "/bielu/scalar/arazzo";
+    }));
+```
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `EndLabelExtension` | none | A specification extension (`x-…`) on `end` failure actions whose value names the end node they lead to in the workflow overview, in place of the action's name. Actions without it keep their name. |
+| `AssetsPath` | `/bielu/scalar/arazzo` | Where `MapScalarArazzoAssets` serves the script. |
+
+The options are written to the page as `window.__BIELU_SCALAR_ARAZZO__`, which the plugin reads when it
+starts. With the npm package, pass them to `createArazzoPlugin({ endLabelExtension: 'x-page' })`; with
+Scalar's `pluginUrls`, put them on the module URL (`scalar-plugin.mjs?endLabelExtension=x-page`).
+
 ## What is rendered
 
 Step targets emphasize the HTTP method and path or channel action and address. Source versions remain
@@ -61,6 +84,11 @@ With its steps collapsed, a workflow reads as an outline of what each step calls
 
 ![The placeOrder workflow with its five steps collapsed, each showing its spec and target in one line, beside the workflow overview](../../images/arazzo/scalar-collapsed-steps.jpg)
 
+The trackOrder workflow's overview, expanded to fill the window, with its `place` step expanded to show the
+placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is a workflow node of its own:
+
+![The trackOrder overview with the place step expanded: placeOrder's steps in a box of their own with their end nodes rejected, declined and Success, next to trackOrder's status step and its retry, goto placeOrder and Failed branches](../../images/arazzo/scalar-expanded-workflow.jpg)
+
 - The document's `info`, its `$self` URL (Arazzo 1.1) and its `sourceDescriptions`. Each source shows its spec and version, whether
   it is loaded in the page, and how many steps use it, and the header counts the steps per spec.
 - A filter box under the header that narrows the workflows and steps by id, summary, description,
@@ -71,14 +99,32 @@ With its steps collapsed, a workflow reads as an outline of what each step calls
 - For each workflow: its inputs (nested properties fold out), shared parameters, steps, success
   and failure actions, and outputs.
 - A workflow overview beside the steps: a flowchart of the steps, with arrows for `dependsOn` (or
-  document order) and labeled success and failure branches for `onSuccess`/`onFailure`, ending in
-  Success or Failed for `end` actions. Drag to pan, scroll to zoom, click a step to jump to it, or
-  expand it to fill the window. It follows Scalar's light and dark themes. From the keyboard, the
-  focused overview pans with the arrow keys, zooms with `+`/`-` and resets with `0`; Tab reaches
-  each step box, and Enter opens the step. Each step box has a
+  document order) and labeled success and failure branches for `onSuccess`/`onFailure`. Drag to pan,
+  scroll to zoom, click a step to jump to it, or expand it to fill the window. It follows Scalar's
+  light and dark themes. From the keyboard, the focused overview pans with the arrow keys, zooms with
+  `+`/`-` and resets with `0`; Tab reaches each step box, and Enter opens the step. Each step box has a
   colored marker for the spec its target is described in, explained by a legend in the corner.
+  - **Ends.** `end` success actions lead to one Success node, and so does the last step (or a step no
+    other step depends on) when it has no `onSuccess` of its own, since Arazzo ends a workflow
+    successfully after its last step; that arrow is labeled with the step's success criteria when they
+    are short. `end` failure actions lead to one Failed node while they can't be told apart; when they
+    have different names, each gets its own end node named after the action, or after the value of the
+    extension set with [`EndLabelExtension`](#options).
+  - **Workflows.** A workflow that a step invokes (`workflowId`), or that a `goto`/`retry` action invokes,
+    is a node of its own, drawn with a thick outline and listed in the legend. Actions invoking the same
+    workflow share one node. A `retry` through a workflow gets an arrow to the workflow node, labeled with
+    its criteria and limit (`$statusCode == 401 — retry, ≤ 1×`), and an arrow back to the step, which runs
+    again afterwards; a `goto` gets only the arrow there.
+  - **Expanding workflows.** A workflow node of the same document has a `+` button (Tab reaches it, Enter
+    or Space presses it): it shows that workflow's steps inside the diagram, in a box of their own entered
+    from the workflow node, with their own arrows and ends. Workflows inside it expand the same way. A
+    workflow that is already expanded further up the path is not expanded again: it is marked `↻` (a cycle).
+    `−` hides the steps again, along with anything expanded inside them. Workflows of other documents
+    (`$sourceDescriptions.<name>.<workflowId>`) can't be expanded.
 - For each step: the operation, channel or workflow it targets, with that target's description and
-  its own parameters. An AsyncAPI step also shows the message it sends or receives: its payload as
+  its own parameters. A step that invokes a workflow of the same document has a "Show its steps"
+  button that lists that workflow's steps (each with what it calls) under the target, read-only and one
+  level deep; the target link goes to the workflow itself. An AsyncAPI step also shows the message it sends or receives: its payload as
   a property list (references followed into the AsyncAPI document), its content type, and its first
   example payload; a payload in another schema format, such as Avro, is shown as written. Then come
   the step's parameters, request body, success criteria,

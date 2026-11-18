@@ -204,7 +204,8 @@ describe('workflow graph spec markers', () => {
     const marked = layoutWorkflowGraph(buildWorkflowGraph(arazzo, workflow, (step) => specOf(step)?.family))
 
     // Assert
-    expect(marked.nodes.map((node) => node.spec)).toEqual(['openapi', 'asyncapi', 'asyncapi', 'arazzo'])
+    // The steps, not the Success node the last step leads to.
+    expect(marked.nodes.filter((node) => node.stepId).map((node) => node.spec)).toEqual(['openapi', 'asyncapi', 'asyncapi', 'arazzo'])
     expect(plain.nodes.every((node) => node.spec === undefined)).toBe(true)
     expect(marked.nodes[0]!.width).toBe(plain.nodes[0]!.width + SPEC_MARKER_WIDTH)
   })

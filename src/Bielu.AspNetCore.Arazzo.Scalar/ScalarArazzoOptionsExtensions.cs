@@ -1,4 +1,5 @@
-﻿using Bielu.AspNetCore.AsyncApi.Scalar;
+﻿using System.Text.Json;
+using Bielu.AspNetCore.AsyncApi.Scalar;
 using Scalar.AspNetCore;
 
 namespace Bielu.AspNetCore.Arazzo.Scalar;
@@ -9,8 +10,8 @@ namespace Bielu.AspNetCore.Arazzo.Scalar;
 public static class ScalarArazzoOptionsExtensions
 {
     /// <summary>
-    /// The window global reserved for explicit configuration of the Arazzo bundle. The bundle reads
-    /// its documents from Scalar's own sources, so nothing is assigned to it yet.
+    /// The window global the Arazzo bundle reads its options from (<see cref="ScalarArazzoOptions" />). The bundle
+    /// reads its documents from Scalar's own sources, so it is only written when an option is set.
     /// </summary>
     internal const string GlobalVariableName = "__BIELU_SCALAR_ARAZZO__";
 
@@ -49,6 +50,52 @@ public static class ScalarArazzoOptionsExtensions
         ArgumentException.ThrowIfNullOrEmpty(assetsPath);
 
         return options.WithAsyncApiPluginScript(assetsPath, GlobalVariableName);
+    }
+
+    /// <summary>
+    /// Enables Arazzo documents on this Scalar API Reference, with options. Use it in place of
+    /// <see cref="WithArazzo(ScalarOptions, string)" />, not as well.
+    /// </summary>
+    /// <remarks>
+    /// Same as <see cref="WithArazzo(ScalarOptions, string)" />; options that change what the view shows are
+    /// written to the page as a small configuration script before the Arazzo script. It has a name of its own
+    /// rather than being a <c>WithArazzo</c> overload, because <c>WithArazzo(options, assetsPath)</c> already
+    /// takes two arguments with an optional one, and a second two-argument overload would make
+    /// <c>WithArazzo(null)</c> ambiguous.
+    /// </remarks>
+    /// <param name="options">The Scalar options being configured.</param>
+    /// <param name="configure">Sets the Arazzo view's options.</param>
+    /// <returns>The same <see cref="ScalarOptions" /> instance for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// app.MapScalarApiReference(options => options
+    ///     .AddArazzoDocument("v1", "Workflows")
+    ///     .WithArazzoOptions(arazzo => arazzo.EndLabelExtension = "x-page"));
+    /// </code>
+    /// </example>
+    public static ScalarOptions WithArazzoOptions(this ScalarOptions options, Action<ScalarArazzoOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var arazzo = new ScalarArazzoOptions();
+        configure(arazzo);
+        ArgumentException.ThrowIfNullOrEmpty(arazzo.AssetsPath, nameof(configure));
+        if (arazzo.EndLabelExtension is { } extension && !extension.StartsWith("x-", StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                $"EndLabelExtension '{extension}' is not a specification extension: it must start with 'x-'.",
+                nameof(configure));
+        }
+
+        if (arazzo.EndLabelExtension is not null)
+        {
+            // JsonSerializer escapes <, > and & by default, so the value cannot close the script element.
+            var json = JsonSerializer.Serialize(new { endLabelExtension = arazzo.EndLabelExtension });
+            options.HeadContent = (options.HeadContent ?? string.Empty) + $"<script>window.{GlobalVariableName} = {json};</script>";
+        }
+
+        return options.WithArazzo(arazzo.AssetsPath);
     }
 
     /// <summary>

@@ -58,6 +58,68 @@ public class ScalarArazzoOptionsExtensionsTests
     }
 
     [Fact]
+    public void WithArazzoOptions_EndLabelExtension_WritesTheGlobalBeforeThePluginScript()
+    {
+        // Arrange
+        var options = new ScalarOptions();
+
+        // Act
+        var result = options.WithArazzoOptions(arazzo => arazzo.EndLabelExtension = "x-page");
+
+        // Assert
+        result.ShouldBeSameAs(options);
+        var head = options.HeadContent.ShouldNotBeNull();
+        var global = head.IndexOf($"window.{ScalarArazzoOptionsExtensions.GlobalVariableName} = {{\"endLabelExtension\":\"x-page\"}};", StringComparison.Ordinal);
+        global.ShouldBeGreaterThanOrEqualTo(0);
+        global.ShouldBeLessThan(head.IndexOf("src=\"/bielu/scalar/arazzo/plugin.js\"", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void WithArazzoOptions_ConfiguredAssetsPathWithoutOptions_WritesNoGlobal()
+    {
+        // Arrange
+        var options = new ScalarOptions();
+
+        // Act
+        options.WithArazzoOptions(arazzo => arazzo.AssetsPath = "/custom/arazzo");
+
+        // Assert
+        var head = options.HeadContent.ShouldNotBeNull();
+        head.ShouldContain("src=\"/custom/arazzo/plugin.js\"");
+        head.ShouldNotContain(ScalarArazzoOptionsExtensions.GlobalVariableName);
+    }
+
+    [Fact]
+    public void WithArazzoOptions_EndLabelExtensionCannotBreakOutOfTheScript()
+    {
+        // Arrange
+        var options = new ScalarOptions();
+
+        // Act
+        options.WithArazzoOptions(arazzo => arazzo.EndLabelExtension = "x-</script><script>alert(1)</script>");
+
+        // Assert
+        options.HeadContent.ShouldNotBeNull().ShouldNotContain("</script><script>alert(1)");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("page")]
+    public void WithArazzoOptions_EndLabelExtensionNotAnExtension_Throws(string extension)
+    {
+        // Act / Assert
+        Should.Throw<ArgumentException>(() => new ScalarOptions().WithArazzoOptions(arazzo => arazzo.EndLabelExtension = extension));
+    }
+
+    [Fact]
+    public void WithArazzoOptions_ThrowsForNullArgumentsForNullArguments()
+    {
+        // Act / Assert
+        Should.Throw<ArgumentNullException>(() => ((ScalarOptions)null!).WithArazzoOptions(_ => { }));
+        Should.Throw<ArgumentNullException>(() => new ScalarOptions().WithArazzoOptions(null!));
+    }
+
+    [Fact]
     public void AddArazzoDocument_ReturnsTheSameOptions()
     {
         // Arrange

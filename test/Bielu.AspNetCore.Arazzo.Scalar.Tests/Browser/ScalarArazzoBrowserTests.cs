@@ -177,5 +177,68 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         errors.ShouldBeEmpty();
     }
 
+    [BrowserFact]
+    public async Task Overview_DrawsWorkflowCallsRetriesThroughThemAndNamedEnds()
+    {
+        // Arrange
+        var errors = new List<string>();
+        var page = await fixture.OpenArazzoDocumentAsync(errors, ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var loadAccount = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · loadAccount" }).Locator(".ba-overview .ba-diagram");
+
+        // Act
+        var workflowNodes = await loadAccount.Locator(".ba-diagram-node-workflow text").AllTextContentsAsync();
+        var ends = await loadAccount.Locator(".ba-diagram-node-failure text").AllTextContentsAsync();
+        var successes = await loadAccount.Locator(".ba-diagram-node-success").CountAsync();
+        var returns = await loadAccount.Locator(".ba-diagram-edge.ba-diagram-return").CountAsync();
+
+        // Assert
+        workflowNodes.Select(Normalize).ShouldContain("signIn");
+        ends.Select(Normalize).ShouldBe(["forbidden", "error"]);
+        successes.ShouldBe(1);
+        returns.ShouldBe(1);
+        errors.ShouldBeEmpty();
+    }
+
+    [BrowserFact]
+    public async Task Overview_ExpandsWorkflowNodesIntoGroups_Recursively()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var diagram = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" }).Locator(".ba-overview .ba-diagram");
+
+        // Act
+        await diagram.GetByRole(AriaRole.Button, new() { Name = "Show the steps of workflow loadAccount" }).ClickAsync();
+        var afterFirst = await diagram.Locator(".ba-diagram-group").CountAsync();
+        var nested = await diagram.Locator("[data-node-id='loadAccount/getAccount']").CountAsync();
+        // The signIn that getAccount retries through, inside loadAccount (listOrders has its own, at the top level).
+        await diagram.Locator("[data-node-id='loadAccount/__workflow__:signIn']")
+            .GetByRole(AriaRole.Button, new() { Name = "Show the steps of workflow signIn" }).FocusAsync();
+        await page.Keyboard.PressAsync("Enter");
+        var afterSecond = await diagram.Locator(".ba-diagram-group").CountAsync();
+        await diagram.GetByRole(AriaRole.Button, new() { Name = "Hide the steps of workflow loadAccount" }).ClickAsync();
+        var afterHiding = await diagram.Locator(".ba-diagram-group").CountAsync();
+
+        // Assert
+        afterFirst.ShouldBe(1);
+        nested.ShouldBe(1);
+        afterSecond.ShouldBe(2);
+        afterHiding.ShouldBe(0);
+    }
+
+    [BrowserFact]
+    public async Task WorkflowStep_ShowsTheStepsOfItsWorkflowInline()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var step = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" }).Locator(".ba-step").First;
+
+        // Act
+        await step.GetByRole(AriaRole.Button, new() { Name = "Show its 1 step" }).ClickAsync();
+        var nested = Normalize(await step.GetByRole(AriaRole.List, new() { Name = "Steps of workflow loadAccount" }).InnerTextAsync());
+
+        // Assert
+        nested.ShouldBe("getAccount calls getOrder");
+    }
+
     private static string Normalize(string? text) => string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 }

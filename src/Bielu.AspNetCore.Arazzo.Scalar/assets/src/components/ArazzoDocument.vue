@@ -1068,6 +1068,93 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-diagram-arrow.ba-diagram-failure {
   fill: var(--scalar-color-red, #d4413b);
 }
+/* A workflow a step or an action invokes: a thick outline and italic name set it apart from a step that calls an API. */
+.bielu-arazzo .ba-diagram-node-workflow > rect:first-of-type {
+  fill: var(--scalar-background-1);
+  stroke: var(--scalar-border-color);
+  stroke-width: 3;
+}
+.bielu-arazzo .ba-diagram-node-workflow > text {
+  font-style: italic;
+}
+.bielu-arazzo .ba-diagram-node-expanded > rect:first-of-type {
+  stroke: var(--scalar-color-accent);
+}
+.bielu-arazzo .ba-diagram-node-cycle > rect:first-of-type {
+  stroke-dasharray: 4 3;
+}
+.bielu-arazzo .ba-diagram-toggle {
+  cursor: pointer;
+}
+.bielu-arazzo .ba-diagram-toggle rect {
+  fill: var(--scalar-background-2);
+  stroke: var(--scalar-border-color);
+  stroke-width: 1;
+}
+.bielu-arazzo .ba-diagram-toggle text {
+  fill: var(--scalar-color-1);
+  font-family: var(--scalar-font);
+  font-size: 12px;
+  font-weight: var(--scalar-semibold, 600);
+  font-style: normal;
+}
+.bielu-arazzo .ba-diagram-toggle:hover rect,
+.bielu-arazzo .ba-diagram-toggle:focus-visible rect {
+  stroke: var(--scalar-color-accent);
+}
+.bielu-arazzo .ba-diagram-toggle:focus-visible {
+  outline: none;
+}
+.bielu-arazzo .ba-diagram-toggle-cycle {
+  cursor: help;
+}
+.bielu-arazzo .ba-diagram-group rect {
+  fill: color-mix(in srgb, var(--scalar-color-3) 6%, transparent);
+  stroke: var(--scalar-border-color);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+.bielu-arazzo .ba-diagram-group text {
+  fill: var(--scalar-color-2);
+  font-family: var(--scalar-font-code);
+  font-size: 11px;
+}
+/* Back from a workflow a retry ran to the step that runs again. */
+.bielu-arazzo .ba-diagram-edge.ba-diagram-return {
+  stroke: var(--scalar-color-orange, #d97706);
+  stroke-dasharray: 2 3;
+}
+.bielu-arazzo .ba-diagram-arrow.ba-diagram-return {
+  fill: var(--scalar-color-orange, #d97706);
+}
+/* From an expanded workflow node into its first steps. */
+.bielu-arazzo .ba-diagram-edge.ba-diagram-expand {
+  stroke: var(--scalar-color-3);
+  stroke-dasharray: 1 3;
+}
+.bielu-arazzo .ba-nested {
+  margin-top: 8px;
+}
+.bielu-arazzo .ba-nested-steps {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-nested-steps li {
+  padding: 2px 0;
+}
+.bielu-arazzo .ba-diagram-legend-workflow {
+  width: 14px;
+  height: 12px;
+  border: 3px solid var(--scalar-border-color);
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+.bielu-arazzo .ba-diagram-legend-line {
+  width: 16px;
+  height: 0;
+  border-top: 2px dashed var(--ba-line-color);
+}
 .bielu-arazzo .ba-diagram-edge-label rect {
   fill: var(--scalar-background-1);
   stroke: var(--scalar-border-color);

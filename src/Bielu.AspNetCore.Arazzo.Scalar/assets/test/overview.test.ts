@@ -24,10 +24,12 @@ describe('buildWorkflowGraph', () => {
     const graph = buildWorkflowGraph(documentWith(workflow), workflow)
 
     // Assert
-    expect(graph.nodes.map((node) => node.id)).toEqual(['a', 'b', 'c'])
+    expect(graph.nodes.map((node) => node.id)).toEqual(['a', 'b', 'c', SUCCESS_NODE_ID])
     expect(graph.edges).toEqual([
       { from: 'a', to: 'b', kind: 'next' },
       { from: 'b', to: 'c', kind: 'next' },
+      // Arazzo ends a workflow successfully after its last step.
+      { from: 'c', to: SUCCESS_NODE_ID, kind: 'success' },
     ])
   })
 
@@ -42,7 +44,11 @@ describe('buildWorkflowGraph', () => {
     const graph = buildWorkflowGraph(documentWith(workflow), workflow)
 
     // Assert
-    expect(graph.edges).toEqual([{ from: 'a', to: 'c', kind: 'next', label: undefined }])
+    expect(graph.edges).toEqual([
+      { from: 'a', to: 'c', kind: 'next', label: undefined },
+      { from: 'b', to: SUCCESS_NODE_ID, kind: 'success' },
+      { from: 'c', to: SUCCESS_NODE_ID, kind: 'success' },
+    ])
   })
 
   it('draws actions as labeled arrows, with end actions leading to Success/Failed', () => {
@@ -74,6 +80,7 @@ describe('buildWorkflowGraph', () => {
       { from: 'create', to: SUCCESS_NODE_ID, kind: 'success', label: '$response.body#/done == true' },
       { from: 'create', to: 'create', kind: 'failure', label: 'again — retry, ≤ 3×' },
       { from: 'create', to: FAILURE_NODE_ID, kind: 'failure', label: 'giveUp' },
+      { from: 'confirm', to: SUCCESS_NODE_ID, kind: 'success' },
     ])
   })
 
@@ -91,12 +98,15 @@ describe('buildWorkflowGraph', () => {
     const graph = buildWorkflowGraph(documentWith(workflow), workflow)
 
     // Assert
-    expect(graph.edges).toEqual([{ from: 'a', to: 'b', kind: 'success', label: undefined }])
+    expect(graph.edges).toEqual([
+      { from: 'a', to: 'b', kind: 'success', label: undefined },
+      { from: 'b', to: SUCCESS_NODE_ID, kind: 'success' },
+    ])
   })
 
   it('returns an empty graph for a workflow without steps', () => {
     // Arrange / Act / Assert
-    expect(buildWorkflowGraph(documentWith({ workflowId: 'wf' }), undefined)).toEqual({ nodes: [], edges: [] })
+    expect(buildWorkflowGraph(documentWith({ workflowId: 'wf' }), undefined)).toEqual({ nodes: [], edges: [], groups: [] })
   })
 })
 
