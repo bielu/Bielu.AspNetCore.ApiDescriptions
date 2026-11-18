@@ -68,6 +68,24 @@ instead of imperative code.
 
 </div>
 
+<div class="landing-card">
+
+## NPM packages
+
+The Scalar plugins behind the .NET packages, published to npm for JavaScript apps and static pages:
+`@bielu/scalar-arazzo` renders Arazzo workflows next to the OpenAPI and AsyncAPI documents they call, and
+`@bielu/scalar-signalr`, `@bielu/scalar-grpc` and `@bielu/scalar-broker` add live consoles.
+
+- Arazzo workflows in Scalar from two static documents, no server code
+- ES module, `<script>` and `pluginUrls` entry points
+- Technical and Pages views of each workflow
+
+[NPM packages →](articles/npm/overview.md)
+&nbsp;·&nbsp;
+[Arazzo for Scalar →](articles/npm/scalar-arazzo.md)
+
+</div>
+
 </div>
 
 > ⚠️ **Note:** Before version 1.0.0, these libraries are regarded as unstable and **breaking changes may be

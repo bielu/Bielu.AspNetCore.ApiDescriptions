@@ -22,6 +22,9 @@
     - name: API Reference
       href: api/api-catalog/
       homepage: api/api-catalog/index.md
+- name: NPM packages
+  href: articles/npm/
+  homepage: articles/npm/overview.md
 - name: Overlay
   items:
     - name: Articles
