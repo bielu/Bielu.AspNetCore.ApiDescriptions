@@ -10,7 +10,18 @@ export type ArazzoPluginOptions = {
    * end node those actions lead to in the workflow overview, in place of the action's name.
    */
   endLabelExtension?: string
+  /** The Pages view: a document extension holding the map of page id → `{ title, route, description }`. */
+  pagesExtension?: string
+  /** The Pages view: the extension naming the page of a step (the user is on it) or of an action (they land on it). */
+  pageExtension?: string
+  /** The Pages view: the extension holding a plain-language label of a workflow, step or action. */
+  labelExtension?: string
 }
+
+/** The Pages view's options; each must name a specification extension (`x-…`). */
+const PAGES_KEYS = ['pagesExtension', 'pageExtension', 'labelExtension'] as const
+
+const isSpecificationExtension = (value: unknown): value is string => typeof value === 'string' && value.startsWith('x-') && value.length > 2
 
 /** The window global the .NET package assigns the options to. */
 export const PLUGIN_OPTIONS_GLOBAL = '__BIELU_SCALAR_ARAZZO__'
@@ -23,8 +34,17 @@ const sanitize = (value: unknown): ArazzoPluginOptions | undefined => {
   if (!value || typeof value !== 'object') {
     return undefined
   }
-  const { endLabelExtension } = value as Record<string, unknown>
-  return isExtensionName(endLabelExtension) ? { endLabelExtension } : undefined
+  const record = value as Record<string, unknown>
+  const options: ArazzoPluginOptions = {}
+  if (isExtensionName(record.endLabelExtension)) {
+    options.endLabelExtension = record.endLabelExtension
+  }
+  for (const key of PAGES_KEYS) {
+    if (isSpecificationExtension(record[key])) {
+      options[key] = record[key]
+    }
+  }
+  return Object.keys(options).length ? options : undefined
 }
 
 /** Reads the options from the plugin module's own URL; an ES module has no `document.currentScript`. */
@@ -33,8 +53,8 @@ export const pluginOptionsFromModuleUrl = (moduleUrl: string | undefined): Arazz
     return {}
   }
   try {
-    const endLabelExtension = new URL(moduleUrl).searchParams.get('endLabelExtension')
-    return isExtensionName(endLabelExtension) ? { endLabelExtension } : {}
+    const query = new URL(moduleUrl).searchParams
+    return sanitize(Object.fromEntries(['endLabelExtension', ...PAGES_KEYS].map((key) => [key, query.get(key) ?? undefined]))) ?? {}
   } catch {
     return {}
   }

@@ -81,17 +81,36 @@ public static class ScalarArazzoOptionsExtensions
         var arazzo = new ScalarArazzoOptions();
         configure(arazzo);
         ArgumentException.ThrowIfNullOrEmpty(arazzo.AssetsPath, nameof(configure));
-        if (arazzo.EndLabelExtension is { } extension && (extension.Length <= 2 || !extension.StartsWith("x-", StringComparison.Ordinal)))
+        // The options the bundle reads, by their JavaScript names; unset ones are left out.
+        var bundleOptions = new Dictionary<string, string>();
+        foreach (var (name, value) in new[]
         {
-            throw new ArgumentException(
-                $"EndLabelExtension '{extension}' is not a specification extension: it must be 'x-' followed by a name.",
-                nameof(configure));
+            ("endLabelExtension", arazzo.EndLabelExtension),
+            ("pagesExtension", arazzo.PagesExtension),
+            ("pageExtension", arazzo.PageExtension),
+            ("labelExtension", arazzo.LabelExtension),
+        })
+        {
+            if (value is null)
+            {
+                continue;
+            }
+
+            if (value.Length <= 2 || !value.StartsWith("x-", StringComparison.Ordinal))
+            {
+                var property = char.ToUpperInvariant(name[0]) + name[1..];
+                throw new ArgumentException(
+                    $"{property} '{value}' is not a specification extension: it must be 'x-' followed by a name.",
+                    nameof(configure));
+            }
+
+            bundleOptions[name] = value;
         }
 
-        if (arazzo.EndLabelExtension is not null)
+        if (bundleOptions.Count > 0)
         {
-            // JsonSerializer escapes <, > and & by default, so the value cannot close the script element.
-            var json = JsonSerializer.Serialize(new { endLabelExtension = arazzo.EndLabelExtension });
+            // JsonSerializer escapes <, > and & by default, so a value cannot close the script element.
+            var json = JsonSerializer.Serialize(bundleOptions);
             options.HeadContent = (options.HeadContent ?? string.Empty) + $"<script>window.{GlobalVariableName} = {json};</script>";
         }
 

@@ -292,6 +292,48 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
     }
 
     [BrowserFact]
+    public async Task PagesView_ShowsPagesAndPlainLabels_AndKeepsTheZoom()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" });
+        var diagram = workflow.Locator(".ba-overview .ba-diagram");
+        await diagram.ScrollIntoViewIfNeededAsync();
+        await diagram.HoverAsync();
+        await page.Mouse.WheelAsync(0, -100);
+        var canvas = workflow.Locator(".ba-overview .ba-diagram-canvas");
+        var zoomed = await canvas.EvaluateAsync<string>("canvas => canvas.style.transform");
+        var scale = await diagram.Locator("svg").First.GetAttributeAsync("data-scale");
+
+        // Act
+        await workflow.Locator(".ba-overview").GetByRole(AriaRole.Button, new() { Name = "Pages" }).ClickAsync();
+        var bands = (await diagram.Locator(".ba-diagram-band text").AllTextContentsAsync()).Select(Normalize).ToList();
+        var labels = (await diagram.Locator(".ba-diagram-node text").AllTextContentsAsync()).Select(Normalize).ToList();
+        var stepPage = Normalize(await workflow.Locator(".ba-step .ba-step-page").Last.InnerTextAsync());
+
+        // Assert
+        zoomed.ShouldContain("scale(1.1)");
+        (await canvas.EvaluateAsync<string>("canvas => canvas.style.transform")).ShouldBe(zoomed);
+        (await diagram.Locator("svg").First.GetAttributeAsync("data-scale")).ShouldBe(scale);
+        bands.ShouldContain("Order list · /orders");
+        bands.ShouldContain("No page");
+        labels.ShouldContain("Load the order list");
+        labels.ShouldContain("Load the customer account");
+        labels.ShouldContain("No permission");
+        stepPage.ShouldBe("Order list · /orders Load the order list");
+    }
+
+    [BrowserFact]
+    public async Task PagesView_IsNotOfferedForADocumentThatDoesNotUseIt()
+    {
+        // Arrange / Act
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.GeneratedDocumentSlug);
+
+        // Assert
+        (await page.Locator(".bielu-arazzo .ba-view-toggle").CountAsync()).ShouldBe(0);
+    }
+
+    [BrowserFact]
     public async Task WorkflowStep_ShowsTheStepsOfItsWorkflowInline()
     {
         // Arrange

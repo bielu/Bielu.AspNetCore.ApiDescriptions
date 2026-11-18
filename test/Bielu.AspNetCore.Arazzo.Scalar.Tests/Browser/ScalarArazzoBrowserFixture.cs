@@ -52,7 +52,13 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
             .AddDocument("field-reference", "Arazzo field reference", "/fixtures/field-reference.arazzo.json")
             .AddArazzoDocument(GeneratedDocumentName, "Generated workflows")
             .AddArazzoDocument(AccountDocumentName, "Account workflows")
-            .WithArazzoOptions(arazzo => arazzo.EndLabelExtension = EndLabelExtension));
+            .WithArazzoOptions(arazzo =>
+            {
+                arazzo.EndLabelExtension = EndLabelExtension;
+                arazzo.PagesExtension = PagesExtension;
+                arazzo.PageExtension = EndLabelExtension;
+                arazzo.LabelExtension = LabelExtension;
+            }));
 
         await app.StartAsync();
         _app = app;
@@ -90,6 +96,12 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
     /// <summary>The extension whose value names the end nodes of the access document's end actions.</summary>
     public const string EndLabelExtension = "x-page";
 
+    /// <summary>The account document's map of pages, for the Pages view.</summary>
+    public const string PagesExtension = "x-shop-pages";
+
+    /// <summary>The plain-language labels of the account document's steps and actions, for the Pages view.</summary>
+    public const string LabelExtension = "x-label";
+
     /// <summary>
     /// Workflows of a shop that signs its customers in: every API step retries through the signIn workflow on
     /// 401 and ends on a page (named by <see cref="EndLabelExtension"/>) on 403 or any other failure.
@@ -100,16 +112,25 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
         // Both sources, like the other documents, so the page is ready once both show as loaded.
         options.WithInfo("Account workflows", "1.0.0")
             .AddSourceDescription("orders", "/openapi/v1.json", ArazzoSourceDescriptionType.OpenApi)
-            .AddSourceDescription("events", "/asyncapi/v1.json", ArazzoSourceDescriptionType.AsyncApi);
+            .AddSourceDescription("events", "/asyncapi/v1.json", ArazzoSourceDescriptionType.AsyncApi)
+            .WithExtension(PagesExtension, new JsonObject
+            {
+                ["signIn"] = new JsonObject { ["title"] = "Sign in", ["route"] = "/sign-in" },
+                ["orders"] = new JsonObject { ["title"] = "Order list", ["route"] = "/orders" },
+                ["forbidden"] = new JsonObject { ["title"] = "No permission", ["route"] = "/forbidden" },
+                ["error"] = new JsonObject { ["title"] = "Something went wrong", ["route"] = "/error" },
+            });
 
         options.AddWorkflow("signIn", workflow => workflow
-            .Step("authorize", step => step.Operation("createOrder"))
-            .Step("exchangeCode", step => step.Operation("getOrder")));
+            .WithExtension(LabelExtension, "Sign the customer in")
+            .Step("authorize", step => step.Operation("createOrder").WithExtension(EndLabelExtension, "signIn").WithExtension(LabelExtension, "Open the sign-in page"))
+            .Step("exchangeCode", step => step.Operation("getOrder").WithExtension(EndLabelExtension, "signIn")));
         options.AddWorkflow("loadAccount", workflow => workflow
-            .Step("getAccount", step => AddFailures(step.Operation("getOrder").SuccessCriteria("$statusCode == 200"))));
+            .WithExtension(LabelExtension, "Load the customer account")
+            .Step("getAccount", step => AddFailures(step.Operation("getOrder").SuccessCriteria("$statusCode == 200").WithExtension(LabelExtension, "Load the account"))));
         options.AddWorkflow("browseOrders", workflow => workflow
             .Step("loadAccount", step => step.Workflow("loadAccount"))
-            .Step("listOrders", step => AddFailures(step.Operation("getOrder"))));
+            .Step("listOrders", step => AddFailures(step.Operation("getOrder").WithExtension(EndLabelExtension, "orders").WithExtension(LabelExtension, "Load the order list"))));
     }
 
     private static ArazzoStepBuilder AddFailures(ArazzoStepBuilder step) => step
@@ -126,7 +147,7 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
             Name = "showForbiddenPage",
             Type = ArazzoFailureActionType.End,
             Criteria = [new ArazzoCriterion { Condition = "$statusCode == 403" }],
-            Extensions = new Dictionary<string, JsonNode?> { [EndLabelExtension] = JsonValue.Create("forbidden") },
+            Extensions = new Dictionary<string, JsonNode?> { [EndLabelExtension] = JsonValue.Create("forbidden"), [LabelExtension] = JsonValue.Create("No permission") },
         })
         .OnFailure(new ArazzoFailureAction
         {

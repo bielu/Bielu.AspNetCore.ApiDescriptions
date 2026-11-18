@@ -1163,6 +1163,90 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-nested-steps li {
   padding: 2px 0;
 }
+/* Pages view: a band per page, behind the steps the user takes on it. */
+.bielu-arazzo .ba-diagram-band rect {
+  fill: color-mix(in srgb, var(--scalar-color-accent) 7%, transparent);
+  stroke: color-mix(in srgb, var(--scalar-color-accent) 35%, transparent);
+  stroke-width: 1;
+}
+.bielu-arazzo .ba-diagram-band text {
+  fill: var(--scalar-color-2);
+  font-family: var(--scalar-font);
+  font-size: 11px;
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-diagram-band-none rect {
+  fill: color-mix(in srgb, var(--scalar-color-3) 5%, transparent);
+  stroke: var(--scalar-border-color);
+  stroke-dasharray: 3 3;
+}
+.bielu-arazzo .ba-diagram-band-none text {
+  fill: var(--scalar-color-3);
+  font-weight: normal;
+  font-style: italic;
+}
+.bielu-arazzo .ba-diagram-node text.ba-diagram-subtitle {
+  fill: var(--scalar-color-2);
+  font-family: var(--scalar-font);
+  font-size: 10.5px;
+  font-weight: normal;
+}
+.bielu-arazzo .ba-view-toggle {
+  display: inline-flex;
+  margin-left: auto;
+  margin-right: 6px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius, 6px);
+  overflow: hidden;
+}
+.bielu-arazzo .ba-view-toggle button {
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-mini, 12px);
+  cursor: pointer;
+}
+.bielu-arazzo .ba-view-toggle button[aria-pressed='true'] {
+  background: var(--scalar-background-3, var(--scalar-background-2));
+  color: var(--scalar-color-1);
+}
+.bielu-arazzo .ba-step-page {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-diagram-legend-band {
+  width: 14px;
+  height: 10px;
+  border: 1px solid color-mix(in srgb, var(--scalar-color-accent) 35%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--scalar-color-accent) 7%, transparent);
+}
+.bielu-arazzo .ba-diagram-legend-band-none {
+  border: 1px dashed var(--scalar-border-color);
+  background: transparent;
+}
+.bielu-arazzo .ba-diagram-legend-end {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 12px;
+  border-radius: 6px;
+  font-size: 9px;
+}
+.bielu-arazzo .ba-diagram-legend-end-success {
+  border: 1px solid var(--scalar-color-green, #2e9d4d);
+  color: var(--scalar-color-green, #2e9d4d);
+}
+.bielu-arazzo .ba-diagram-legend-end-failure {
+  border: 1px solid var(--scalar-color-red, #d4413b);
+}
 .bielu-arazzo .ba-diagram-legend-workflow {
   width: 14px;
   height: 12px;
