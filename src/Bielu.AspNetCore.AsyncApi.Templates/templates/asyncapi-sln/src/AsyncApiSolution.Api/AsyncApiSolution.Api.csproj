@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="3.0.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.16.17" />
+    <PackageReference Include="Scalar.AspNetCore" Version="3.0.1" />
     <ProjectReference Include="..\AsyncApiSolution.Contracts\AsyncApiSolution.Contracts.csproj" />
   </ItemGroup>
 

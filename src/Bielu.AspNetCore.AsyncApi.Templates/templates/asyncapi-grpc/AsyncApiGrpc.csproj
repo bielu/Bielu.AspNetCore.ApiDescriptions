@@ -15,7 +15,7 @@
     <PackageReference Include="Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Grpc" Version="3.0.0" />
     <PackageReference Include="Bielu.AspNetCore.AsyncApi.Scalar.Grpc" Version="3.0.0" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.16.17" />
+    <PackageReference Include="Scalar.AspNetCore" Version="3.0.1" />
   </ItemGroup>
 
 </Project>
