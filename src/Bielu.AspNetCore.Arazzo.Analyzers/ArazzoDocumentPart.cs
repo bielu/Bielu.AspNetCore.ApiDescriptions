@@ -158,6 +158,10 @@ internal sealed class WorkflowPart
                 case "Channel" or "OperationPath":
                     document.SourceReferences.AddRange(ArazzoSymbols.ConstantIds(call, "sourceName"));
                     break;
+                case "Workflow" when ArazzoSymbols.Argument(call, "sourceName") is not null:
+                    // A workflow of another Arazzo document: its id is that document's, but its source must be declared here.
+                    document.SourceReferences.AddRange(ArazzoSymbols.ConstantIds(call, "sourceName"));
+                    break;
                 case "Workflow":
                     document.WorkflowReferences.AddRange(ArazzoSymbols.ConstantIds(call, "workflowId"));
                     break;

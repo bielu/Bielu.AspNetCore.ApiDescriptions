@@ -25,7 +25,7 @@ internal sealed class ArazzoDocumentReferences
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "A Channel or OperationPath step builds a $sourceDescriptions.<name> reference, which only resolves when the document declares a source description of that name.",
+        description: "A Channel, OperationPath or Workflow(sourceName, workflowId) step builds a $sourceDescriptions.<name> reference, which only resolves when the document declares a source description of that name.",
         customTags: WellKnownDiagnosticTags.CompilationEnd);
 
     public static readonly DiagnosticDescriptor UnknownIdDescriptor = new(

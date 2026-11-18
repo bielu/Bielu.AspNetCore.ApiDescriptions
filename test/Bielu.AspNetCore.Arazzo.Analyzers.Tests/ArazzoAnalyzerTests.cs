@@ -507,6 +507,26 @@ new ServiceCollection().AddArazzo(""orders"", o => o
     }
 
     [Fact]
+    public async Task BARAZZO006_WorkflowOfAnotherArazzoDocument_ChecksTheSourceNotTheWorkflowId()
+    {
+        // Arrange
+        var source = @"
+new ServiceCollection().AddArazzo(""orders"", o => o
+    .AddSourceDescription(""payments"", ""https://example.com/payments.arazzo.json"", ""arazzo"")
+    .AddWorkflow(""w"", w => w
+        .Step(""a"", s => s.Workflow(""payments"", ""chargeCard""))
+        .Step(""b"", s => s.Workflow(""billing"", ""invoice""))));
+";
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        diagnostics.Where(d => d.Id == "BARAZZO006").Select(Text).ShouldBe(["\"billing\""]);
+        diagnostics.ShouldNotContain(d => d.Id == "BARAZZO007");
+    }
+
+    [Fact]
     public async Task BARAZZO006_SourceDeclaredInAnotherAddArazzoCallForSameDocument_NoWarning()
     {
         // Arrange - both calls configure the options of document 'v1' (the default name).

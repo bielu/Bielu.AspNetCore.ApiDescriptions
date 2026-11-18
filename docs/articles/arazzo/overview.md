@@ -271,7 +271,7 @@ readers and writers, and rendered by the Scalar plugin.
 | Document | `arazzo` (`Version`), `$self`, `info` (with its extensions via `WithInfo(Action)`), `sourceDescriptions`, `workflows`, `components`, `x-*` | — |
 | Source Description | `name`, `url`, `type`, `x-*` (`WithSourceDescriptionExtension`) | — |
 | Workflow | `workflowId`, `summary`, `description`, `inputs` (schema or `$ref`), `dependsOn`, `steps`, `successActions`, `failureActions`, `outputs`, `parameters`, `x-*` | — |
-| Step | every target (`operationId`, `operationPath`, `channelPath` + `action`, `workflowId`), `description`, `parameters`, `requestBody`, `successCriteria` (with `x-*` through `SuccessCriteria(ArazzoCriterion)`), `onSuccess`, `onFailure`, `outputs`, `timeout`, `correlationId`, `dependsOn`, `x-*` | `workflowId` of a workflow in another Arazzo source description (`$sourceDescriptions.{name}.{workflowId}`): `Workflow(...)` takes only local ids |
+| Step | every target (`operationId`, `operationPath`, `channelPath` + `action`, `workflowId`, including a workflow of another Arazzo document with `Workflow(sourceName, workflowId)`), `description`, `parameters`, `requestBody`, `successCriteria` (with `x-*` through `SuccessCriteria(ArazzoCriterion)`), `onSuccess`, `onFailure`, `outputs`, `timeout`, `correlationId`, `dependsOn`, `x-*` | — |
 | Request Body | `contentType`, `payload` (literal, expression or selector), `replacements`, `x-*` (`WithRequestBodyExtension`) | — |
 | Payload Replacement | `target`, `targetSelectorType`, `value` (literal, expression or selector), `x-*` (`Replacement(ArazzoPayloadReplacement)`) | — |
 | Parameter, Success Action, Failure Action, Selector, Criterion | every field, by passing the model object (`Parameter(ArazzoParameter)`, `OnSuccess(ArazzoSuccessAction)`, and so on) | — |
@@ -323,7 +323,7 @@ compile time. Most of these mistakes otherwise surface as an exception at startu
 | BARAZZO003 | Error | A step that sets no target, or more than one, of `Operation`, `OperationPath`, `Channel` and `Workflow`. |
 | BARAZZO004 | Error | A `Channel` step action other than `"send"` or `"receive"` (case-sensitive). |
 | BARAZZO005 | Warning | `WithCorrelationId` on a step that doesn't receive: a `send` step, or an operation or workflow step. |
-| BARAZZO006 | Warning | A `Channel` or `OperationPath` step naming a source description the document never declares. |
+| BARAZZO006 | Warning | A `Channel`, `OperationPath` or `Workflow(sourceName, workflowId)` step naming a source description the document never declares. |
 | BARAZZO007 | Warning | `DependsOn` or `Workflow` naming a workflow, or a step of the same workflow, that the document never defines. |
 | BARAZZO008 | Info | `AddAsyncApiSource`/`AddOpenApiSource` pointing at a document name the project never registers with `AddAsyncApi`/`AddOpenApi`. |
 
