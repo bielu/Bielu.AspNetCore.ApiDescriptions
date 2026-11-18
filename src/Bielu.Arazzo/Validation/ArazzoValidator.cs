@@ -11,6 +11,8 @@ namespace Bielu.Arazzo.Validation;
 /// </summary>
 public static class ArazzoValidator
 {
+    private static readonly System.Text.RegularExpressions.Regex OutputKeyPattern = new(@"^[a-zA-Z0-9\.\-_]+$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
     /// <summary>Validates the structural invariants of an Arazzo document.</summary>
     /// <param name="document">The document to validate.</param>
     /// <returns>The validation errors and warnings found in the document.</returns>
@@ -322,6 +324,11 @@ public static class ArazzoValidator
             foreach (var (name, value) in outputs)
             {
                 var outputPath = $"{path}/{EscapePointerSegment(name)}";
+                if (!OutputKeyPattern.IsMatch(name))
+                {
+                    errors.Add(new ArazzoError(outputPath, $@"Output name '{name}' must match ^[a-zA-Z0-9\.\-_]+$."));
+                }
+
                 if (value.IsLiteral)
                 {
                     errors.Add(new ArazzoError(outputPath, "An output must be a runtime expression or a Selector Object, not a literal value."));
