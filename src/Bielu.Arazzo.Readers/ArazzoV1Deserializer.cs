@@ -72,7 +72,7 @@ internal static class ArazzoV1Deserializer
         {
             Name = ReadRequiredString(obj, "name", $"{path}/name", ctx),
             Url = ReadRequiredString(obj, "url", $"{path}/url", ctx),
-            Type = ReadOptionalString(obj, "type"),
+            Type = ReadOptionalString(obj, "type") is { } type ? new ArazzoSourceDescriptionType(type) : (ArazzoSourceDescriptionType?)null,
             Extensions = ReadExtensions(obj, path, known, ctx),
         };
     }
@@ -138,7 +138,7 @@ internal static class ArazzoV1Deserializer
             Outputs = ReadValueMap(Get(obj, "outputs")),
             Timeout = ReadOptionalInt(obj, "timeout", $"{path}/timeout", ctx),
             CorrelationId = ReadOptionalString(obj, "correlationId"),
-            Action = ReadOptionalString(obj, "action"),
+            Action = ReadOptionalString(obj, "action") is { } action ? new ArazzoStepAction(action) : (ArazzoStepAction?)null,
             DependsOn = ReadStringArray(Get(obj, "dependsOn")),
             Extensions = ReadExtensions(obj, path, known, ctx),
         };
@@ -198,7 +198,7 @@ internal static class ArazzoV1Deserializer
         return new ArazzoParameter
         {
             Name = ReadRequiredString(obj, "name", $"{path}/name", ctx),
-            In = ReadOptionalString(obj, "in"),
+            In = ReadOptionalString(obj, "in") is { } location ? new ArazzoParameterLocation(location) : (ArazzoParameterLocation?)null,
             Value = ReadValue(Get(obj, "value")),
             Extensions = ReadExtensions(obj, path, known, ctx),
         };

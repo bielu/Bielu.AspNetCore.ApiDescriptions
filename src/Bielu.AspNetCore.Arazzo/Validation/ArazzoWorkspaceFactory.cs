@@ -41,18 +41,15 @@ internal sealed class ArazzoWorkspaceFactory(
 
         foreach (var wiring in options.SourceWirings)
         {
-            var document = wiring.SourceType switch
-            {
-                ArazzoSourceDescriptionType.AsyncApi => await ResolveAsyncApiDocumentAsync(wiring, errors,
-                    cancellationToken),
-                ArazzoSourceDescriptionType.OpenApi => await ResolveOpenApiDocumentAsync(wiring, errors,
-                    cancellationToken),
-                _ => throw new InvalidOperationException($"Unsupported self-wired source type '{wiring.SourceType}'."),
-            };
+            var document = wiring.SourceType == ArazzoSourceDescriptionType.AsyncApi
+                ? await ResolveAsyncApiDocumentAsync(wiring, errors, cancellationToken)
+                : wiring.SourceType == ArazzoSourceDescriptionType.OpenApi
+                    ? await ResolveOpenApiDocumentAsync(wiring, errors, cancellationToken)
+                    : throw new InvalidOperationException($"Unsupported self-wired source type '{wiring.SourceType}'.");
 
             if (document is not null)
             {
-                workspace.RegisterDocument(wiring.SourceName, wiring.SourceType, document);
+                workspace.RegisterDocument(wiring.SourceName, wiring.SourceType.Value, document);
             }
             else
             {

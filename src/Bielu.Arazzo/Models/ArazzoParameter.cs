@@ -11,7 +11,7 @@ public sealed class ArazzoParameter : IArazzoSerializable, IArazzoExtensible
     public required string Name { get; set; }
 
     /// <summary>One of "path", "query", "querystring", "header", or "cookie".</summary>
-    public string? In { get; set; }
+    public ArazzoParameterLocation? In { get; set; }
 
     public required ArazzoValue Value { get; set; }
 
@@ -22,19 +22,10 @@ public sealed class ArazzoParameter : IArazzoSerializable, IArazzoExtensible
         writer.WriteStartObject();
         writer.WritePropertyName("name");
         writer.WriteValue(Name);
-        writer.WriteOptionalProperty("in", In);
+        writer.WriteOptionalProperty("in", In?.Value);
         writer.WritePropertyName("value");
         Value.SerializeAsV1(writer);
         writer.WriteExtensions(Extensions);
         writer.WriteEndObject();
     }
-}
-
-public static class ArazzoParameterLocation
-{
-    public const string Path = "path";
-    public const string Query = "query";
-    public const string QueryString = "querystring";
-    public const string Header = "header";
-    public const string Cookie = "cookie";
 }

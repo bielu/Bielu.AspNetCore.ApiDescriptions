@@ -53,3 +53,23 @@ What to check:
 
 - A custom resolver: derive from `ArazzoSourceResolver<TDocument>` instead of implementing `IArazzoSourceResolver` directly. `TryResolveOperationPath` and `TryResolveChannelPath` are virtual and return `false` unless overridden.
 - Code that calls `AsyncApiSourceResolver` or `OpenApiSourceResolver` directly: their methods now take an `AsyncApiDocument` or an `OpenApiDocument` rather than `object`. `ArazzoWorkspace` is unchanged.
+
+## Typed Arazzo values
+
+`ArazzoStepAction`, `ArazzoParameterLocation`, `ArazzoSourceDescriptionType`, `ArazzoSuccessActionType` and `ArazzoFailureActionType` were static classes of `string` constants. They are now `readonly record struct`s, and the model properties that hold them use those types: `ArazzoStep.Action`, `ArazzoParameter.In`, `ArazzoSourceDescription.Type`, `ArazzoSuccessAction.Type` and `ArazzoFailureAction.Type`. A string converts to them implicitly, so most code compiles unchanged:
+
+```csharp
+step.Action = ArazzoStepAction.Receive;    // as before
+step.Action = "receive";                   // as before, through the implicit conversion
+if (step.Action == ArazzoStepAction.Send)  // as before
+```
+
+What needs a change:
+
+| 2.x | 3.0 |
+|-----|-----|
+| `string action = step.Action;` | `string? action = step.Action?.Value;` (there is no implicit conversion back to `string`, which would make `==` ambiguous) |
+| `case ArazzoStepAction.Send:` in a `switch` | The values are static properties now, not constants: compare with `==`, or switch on `.Value` |
+| `cond ? ArazzoStepAction.Send : null` | `cond ? ArazzoStepAction.Send : (ArazzoStepAction?)null`. Without the cast, `null` goes through the conversion from `string` and throws `ArgumentNullException` |
+
+`ArazzoStepBuilder.Channel`, both builders' `Parameter(name, expression, location)` and `ArazzoOptions.AddSourceDescription` take the typed values; string arguments still convert. A value outside the specification, such as `"publish"`, still reads and writes as before and is reported by `ArazzoValidator`; `IsKnown` says whether a value is one the specification defines. `ArazzoCriterionType` is unchanged, since a criterion's type is already an `ArazzoSelectorType`.

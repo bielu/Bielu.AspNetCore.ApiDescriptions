@@ -141,7 +141,7 @@ public sealed class ArazzoWorkflowBuilder
     /// <param name="name">The parameter name.</param>
     /// <param name="valueExpression">The runtime expression producing the value, e.g. <c>$inputs.tenant</c>.</param>
     /// <param name="location">Where the parameter goes (see <see cref="ArazzoParameterLocation"/>).</param>
-    public ArazzoWorkflowBuilder Parameter(string name, string valueExpression, string? location = null)
+    public ArazzoWorkflowBuilder Parameter(string name, string valueExpression, ArazzoParameterLocation? location = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         ArgumentException.ThrowIfNullOrEmpty(valueExpression);

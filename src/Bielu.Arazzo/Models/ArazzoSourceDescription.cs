@@ -14,7 +14,7 @@ public sealed class ArazzoSourceDescription : IArazzoSerializable, IArazzoExtens
     public required string Url { get; set; }
 
     /// <summary>One of "openapi", "asyncapi", or "arazzo".</summary>
-    public string? Type { get; set; }
+    public ArazzoSourceDescriptionType? Type { get; set; }
 
     public IDictionary<string, System.Text.Json.Nodes.JsonNode?>? Extensions { get; set; }
 
@@ -25,15 +25,8 @@ public sealed class ArazzoSourceDescription : IArazzoSerializable, IArazzoExtens
         writer.WriteValue(Name);
         writer.WritePropertyName("url");
         writer.WriteValue(Url);
-        writer.WriteOptionalProperty("type", Type);
+        writer.WriteOptionalProperty("type", Type?.Value);
         writer.WriteExtensions(Extensions);
         writer.WriteEndObject();
     }
-}
-
-public static class ArazzoSourceDescriptionType
-{
-    public const string OpenApi = "openapi";
-    public const string AsyncApi = "asyncapi";
-    public const string Arazzo = "arazzo";
 }

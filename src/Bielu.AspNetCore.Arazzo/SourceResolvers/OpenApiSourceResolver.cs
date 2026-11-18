@@ -12,7 +12,7 @@ namespace Bielu.AspNetCore.Arazzo.SourceResolvers;
 public sealed class OpenApiSourceResolver : ArazzoSourceResolver<OpenApiDocument>
 {
     /// <inheritdoc />
-    public override string SourceType => ArazzoSourceDescriptionType.OpenApi;
+    public override string SourceType => ArazzoSourceDescriptionType.OpenApi.Value;
 
     /// <inheritdoc />
     public override bool TryResolveOperation(OpenApiDocument document, string operationId, out JsonNode? operation)

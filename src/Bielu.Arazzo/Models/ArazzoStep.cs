@@ -50,7 +50,7 @@ public sealed class ArazzoStep : IArazzoSerializable, IArazzoExtensible
     public string? CorrelationId { get; set; }
 
     /// <summary>AsyncAPI-only: "send" (publish) or "receive" (subscribe).</summary>
-    public string? Action { get; set; }
+    public ArazzoStepAction? Action { get; set; }
 
     /// <summary>
     /// stepIds that must complete before this step executes. Primarily for async coordination — see
@@ -84,15 +84,9 @@ public sealed class ArazzoStep : IArazzoSerializable, IArazzoExtensible
         writer.WriteOptionalMapProperty("outputs", Outputs, v => v.SerializeAsV1(writer));
         writer.WriteOptionalProperty("timeout", Timeout);
         writer.WriteOptionalProperty("correlationId", CorrelationId);
-        writer.WriteOptionalProperty("action", Action);
+        writer.WriteOptionalProperty("action", Action?.Value);
         writer.WriteOptionalArrayProperty("dependsOn", DependsOn, writer.WriteValue);
         writer.WriteExtensions(Extensions);
         writer.WriteEndObject();
     }
-}
-
-public static class ArazzoStepAction
-{
-    public const string Send = "send";
-    public const string Receive = "receive";
 }

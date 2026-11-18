@@ -9,7 +9,7 @@ public sealed class ArazzoFailureAction : IArazzoSerializable, IArazzoExtensible
     public required string Name { get; set; }
 
     /// <summary>"end", "retry", or "goto".</summary>
-    public required string Type { get; set; }
+    public required ArazzoFailureActionType Type { get; set; }
 
     /// <summary>Only when Type is "goto" or "retry". Mutually exclusive with <see cref="StepId"/>.</summary>
     public string? WorkflowId { get; set; }
@@ -40,7 +40,7 @@ public sealed class ArazzoFailureAction : IArazzoSerializable, IArazzoExtensible
         writer.WritePropertyName("name");
         writer.WriteValue(Name);
         writer.WritePropertyName("type");
-        writer.WriteValue(Type);
+        writer.WriteValue(Type.Value);
         writer.WriteOptionalProperty("workflowId", WorkflowId);
         writer.WriteOptionalProperty("stepId", StepId);
         writer.WriteOptionalArrayProperty("parameters", Parameters, p => p.SerializeAsV1(writer));
@@ -53,14 +53,3 @@ public sealed class ArazzoFailureAction : IArazzoSerializable, IArazzoExtensible
 }
 
 /// <summary>Failure action type values defined by the Arazzo specification.</summary>
-public static class ArazzoFailureActionType
-{
-    /// <summary>Ends workflow execution.</summary>
-    public const string End = "end";
-
-    /// <summary>Retries the failed operation.</summary>
-    public const string Retry = "retry";
-
-    /// <summary>Continues execution at another workflow or step.</summary>
-    public const string Goto = "goto";
-}

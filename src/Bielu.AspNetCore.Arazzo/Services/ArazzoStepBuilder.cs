@@ -28,7 +28,7 @@ public sealed class ArazzoStepBuilder
 
     private string? WorkflowIdValue { get; set; }
 
-    private string? ActionValue { get; set; }
+    private ArazzoStepAction? ActionValue { get; set; }
 
     private string? CorrelationIdValue { get; set; }
 
@@ -80,11 +80,11 @@ public sealed class ArazzoStepBuilder
     /// (see <see cref="ArazzoStepAction"/>). Mutually exclusive with <see cref="Operation"/>,
     /// <see cref="OperationPath"/>, and <see cref="Workflow"/>.
     /// </summary>
-    public ArazzoStepBuilder Channel(string sourceName, string channelName, string action)
+    public ArazzoStepBuilder Channel(string sourceName, string channelName, ArazzoStepAction action)
     {
         ArazzoIdentifier.Validate(sourceName, nameof(sourceName));
         ArgumentException.ThrowIfNullOrEmpty(channelName);
-        ArgumentException.ThrowIfNullOrEmpty(action);
+        ArgumentException.ThrowIfNullOrEmpty(action.Value, nameof(action));
         EnsureNoTargetSet(nameof(Channel));
         ChannelPathValue = $"{{$sourceDescriptions.{sourceName}.url}}#/channels/{EscapePointerSegment(channelName)}";
         ActionValue = action;
@@ -275,7 +275,7 @@ public sealed class ArazzoStepBuilder
     }
 
     /// <summary>Adds a parameter whose value is the given runtime expression.</summary>
-    public ArazzoStepBuilder Parameter(string name, string valueExpression, string? location = null)
+    public ArazzoStepBuilder Parameter(string name, string valueExpression, ArazzoParameterLocation? location = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         ArgumentException.ThrowIfNullOrEmpty(valueExpression);

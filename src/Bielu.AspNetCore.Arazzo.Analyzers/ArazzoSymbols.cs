@@ -42,7 +42,40 @@ internal static class ArazzoSymbols
 
     /// <summary>The compile-time constant string bound to <paramref name="parameterName"/>, or <see langword="null"/>.</summary>
     public static string? ConstantString(IInvocationOperation invocation, string parameterName) =>
-        Argument(invocation, parameterName)?.Value.ConstantValue is { HasValue: true, Value: string value } ? value : null;
+        ConstantString(Argument(invocation, parameterName)?.Value);
+
+    /// <summary>The typed values of the Arazzo model whose static properties name a value known at compile time.</summary>
+    private static readonly HashSet<string> TypedValueTypes = new()
+    {
+        "Bielu.Arazzo.Models.ArazzoStepAction",
+        "Bielu.Arazzo.Models.ArazzoParameterLocation",
+        "Bielu.Arazzo.Models.ArazzoSourceDescriptionType",
+        "Bielu.Arazzo.Models.ArazzoSuccessActionType",
+        "Bielu.Arazzo.Models.ArazzoFailureActionType",
+    };
+
+    /// <summary>
+    /// The string <paramref name="value"/> stands for when it is known at compile time: a constant (also through the
+    /// implicit conversion to a typed value such as <c>ArazzoStepAction</c>), or one of a typed value's static
+    /// properties, such as <c>ArazzoStepAction.Send</c>, whose string form is its name in lower case.
+    /// </summary>
+    public static string? ConstantString(IOperation? value)
+    {
+        while (value is IConversionOperation conversion)
+        {
+            value = conversion.Operand;
+        }
+
+        if (value?.ConstantValue is { HasValue: true, Value: string constant })
+        {
+            return constant;
+        }
+
+        return value is IPropertyReferenceOperation { Property: { IsStatic: true } property }
+               && TypedValueTypes.Contains(property.ContainingType.ToDisplayString())
+            ? property.Name.ToLowerInvariant()
+            : null;
+    }
 
     /// <summary>
     /// The values bound to <paramref name="parameterName"/>: one, or each element of a <c>params</c> array, which
