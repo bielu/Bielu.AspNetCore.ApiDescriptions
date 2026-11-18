@@ -1,4 +1,5 @@
 import { isArazzoDocument, traverseArazzoDocument } from './helpers/navigation'
+import { type ArazzoPluginOptions, PLUGIN_OPTIONS_GLOBAL, resolvePluginOptions, setPluginOptions } from './helpers/plugin-options'
 import { installCrossDocumentHistory } from './helpers/target-link'
 import type { PluginNavigationEntry } from './types'
 
@@ -57,8 +58,14 @@ export const arazzoDocumentType: ArazzoDocumentType = {
  * Creates the Arazzo plugin for the Scalar API Reference. It needs `@scalar/api-reference` 1.80.0 or later
  * (plugin `documentTypes`, scalar/scalar#10816); older versions ignore the field, and would then render an
  * Arazzo source as an empty OpenAPI document.
+ *
+ * `options` win over the ones the .NET package writes to the page (`window.__BIELU_SCALAR_ARAZZO__`) and the
+ * ones on the `scalar-plugin.mjs` URL; see {@link ArazzoPluginOptions}.
  */
-export const createArazzoPlugin = (): ApiReferencePlugin => {
+export const createArazzoPlugin = (options?: ArazzoPluginOptions, moduleUrl?: string): ApiReferencePlugin => {
+  setPluginOptions(
+    resolvePluginOptions(options, typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>)[PLUGIN_OPTIONS_GLOBAL] : undefined, moduleUrl),
+  )
   // Step targets link into the other documents of the page; Back and Forward across such a link
   // must reload to switch documents, whichever document is shown when the page loads.
   if (typeof window !== 'undefined') {

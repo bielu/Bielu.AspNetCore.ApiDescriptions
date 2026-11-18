@@ -1,1 +1,8 @@
 ﻿#nullable enable
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.AssetsPath.get -> string!
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.AssetsPath.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.EndLabelExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.EndLabelExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.ScalarArazzoOptions() -> void
+static Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptionsExtensions.WithArazzoOptions(this Scalar.AspNetCore.ScalarOptions! options, System.Action<Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions!>! configure) -> Scalar.AspNetCore.ScalarOptions!

@@ -24,10 +24,12 @@ describe('buildWorkflowGraph', () => {
     const graph = buildWorkflowGraph(documentWith(workflow), workflow)
 
     // Assert
-    expect(graph.nodes.map((node) => node.id)).toEqual(['a', 'b', 'c'])
+    expect(graph.nodes.map((node) => node.id)).toEqual(['a', 'b', 'c', SUCCESS_NODE_ID])
     expect(graph.edges).toEqual([
       { from: 'a', to: 'b', kind: 'next' },
       { from: 'b', to: 'c', kind: 'next' },
+      // Arazzo ends a workflow successfully after its last step.
+      { from: 'c', to: SUCCESS_NODE_ID, kind: 'success' },
     ])
   })
 
@@ -42,7 +44,11 @@ describe('buildWorkflowGraph', () => {
     const graph = buildWorkflowGraph(documentWith(workflow), workflow)
 
     // Assert
-    expect(graph.edges).toEqual([{ from: 'a', to: 'c', kind: 'next', label: undefined }])
+    expect(graph.edges).toEqual([
+      { from: 'a', to: 'c', kind: 'next', label: undefined },
+      { from: 'b', to: SUCCESS_NODE_ID, kind: 'success' },
+      { from: 'c', to: SUCCESS_NODE_ID, kind: 'success' },
+    ])
   })
 
   it('draws actions as labeled arrows, with end actions leading to Success/Failed', () => {
@@ -55,7 +61,7 @@ describe('buildWorkflowGraph', () => {
           successCriteria: [{ condition: '$statusCode == 201' }],
           onSuccess: [{ name: 'done', type: 'end', criteria: [{ condition: '$response.body#/done == true' }] }],
           onFailure: [
-            { name: 'again', type: 'retry', stepId: 'create', retryLimit: 3 },
+            { name: 'again', type: 'retry', stepId: 'create', retryLimit: 3, criteria: [{ condition: '$statusCode == 503' }] },
             { reference: '$components.failureActions.giveUp' },
           ],
         },
@@ -71,10 +77,13 @@ describe('buildWorkflowGraph', () => {
     expect(graph.nodes.map((node) => node.id)).toEqual(['create', 'confirm', SUCCESS_NODE_ID, FAILURE_NODE_ID])
     expect(graph.edges).toEqual([
       { from: 'create', to: 'confirm', kind: 'next', label: '$statusCode == 201' },
-      { from: 'create', to: SUCCESS_NODE_ID, kind: 'success', label: '$response.body#/done == true' },
-      { from: 'create', to: 'create', kind: 'failure', label: 'again — retry, ≤ 3×' },
-      { from: 'create', to: FAILURE_NODE_ID, kind: 'failure', label: 'giveUp' },
+      { from: 'create', to: SUCCESS_NODE_ID, kind: 'success', label: '$response.body#/done == true', action: 'done' },
+      // Actions without criteria are the catch-all: "otherwise", with the action's name kept for the tooltip.
+      { from: 'create', to: FAILURE_NODE_ID, kind: 'failure', label: 'otherwise', action: 'giveUp' },
+      { from: 'confirm', to: SUCCESS_NODE_ID, kind: 'success' },
     ])
+    // A retry of the step itself is a badge on its box, not a loop back into it.
+    expect(graph.nodes[0]!.retries).toEqual([{ label: '$statusCode == 503 — retry, ≤ 3×', action: 'again', retryLimit: 3 }])
   })
 
   it('does not repeat a dependsOn arrow an action already draws', () => {
@@ -91,12 +100,15 @@ describe('buildWorkflowGraph', () => {
     const graph = buildWorkflowGraph(documentWith(workflow), workflow)
 
     // Assert
-    expect(graph.edges).toEqual([{ from: 'a', to: 'b', kind: 'success', label: undefined }])
+    expect(graph.edges).toEqual([
+      { from: 'a', to: 'b', kind: 'success', label: 'otherwise', action: 'next' },
+      { from: 'b', to: SUCCESS_NODE_ID, kind: 'success' },
+    ])
   })
 
   it('returns an empty graph for a workflow without steps', () => {
     // Arrange / Act / Assert
-    expect(buildWorkflowGraph(documentWith({ workflowId: 'wf' }), undefined)).toEqual({ nodes: [], edges: [] })
+    expect(buildWorkflowGraph(documentWith({ workflowId: 'wf' }), undefined)).toEqual({ nodes: [], edges: [], groups: [] })
   })
 })
 

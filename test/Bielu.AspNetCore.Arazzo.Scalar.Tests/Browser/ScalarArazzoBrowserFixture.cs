@@ -38,6 +38,7 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddArazzo(GeneratedDocumentName, ConfigureGeneratedDocument);
+        builder.Services.AddArazzo(AccountDocumentName, ConfigureAccountDocument);
         var app = builder.Build();
 
         MapFixture(app, "/openapi/v1.json", "orders.openapi.json");
@@ -50,7 +51,8 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
             .AddDocument("events", "Events", "/asyncapi/v1.json")
             .AddDocument("field-reference", "Arazzo field reference", "/fixtures/field-reference.arazzo.json")
             .AddArazzoDocument(GeneratedDocumentName, "Generated workflows")
-            .WithArazzo());
+            .AddArazzoDocument(AccountDocumentName, "Account workflows")
+            .WithArazzoOptions(arazzo => arazzo.EndLabelExtension = EndLabelExtension));
 
         await app.StartAsync();
         _app = app;
@@ -80,6 +82,58 @@ public sealed class ScalarArazzoBrowserFixture : IAsyncLifetime
 
     /// <summary>Scalar's hash slug for <see cref="GeneratedDocumentName"/>, from its title.</summary>
     public const string GeneratedDocumentSlug = "generated-workflows";
+
+    public const string AccountDocumentName = "account";
+
+    public const string AccountDocumentSlug = "account-workflows";
+
+    /// <summary>The extension whose value names the end nodes of the access document's end actions.</summary>
+    public const string EndLabelExtension = "x-page";
+
+    /// <summary>
+    /// Workflows of a shop that signs its customers in: every API step retries through the signIn workflow on
+    /// 401 and ends on a page (named by <see cref="EndLabelExtension"/>) on 403 or any other failure.
+    /// </summary>
+    private static void ConfigureAccountDocument(ArazzoOptions options)
+    {
+        options.ValidateSourceReferencesOnStartup = false;
+        // Both sources, like the other documents, so the page is ready once both show as loaded.
+        options.WithInfo("Account workflows", "1.0.0")
+            .AddSourceDescription("orders", "/openapi/v1.json", ArazzoSourceDescriptionType.OpenApi)
+            .AddSourceDescription("events", "/asyncapi/v1.json", ArazzoSourceDescriptionType.AsyncApi);
+
+        options.AddWorkflow("signIn", workflow => workflow
+            .Step("authorize", step => step.Operation("createOrder"))
+            .Step("exchangeCode", step => step.Operation("getOrder")));
+        options.AddWorkflow("loadAccount", workflow => workflow
+            .Step("getAccount", step => AddFailures(step.Operation("getOrder").SuccessCriteria("$statusCode == 200"))));
+        options.AddWorkflow("browseOrders", workflow => workflow
+            .Step("loadAccount", step => step.Workflow("loadAccount"))
+            .Step("listOrders", step => AddFailures(step.Operation("getOrder"))));
+    }
+
+    private static ArazzoStepBuilder AddFailures(ArazzoStepBuilder step) => step
+        .OnFailure(new ArazzoFailureAction
+        {
+            Name = "signIn",
+            Type = ArazzoFailureActionType.Retry,
+            WorkflowId = "signIn",
+            RetryLimit = 1,
+            Criteria = [new ArazzoCriterion { Condition = "$statusCode == 401" }],
+        })
+        .OnFailure(new ArazzoFailureAction
+        {
+            Name = "showForbiddenPage",
+            Type = ArazzoFailureActionType.End,
+            Criteria = [new ArazzoCriterion { Condition = "$statusCode == 403" }],
+            Extensions = new Dictionary<string, JsonNode?> { [EndLabelExtension] = JsonValue.Create("forbidden") },
+        })
+        .OnFailure(new ArazzoFailureAction
+        {
+            Name = "showErrorPage",
+            Type = ArazzoFailureActionType.End,
+            Extensions = new Dictionary<string, JsonNode?> { [EndLabelExtension] = JsonValue.Create("error") },
+        });
 
     /// <summary>
     /// A document built with <c>AddArazzo</c>'s fluent API rather than written by hand, so the tests cover the

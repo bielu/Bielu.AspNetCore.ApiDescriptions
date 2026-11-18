@@ -23,6 +23,10 @@ Requires `@scalar/api-reference` 1.80.0 or later, the first version with plugin 
   on the step, on the overview flowchart, and per source description.
 - Links from each step to the operation or channel it calls in its own document, and for AsyncAPI
   steps the message payload they send or receive.
+- Workflows a step or a `goto`/`retry` action invokes as nodes of their own in the flowchart, with an
+  arrow back for a `retry`. A `+` on a workflow node of the same document shows its steps inside the
+  flowchart (recursively, never re-expanding a workflow already on the path), and a step that invokes
+  one can list that workflow's steps inline. Distinct `end` failure actions get end nodes of their own.
 - Collapsible steps and a filter for workflows and steps. The overview can be used from the
   keyboard, and the layout works at phone width. A malformed document renders what it can instead
   of failing.
@@ -49,12 +53,33 @@ Scalar.createApiReference('#app', {
 })
 ```
 
+Options (all optional):
+
+```ts
+createArazzoPlugin({
+  // Name the end node of an `end` failure action after the value of this extension, not the action's name.
+  endLabelExtension: 'x-page',
+})
+```
+
 The package root is an ES module: importing it registers the Arazzo document element, and the
 plugin is added where you pass it, as above.
 
 As a `<script>` tag (`dist/plugin.js`, the package's default file on unpkg and jsDelivr), which hooks
 `window.Scalar.createApiReference` and adds the plugin to every API Reference on the page; or through
 Scalar's `pluginUrls` with `dist/scalar-plugin.mjs`, whose default export is the plugin.
+
+The options can reach the plugin three ways. The first one that is set wins, and the others are then
+ignored:
+
+1. `createArazzoPlugin(options)`.
+2. The `window.__BIELU_SCALAR_ARAZZO__` page global, which the `<script>` entry reads.
+3. The query string of the `scalar-plugin.mjs` URL (`scalar-plugin.mjs?endLabelExtension=x-page`), the
+   only input the `pluginUrls` entry has.
+
+So if the page global sets `endLabelExtension: 'x-page'` and the module URL sets
+`?endLabelExtension=x-screen`, the plugin uses `x-page`. Each value must be a specification extension
+(`x-` followed by a name); anything else is ignored, so a bad value falls through to the next source.
 
 ASP.NET Core apps use the
 [Bielu.AspNetCore.Arazzo.Scalar](https://www.nuget.org/packages/Bielu.AspNetCore.Arazzo.Scalar)

@@ -11,4 +11,5 @@ import { ARAZZO_ELEMENT_SPEC, createArazzoPlugin } from './plugin'
  */
 registerConsoleElement(ARAZZO_ELEMENT_SPEC, ArazzoDocument)
 
-export default createArazzoPlugin()
+// Options can ride on the module URL (`scalar-plugin.mjs?endLabelExtension=x-…`), the only seam `pluginUrls` offers.
+export default createArazzoPlugin(undefined, import.meta.url)

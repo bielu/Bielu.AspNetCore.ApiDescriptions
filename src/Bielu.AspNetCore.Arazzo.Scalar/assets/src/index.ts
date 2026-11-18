@@ -7,6 +7,7 @@ export { resolveStepTarget } from './helpers/resolve-target'
 export type { ChannelTarget, OperationTarget, StepTarget, WorkflowTarget } from './helpers/resolve-target'
 export { arazzoDocumentType, createArazzoPlugin } from './plugin'
 export type { ApiReferencePlugin, ArazzoDocumentType } from './plugin'
+export type { ArazzoPluginOptions } from './helpers/plugin-options'
 export type { ArazzoDocument, ArazzoStep, ArazzoWorkflow, PluginNavigationEntry } from './types'
 
 // The package root (`import { createArazzoPlugin } from '@bielu/scalar-arazzo'`, built as `dist/index.mjs`):

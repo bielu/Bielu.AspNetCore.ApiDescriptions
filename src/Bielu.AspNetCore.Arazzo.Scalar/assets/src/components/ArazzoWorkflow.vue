@@ -5,6 +5,7 @@ import { resolveLocalRef } from '../helpers/extensions'
 import { renderMarkdown } from '../helpers/markdown'
 import type { WorkflowView } from '../helpers/navigation'
 import { resolveReusables } from '../helpers/reusable'
+import { pluginOptions } from '../helpers/plugin-options'
 import { resolveStepTarget } from '../helpers/resolve-target'
 import { targetSpec } from '../helpers/target-spec'
 import { buildWorkflowGraph, layoutWorkflowGraph } from '../helpers/workflow-graph'
@@ -58,6 +59,24 @@ const failureActions = computed(() =>
   resolveReusables<ArazzoFailureAction>(props.document, workflow.value.failureActions),
 )
 
+/** The workflow nodes whose steps the overview shows; shared by the inline and the expanded diagram. */
+const expandedWorkflows = ref<ReadonlySet<string>>(new Set())
+
+const toggleWorkflow = (nodeId: string) => {
+  const next = new Set(expandedWorkflows.value)
+  if (next.has(nodeId)) {
+    // Hiding a workflow hides what was expanded inside it, so showing it again starts collapsed.
+    for (const id of next) {
+      if (id === nodeId || id.startsWith(`${nodeId}/`)) {
+        next.delete(id)
+      }
+    }
+  } else {
+    next.add(nodeId)
+  }
+  expandedWorkflows.value = next
+}
+
 /** Each step box is marked with the spec its target is described in. */
 const diagram = computed(() =>
   layoutWorkflowGraph(
@@ -65,6 +84,7 @@ const diagram = computed(() =>
       props.document,
       workflow.value,
       (step) => targetSpec(props.document, step, resolveStepTarget(props.document, step, props.documents), props.documents)?.family,
+      { expanded: expandedWorkflows.value, endLabelExtension: pluginOptions().endLabelExtension },
     ),
   ),
 )
@@ -240,7 +260,8 @@ const closeOnBackdrop = (event: MouseEvent) => {
           </div>
           <ArazzoWorkflowDiagram
             :layout="diagram"
-            :stepSectionIds="stepSectionIds" />
+            :stepSectionIds="stepSectionIds"
+            @toggleWorkflow="toggleWorkflow" />
           <div class="ba-overview-footer">
             <ArazzoSpecLegend :layout="diagram" />
             <span class="ba-muted ba-overview-hint">Select a step to view details</span>
@@ -290,7 +311,8 @@ const closeOnBackdrop = (event: MouseEvent) => {
         fit
         :layout="diagram"
         :stepSectionIds="stepSectionIds"
-        @click.capture="(event: MouseEvent) => (event.target as Element).closest('.ba-diagram-link') && dialog?.close()" />
+        @openStep="dialog?.close()"
+        @toggleWorkflow="toggleWorkflow" />
     </dialog>
   </section>
 </template>

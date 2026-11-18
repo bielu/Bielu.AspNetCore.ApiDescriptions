@@ -177,5 +177,134 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         errors.ShouldBeEmpty();
     }
 
+    [BrowserFact]
+    public async Task Overview_DrawsWorkflowCallsRetriesThroughThemAndNamedEnds()
+    {
+        // Arrange
+        var errors = new List<string>();
+        var page = await fixture.OpenArazzoDocumentAsync(errors, ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var loadAccount = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · loadAccount" }).Locator(".ba-overview .ba-diagram");
+
+        // Act
+        var workflowNodes = await loadAccount.Locator(".ba-diagram-node-workflow text").AllTextContentsAsync();
+        var ends = await loadAccount.Locator(".ba-diagram-node-failure text").AllTextContentsAsync();
+        var successes = await loadAccount.Locator(".ba-diagram-node-success").CountAsync();
+        var returns = await loadAccount.Locator(".ba-diagram-edge.ba-diagram-return").CountAsync();
+
+        // Assert
+        workflowNodes.Select(Normalize).ShouldContain("signIn");
+        ends.Select(Normalize).ShouldBe(["forbidden", "error"]);
+        successes.ShouldBe(1);
+        returns.ShouldBe(1);
+        errors.ShouldBeEmpty();
+    }
+
+    [BrowserFact]
+    public async Task Overview_ExpandsWorkflowNodesIntoGroups_Recursively()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var diagram = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" }).Locator(".ba-overview .ba-diagram");
+
+        // Act
+        await diagram.GetByRole(AriaRole.Button, new() { Name = "Show the steps of workflow loadAccount" }).ClickAsync();
+        var afterFirst = await diagram.Locator(".ba-diagram-group").CountAsync();
+        var nested = await diagram.Locator("[data-node-id='loadAccount/getAccount']").CountAsync();
+        // The signIn that getAccount retries through, inside loadAccount (listOrders has its own, at the top level).
+        await diagram.Locator("[data-node-id='loadAccount/__workflow__:signIn']")
+            .GetByRole(AriaRole.Button, new() { Name = "Show the steps of workflow signIn" }).FocusAsync();
+        await page.Keyboard.PressAsync("Enter");
+        var afterSecond = await diagram.Locator(".ba-diagram-group").CountAsync();
+        await diagram.GetByRole(AriaRole.Button, new() { Name = "Hide the steps of workflow loadAccount" }).ClickAsync();
+        var afterHiding = await diagram.Locator(".ba-diagram-group").CountAsync();
+
+        // Assert
+        afterFirst.ShouldBe(1);
+        nested.ShouldBe(1);
+        afterSecond.ShouldBe(2);
+        afterHiding.ShouldBe(0);
+    }
+
+    [BrowserFact]
+    public async Task FullScreenOverview_StaysOpenAndZoomed_WhenAWorkflowNodeIsCollapsed()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" });
+        await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+        var dialog = workflow.Locator("dialog[open]");
+        var diagram = dialog.Locator(".ba-diagram");
+        await diagram.HoverAsync();
+        await page.Mouse.WheelAsync(0, -100);
+        var canvas = dialog.Locator(".ba-diagram-canvas");
+        var zoomed = await canvas.EvaluateAsync<string>("canvas => canvas.style.transform");
+
+        // Act
+        await diagram.GetByRole(AriaRole.Button, new() { Name = "Show the steps of workflow loadAccount" }).ClickAsync();
+        await diagram.GetByRole(AriaRole.Button, new() { Name = "Hide the steps of workflow loadAccount" }).ClickAsync();
+
+        // Assert
+        zoomed.ShouldContain("scale(1.1)");
+        (await dialog.CountAsync()).ShouldBe(1);
+        (await canvas.EvaluateAsync<string>("canvas => canvas.style.transform")).ShouldBe(zoomed);
+        (await diagram.Locator(".ba-diagram-group").CountAsync()).ShouldBe(0);
+    }
+
+    [BrowserTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Overview_KeepsTheToggledNodeInPlaceAndTheZoom_WhenExpandingAndCollapsing(bool fullScreen)
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · loadAccount" });
+        if (fullScreen)
+        {
+            await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+        }
+
+        var diagram = workflow.Locator(fullScreen ? "dialog[open] .ba-diagram" : ".ba-overview .ba-diagram");
+        await diagram.ScrollIntoViewIfNeededAsync();
+        var toggle = diagram.Locator("[data-node-id='__workflow__:signIn'] .ba-diagram-toggle");
+        var step = diagram.Locator("[data-node-id='getAccount'] rect").First;
+        var before = await toggle.BoundingBoxAsync();
+        var stepBefore = await step.BoundingBoxAsync();
+
+        // Act
+        await toggle.ClickAsync();
+        var expanded = await toggle.BoundingBoxAsync();
+        var stepExpanded = await step.BoundingBoxAsync();
+        await toggle.ClickAsync();
+        var collapsed = await toggle.BoundingBoxAsync();
+        var stepCollapsed = await step.BoundingBoxAsync();
+
+        // Assert: the toggle stays under the pointer, and nothing is rescaled.
+        foreach (var after in new[] { expanded, collapsed })
+        {
+            Math.Abs(after!.X - before!.X).ShouldBeLessThan(2);
+            Math.Abs(after.Y - before.Y).ShouldBeLessThan(2);
+        }
+
+        foreach (var after in new[] { stepExpanded, stepCollapsed })
+        {
+            Math.Abs(after!.Width - stepBefore!.Width).ShouldBeLessThan(1);
+        }
+    }
+
+    [BrowserFact]
+    public async Task WorkflowStep_ShowsTheStepsOfItsWorkflowInline()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var step = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" }).Locator(".ba-step").First;
+
+        // Act
+        await step.GetByRole(AriaRole.Button, new() { Name = "Show its 1 step" }).ClickAsync();
+        var nested = Normalize(await step.GetByRole(AriaRole.List, new() { Name = "Steps of workflow loadAccount" }).InnerTextAsync());
+
+        // Assert
+        nested.ShouldBe("getAccount calls getOrder");
+    }
+
     private static string Normalize(string? text) => string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 }

@@ -968,6 +968,11 @@ onBeforeUnmount(() => {
   touch-action: none;
   user-select: none;
 }
+/* With a workflow expanded, the inline overview may grow to the height of the window (then it pans), so the
+   expanded steps are not cut off at the usual height. */
+.bielu-arazzo .ba-diagram.ba-diagram-grown {
+  max-height: calc(var(--refs-viewport-height, 100vh) - 140px);
+}
 .bielu-arazzo .ba-diagram-dragging {
   cursor: grabbing;
 }
@@ -1014,8 +1019,8 @@ onBeforeUnmount(() => {
 }
 .bielu-arazzo .ba-diagram svg {
   display: block;
-  max-width: 100%;
-  height: auto;
+  /* Sized by the diagram itself (its scale is kept across expanding and collapsing workflows). */
+  max-width: none;
   overflow: visible;
 }
 .bielu-arazzo .ba-diagram-node rect {
@@ -1030,6 +1035,15 @@ onBeforeUnmount(() => {
 }
 .bielu-arazzo .ba-diagram-link {
   cursor: pointer;
+}
+/* A step that retries itself: a pill inside the right end of its box, in orange, as a retry is not yet a failure. */
+.bielu-arazzo .ba-diagram-node .ba-diagram-retry rect {
+  fill: color-mix(in srgb, var(--scalar-color-orange, #c2700c) 12%, var(--scalar-background-1));
+  stroke: color-mix(in srgb, var(--scalar-color-orange, #c2700c) 45%, transparent);
+}
+.bielu-arazzo .ba-diagram-node .ba-diagram-retry text {
+  fill: var(--scalar-color-2);
+  font-size: 10.5px;
 }
 .bielu-arazzo .ba-diagram-link:hover rect {
   stroke: var(--scalar-color-accent);
@@ -1067,6 +1081,99 @@ onBeforeUnmount(() => {
 }
 .bielu-arazzo .ba-diagram-arrow.ba-diagram-failure {
   fill: var(--scalar-color-red, #d4413b);
+}
+/* A workflow a step or an action invokes: a thick outline and italic name set it apart from a step that calls an API. */
+.bielu-arazzo .ba-diagram-node-workflow > rect:first-of-type {
+  fill: var(--scalar-background-1);
+  stroke: var(--scalar-border-color);
+  stroke-width: 3;
+}
+.bielu-arazzo .ba-diagram-node-workflow > text {
+  font-style: italic;
+}
+/* Keyboard focus wins over the workflow, expanded and cycle outlines above and below, which would otherwise hide it. */
+.bielu-arazzo .ba-diagram-node.ba-diagram-node:focus-visible > rect:first-of-type {
+  stroke: var(--scalar-color-accent);
+  stroke-width: 3.5;
+  stroke-dasharray: none;
+}
+.bielu-arazzo .ba-diagram-node-expanded > rect:first-of-type {
+  stroke: var(--scalar-color-accent);
+}
+.bielu-arazzo .ba-diagram-node-cycle > rect:first-of-type {
+  stroke-dasharray: 4 3;
+}
+.bielu-arazzo .ba-diagram-toggle {
+  cursor: pointer;
+}
+.bielu-arazzo .ba-diagram-toggle rect {
+  fill: var(--scalar-background-2);
+  stroke: var(--scalar-border-color);
+  stroke-width: 1;
+}
+.bielu-arazzo .ba-diagram-toggle text {
+  fill: var(--scalar-color-1);
+  font-family: var(--scalar-font);
+  font-size: 12px;
+  font-weight: var(--scalar-semibold, 600);
+  font-style: normal;
+}
+.bielu-arazzo .ba-diagram-toggle:hover rect,
+.bielu-arazzo .ba-diagram-toggle:focus-visible rect {
+  stroke: var(--scalar-color-accent);
+}
+.bielu-arazzo .ba-diagram-toggle:focus-visible {
+  outline: none;
+}
+.bielu-arazzo .ba-diagram-toggle-cycle {
+  cursor: help;
+}
+.bielu-arazzo .ba-diagram-group rect {
+  fill: color-mix(in srgb, var(--scalar-color-3) 6%, transparent);
+  stroke: var(--scalar-border-color);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+.bielu-arazzo .ba-diagram-group text {
+  fill: var(--scalar-color-2);
+  font-family: var(--scalar-font-code);
+  font-size: 11px;
+}
+/* Back from a workflow a retry ran to the step that runs again. */
+.bielu-arazzo .ba-diagram-edge.ba-diagram-return {
+  stroke: var(--scalar-color-orange, #d97706);
+  stroke-dasharray: 2 3;
+}
+.bielu-arazzo .ba-diagram-arrow.ba-diagram-return {
+  fill: var(--scalar-color-orange, #d97706);
+}
+/* From an expanded workflow node into its first steps. */
+.bielu-arazzo .ba-diagram-edge.ba-diagram-expand {
+  stroke: var(--scalar-color-3);
+  stroke-dasharray: 1 3;
+}
+.bielu-arazzo .ba-nested {
+  margin-top: 8px;
+}
+.bielu-arazzo .ba-nested-steps {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-nested-steps li {
+  padding: 2px 0;
+}
+.bielu-arazzo .ba-diagram-legend-workflow {
+  width: 14px;
+  height: 12px;
+  border: 3px solid var(--scalar-border-color);
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+.bielu-arazzo .ba-diagram-legend-line {
+  width: 16px;
+  height: 0;
+  border-top: 2px dashed var(--ba-line-color);
 }
 .bielu-arazzo .ba-diagram-edge-label rect {
   fill: var(--scalar-background-1);

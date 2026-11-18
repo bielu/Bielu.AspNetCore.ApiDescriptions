@@ -6,6 +6,7 @@ import { resolveReusables } from '../helpers/reusable'
 import { resolveStepTarget, targetDescription, targetMessages, targetParameters } from '../helpers/resolve-target'
 import { stepHeading } from '../helpers/heading'
 import { STEP_EXPAND_EVENT } from '../helpers/navigation'
+import { nestedWorkflowSteps } from '../helpers/nested-workflow'
 import { navigationHref, openInOtherDocument, targetDisplayName, targetNavigationId } from '../helpers/target-link'
 import { specLabel, targetSpec } from '../helpers/target-spec'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, ArazzoSuccessAction, PluginEventBus } from '../types'
@@ -211,6 +212,12 @@ const onSuccess = computed(() => resolveReusables<ArazzoSuccessAction>(props.doc
 const onFailure = computed(() => resolveReusables<ArazzoFailureAction>(props.document, props.step.onFailure))
 
 const description = computed(() => renderMarkdown(heading.value.description))
+
+/** For a step that invokes a workflow of this document: that workflow's steps, shown read-only on demand. */
+const nested = computed(() => nestedWorkflowSteps(props.document, props.step))
+const nestedOpen = ref(false)
+const nestedId = `${props.id}/nested`
+const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes workflow' : kind === 'channel' ? 'uses channel' : 'calls')
 </script>
 
 <template>
@@ -331,6 +338,29 @@ const description = computed(() => renderMarkdown(heading.value.description))
         v-if="targetSummary"
         class="ba-target-summary">
         {{ targetSummary }}
+      </div>
+      <div
+        v-if="nested"
+        class="ba-nested">
+        <button
+          :aria-controls="nestedId"
+          :aria-expanded="nestedOpen"
+          class="ba-toggle"
+          type="button"
+          @click="nestedOpen = !nestedOpen">
+          {{ nestedOpen ? 'Hide' : 'Show' }} its {{ nested.steps.length }} step{{ nested.steps.length === 1 ? '' : 's' }}
+        </button>
+        <ol
+          v-show="nestedOpen"
+          :id="nestedId"
+          :aria-label="`Steps of workflow ${nested.workflowId}`"
+          class="ba-nested-steps">
+          <li
+            v-for="nestedStep in nested.steps"
+            :key="nestedStep.stepId">
+            <code>{{ nestedStep.stepId }}</code> <span class="ba-muted">{{ nestedVerb(nestedStep.kind) }}</span> <code>{{ nestedStep.target }}</code>
+          </li>
+        </ol>
       </div>
       <div
         v-if="targetDetails"
