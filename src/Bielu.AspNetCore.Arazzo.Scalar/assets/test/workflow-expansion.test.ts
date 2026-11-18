@@ -473,4 +473,27 @@ describe('plugin options', () => {
     expect(pluginOptionsFromModuleUrl(undefined)).toEqual({})
     expect(pluginOptionsFromModuleUrl('https://cdn.test/p.mjs?endLabelExtension=')).toEqual({})
   })
+
+  it('accepts only "x-" followed by a name for every option, from every input path', () => {
+    // Arrange: a bare prefix and a non-extension for each of the four options.
+    const bad = (value: string) => ({ endLabelExtension: value, pagesExtension: value, pageExtension: value, labelExtension: value })
+    const query = (value: string) => `https://cdn.test/p.mjs?${new URLSearchParams(bad(value))}`
+
+    // Act / Assert
+    for (const value of ['x-', 'page']) {
+      expect(resolvePluginOptions(bad(value))).toEqual({})
+      expect(resolvePluginOptions(undefined, bad(value))).toEqual({})
+      expect(pluginOptionsFromModuleUrl(query(value))).toEqual({})
+    }
+  })
+
+  it('reads every option back from a module URL, including one that needed encoding', () => {
+    // Act
+    const options = pluginOptionsFromModuleUrl(
+      'https://cdn.test/p.mjs?v=2&endLabelExtension=x-end&pagesExtension=x-shop%20pages&pageExtension=x-page&labelExtension=x-label%26text#top',
+    )
+
+    // Assert
+    expect(options).toEqual({ endLabelExtension: 'x-end', pagesExtension: 'x-shop pages', pageExtension: 'x-page', labelExtension: 'x-label&text' })
+  })
 })

@@ -117,6 +117,36 @@ public class ScalarArazzoOptionsExtensionsTests
         }));
     }
 
+    [Theory]
+    [InlineData("end", "x-")]
+    [InlineData("end", "page")]
+    [InlineData("pages", "x-")]
+    [InlineData("page", "x-")]
+    [InlineData("label", "x-")]
+    public void WithArazzoOptions_BarePrefixOrNonExtension_Throws(string option, string value)
+    {
+        // Act / Assert
+        var exception = Should.Throw<ArgumentException>(() => new ScalarOptions().WithArazzoOptions(arazzo =>
+        {
+            switch (option)
+            {
+                case "end":
+                    arazzo.EndLabelExtension = value;
+                    break;
+                case "pages":
+                    arazzo.PagesExtension = value;
+                    break;
+                case "page":
+                    arazzo.PageExtension = value;
+                    break;
+                default:
+                    arazzo.LabelExtension = value;
+                    break;
+            }
+        }));
+        exception.Message.ShouldContain("'x-' followed by a name");
+    }
+
     [Fact]
     public void WithArazzoOptions_ConfiguredAssetsPathWithoutOptions_WritesNoGlobal()
     {
