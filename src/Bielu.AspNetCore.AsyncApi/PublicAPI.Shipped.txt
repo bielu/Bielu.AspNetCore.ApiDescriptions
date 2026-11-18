@@ -46,8 +46,6 @@ Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DefaultContentType.get -> str
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DefaultContentType.set -> void
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DetectAuthenticationSchemes(System.Action<Bielu.AspNetCore.AsyncApi.Services.AuthenticationDetectionOptions!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DocumentName.get -> string!
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DocumentRoutePattern.get -> string!
-Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.DocumentRoutePattern.set -> void
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(string! filePath) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.IncludeXmlComments(System.Reflection.Assembly! assembly) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!
 Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions.Info.get -> ByteBard.AsyncAPI.Models.AsyncApiInfo?

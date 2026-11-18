@@ -204,7 +204,6 @@ Bielu.Arazzo.Models.ArazzoFailureAction.RetryLimit.set -> void
 Bielu.Arazzo.Models.ArazzoFailureAction.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
 Bielu.Arazzo.Models.ArazzoFailureAction.StepId.get -> string?
 Bielu.Arazzo.Models.ArazzoFailureAction.StepId.set -> void
-Bielu.Arazzo.Models.ArazzoFailureAction.Type.get -> string!
 Bielu.Arazzo.Models.ArazzoFailureAction.Type.set -> void
 Bielu.Arazzo.Models.ArazzoFailureAction.WorkflowId.get -> string?
 Bielu.Arazzo.Models.ArazzoFailureAction.WorkflowId.set -> void
@@ -226,7 +225,6 @@ Bielu.Arazzo.Models.ArazzoParameter
 Bielu.Arazzo.Models.ArazzoParameter.ArazzoParameter() -> void
 Bielu.Arazzo.Models.ArazzoParameter.Extensions.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.Nodes.JsonNode?>?
 Bielu.Arazzo.Models.ArazzoParameter.Extensions.set -> void
-Bielu.Arazzo.Models.ArazzoParameter.In.get -> string?
 Bielu.Arazzo.Models.ArazzoParameter.In.set -> void
 Bielu.Arazzo.Models.ArazzoParameter.Name.get -> string!
 Bielu.Arazzo.Models.ArazzoParameter.Name.set -> void
@@ -297,13 +295,11 @@ Bielu.Arazzo.Models.ArazzoSourceDescription.Extensions.set -> void
 Bielu.Arazzo.Models.ArazzoSourceDescription.Name.get -> string!
 Bielu.Arazzo.Models.ArazzoSourceDescription.Name.set -> void
 Bielu.Arazzo.Models.ArazzoSourceDescription.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
-Bielu.Arazzo.Models.ArazzoSourceDescription.Type.get -> string?
 Bielu.Arazzo.Models.ArazzoSourceDescription.Type.set -> void
 Bielu.Arazzo.Models.ArazzoSourceDescription.Url.get -> string!
 Bielu.Arazzo.Models.ArazzoSourceDescription.Url.set -> void
 Bielu.Arazzo.Models.ArazzoSourceDescriptionType
 Bielu.Arazzo.Models.ArazzoStep
-Bielu.Arazzo.Models.ArazzoStep.Action.get -> string?
 Bielu.Arazzo.Models.ArazzoStep.Action.set -> void
 Bielu.Arazzo.Models.ArazzoStep.ArazzoStep() -> void
 Bielu.Arazzo.Models.ArazzoStep.ChannelPath.get -> string?
@@ -351,7 +347,6 @@ Bielu.Arazzo.Models.ArazzoSuccessAction.Name.set -> void
 Bielu.Arazzo.Models.ArazzoSuccessAction.SerializeAsV1(Bielu.Arazzo.Writers.IArazzoWriter! writer) -> void
 Bielu.Arazzo.Models.ArazzoSuccessAction.StepId.get -> string?
 Bielu.Arazzo.Models.ArazzoSuccessAction.StepId.set -> void
-Bielu.Arazzo.Models.ArazzoSuccessAction.Type.get -> string!
 Bielu.Arazzo.Models.ArazzoSuccessAction.Type.set -> void
 Bielu.Arazzo.Models.ArazzoSuccessAction.WorkflowId.get -> string?
 Bielu.Arazzo.Models.ArazzoSuccessAction.WorkflowId.set -> void
@@ -437,21 +432,6 @@ const Bielu.Arazzo.Models.ArazzoCriterionType.JsonPath = "jsonpath" -> string!
 const Bielu.Arazzo.Models.ArazzoCriterionType.Regex = "regex" -> string!
 const Bielu.Arazzo.Models.ArazzoCriterionType.Simple = "simple" -> string!
 const Bielu.Arazzo.Models.ArazzoCriterionType.XPath = "xpath" -> string!
-const Bielu.Arazzo.Models.ArazzoFailureActionType.End = "end" -> string!
-const Bielu.Arazzo.Models.ArazzoFailureActionType.Goto = "goto" -> string!
-const Bielu.Arazzo.Models.ArazzoFailureActionType.Retry = "retry" -> string!
-const Bielu.Arazzo.Models.ArazzoParameterLocation.Cookie = "cookie" -> string!
-const Bielu.Arazzo.Models.ArazzoParameterLocation.Header = "header" -> string!
-const Bielu.Arazzo.Models.ArazzoParameterLocation.Path = "path" -> string!
-const Bielu.Arazzo.Models.ArazzoParameterLocation.Query = "query" -> string!
-const Bielu.Arazzo.Models.ArazzoParameterLocation.QueryString = "querystring" -> string!
-const Bielu.Arazzo.Models.ArazzoSourceDescriptionType.Arazzo = "arazzo" -> string!
-const Bielu.Arazzo.Models.ArazzoSourceDescriptionType.AsyncApi = "asyncapi" -> string!
-const Bielu.Arazzo.Models.ArazzoSourceDescriptionType.OpenApi = "openapi" -> string!
-const Bielu.Arazzo.Models.ArazzoStepAction.Receive = "receive" -> string!
-const Bielu.Arazzo.Models.ArazzoStepAction.Send = "send" -> string!
-const Bielu.Arazzo.Models.ArazzoSuccessActionType.End = "end" -> string!
-const Bielu.Arazzo.Models.ArazzoSuccessActionType.Goto = "goto" -> string!
 override Bielu.Arazzo.Expressions.RuntimeExpression.Components.<Clone>$() -> Bielu.Arazzo.Expressions.RuntimeExpression.Components!
 override Bielu.Arazzo.Expressions.RuntimeExpression.Components.Equals(object? obj) -> bool
 override Bielu.Arazzo.Expressions.RuntimeExpression.Components.GetHashCode() -> int
@@ -577,3 +557,88 @@ static Bielu.Arazzo.Writers.ArazzoYamlWriter.Write(Bielu.Arazzo.Models.IArazzoSe
 virtual Bielu.Arazzo.Expressions.RuntimeExpression.EqualityContract.get -> System.Type!
 virtual Bielu.Arazzo.Expressions.RuntimeExpression.Equals(Bielu.Arazzo.Expressions.RuntimeExpression? other) -> bool
 virtual Bielu.Arazzo.Expressions.RuntimeExpression.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Bielu.Arazzo.ArazzoSourceResolver<TDocument>
+Bielu.Arazzo.ArazzoSourceResolver<TDocument>.ArazzoSourceResolver() -> void
+Bielu.Arazzo.ArazzoSourceResolver<TDocument>.DocumentType.get -> System.Type!
+Bielu.Arazzo.IArazzoSourceResolver.DocumentType.get -> System.Type!
+Bielu.Arazzo.Models.ArazzoFailureAction.Type.get -> Bielu.Arazzo.Models.ArazzoFailureActionType
+Bielu.Arazzo.Models.ArazzoFailureActionType.ArazzoFailureActionType() -> void
+Bielu.Arazzo.Models.ArazzoFailureActionType.ArazzoFailureActionType(string! value) -> void
+Bielu.Arazzo.Models.ArazzoFailureActionType.Equals(Bielu.Arazzo.Models.ArazzoFailureActionType other) -> bool
+Bielu.Arazzo.Models.ArazzoFailureActionType.IsKnown.get -> bool
+Bielu.Arazzo.Models.ArazzoFailureActionType.Value.get -> string!
+Bielu.Arazzo.Models.ArazzoParameter.In.get -> Bielu.Arazzo.Models.ArazzoParameterLocation?
+Bielu.Arazzo.Models.ArazzoParameterLocation.ArazzoParameterLocation() -> void
+Bielu.Arazzo.Models.ArazzoParameterLocation.ArazzoParameterLocation(string! value) -> void
+Bielu.Arazzo.Models.ArazzoParameterLocation.Equals(Bielu.Arazzo.Models.ArazzoParameterLocation other) -> bool
+Bielu.Arazzo.Models.ArazzoParameterLocation.IsKnown.get -> bool
+Bielu.Arazzo.Models.ArazzoParameterLocation.Value.get -> string!
+Bielu.Arazzo.Models.ArazzoSourceDescription.Type.get -> Bielu.Arazzo.Models.ArazzoSourceDescriptionType?
+Bielu.Arazzo.Models.ArazzoSourceDescriptionType.ArazzoSourceDescriptionType() -> void
+Bielu.Arazzo.Models.ArazzoSourceDescriptionType.ArazzoSourceDescriptionType(string! value) -> void
+Bielu.Arazzo.Models.ArazzoSourceDescriptionType.Equals(Bielu.Arazzo.Models.ArazzoSourceDescriptionType other) -> bool
+Bielu.Arazzo.Models.ArazzoSourceDescriptionType.IsKnown.get -> bool
+Bielu.Arazzo.Models.ArazzoSourceDescriptionType.Value.get -> string!
+Bielu.Arazzo.Models.ArazzoStep.Action.get -> Bielu.Arazzo.Models.ArazzoStepAction?
+Bielu.Arazzo.Models.ArazzoStepAction.ArazzoStepAction() -> void
+Bielu.Arazzo.Models.ArazzoStepAction.ArazzoStepAction(string! value) -> void
+Bielu.Arazzo.Models.ArazzoStepAction.Equals(Bielu.Arazzo.Models.ArazzoStepAction other) -> bool
+Bielu.Arazzo.Models.ArazzoStepAction.IsKnown.get -> bool
+Bielu.Arazzo.Models.ArazzoStepAction.Value.get -> string!
+Bielu.Arazzo.Models.ArazzoSuccessAction.Parameters.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoReferenceable<Bielu.Arazzo.Models.ArazzoParameter!>!>?
+Bielu.Arazzo.Models.ArazzoSuccessAction.Parameters.set -> void
+Bielu.Arazzo.Models.ArazzoSuccessAction.Type.get -> Bielu.Arazzo.Models.ArazzoSuccessActionType
+Bielu.Arazzo.Models.ArazzoSuccessActionType.ArazzoSuccessActionType() -> void
+Bielu.Arazzo.Models.ArazzoSuccessActionType.ArazzoSuccessActionType(string! value) -> void
+Bielu.Arazzo.Models.ArazzoSuccessActionType.Equals(Bielu.Arazzo.Models.ArazzoSuccessActionType other) -> bool
+Bielu.Arazzo.Models.ArazzoSuccessActionType.IsKnown.get -> bool
+Bielu.Arazzo.Models.ArazzoSuccessActionType.Value.get -> string!
+abstract Bielu.Arazzo.ArazzoSourceResolver<TDocument>.SourceType.get -> string!
+abstract Bielu.Arazzo.ArazzoSourceResolver<TDocument>.TryResolveOperation(TDocument! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+override Bielu.Arazzo.Models.ArazzoFailureActionType.GetHashCode() -> int
+override Bielu.Arazzo.Models.ArazzoFailureActionType.ToString() -> string!
+override Bielu.Arazzo.Models.ArazzoParameterLocation.GetHashCode() -> int
+override Bielu.Arazzo.Models.ArazzoParameterLocation.ToString() -> string!
+override Bielu.Arazzo.Models.ArazzoSourceDescriptionType.GetHashCode() -> int
+override Bielu.Arazzo.Models.ArazzoSourceDescriptionType.ToString() -> string!
+override Bielu.Arazzo.Models.ArazzoStepAction.GetHashCode() -> int
+override Bielu.Arazzo.Models.ArazzoStepAction.ToString() -> string!
+override Bielu.Arazzo.Models.ArazzoSuccessActionType.GetHashCode() -> int
+override Bielu.Arazzo.Models.ArazzoSuccessActionType.ToString() -> string!
+static Bielu.Arazzo.Models.ArazzoFailureActionType.End.get -> Bielu.Arazzo.Models.ArazzoFailureActionType
+static Bielu.Arazzo.Models.ArazzoFailureActionType.Goto.get -> Bielu.Arazzo.Models.ArazzoFailureActionType
+static Bielu.Arazzo.Models.ArazzoFailureActionType.Retry.get -> Bielu.Arazzo.Models.ArazzoFailureActionType
+static Bielu.Arazzo.Models.ArazzoFailureActionType.implicit operator Bielu.Arazzo.Models.ArazzoFailureActionType(string! value) -> Bielu.Arazzo.Models.ArazzoFailureActionType
+static Bielu.Arazzo.Models.ArazzoFailureActionType.operator !=(Bielu.Arazzo.Models.ArazzoFailureActionType left, Bielu.Arazzo.Models.ArazzoFailureActionType right) -> bool
+static Bielu.Arazzo.Models.ArazzoFailureActionType.operator ==(Bielu.Arazzo.Models.ArazzoFailureActionType left, Bielu.Arazzo.Models.ArazzoFailureActionType right) -> bool
+static Bielu.Arazzo.Models.ArazzoParameterLocation.Cookie.get -> Bielu.Arazzo.Models.ArazzoParameterLocation
+static Bielu.Arazzo.Models.ArazzoParameterLocation.Header.get -> Bielu.Arazzo.Models.ArazzoParameterLocation
+static Bielu.Arazzo.Models.ArazzoParameterLocation.Path.get -> Bielu.Arazzo.Models.ArazzoParameterLocation
+static Bielu.Arazzo.Models.ArazzoParameterLocation.Query.get -> Bielu.Arazzo.Models.ArazzoParameterLocation
+static Bielu.Arazzo.Models.ArazzoParameterLocation.QueryString.get -> Bielu.Arazzo.Models.ArazzoParameterLocation
+static Bielu.Arazzo.Models.ArazzoParameterLocation.implicit operator Bielu.Arazzo.Models.ArazzoParameterLocation(string! value) -> Bielu.Arazzo.Models.ArazzoParameterLocation
+static Bielu.Arazzo.Models.ArazzoParameterLocation.operator !=(Bielu.Arazzo.Models.ArazzoParameterLocation left, Bielu.Arazzo.Models.ArazzoParameterLocation right) -> bool
+static Bielu.Arazzo.Models.ArazzoParameterLocation.operator ==(Bielu.Arazzo.Models.ArazzoParameterLocation left, Bielu.Arazzo.Models.ArazzoParameterLocation right) -> bool
+static Bielu.Arazzo.Models.ArazzoSourceDescriptionType.Arazzo.get -> Bielu.Arazzo.Models.ArazzoSourceDescriptionType
+static Bielu.Arazzo.Models.ArazzoSourceDescriptionType.AsyncApi.get -> Bielu.Arazzo.Models.ArazzoSourceDescriptionType
+static Bielu.Arazzo.Models.ArazzoSourceDescriptionType.OpenApi.get -> Bielu.Arazzo.Models.ArazzoSourceDescriptionType
+static Bielu.Arazzo.Models.ArazzoSourceDescriptionType.implicit operator Bielu.Arazzo.Models.ArazzoSourceDescriptionType(string! value) -> Bielu.Arazzo.Models.ArazzoSourceDescriptionType
+static Bielu.Arazzo.Models.ArazzoSourceDescriptionType.operator !=(Bielu.Arazzo.Models.ArazzoSourceDescriptionType left, Bielu.Arazzo.Models.ArazzoSourceDescriptionType right) -> bool
+static Bielu.Arazzo.Models.ArazzoSourceDescriptionType.operator ==(Bielu.Arazzo.Models.ArazzoSourceDescriptionType left, Bielu.Arazzo.Models.ArazzoSourceDescriptionType right) -> bool
+static Bielu.Arazzo.Models.ArazzoStepAction.Receive.get -> Bielu.Arazzo.Models.ArazzoStepAction
+static Bielu.Arazzo.Models.ArazzoStepAction.Send.get -> Bielu.Arazzo.Models.ArazzoStepAction
+static Bielu.Arazzo.Models.ArazzoStepAction.implicit operator Bielu.Arazzo.Models.ArazzoStepAction(string! value) -> Bielu.Arazzo.Models.ArazzoStepAction
+static Bielu.Arazzo.Models.ArazzoStepAction.operator !=(Bielu.Arazzo.Models.ArazzoStepAction left, Bielu.Arazzo.Models.ArazzoStepAction right) -> bool
+static Bielu.Arazzo.Models.ArazzoStepAction.operator ==(Bielu.Arazzo.Models.ArazzoStepAction left, Bielu.Arazzo.Models.ArazzoStepAction right) -> bool
+static Bielu.Arazzo.Models.ArazzoSuccessActionType.End.get -> Bielu.Arazzo.Models.ArazzoSuccessActionType
+static Bielu.Arazzo.Models.ArazzoSuccessActionType.Goto.get -> Bielu.Arazzo.Models.ArazzoSuccessActionType
+static Bielu.Arazzo.Models.ArazzoSuccessActionType.implicit operator Bielu.Arazzo.Models.ArazzoSuccessActionType(string! value) -> Bielu.Arazzo.Models.ArazzoSuccessActionType
+static Bielu.Arazzo.Models.ArazzoSuccessActionType.operator !=(Bielu.Arazzo.Models.ArazzoSuccessActionType left, Bielu.Arazzo.Models.ArazzoSuccessActionType right) -> bool
+static Bielu.Arazzo.Models.ArazzoSuccessActionType.operator ==(Bielu.Arazzo.Models.ArazzoSuccessActionType left, Bielu.Arazzo.Models.ArazzoSuccessActionType right) -> bool
+virtual Bielu.Arazzo.ArazzoSourceResolver<TDocument>.TryResolveChannelPath(TDocument! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
+virtual Bielu.Arazzo.ArazzoSourceResolver<TDocument>.TryResolveOperationPath(TDocument! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+~override Bielu.Arazzo.Models.ArazzoFailureActionType.Equals(object obj) -> bool
+~override Bielu.Arazzo.Models.ArazzoParameterLocation.Equals(object obj) -> bool
+~override Bielu.Arazzo.Models.ArazzoSourceDescriptionType.Equals(object obj) -> bool
+~override Bielu.Arazzo.Models.ArazzoStepAction.Equals(object obj) -> bool
+~override Bielu.Arazzo.Models.ArazzoSuccessActionType.Equals(object obj) -> bool
