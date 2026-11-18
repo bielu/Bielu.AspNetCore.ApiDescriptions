@@ -39,6 +39,8 @@ export type WorkflowGraphEdge = {
    * the step that retries; `expand` goes from an expanded workflow node into its first steps.
    */
   kind: 'next' | 'success' | 'failure' | 'return' | 'expand'
+  /** For an `onSuccess`/`onFailure` arrow: the action's name, which the label leaves out when it shows criteria. */
+  action?: string
 }
 
 /** An expanded workflow: a box drawn around the steps of the workflow a workflow node invokes. */
@@ -82,9 +84,27 @@ export const groupId = (nodeId: string): string => `${nodeId}::group`
 const describeCriteria = (criteria: ArazzoCriterion[] | undefined): string | undefined =>
   criteria?.length ? criteria.map((criterion) => criterion.condition).join(' && ') : undefined
 
-/** The condition is what a reader wants on an arrow; the action's own name is the fallback. */
+/** What an action's arrow is labeled with when the action has no criteria: it is the catch-all branch. */
+export const OTHERWISE_LABEL = 'otherwise'
+
+/**
+ * The condition is what a reader wants on an arrow; an action without criteria is the catch-all, "otherwise".
+ * The action's name goes on the edge separately (`action`), for the tooltip.
+ */
 const actionLabel = (action: ArazzoSuccessAction | ArazzoFailureAction, extra?: string): string =>
-  [describeCriteria(action.criteria) ?? action.name, extra].filter(Boolean).join(' — ')
+  [describeCriteria(action.criteria) ?? OTHERWISE_LABEL, extra].filter(Boolean).join(' — ')
+
+/** An arrow drawn for an action, carrying the action's name. */
+const actionEdge = (
+  from: string,
+  to: string,
+  kind: 'success' | 'failure',
+  action: ArazzoSuccessAction | ArazzoFailureAction,
+  extra?: string,
+): WorkflowGraphEdge => {
+  const edge: WorkflowGraphEdge = { from, to, kind, label: actionLabel(action, extra) }
+  return action.name ? { ...edge, action: action.name } : edge
+}
 
 const retryExtra = (action: ArazzoFailureAction): string | undefined => {
   if (action.type !== 'retry') {
@@ -219,12 +239,12 @@ const addScope = (
     for (const action of resolveReusables<ArazzoSuccessAction>(document, step.onSuccess)) {
       if (action.type === 'end') {
         usesSuccess = true
-        actionEdges.push({ from, to: at(SUCCESS_NODE_ID), label: actionLabel(action), kind: 'success' })
+        actionEdges.push(actionEdge(from, at(SUCCESS_NODE_ID), 'success', action))
       } else if (action.stepId && stepIds.has(action.stepId)) {
         explicit.add(`${step.stepId}->${action.stepId}`)
-        actionEdges.push({ from, to: at(action.stepId), label: describeCriteria(action.criteria), kind: 'success' })
+        actionEdges.push(actionEdge(from, at(action.stepId), 'success', action))
       } else if (action.workflowId) {
-        actionEdges.push({ from, to: invokedNode(action.workflowId).id, label: actionLabel(action), kind: 'success' })
+        actionEdges.push(actionEdge(from, invokedNode(action.workflowId).id, 'success', action))
       }
     }
     for (const action of resolveReusables<ArazzoFailureAction>(document, step.onFailure)) {
@@ -232,10 +252,10 @@ const addScope = (
         failureEnds.push({ from, action })
       } else if (action.stepId && stepIds.has(action.stepId)) {
         explicit.add(`${step.stepId}->${action.stepId}`)
-        actionEdges.push({ from, to: at(action.stepId), label: actionLabel(action, retryExtra(action)), kind: 'failure' })
+        actionEdges.push(actionEdge(from, at(action.stepId), 'failure', action, retryExtra(action)))
       } else if (action.workflowId) {
         const target = invokedNode(action.workflowId).id
-        actionEdges.push({ from, to: target, label: actionLabel(action, retryExtra(action)), kind: 'failure' })
+        actionEdges.push(actionEdge(from, target, 'failure', action, retryExtra(action)))
         if (action.type === 'retry') {
           actionEdges.push({ from: target, to: from, kind: 'return' })
         }
@@ -258,7 +278,7 @@ const addScope = (
     if (node.actions && action.name && !node.actions.includes(action.name)) {
       node.actions.push(action.name)
     }
-    actionEdges.push({ from, to: id, label: actionLabel(action), kind: 'failure' })
+    actionEdges.push(actionEdge(from, id, 'failure', action))
   }
 
   const nextEdges: WorkflowGraphEdge[] = []
@@ -318,6 +338,17 @@ const addScope = (
       options,
     )
     graph.edges.push(...entries.map((entry) => ({ from: node.id, to: entry, kind: 'expand' as const })))
+
+    // Control comes back to a retrying step once the retried workflow succeeds: start the arrow back at the
+    // expanded workflow's own Success node, so that node doesn't read as the end of this workflow.
+    const nestedSuccess = `${node.id}/${SUCCESS_NODE_ID}`
+    if (graph.nodes.some((candidate) => candidate.id === nestedSuccess)) {
+      for (const edge of graph.edges) {
+        if (edge.kind === 'return' && edge.from === node.id) {
+          edge.from = nestedSuccess
+        }
+      }
+    }
   }
 
   // The steps a run of this workflow starts at: those without prerequisites, or the first one.

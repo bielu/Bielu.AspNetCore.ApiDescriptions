@@ -968,6 +968,11 @@ onBeforeUnmount(() => {
   touch-action: none;
   user-select: none;
 }
+/* With a workflow expanded, the inline overview may grow to the height of the window (then it pans), so the
+   expanded steps are not cut off at the usual height. */
+.bielu-arazzo .ba-diagram.ba-diagram-grown {
+  max-height: calc(var(--refs-viewport-height, 100vh) - 140px);
+}
 .bielu-arazzo .ba-diagram-dragging {
   cursor: grabbing;
 }

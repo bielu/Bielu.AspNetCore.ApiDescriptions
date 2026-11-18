@@ -77,9 +77,10 @@ describe('buildWorkflowGraph', () => {
     expect(graph.nodes.map((node) => node.id)).toEqual(['create', 'confirm', SUCCESS_NODE_ID, FAILURE_NODE_ID])
     expect(graph.edges).toEqual([
       { from: 'create', to: 'confirm', kind: 'next', label: '$statusCode == 201' },
-      { from: 'create', to: SUCCESS_NODE_ID, kind: 'success', label: '$response.body#/done == true' },
-      { from: 'create', to: 'create', kind: 'failure', label: 'again — retry, ≤ 3×' },
-      { from: 'create', to: FAILURE_NODE_ID, kind: 'failure', label: 'giveUp' },
+      { from: 'create', to: SUCCESS_NODE_ID, kind: 'success', label: '$response.body#/done == true', action: 'done' },
+      // Actions without criteria are the catch-all: "otherwise", with the action's name kept for the tooltip.
+      { from: 'create', to: 'create', kind: 'failure', label: 'otherwise — retry, ≤ 3×', action: 'again' },
+      { from: 'create', to: FAILURE_NODE_ID, kind: 'failure', label: 'otherwise', action: 'giveUp' },
       { from: 'confirm', to: SUCCESS_NODE_ID, kind: 'success' },
     ])
   })
@@ -99,7 +100,7 @@ describe('buildWorkflowGraph', () => {
 
     // Assert
     expect(graph.edges).toEqual([
-      { from: 'a', to: 'b', kind: 'success', label: undefined },
+      { from: 'a', to: 'b', kind: 'success', label: 'otherwise', action: 'next' },
       { from: 'b', to: SUCCESS_NODE_ID, kind: 'success' },
     ])
   })

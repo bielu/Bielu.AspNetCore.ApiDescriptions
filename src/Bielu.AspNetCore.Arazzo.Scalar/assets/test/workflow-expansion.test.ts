@@ -77,7 +77,7 @@ describe('workflow nodes', () => {
     // Assert
     const signInNode = workflowNodeId('', 'signIn')
     expect(graph.nodes.find((node) => node.id === signInNode)).toMatchObject({ kind: 'workflow', label: 'signIn', expandable: true })
-    expect(graph.edges).toContainEqual({ from: 'getAccount', to: signInNode, kind: 'failure', label: '$statusCode == 401 — retry, ≤ 1×' })
+    expect(graph.edges).toContainEqual({ from: 'getAccount', to: signInNode, kind: 'failure', label: '$statusCode == 401 — retry, ≤ 1×', action: 'signIn' })
     expect(graph.edges).toContainEqual({ from: signInNode, to: 'getAccount', kind: 'return' })
   })
 
@@ -93,7 +93,7 @@ describe('workflow nodes', () => {
 
     // Assert
     const signInNode = workflowNodeId('', 'signIn')
-    expect(graph.edges).toEqual([{ from: 'a', to: signInNode, kind: 'success', label: 'continue' }])
+    expect(graph.edges).toEqual([{ from: 'a', to: signInNode, kind: 'success', label: 'otherwise', action: 'continue' }])
   })
 
   it('shares one workflow node between every step that retries through the same workflow', () => {
@@ -129,6 +129,38 @@ describe('expanding workflow nodes', () => {
     )
     expect(graph.edges).toContainEqual({ from: 'loadAccount', to: 'loadAccount/getAccount', kind: 'expand' })
     expect(graph.edges).toContainEqual({ from: workflowNodeId('loadAccount/', 'signIn'), to: 'loadAccount/getAccount', kind: 'return' })
+  })
+
+  it('starts the arrow back from an expanded retried workflow at its own Success node', () => {
+    // Arrange
+    const nestedSignIn = workflowNodeId('loadAccount/', 'signIn')
+
+    // Act
+    const graph = buildWorkflowGraph(document, loadAccount, undefined, { expanded: new Set([workflowNodeId('', 'signIn')]) })
+    const nested = buildWorkflowGraph(document, browseOrders, undefined, { expanded: new Set(['loadAccount', nestedSignIn]) })
+
+    // Assert: the inner Success is where control goes back to the step, not an end of the outer workflow.
+    const signInNode = workflowNodeId('', 'signIn')
+    expect(graph.edges.filter((edge) => edge.kind === 'return')).toEqual([
+      { from: `${signInNode}/${SUCCESS_NODE_ID}`, to: 'getAccount', kind: 'return' },
+    ])
+    expect(nested.edges.filter((edge) => edge.kind === 'return' && edge.to === 'loadAccount/getAccount')).toEqual([
+      { from: `${nestedSignIn}/${SUCCESS_NODE_ID}`, to: 'loadAccount/getAccount', kind: 'return' },
+    ])
+  })
+
+  it('keeps the arrow back on the workflow node when the expanded workflow has no Success node', () => {
+    // Arrange: the retried workflow always ends on a failure.
+    const giveUp: ArazzoWorkflow = { workflowId: 'giveUp', steps: [{ stepId: 'stop', onSuccess: [{ name: 'loop', type: 'goto', stepId: 'stop' }] }] }
+    const workflow: ArazzoWorkflow = { workflowId: 'wf', steps: [{ stepId: 'a', onFailure: [{ name: 'again', type: 'retry', workflowId: 'giveUp' }] }] }
+
+    // Act
+    const graph = buildWorkflowGraph({ arazzo: '1.1.0', workflows: [workflow, giveUp] }, workflow, undefined, {
+      expanded: new Set([workflowNodeId('', 'giveUp')]),
+    })
+
+    // Assert
+    expect(graph.edges.filter((edge) => edge.kind === 'return')).toEqual([{ from: workflowNodeId('', 'giveUp'), to: 'a', kind: 'return' }])
   })
 
   it('expands recursively, each level in a group inside its parent\'s', () => {
@@ -211,7 +243,7 @@ describe('end nodes', () => {
       [endNodeId('', 'showForbiddenPage'), 'showForbiddenPage'],
       [endNodeId('', 'showErrorPage'), 'showErrorPage'],
     ])
-    expect(graph.edges).toContainEqual({ from: 'getAccount', to: endNodeId('', 'showErrorPage'), kind: 'failure', label: 'showErrorPage' })
+    expect(graph.edges).toContainEqual({ from: 'getAccount', to: endNodeId('', 'showErrorPage'), kind: 'failure', label: 'otherwise', action: 'showErrorPage' })
   })
 
   it('labels end nodes with the configured extension when the action has it', () => {
@@ -265,10 +297,10 @@ describe('implicit success', () => {
       endNodeId('', 'showErrorPage'),
     ])
     expect(graph.edges).toEqual([
-      { from: 'getAccount', to: workflowNodeId('', 'signIn'), kind: 'failure', label: '$statusCode == 401 — retry, ≤ 1×' },
+      { from: 'getAccount', to: workflowNodeId('', 'signIn'), kind: 'failure', label: '$statusCode == 401 — retry, ≤ 1×', action: 'signIn' },
       { from: workflowNodeId('', 'signIn'), to: 'getAccount', kind: 'return' },
-      { from: 'getAccount', to: endNodeId('', 'showForbiddenPage'), kind: 'failure', label: '$statusCode == 403' },
-      { from: 'getAccount', to: endNodeId('', 'showErrorPage'), kind: 'failure', label: 'showErrorPage' },
+      { from: 'getAccount', to: endNodeId('', 'showForbiddenPage'), kind: 'failure', label: '$statusCode == 403', action: 'showForbiddenPage' },
+      { from: 'getAccount', to: endNodeId('', 'showErrorPage'), kind: 'failure', label: 'otherwise', action: 'showErrorPage' },
       { from: 'getAccount', to: SUCCESS_NODE_ID, kind: 'success', label: '$statusCode == 200' },
     ])
   })

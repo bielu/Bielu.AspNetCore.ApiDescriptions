@@ -216,7 +216,7 @@ const label = computed(() =>
     class="ba-diagram"
     role="group"
     tabindex="0"
-    :class="{ 'ba-diagram-dragging': dragging }"
+    :class="{ 'ba-diagram-dragging': dragging, 'ba-diagram-grown': !fit && (layout.groups?.length ?? 0) > 0 }"
     @dblclick="resetView"
     @keydown="onKeydown"
     @pointercancel="stopDragging"
@@ -280,6 +280,7 @@ const label = computed(() =>
           <g
             v-if="edge.label && edge.labelPosition"
             class="ba-diagram-edge-label">
+            <title v-if="edge.action">{{ edge.action }}</title>
             <rect
               :height="18"
               rx="3"

@@ -99,7 +99,9 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
 - For each workflow: its inputs (nested properties fold out), shared parameters, steps, success
   and failure actions, and outputs.
 - A workflow overview beside the steps: a flowchart of the steps, with arrows for `dependsOn` (or
-  document order) and labeled success and failure branches for `onSuccess`/`onFailure`. Drag to pan,
+  document order) and labeled success and failure branches for `onSuccess`/`onFailure`: each branch
+  shows its criteria, and an action without criteria (the catch-all) reads "otherwise"; hovering a
+  branch's label shows the action's name. Drag to pan,
   scroll to zoom, click a step to jump to it, or expand it to fill the window. It follows Scalar's
   light and dark themes. From the keyboard, the focused overview pans with the arrow keys, zooms with
   `+`/`-` and resets with `0`; Tab reaches each step box, and Enter opens the step. Each step box has a
@@ -114,12 +116,15 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     is a node of its own, drawn with a thick outline and listed in the legend. Actions invoking the same
     workflow share one node. A `retry` through a workflow gets an arrow to the workflow node, labeled with
     its criteria and limit (`$statusCode == 401 — retry, ≤ 1×`), and an arrow back to the step, which runs
-    again afterwards; a `goto` gets only the arrow there.
+    again afterwards; a `goto` gets only the arrow there. When the retried workflow is expanded, the arrow
+    back starts at its own Success node, where control returns to the step.
   - **Expanding workflows.** A workflow node of the same document has a `+` button (Tab reaches it, Enter
     or Space presses it): it shows that workflow's steps inside the diagram, in a box of their own entered
     from the workflow node, with their own arrows and ends. Workflows inside it expand the same way. A
     workflow that is already expanded further up the path is not expanded again: it is marked `↻` (a cycle).
-    `−` hides the steps again, along with anything expanded inside them. Workflows of other documents
+    `−` hides the steps again, along with anything expanded inside them. While a workflow is expanded,
+    the overview beside the steps may grow to the height of the window (and pans beyond that), and it
+    keeps its zoom and position; the full-window view stays open. Workflows of other documents
     (`$sourceDescriptions.<name>.<workflowId>`) can't be expanded.
 - For each step: the operation, channel or workflow it targets, with that target's description and
   its own parameters. A step that invokes a workflow of the same document has a "Show its steps"

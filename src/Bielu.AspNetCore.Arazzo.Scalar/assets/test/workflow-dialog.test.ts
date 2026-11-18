@@ -97,3 +97,44 @@ describe('the inline workflow overview', () => {
     expect(transformOf(workflow, false)).toBe(zoomed)
   })
 })
+
+describe('the inline overview with an expanded workflow', () => {
+  it('may grow taller to fit the expanded graph, and shrinks back once nothing is expanded', async () => {
+    // Arrange
+    const workflow = mountWorkflow()
+    const inline = () => workflow.find('.ba-overview .ba-diagram')
+
+    // Act
+    const before = inline().classes()
+    await placeToggle(workflow, false).trigger('click')
+    const expanded = inline().classes()
+    await placeToggle(workflow, false).trigger('click')
+
+    // Assert
+    expect(before).not.toContain('ba-diagram-grown')
+    expect(expanded).toContain('ba-diagram-grown')
+    expect(inline().classes()).not.toContain('ba-diagram-grown')
+  })
+
+  it('shows the name of an action on its arrow\'s tooltip', async () => {
+    // Arrange
+    const withActions: Workflow = {
+      workflowId: 'trackOrder',
+      steps: [{ stepId: 'status', operationId: 'getOrder', onFailure: [{ name: 'giveUp', type: 'end' }, { name: 'gone', type: 'end', criteria: [{ condition: '$statusCode == 410' }] }] }],
+    }
+    wrapper = mount(ArazzoWorkflow, {
+      attachTo: globalThis.document.body,
+      props: { view: { id: 'trackOrder', workflow: withActions, steps: [{ id: 'trackOrder/status', step: withActions.steps![0]! }] }, document: { arazzo: '1.1.0', workflows: [withActions] }, documents: {} },
+    })
+
+    // Act
+    const labels = wrapper.findAll('.ba-overview .ba-diagram-edge-label').map((label) => ({
+      text: label.find('text').text(),
+      title: label.find('title').text(),
+    }))
+
+    // Assert
+    expect(labels).toContainEqual({ text: 'otherwise', title: 'giveUp' })
+    expect(labels).toContainEqual({ text: '$statusCode == 410', title: 'gone' })
+  })
+})
