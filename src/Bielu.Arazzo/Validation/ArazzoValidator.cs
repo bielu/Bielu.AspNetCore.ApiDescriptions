@@ -35,7 +35,8 @@ public static class ArazzoValidator
     /// <summary>
     /// Rejects, in a document declaring Arazzo 1.0, the fields and values Arazzo 1.1.0 added besides <c>$self</c>,
     /// the Selector Object and <c>targetSelectorType</c> (checked elsewhere): AsyncAPI sources and their step fields,
-    /// step <c>timeout</c> and <c>dependsOn</c>, the <c>querystring</c> parameter location, and the
+    /// step <c>timeout</c> and <c>dependsOn</c>, <c>parameters</c> on success and failure actions,
+    /// the <c>querystring</c> parameter location, and the
     /// <c>jsonpointer</c> criterion type and <c>rfc9535</c> JSONPath version.
     /// </summary>
     private static void ValidateVersion10Features(ArazzoDocument document, List<ArazzoError> errors)
@@ -79,11 +80,31 @@ public static class ArazzoValidator
             }
         }
 
+        void CheckActionParameters(IList<ArazzoReferenceable<ArazzoParameter>>? parameters, string path)
+        {
+            if (parameters is not null)
+            {
+                Require11(path, "parameters on a success or failure action");
+            }
+        }
+
+        void CheckSuccessAction(ArazzoSuccessAction? action, string path)
+        {
+            CheckCriteria(action?.Criteria, $"{path}/criteria");
+            CheckActionParameters(action?.Parameters, $"{path}/parameters");
+        }
+
+        void CheckFailureAction(ArazzoFailureAction? action, string path)
+        {
+            CheckCriteria(action?.Criteria, $"{path}/criteria");
+            CheckActionParameters(action?.Parameters, $"{path}/parameters");
+        }
+
         void CheckSuccessActions(IList<ArazzoReferenceable<ArazzoSuccessAction>>? actions, string path)
         {
             for (var i = 0; actions is not null && i < actions.Count; i++)
             {
-                CheckCriteria(actions[i].Value?.Criteria, $"{path}/{i}/criteria");
+                CheckSuccessAction(actions[i].Value, $"{path}/{i}");
             }
         }
 
@@ -91,8 +112,7 @@ public static class ArazzoValidator
         {
             for (var i = 0; actions is not null && i < actions.Count; i++)
             {
-                CheckCriteria(actions[i].Value?.Criteria, $"{path}/{i}/criteria");
-                CheckParameters(actions[i].Value?.Parameters, $"{path}/{i}/parameters");
+                CheckFailureAction(actions[i].Value, $"{path}/{i}");
             }
         }
 
@@ -116,14 +136,12 @@ public static class ArazzoValidator
 
             foreach (var (name, action) in components.SuccessActions ?? new Dictionary<string, ArazzoSuccessAction>())
             {
-                CheckCriteria(action.Criteria, $"/components/successActions/{EscapePointerSegment(name)}/criteria");
+                CheckSuccessAction(action, $"/components/successActions/{EscapePointerSegment(name)}");
             }
 
             foreach (var (name, action) in components.FailureActions ?? new Dictionary<string, ArazzoFailureAction>())
             {
-                var path = $"/components/failureActions/{EscapePointerSegment(name)}";
-                CheckCriteria(action.Criteria, $"{path}/criteria");
-                CheckParameters(action.Parameters, $"{path}/parameters");
+                CheckFailureAction(action, $"/components/failureActions/{EscapePointerSegment(name)}");
             }
         }
 
@@ -205,7 +223,9 @@ public static class ArazzoValidator
 
         foreach (var (name, action) in components?.SuccessActions ?? new Dictionary<string, ArazzoSuccessAction>())
         {
-            ValidateSuccessAction(action, $"/components/successActions/{EscapePointerSegment(name)}", errors);
+            var path = $"/components/successActions/{EscapePointerSegment(name)}";
+            ValidateSuccessAction(action, path, errors);
+            CheckReferences(action.Parameters, "parameters", components?.Parameters, $"{path}/parameters", errors);
         }
 
         foreach (var (name, action) in components?.FailureActions ?? new Dictionary<string, ArazzoFailureAction>())
@@ -223,7 +243,8 @@ public static class ArazzoValidator
             CheckReferences(workflow.Parameters, "parameters", components?.Parameters, $"{workflowPath}/parameters", errors);
             CheckReferences(workflow.SuccessActions, "successActions", components?.SuccessActions, $"{workflowPath}/successActions", errors);
             CheckReferences(workflow.FailureActions, "failureActions", components?.FailureActions, $"{workflowPath}/failureActions", errors);
-            CheckNestedFailureActionReferences(workflow.FailureActions, components?.Parameters, $"{workflowPath}/failureActions", errors);
+            CheckNestedParameterReferences(workflow.SuccessActions, a => a.Parameters, components?.Parameters, $"{workflowPath}/successActions", errors);
+            CheckNestedParameterReferences(workflow.FailureActions, a => a.Parameters, components?.Parameters, $"{workflowPath}/failureActions", errors);
 
             for (var s = 0; s < workflow.Steps.Count; s++)
             {
@@ -232,17 +253,23 @@ public static class ArazzoValidator
                 CheckReferences(step.Parameters, "parameters", components?.Parameters, $"{stepPath}/parameters", errors);
                 CheckReferences(step.OnSuccess, "successActions", components?.SuccessActions, $"{stepPath}/onSuccess", errors);
                 CheckReferences(step.OnFailure, "failureActions", components?.FailureActions, $"{stepPath}/onFailure", errors);
-                CheckNestedFailureActionReferences(step.OnFailure, components?.Parameters, $"{stepPath}/onFailure", errors);
+                CheckNestedParameterReferences(step.OnSuccess, a => a.Parameters, components?.Parameters, $"{stepPath}/onSuccess", errors);
+                CheckNestedParameterReferences(step.OnFailure, a => a.Parameters, components?.Parameters, $"{stepPath}/onFailure", errors);
             }
         }
     }
 
-    private static void CheckNestedFailureActionReferences(IList<ArazzoReferenceable<ArazzoFailureAction>>? actions,
+    private static void CheckNestedParameterReferences<TAction>(IList<ArazzoReferenceable<TAction>>? actions,
+        Func<TAction, IList<ArazzoReferenceable<ArazzoParameter>>?> actionParameters,
         IDictionary<string, ArazzoParameter>? parameters, string path, List<ArazzoError> errors)
+        where TAction : class, IArazzoSerializable
     {
         for (var i = 0; actions is not null && i < actions.Count; i++)
         {
-            CheckReferences(actions[i].Value?.Parameters, "parameters", parameters, $"{path}/{i}/parameters", errors);
+            if (actions[i].Value is { } action)
+            {
+                CheckReferences(actionParameters(action), "parameters", parameters, $"{path}/{i}/parameters", errors);
+            }
         }
     }
 
@@ -549,6 +576,8 @@ public static class ArazzoValidator
             errors.Add(new ArazzoError(path, "A 'goto' success action requires either workflowId or stepId."));
         }
 
+        ValidateReferenceableList(action.Parameters, $"{path}/parameters", errors, ValidateActionParameter);
+
         if (action.Criteria is null)
         {
             return;
@@ -581,7 +610,7 @@ public static class ArazzoValidator
             errors.Add(new ArazzoError(path, "retryAfter and retryLimit only apply when type is 'retry'."));
         }
 
-        ValidateReferenceableList(action.Parameters, $"{path}/parameters", errors, ValidateParameter);
+        ValidateReferenceableList(action.Parameters, $"{path}/parameters", errors, ValidateActionParameter);
 
         if (action.Criteria is null)
         {
@@ -591,6 +620,15 @@ public static class ArazzoValidator
         for (var i = 0; i < action.Criteria.Count; i++)
         {
             ValidateCriterion(action.Criteria[i], $"{path}/criteria/{i}", errors);
+        }
+    }
+
+    /// <summary>A success or failure action passes its parameters to a workflow, so the spec forbids their <c>in</c>.</summary>
+    private static void ValidateActionParameter(ArazzoParameter parameter, string path, List<ArazzoError> errors)
+    {
+        if (parameter.In is not null)
+        {
+            errors.Add(new ArazzoError($"{path}/in", "in MUST NOT be used on a success or failure action parameter; its parameters go to a workflow."));
         }
     }
 

@@ -16,6 +16,12 @@ public sealed class ArazzoSuccessAction : IArazzoSerializable, IArazzoExtensible
     /// <summary>Only when Type is "goto". Mutually exclusive with <see cref="WorkflowId"/>.</summary>
     public string? StepId { get; set; }
 
+    /// <summary>
+    /// Arazzo 1.1.0 and later: parameters passed to the workflow referenced by <see cref="WorkflowId"/>.
+    /// The "in" field MUST NOT be used here.
+    /// </summary>
+    public IList<ArazzoReferenceable<ArazzoParameter>>? Parameters { get; set; }
+
     public IList<ArazzoCriterion>? Criteria { get; set; }
 
     public IDictionary<string, System.Text.Json.Nodes.JsonNode?>? Extensions { get; set; }
@@ -29,6 +35,7 @@ public sealed class ArazzoSuccessAction : IArazzoSerializable, IArazzoExtensible
         writer.WriteValue(Type.Value);
         writer.WriteOptionalProperty("workflowId", WorkflowId);
         writer.WriteOptionalProperty("stepId", StepId);
+        writer.WriteOptionalArrayProperty("parameters", Parameters, p => p.SerializeAsV1(writer));
         writer.WriteOptionalArrayProperty("criteria", Criteria, c => c.SerializeAsV1(writer));
         writer.WriteExtensions(Extensions);
         writer.WriteEndObject();

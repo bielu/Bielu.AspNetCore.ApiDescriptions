@@ -206,13 +206,14 @@ internal static class ArazzoV1Deserializer
 
     private static ArazzoSuccessAction ReadSuccessAction(JsonObject obj, string path, ParsingContext ctx)
     {
-        var known = new HashSet<string> { "name", "type", "workflowId", "stepId", "criteria" };
+        var known = new HashSet<string> { "name", "type", "workflowId", "stepId", "parameters", "criteria" };
         return new ArazzoSuccessAction
         {
             Name = ReadRequiredString(obj, "name", $"{path}/name", ctx),
             Type = ReadRequiredString(obj, "type", $"{path}/type", ctx),
             WorkflowId = ReadOptionalString(obj, "workflowId"),
             StepId = ReadOptionalString(obj, "stepId"),
+            Parameters = ReadArray(Get(obj, "parameters"), $"{path}/parameters", ctx, ReadParameterReferenceable),
             Criteria = ReadArray(Get(obj, "criteria"), $"{path}/criteria", ctx, ReadCriterion),
             Extensions = ReadExtensions(obj, path, known, ctx),
         };
