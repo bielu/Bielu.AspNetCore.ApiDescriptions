@@ -19,6 +19,66 @@ namespace Bielu.AspNetCore.Arazzo.Tests.Integration;
 public class ArazzoSelfWiringTests
 {
     [Fact]
+    public async Task Startup_OperationPathOnUrlOnlySource_IsNotValidated()
+    {
+        // payments is another service's OpenAPI document, added by URL only: nothing to resolve it against.
+        using var host = await BuildMixedSourcesHostAsync(step => step.OperationPath("payments", "/payments", "post"));
+
+        host.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task Startup_ChannelPathOnUrlOnlySource_IsNotValidated()
+    {
+        using var host = await BuildMixedSourcesHostAsync(step => step.Channel("events", "paymentCompleted", ArazzoStepAction.Receive));
+
+        host.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task Startup_QualifiedOperationIdOnUrlOnlySource_IsNotValidated()
+    {
+        using var host = await BuildMixedSourcesHostAsync(step => step.Operation("$sourceDescriptions.payments.createPayment"));
+
+        host.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task Startup_QualifiedOperationIdOnSelfWiredSource_Resolves()
+    {
+        using var host = await BuildMixedSourcesHostAsync(step => step.Operation("$sourceDescriptions.orders.createOrder"));
+
+        host.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task Startup_QualifiedOperationIdOnSelfWiredSource_IsStillValidated()
+    {
+        var exception = await Should.ThrowAsync<ArazzoStartupValidationException>(() =>
+            BuildMixedSourcesHostAsync(step => step.Operation("$sourceDescriptions.orders.doesNotExist")));
+
+        exception.Errors.ShouldHaveSingleItem().ShouldContain("doesNotExist");
+    }
+
+    [Fact]
+    public async Task Startup_OperationPathOnSelfWiredSourceNextToUrlOnlySource_IsStillValidated()
+    {
+        var exception = await Should.ThrowAsync<ArazzoStartupValidationException>(() =>
+            BuildMixedSourcesHostAsync(step => step.OperationPath("orders", "/orders", "delete")));
+
+        exception.Errors.ShouldHaveSingleItem().ShouldContain("orders");
+    }
+
+    [Fact]
+    public async Task Startup_OperationPathOnUndeclaredSource_Throws()
+    {
+        var exception = await Should.ThrowAsync<ArazzoStartupValidationException>(() =>
+            BuildMixedSourcesHostAsync(step => step.OperationPath("nowhere", "/payments", "post")));
+
+        exception.Errors.ShouldHaveSingleItem().ShouldContain("nowhere");
+    }
+
+    [Fact]
     public async Task Startup_ResolvableOperationId_Succeeds()
     {
         using var host = await BuildOperationIdHostAsync(operationId: "createOrder");
@@ -332,6 +392,56 @@ public class ArazzoSelfWiringTests
 
         var host = builder.Build();
         await host.StartAsync();
+        return host;
+    }
+
+    /// <summary>
+    /// A host with one self-wired source (<c>orders</c>, this app's OpenAPI document, which maps only
+    /// <c>POST /orders</c>) and two sources added by URL only (<c>payments</c>, another service's OpenAPI
+    /// document, and <c>events</c>, its AsyncAPI document), with one step configured by <paramref name="configureStep"/>.
+    /// </summary>
+    private static async Task<IHost> BuildMixedSourcesHostAsync(Action<Services.ArazzoStepBuilder> configureStep)
+    {
+        var builder = Host.CreateDefaultBuilder()
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseTestServer();
+                webBuilder.ConfigureServices(services =>
+                {
+                    services.AddOpenApi("v1");
+                    services.AddArazzo(options =>
+                    {
+                        options.WithInfo("Test Workflows", "1.0.0");
+                        options.AddOpenApiSource("orders", "v1");
+                        options.AddSourceDescription("payments", "https://payments.example.com/openapi/v1.json", ArazzoSourceDescriptionType.OpenApi);
+                        options.AddSourceDescription("events", "https://payments.example.com/asyncapi/v1.json", ArazzoSourceDescriptionType.AsyncApi);
+                        options.AddWorkflow("pay", wf => wf.Step("step", configureStep));
+                    });
+                    services.AddRouting();
+                });
+                webBuilder.Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapPost("/orders", () => "ok").WithName("createOrder");
+                        endpoints.MapOpenApi();
+                        endpoints.MapArazzo();
+                    });
+                });
+            });
+
+        var host = builder.Build();
+        try
+        {
+            await host.StartAsync();
+        }
+        catch
+        {
+            host.Dispose();
+            throw;
+        }
+
         return host;
     }
 
