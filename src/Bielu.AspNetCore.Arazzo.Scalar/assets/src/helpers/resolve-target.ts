@@ -10,6 +10,10 @@ export type WorkflowTarget = {
   workflow: ArazzoWorkflow | undefined
   /** The workspace name of the Arazzo document the workflow is in, when it is another loaded document. */
   documentName?: string
+  /** For `$sourceDescriptions.<name>.<id>`: the source description it names. */
+  sourceName?: string
+  /** The `arazzo` version of the document the workflow was found in. */
+  version?: string
 }
 
 /** A step that calls an OpenAPI operation of a loaded sibling document. */
@@ -115,7 +119,10 @@ export const findDocumentByUrl = (
   source: ArazzoSourceDescription,
 ): LoadedDocument | undefined => {
   const page = pageUrl()
-  const wanted = absoluteUrl(source.url, absoluteUrl(arazzo['x-scalar-original-source-url'], page) ?? page)
+  // Arazzo's base URI: the document's `$self` when it has one (itself resolved against where the document was
+  // retrieved from), else the retrieval URL.
+  const retrieved = absoluteUrl(arazzo['x-scalar-original-source-url'], page) ?? page
+  const wanted = absoluteUrl(source.url, absoluteUrl(arazzo.$self, retrieved) ?? retrieved)
   if (!wanted) {
     return undefined
   }
@@ -270,6 +277,37 @@ const findByPointer = (
   return undefined
 }
 
+/**
+ * Whether every document the Arazzo document can resolve into is loaded: each of its source descriptions, and the
+ * Arazzo sources of every Arazzo document reached through them, so a workflow called across documents can be drawn
+ * all the way down. Each document is visited once, so sources that call back into each other end.
+ */
+export const sourcesLoaded = (arazzo: ArazzoDocument, documents: Record<string, unknown>): boolean => {
+  const visited = new Set<ArazzoDocument>()
+  const queue: { document: ArazzoDocument; root: boolean }[] = [{ document: arazzo, root: true }]
+  for (let next = queue.shift(); next; next = queue.shift()) {
+    if (visited.has(next.document)) {
+      continue
+    }
+    visited.add(next.document)
+    for (const source of next.document.sourceDescriptions ?? []) {
+      // Beyond the document itself only Arazzo sources matter: they hold the workflows drawn inside it.
+      if (!next.root && source.type !== 'arazzo') {
+        continue
+      }
+      const loaded = findDocumentByUrl(next.document, documents, source)
+      if (!loaded) {
+        return false
+      }
+      const other = typeof loaded.document.arazzo === 'string' ? normalizeArazzoDocument(loaded.document) : undefined
+      if (other) {
+        queue.push({ document: other, root: false })
+      }
+    }
+  }
+  return true
+}
+
 /** `$sourceDescriptions.<name>.<workflowId>`: a workflow of the Arazzo document a source description names. */
 export const QUALIFIED_WORKFLOW = /^\$sourceDescriptions\.([^.]+)\.(.+)$/
 
@@ -323,11 +361,14 @@ export const resolveStepTarget = (
 ): StepTarget | undefined => {
   if (step.workflowId) {
     const resolved = resolveWorkflow(arazzo, step.workflowId, documents)
+    const sourceName = QUALIFIED_WORKFLOW.exec(step.workflowId)?.[1]
     return {
       kind: 'workflow',
       identifier: step.workflowId,
       workflow: resolved?.workflow,
       ...(resolved?.documentName ? { documentName: resolved.documentName } : {}),
+      ...(sourceName ? { sourceName } : {}),
+      ...(resolved ? { version: resolved.document.arazzo } : {}),
     }
   }
 

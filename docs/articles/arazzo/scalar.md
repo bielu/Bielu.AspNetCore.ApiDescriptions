@@ -154,7 +154,10 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     reusable actions, its page registry in the Pages view, and its step targets. The cycle check counts the
     document as well as the workflow, so a call back into this document is marked `↻`. The group is labelled
     with the readable form, `identity.signIn`, and so is the node when the document isn't loaded, in which
-    case it can't be expanded. Boxes inside it have no step section on this page, so they don't open one.
+    case it can't be expanded. Boxes inside it have no step section on this page, so they don't open one. The document may load after this one: the view keeps checking until every source, and every Arazzo source of the
+    documents those lead to, is loaded. A relative source URL resolves against the document's `` when it has one,
+    as Arazzo specifies, else against the URL it was loaded from. The step badge shows the called document's Arazzo
+    version, and the step counts under that source in Sources.
 - For each step: the operation, channel or workflow it targets, with that target's description and
   its own parameters. A step that invokes a workflow has a "Show its steps" button that lists that
   workflow's steps (each with what it calls) under the target, read-only and one level deep. This includes a

@@ -94,7 +94,8 @@ export const targetSpec = (
     return undefined
   }
   if (target.kind === 'workflow') {
-    return { family: 'arazzo', version: arazzo.arazzo, resolved: Boolean(target.workflow), sourceName: undefined }
+    // The version of the document the workflow is in, and the source it was called through, if any.
+    return { family: 'arazzo', version: target.version ?? arazzo.arazzo, resolved: Boolean(target.workflow), sourceName: target.sourceName }
   }
 
   const loaded = target.documentName ? documentSpec(documents[target.documentName]) : undefined
