@@ -6,3 +6,16 @@ const Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoDefaults.AssetsPath = "/bielu/s
 static Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoEndpointRouteBuilderExtensions.MapScalarArazzoAssets(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path = "/bielu/scalar/arazzo") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
 static Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptionsExtensions.AddArazzoDocument(this Scalar.AspNetCore.ScalarOptions! options, string! documentName = "v1", string? title = null, string! routePattern = "/arazzo/{documentName}.json", bool isDefault = false) -> Scalar.AspNetCore.ScalarOptions!
 static Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptionsExtensions.WithArazzo(this Scalar.AspNetCore.ScalarOptions! options, string! assetsPath = "/bielu/scalar/arazzo") -> Scalar.AspNetCore.ScalarOptions!
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.AssetsPath.get -> string!
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.AssetsPath.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.EndLabelExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.EndLabelExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.LabelExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.LabelExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.PageExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.PageExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.PagesExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.PagesExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.ScalarArazzoOptions() -> void
+static Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptionsExtensions.WithArazzoOptions(this Scalar.AspNetCore.ScalarOptions! options, System.Action<Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions!>! configure) -> Scalar.AspNetCore.ScalarOptions!
