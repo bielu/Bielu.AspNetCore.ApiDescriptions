@@ -10,20 +10,19 @@ namespace Bielu.AspNetCore.Arazzo.SourceResolvers;
 /// Resolves Arazzo <c>operationId</c>/<c>channelPath</c> references against a live <see cref="AsyncApiDocument"/>.
 /// Registered for <see cref="ArazzoSourceDescriptionType.AsyncApi"/> sources by <c>AddArazzo</c>'s self-wiring.
 /// </summary>
-public sealed class AsyncApiSourceResolver : IArazzoSourceResolver
+public sealed class AsyncApiSourceResolver : ArazzoSourceResolver<AsyncApiDocument>
 {
     /// <inheritdoc />
-    public string SourceType => ArazzoSourceDescriptionType.AsyncApi;
+    public override string SourceType => ArazzoSourceDescriptionType.AsyncApi;
 
     /// <inheritdoc />
-    public bool TryResolveOperation(object document, string operationId, out JsonNode? operation)
+    public override bool TryResolveOperation(AsyncApiDocument document, string operationId, out JsonNode? operation)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(operationId);
 
         operation = null;
-        if (document is not AsyncApiDocument asyncApiDocument ||
-            !asyncApiDocument.Operations.TryGetValue(operationId, out var candidate))
+        if (!document.Operations.TryGetValue(operationId, out var candidate))
         {
             return false;
         }
@@ -33,19 +32,18 @@ public sealed class AsyncApiSourceResolver : IArazzoSourceResolver
     }
 
     /// <summary>AsyncAPI operations are not addressed by JSON Pointer in this package's builder; resolves an <c>/operations/{id}</c> pointer as a convenience, otherwise returns false.</summary>
-    public bool TryResolveOperationPath(object document, string jsonPointer, out JsonNode? operation)
+    public override bool TryResolveOperationPath(AsyncApiDocument document, string jsonPointer, out JsonNode? operation)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(jsonPointer);
 
         operation = null;
-        if (document is not AsyncApiDocument asyncApiDocument ||
-            !TryParseMapPointer(jsonPointer, "/operations/", out var name))
+        if (!TryParseMapPointer(jsonPointer, "/operations/", out var name))
         {
             return false;
         }
 
-        if (!asyncApiDocument.Operations.TryGetValue(name, out var candidate))
+        if (!document.Operations.TryGetValue(name, out var candidate))
         {
             return false;
         }
@@ -55,19 +53,18 @@ public sealed class AsyncApiSourceResolver : IArazzoSourceResolver
     }
 
     /// <summary>Resolves an <c>/channels/{name}</c> JSON Pointer, as produced by <c>ArazzoStepBuilder.Channel</c>.</summary>
-    public bool TryResolveChannelPath(object document, string jsonPointer, out JsonNode? channel)
+    public override bool TryResolveChannelPath(AsyncApiDocument document, string jsonPointer, out JsonNode? channel)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(jsonPointer);
 
         channel = null;
-        if (document is not AsyncApiDocument asyncApiDocument ||
-            !TryParseMapPointer(jsonPointer, "/channels/", out var name))
+        if (!TryParseMapPointer(jsonPointer, "/channels/", out var name))
         {
             return false;
         }
 
-        if (!asyncApiDocument.Channels.TryGetValue(name, out var candidate))
+        if (!document.Channels.TryGetValue(name, out var candidate))
         {
             return false;
         }

@@ -169,25 +169,19 @@ public class ArazzoSelfWiringTests
         await Should.NotThrowAsync(() => host.StartAsync());
     }
 
-    private sealed class AlwaysResolvesOpenApiResolver : IArazzoSourceResolver
+    private sealed class AlwaysResolvesOpenApiResolver : ArazzoSourceResolver<Microsoft.OpenApi.OpenApiDocument>
     {
-        public string SourceType => ArazzoSourceDescriptionType.OpenApi;
+        public override string SourceType => ArazzoSourceDescriptionType.OpenApi;
 
-        public bool TryResolveOperation(object document, string operationId, out JsonNode? operation)
+        public override bool TryResolveOperation(Microsoft.OpenApi.OpenApiDocument document, string operationId, out JsonNode? operation)
         {
             operation = null;
             return true;
         }
 
-        public bool TryResolveOperationPath(object document, string jsonPointer, out JsonNode? operation)
+        public override bool TryResolveOperationPath(Microsoft.OpenApi.OpenApiDocument document, string jsonPointer, out JsonNode? operation)
         {
             operation = null;
-            return true;
-        }
-
-        public bool TryResolveChannelPath(object document, string jsonPointer, out JsonNode? channel)
-        {
-            channel = null;
             return true;
         }
     }
