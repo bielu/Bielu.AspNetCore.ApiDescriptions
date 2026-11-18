@@ -18,6 +18,7 @@
 | An output (step or workflow) whose value is a literal, such as `"outputs": { "count": 3 }` | Outputs are runtime expressions or Selector Objects: use an expression such as `$response.body#/count` |
 | A Selector Object (as a parameter value, payload, payload replacement value or output) in a document declaring `arazzo: 1.0.x` | Declare `1.1.0` (`ArazzoOptions.Version = ArazzoVersion.V1_1`, the default), or use a runtime expression |
 | `targetSelectorType` on a payload replacement in a `1.0.x` document | Declare `1.1.0`, or drop it |
+| In a `1.0.x` document, the other 1.1 additions: an `asyncapi` source description; the `channelPath`, `action`, `correlationId`, `timeout` or `dependsOn` step fields; the `querystring` parameter location; the `jsonpointer` criterion type or the `rfc9535` JSONPath version | Declare `1.1.0`. A document that uses AsyncAPI steps already needs 1.1, which introduced them |
 | `$self` in a `1.0.x` document, or a `$self` with a `#fragment` | Declare `1.1.0`; remove the fragment |
 | A Reusable Object (`$components.{kind}.{name}`) that names no entry, or an entry of another kind (a `successActions` reference in `onFailure`, say), or a workflow `inputs` `$ref` to a missing `#/components/inputs/{name}` | Add the component, or fix the reference |
 | `value` on a reference to anything but a parameter | Remove `value`; only a parameter reference can override its value |

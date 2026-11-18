@@ -562,4 +562,90 @@ public class ArazzoValidatorTests
         // Assert
         errors.ShouldBeEmpty();
     }
+
+    private static ArazzoDocument DocumentUsingEveryArazzo11StepFeature(string arazzo)
+    {
+        var document = MinimalValidDocument();
+        document.Arazzo = arazzo;
+        document.SourceDescriptions.Add(new ArazzoSourceDescription { Name = "events", Url = "https://example.com/asyncapi.json", Type = ArazzoSourceDescriptionType.AsyncApi });
+        document.Workflows[0].Steps.Add(new ArazzoStep
+        {
+            StepId = "s2",
+            ChannelPath = "{$sourceDescriptions.events.url}#/channels/orders",
+            Action = ArazzoStepAction.Receive,
+            CorrelationId = "orderId",
+            Timeout = 1000,
+            DependsOn = ["s1"],
+            Parameters = [ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = "q", In = ArazzoParameterLocation.QueryString, Value = "$inputs.q" })],
+            SuccessCriteria =
+            [
+                new ArazzoCriterion { Context = "$message.payload", Condition = "/id", Type = "jsonpointer" },
+                new ArazzoCriterion { Context = "$message.payload", Condition = "$.id", Type = new ArazzoSelectorType { Type = "jsonpath", Version = "rfc9535" } },
+            ],
+        });
+        return document;
+    }
+
+    [Fact]
+    public void Validate_Arazzo11StepFeaturesInArazzo10Document_ReturnsAnErrorPerFeature()
+    {
+        // Arrange
+        var document = DocumentUsingEveryArazzo11StepFeature("1.0.1");
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.Where(e => e.Message.Contains("requires Arazzo 1.1.0")).Select(e => e.Path).ShouldBe(
+        [
+            "/sourceDescriptions/1/type",
+            "/workflows/0/steps/1/channelPath",
+            "/workflows/0/steps/1/action",
+            "/workflows/0/steps/1/correlationId",
+            "/workflows/0/steps/1/timeout",
+            "/workflows/0/steps/1/dependsOn",
+            "/workflows/0/steps/1/parameters/0/in",
+            "/workflows/0/steps/1/successCriteria/0/type",
+            "/workflows/0/steps/1/successCriteria/1/type/version",
+        ], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void Validate_Arazzo11StepFeaturesInArazzo11Document_ReturnsNoVersionErrors()
+    {
+        // Act
+        var errors = ArazzoValidator.Validate(DocumentUsingEveryArazzo11StepFeature("1.1.0"));
+
+        // Assert
+        errors.ShouldNotContain(e => e.Message.Contains("requires Arazzo 1.1.0"));
+    }
+
+    [Fact]
+    public void Validate_Arazzo11FeaturesInArazzo10ActionsAndComponents_ReturnsErrors()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Arazzo = "1.0.0";
+        var jsonPointer = new ArazzoCriterion { Context = "$response.body", Condition = "/id", Type = "jsonpointer" };
+        document.Workflows[0].SuccessActions = [ArazzoReferenceable<ArazzoSuccessAction>.Of(new ArazzoSuccessAction { Name = "done", Type = "end", Criteria = [jsonPointer] })];
+        document.Components = new ArazzoComponents
+        {
+            Parameters = new Dictionary<string, ArazzoParameter> { ["q"] = new() { Name = "q", In = ArazzoParameterLocation.QueryString, Value = "$inputs.q" } },
+            FailureActions = new Dictionary<string, ArazzoFailureAction>
+            {
+                ["stop"] = new() { Name = "stop", Type = "end", Criteria = [jsonPointer] },
+            },
+        };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.Select(e => e.Path).ShouldBe(
+        [
+            "/workflows/0/successActions/0/criteria/0/type",
+            "/components/parameters/q/in",
+            "/components/failureActions/stop/criteria/0/type",
+        ], ignoreOrder: true);
+    }
 }
