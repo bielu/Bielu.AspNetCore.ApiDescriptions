@@ -18,16 +18,14 @@ export type ArazzoPluginOptions = {
   labelExtension?: string
 }
 
-/** The Pages view's options; each must name a specification extension (`x-…`). */
-const PAGES_KEYS = ['pagesExtension', 'pageExtension', 'labelExtension'] as const
+/** The options; each must name a specification extension: `x-` followed by a name. */
+const OPTION_KEYS = ['endLabelExtension', 'pagesExtension', 'pageExtension', 'labelExtension'] as const
 
+/** The rule .NET (`WithArazzoOptions`) and the Aspire helper apply too, so every input path accepts the same names. */
 const isSpecificationExtension = (value: unknown): value is string => typeof value === 'string' && value.startsWith('x-') && value.length > 2
 
 /** The window global the .NET package assigns the options to. */
 export const PLUGIN_OPTIONS_GLOBAL = '__BIELU_SCALAR_ARAZZO__'
-
-/** A specification extension name: `x-` followed by a name. .NET (`WithArazzoOptions`) applies the same rule. */
-const isExtensionName = (value: unknown): value is string => typeof value === 'string' && value.startsWith('x-') && value.length > 2
 
 /** Keeps only well-formed options; anything else (it is untyped input) is dropped. */
 const sanitize = (value: unknown): ArazzoPluginOptions | undefined => {
@@ -36,10 +34,7 @@ const sanitize = (value: unknown): ArazzoPluginOptions | undefined => {
   }
   const record = value as Record<string, unknown>
   const options: ArazzoPluginOptions = {}
-  if (isExtensionName(record.endLabelExtension)) {
-    options.endLabelExtension = record.endLabelExtension
-  }
-  for (const key of PAGES_KEYS) {
+  for (const key of OPTION_KEYS) {
     if (isSpecificationExtension(record[key])) {
       options[key] = record[key]
     }
@@ -54,7 +49,7 @@ export const pluginOptionsFromModuleUrl = (moduleUrl: string | undefined): Arazz
   }
   try {
     const query = new URL(moduleUrl).searchParams
-    return sanitize(Object.fromEntries(['endLabelExtension', ...PAGES_KEYS].map((key) => [key, query.get(key) ?? undefined]))) ?? {}
+    return sanitize(Object.fromEntries(OPTION_KEYS.map((key) => [key, query.get(key) ?? undefined]))) ?? {}
   } catch {
     return {}
   }

@@ -81,6 +81,99 @@ public class ScalarArazzoAspireExtensionsTests
     }
 
     [Fact]
+    public async Task WithArazzoOptions_NoOptions_AddsThePinnedPluginUrlUnchanged()
+    {
+        // Act
+        var pluginUrls = await GetPluginUrlsAsync(scalar => scalar.WithArazzoOptions(_ => { }));
+
+        // Assert
+        pluginUrls.ShouldHaveSingleItem().ShouldBe(ScalarArazzoAspireExtensions.DefaultPluginUrl);
+    }
+
+    [Fact]
+    public async Task WithArazzoOptions_AllOptions_EncodesThemInThePluginUrl()
+    {
+        // Act
+        var pluginUrls = await GetPluginUrlsAsync(scalar => scalar.WithArazzoOptions(arazzo =>
+        {
+            arazzo.EndLabelExtension = "x-end";
+            arazzo.PagesExtension = "x-shop pages";
+            arazzo.PageExtension = "x-page";
+            arazzo.LabelExtension = "x-label&text";
+        }));
+
+        // Assert
+        var url = new Uri(pluginUrls.ShouldHaveSingleItem());
+        url.GetLeftPart(UriPartial.Path).ShouldBe(ScalarArazzoAspireExtensions.DefaultPluginUrl);
+        var query = System.Web.HttpUtility.ParseQueryString(url.Query);
+        query["endLabelExtension"].ShouldBe("x-end");
+        query["pagesExtension"].ShouldBe("x-shop pages");
+        query["pageExtension"].ShouldBe("x-page");
+        query["labelExtension"].ShouldBe("x-label&text");
+    }
+
+    [Fact]
+    public async Task WithArazzoOptions_CustomUrl_KeepsItsQueryAndFragment()
+    {
+        // Act
+        var pluginUrls = await GetPluginUrlsAsync(scalar => scalar.WithArazzoOptions(arazzo =>
+        {
+            arazzo.PluginUrl = "https://cdn.example.com/arazzo.mjs?v=2&pageExtension=x-old#top";
+            arazzo.PageExtension = "x-page";
+        }));
+
+        // Assert
+        pluginUrls.ShouldHaveSingleItem().ShouldBe("https://cdn.example.com/arazzo.mjs?v=2&pageExtension=x-page#top");
+    }
+
+    [Theory]
+    [InlineData("end", "x-")]
+    [InlineData("end", "page")]
+    [InlineData("pages", "x-")]
+    [InlineData("page", "page")]
+    [InlineData("label", "x-")]
+    public async Task WithArazzoOptions_BarePrefixOrNonExtension_Throws(string option, string value)
+    {
+        // Arrange
+        await using var builder = DistributedApplicationTestingBuilder.Create();
+        var scalar = builder.AddScalarApiReference();
+
+        // Act & Assert
+        var exception = Should.Throw<ArgumentException>(() => scalar.WithArazzoOptions(arazzo =>
+        {
+            switch (option)
+            {
+                case "end":
+                    arazzo.EndLabelExtension = value;
+                    break;
+                case "pages":
+                    arazzo.PagesExtension = value;
+                    break;
+                case "page":
+                    arazzo.PageExtension = value;
+                    break;
+                default:
+                    arazzo.LabelExtension = value;
+                    break;
+            }
+        }));
+        exception.Message.ShouldContain("'x-' followed by a name");
+    }
+
+    [Fact]
+    public async Task WithArazzoOptions_InvalidArguments_Throw()
+    {
+        // Arrange
+        await using var builder = DistributedApplicationTestingBuilder.Create();
+        var scalar = builder.AddScalarApiReference();
+
+        // Act & Assert
+        Should.Throw<ArgumentNullException>(() => ScalarArazzoAspireExtensions.WithArazzoOptions(null!, _ => { }));
+        Should.Throw<ArgumentNullException>(() => scalar.WithArazzoOptions(null!));
+        Should.Throw<ArgumentException>(() => scalar.WithArazzoOptions(arazzo => arazzo.PluginUrl = ""));
+    }
+
+    [Fact]
     public void AddArazzoDocument_Defaults_AddsTheMapArazzoRoute()
     {
         // Arrange

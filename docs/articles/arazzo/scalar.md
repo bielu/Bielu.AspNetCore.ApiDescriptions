@@ -316,6 +316,28 @@ serves with `MapArazzo()` (`/arazzo/{documentName}.json` by default) as a source
 next to its OpenAPI and AsyncAPI documents. The app itself doesn't need `Bielu.AspNetCore.Arazzo.Scalar`
 for this: the container renders the documents.
 
+To set the [options](#options) (`EndLabelExtension` and the Pages view's `PagesExtension`,
+`PageExtension` and `LabelExtension`), call `WithArazzoOptions` instead of `WithArazzo`:
+
+```csharp
+builder.AddScalarApiReference()
+    .WithArazzoOptions(arazzo =>
+    {
+        arazzo.PagesExtension = "x-shop-pages";
+        arazzo.PageExtension = "x-page";
+        arazzo.LabelExtension = "x-label";
+    })
+    .WithApiReference(api, options => options.AddArazzoDocument("v1", "Workflows"));
+```
+
+The module has no other way to receive them, so they go in the query string of its URL
+(`scalar-plugin.mjs?pagesExtension=x-shop-pages&…`). `arazzo.PluginUrl` replaces the default URL; its
+own query parameters and fragment are kept. With no options set, the URL is the one `WithArazzo` uses.
+
+Every way of setting the options (`WithArazzoOptions` in the app or the AppHost, `createArazzoPlugin`,
+the page global and the module URL) accepts the same names: `x-` followed by a name. .NET throws for
+anything else, such as `x-` alone or `page`; the JavaScript entry points ignore it.
+
 > [!IMPORTANT]
 > The plugin needs `@scalar/api-reference` 1.80.0 or later in the Scalar container image. An older image
 > shows an Arazzo source as an empty OpenAPI document.

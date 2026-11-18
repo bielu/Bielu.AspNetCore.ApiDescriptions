@@ -96,6 +96,7 @@ public static class ScalarArazzoOptionsExtensions
                 continue;
             }
 
+            // The same rule as the npm package and the Aspire helper: 'x-' followed by a name.
             if (value.Length <= 2 || !value.StartsWith("x-", StringComparison.Ordinal))
             {
                 var property = char.ToUpperInvariant(name[0]) + name[1..];
