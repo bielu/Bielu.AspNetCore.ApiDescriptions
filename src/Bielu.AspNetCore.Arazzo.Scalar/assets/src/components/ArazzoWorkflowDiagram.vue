@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
-import { STEP_EXPAND_EVENT } from '../helpers/navigation'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
+import { expandStepEvent, STEP_REVEAL_EVENT } from '../helpers/navigation'
 import { INITIAL_PAN_ZOOM, panBy, panZoomForKey, type PanZoomState, zoomAt } from '../helpers/pan-zoom'
 import { specLabel } from '../helpers/target-spec'
 import {
@@ -25,8 +25,10 @@ import {
  */
 const props = defineProps<{
   layout: WorkflowLayout
-  /** stepId → the id of that step's section, for click-to-scroll. */
-  stepSectionIds: Record<string, string>
+  /** workflowId → stepId → the id of that step's section, for every workflow of the document, so a box opens its step. */
+  stepSectionIds: Record<string, Record<string, string>>
+  /** The workflow drawn: its top-level boxes are its steps. */
+  workflowId: string
   /** Grow the diagram to fill its box (up to twice its natural size), as the expanded view does. */
   fit?: boolean
 }>()
@@ -210,8 +212,18 @@ const onToggleKeydown = (event: KeyboardEvent, node: LaidOutNode) => {
   }
 }
 
-/** Only top-level steps have a section on the page; nested ones are shown in their own workflow. */
-const sectionOf = (node: LaidOutNode): string | undefined => (node.group ? undefined : props.stepSectionIds[node.id])
+/**
+ * The section of the step a box stands for: a top-level box's step is in this workflow, a box inside an expanded
+ * workflow's group is a step of that workflow, which has its own section on the page. Keyed by workflow, so two
+ * workflows with a step of the same id never mix.
+ */
+const sectionOf = (node: LaidOutNode): string | undefined => {
+  if (!node.stepId) {
+    return undefined
+  }
+  const workflowId = node.group ? props.layout.groups.find((group) => group.id === node.group)?.workflowId : props.workflowId
+  return workflowId ? props.stepSectionIds[workflowId]?.[node.stepId] : undefined
+}
 
 const isStepLink = (node: LaidOutNode): boolean => (node.kind === 'step' || node.kind === 'workflow') && Boolean(sectionOf(node))
 
@@ -245,14 +257,24 @@ const technicalTitle = (node: LaidOutNode): string | undefined => {
   return undefined
 }
 
-const openStep = (node: LaidOutNode) => {
+/**
+ * Opens a box's step: asks the document to show its section even when a filter hides it (`STEP_REVEAL_EVENT`),
+ * unfolds it, scrolls to it and moves keyboard focus to its disclosure button, so a keyboard reader lands there.
+ */
+const openStep = async (node: LaidOutNode) => {
   const id = sectionOf(node)
-  if (isStepLink(node) && id && !moved) {
-    emit('openStep', node.id)
-    const section = document.getElementById(id)
-    section?.dispatchEvent(new CustomEvent(STEP_EXPAND_EVENT))
-    section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  if (!isStepLink(node) || !id || moved) {
+    return
   }
+  emit('openStep', node.id)
+  viewport.value?.dispatchEvent(new CustomEvent(STEP_REVEAL_EVENT, { bubbles: true, detail: { sectionId: id } }))
+  await nextTick()
+  const section = document.getElementById(id)
+  section?.dispatchEvent(expandStepEvent())
+  // The step and the workflow it belongs to open on that render; only then can it be scrolled to and focused.
+  await nextTick()
+  section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  section?.querySelector<HTMLElement>('.ba-step-toggle')?.focus({ preventScroll: true })
 }
 
 /** A path through dagre's bend points, with each corner rounded by a quadratic curve. */
