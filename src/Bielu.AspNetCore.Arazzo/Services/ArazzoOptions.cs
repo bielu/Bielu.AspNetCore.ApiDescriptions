@@ -277,6 +277,44 @@ public sealed class ArazzoOptions
     public ArazzoOptions AddWorkflow<TWorkflow>(Action<ArazzoWorkflowBuilder> configure)
         => AddWorkflow(ArazzoId.FromType<TWorkflow>(), configure);
 
+    internal List<IArazzoDocumentTransformer> DocumentTransformers { get; } = [];
+
+    /// <summary>
+    /// Registers a document transformer, created from the application services each time it runs, that modifies
+    /// the document's object model before it is validated.
+    /// </summary>
+    /// <typeparam name="TTransformer">The type of the <see cref="IArazzoDocumentTransformer"/> to instantiate.</typeparam>
+    public ArazzoOptions AddDocumentTransformer<
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+    TTransformer>()
+        where TTransformer : IArazzoDocumentTransformer
+    {
+        DocumentTransformers.Add(new TypeBasedArazzoDocumentTransformer(typeof(TTransformer)));
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a document transformer that modifies the document's object model before it is validated.
+    /// Transformers run in registration order, once, when the document is first built.
+    /// </summary>
+    /// <param name="transformer">The transformer to register.</param>
+    public ArazzoOptions AddDocumentTransformer(IArazzoDocumentTransformer transformer)
+    {
+        ArgumentNullException.ThrowIfNull(transformer);
+        DocumentTransformers.Add(transformer);
+        return this;
+    }
+
+    /// <summary>Registers a delegate as a document transformer that modifies the object model before validation.</summary>
+    /// <param name="transformer">The delegate representing the transformer.</param>
+    public ArazzoOptions AddDocumentTransformer(
+        Func<ArazzoDocument, ArazzoDocumentTransformerContext, CancellationToken, Task> transformer)
+    {
+        ArgumentNullException.ThrowIfNull(transformer);
+        DocumentTransformers.Add(new DelegateArazzoDocumentTransformer(transformer));
+        return this;
+    }
+
     internal List<IArazzoSerializedDocumentTransformer> SerializedDocumentTransformers { get; } = [];
 
     /// <summary>

@@ -1,25 +1,41 @@
 ﻿using Bielu.Arazzo;
 using Bielu.Arazzo.Models;
 using Bielu.Arazzo.Validation;
+using Bielu.AspNetCore.Arazzo.Transformers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Bielu.AspNetCore.Arazzo.Services;
 
 /// <summary>Builds and caches the <see cref="ArazzoDocument"/> for one keyed document name.</summary>
-internal sealed class ArazzoDocumentService([ServiceKey] string documentName, IOptionsMonitor<ArazzoOptions> optionsMonitor) : IArazzoDocumentProvider
+internal sealed class ArazzoDocumentService(
+    [ServiceKey] string documentName,
+    IOptionsMonitor<ArazzoOptions> optionsMonitor,
+    IServiceProvider services) : IArazzoDocumentProvider
 {
+    private readonly SemaphoreSlim _buildLock = new(1, 1);
     private ArazzoDocument? _cached;
 
-    public Task<ArazzoDocument> GetArazzoDocumentAsync(CancellationToken cancellationToken = default)
+    public async Task<ArazzoDocument> GetArazzoDocumentAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (_cached is not null)
+        {
+            return _cached;
+        }
 
-        _cached ??= Build(optionsMonitor.Get(documentName));
-        return Task.FromResult(_cached);
+        await _buildLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return _cached ??= await BuildAsync(optionsMonitor.Get(documentName), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _buildLock.Release();
+        }
     }
 
-    private static ArazzoDocument Build(ArazzoOptions options)
+    private async Task<ArazzoDocument> BuildAsync(ArazzoOptions options, CancellationToken cancellationToken)
     {
         if (options.Info is null)
         {
@@ -37,6 +53,13 @@ internal sealed class ArazzoDocumentService([ServiceKey] string documentName, IO
             Components = options.Components,
             Extensions = options.Extensions,
         };
+
+        // Transformers run on the object model before validation, so what they add is validated like the rest.
+        var context = new ArazzoDocumentTransformerContext { DocumentName = options.DocumentName, ApplicationServices = services };
+        foreach (var transformer in options.DocumentTransformers)
+        {
+            await transformer.TransformAsync(document, context, cancellationToken).ConfigureAwait(false);
+        }
 
         var errors = ArazzoValidator.Validate(document).Where(e => !e.IsWarning).ToList();
         if (errors.Count > 0)
