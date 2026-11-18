@@ -11,10 +11,16 @@ public sealed class ArazzoFailureAction : IArazzoSerializable, IArazzoExtensible
     /// <summary>"end", "retry", or "goto".</summary>
     public required ArazzoFailureActionType Type { get; set; }
 
-    /// <summary>Only when Type is "goto" or "retry". Mutually exclusive with <see cref="StepId"/>.</summary>
+    /// <summary>
+    /// Only when Type is "goto" or "retry". Mutually exclusive with <see cref="StepId"/>. A "goto" needs one of the two;
+    /// a "retry" with neither retries the current step, and with this set runs the workflow before retrying.
+    /// </summary>
     public string? WorkflowId { get; set; }
 
-    /// <summary>Only when Type is "goto" or "retry". Mutually exclusive with <see cref="WorkflowId"/>.</summary>
+    /// <summary>
+    /// Only when Type is "goto" or "retry". Mutually exclusive with <see cref="WorkflowId"/>. A "goto" needs one of the two;
+    /// a "retry" with neither retries the current step, and with this set runs the step before retrying.
+    /// </summary>
     public string? StepId { get; set; }
 
     /// <summary>Parameters passed to the referenced workflow. The "in" field MUST NOT be used here.</summary>

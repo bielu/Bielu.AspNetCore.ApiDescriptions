@@ -571,9 +571,10 @@ public static class ArazzoValidator
         {
             errors.Add(new ArazzoError(path, "workflowId and stepId are mutually exclusive."));
         }
-        else if ((action.Type == ArazzoFailureActionType.Goto || action.Type == ArazzoFailureActionType.Retry) && action.WorkflowId is null && action.StepId is null)
+        else if (action.Type == ArazzoFailureActionType.Goto && action.WorkflowId is null && action.StepId is null)
         {
-            errors.Add(new ArazzoError(path, $"A '{action.Type}' failure action requires either workflowId or stepId."));
+            // A 'retry' needs no target: without one, the current step is retried.
+            errors.Add(new ArazzoError(path, "A 'goto' failure action requires either workflowId or stepId."));
         }
 
         if (action.Type != ArazzoFailureActionType.Retry && (action.RetryAfter is not null || action.RetryLimit is not null))
