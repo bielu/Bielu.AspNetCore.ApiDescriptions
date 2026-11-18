@@ -178,6 +178,40 @@ public sealed class ArazzoOptions
         return this;
     }
 
+    /// <summary>
+    /// Adds a Specification Extension (<c>x-*</c>) to the source description named <paramref name="sourceName"/>,
+    /// added earlier with <see cref="AddSourceDescription"/>, <see cref="AddAsyncApiSource"/> or
+    /// <see cref="AddOpenApiSource"/>. Setting the same name again replaces its value.
+    /// </summary>
+    /// <param name="sourceName">The source description's name.</param>
+    /// <param name="name">The extension name, which must start with <c>x-</c>.</param>
+    /// <param name="value">The extension value; any JSON, including <c>null</c>.</param>
+    /// <exception cref="InvalidOperationException">No source description has that name.</exception>
+    public ArazzoOptions WithSourceDescriptionExtension(string sourceName, string name, JsonNode? value)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(sourceName);
+        var source = SourceDescriptions.Find(s => string.Equals(s.Name, sourceName, StringComparison.Ordinal))
+            ?? throw new InvalidOperationException(
+                $"No source description is named '{sourceName}'; add it before giving it extensions.");
+        ArazzoExtensions.Set(source.Extensions ??= new Dictionary<string, JsonNode?>(StringComparer.Ordinal), name, value);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a Specification Extension (<c>x-*</c>) to the <c>components</c> object, creating it when needed. Setting
+    /// the same name again replaces its value.
+    /// </summary>
+    /// <param name="name">The extension name, which must start with <c>x-</c>.</param>
+    /// <param name="value">The extension value; any JSON, including <c>null</c>.</param>
+    public ArazzoOptions WithComponentsExtension(string name, JsonNode? value)
+    {
+        // Set first, so a rejected name leaves no empty components object behind.
+        var extensions = Components?.Extensions ?? new Dictionary<string, JsonNode?>(StringComparer.Ordinal);
+        ArazzoExtensions.Set(extensions, name, value);
+        GetComponents().Extensions = extensions;
+        return this;
+    }
+
     private ArazzoComponents GetComponents() => Components ??= new ArazzoComponents();
 
     private static void AddComponent<T>(IDictionary<string, T> components, string name, T value, string kind)

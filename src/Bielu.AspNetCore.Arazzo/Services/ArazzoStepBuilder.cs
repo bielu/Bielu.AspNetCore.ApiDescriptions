@@ -15,6 +15,7 @@ public sealed class ArazzoStepBuilder
     private readonly Dictionary<string, ArazzoValue> _outputs = new(StringComparer.Ordinal);
     private readonly List<ArazzoPayloadReplacement> _replacements = [];
     private readonly Dictionary<string, JsonNode?> _extensions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, JsonNode?> _requestBodyExtensions = new(StringComparer.Ordinal);
 
     internal ArazzoStepBuilder(string stepId) => _stepId = stepId;
 
@@ -226,12 +227,36 @@ public sealed class ArazzoStepBuilder
     {
         ArgumentException.ThrowIfNullOrEmpty(target);
         ArgumentNullException.ThrowIfNull(value);
-        _replacements.Add(new ArazzoPayloadReplacement
+        return Replacement(new ArazzoPayloadReplacement { Target = target, Value = value, TargetSelectorType = targetSelectorType });
+    }
+
+    /// <summary>
+    /// Adds a Payload Replacement Object as given, for one that carries Specification Extensions (<c>x-*</c>).
+    /// Like the other overload, it is kept whether the payload is set before or after it.
+    /// </summary>
+    /// <param name="replacement">The replacement to add.</param>
+    public ArazzoStepBuilder Replacement(ArazzoPayloadReplacement replacement)
+    {
+        ArgumentNullException.ThrowIfNull(replacement);
+        ArgumentException.ThrowIfNullOrEmpty(replacement.Target, nameof(replacement));
+        if (replacement.Value is null)
         {
-            Target = target,
-            Value = value,
-            TargetSelectorType = targetSelectorType,
-        });
+            throw new ArgumentException("The replacement must have a value.", nameof(replacement));
+        }
+
+        _replacements.Add(replacement);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a Specification Extension (<c>x-*</c>) to the step's request body. Setting the same name again replaces
+    /// its value. A request body with only extensions is still written.
+    /// </summary>
+    /// <param name="name">The extension name, which must start with <c>x-</c>.</param>
+    /// <param name="value">The extension value; any JSON, including <c>null</c>.</param>
+    public ArazzoStepBuilder WithRequestBodyExtension(string name, JsonNode? value)
+    {
+        ArazzoExtensions.Set(_requestBodyExtensions, name, value);
         return this;
     }
 
@@ -240,6 +265,19 @@ public sealed class ArazzoStepBuilder
     {
         ArgumentException.ThrowIfNullOrEmpty(condition);
         _successCriteria.Add(new ArazzoCriterion { Condition = condition, Context = context, Type = type });
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a success criterion given as a Criterion Object, for one that carries Specification Extensions
+    /// (<c>x-*</c>) as well as its condition, context and type.
+    /// </summary>
+    /// <param name="criterion">The criterion to add.</param>
+    public ArazzoStepBuilder SuccessCriteria(ArazzoCriterion criterion)
+    {
+        ArgumentNullException.ThrowIfNull(criterion);
+        ArgumentException.ThrowIfNullOrEmpty(criterion.Condition, nameof(criterion));
+        _successCriteria.Add(criterion);
         return this;
     }
 
@@ -396,13 +434,14 @@ public sealed class ArazzoStepBuilder
     private static string EscapePointerSegment(string segment) => segment.Replace("~", "~0").Replace("/", "~1");
 
     private ArazzoRequestBody? BuildRequestBody()
-        => PayloadValue is null && PayloadContentType is null && _replacements.Count == 0
+        => PayloadValue is null && PayloadContentType is null && _replacements.Count == 0 && _requestBodyExtensions.Count == 0
             ? null
             : new ArazzoRequestBody
             {
                 ContentType = PayloadContentType,
                 Payload = PayloadValue,
                 Replacements = _replacements.Count > 0 ? [.. _replacements] : null,
+                Extensions = _requestBodyExtensions.Count > 0 ? _requestBodyExtensions : null,
             };
 
     internal ArazzoStep Build() => new()
