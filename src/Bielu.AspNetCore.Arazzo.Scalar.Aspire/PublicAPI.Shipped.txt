@@ -1,1 +1,19 @@
 ﻿#nullable enable
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.EndLabelExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.EndLabelExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.LabelExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.LabelExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.PageExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.PageExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.PagesExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.PagesExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.PluginUrl.get -> string!
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.PluginUrl.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.ScalarArazzoAspireOptions() -> void
+const Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.DefaultArazzoRoutePattern = "/arazzo/{documentName}.json" -> string!
+const Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.DefaultPluginUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-arazzo@1.0.0/dist/scalar-plugin.mjs" -> string!
+static Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.AddArazzoDocument<TOptions>(this TOptions! options, string! documentName = "v1", string? title = null, string! routePattern = "/arazzo/{documentName}.json", bool isDefault = false) -> TOptions!
+static Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.WithArazzo(this Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>! builder, string! pluginUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-arazzo@1.0.0/dist/scalar-plugin.mjs") -> Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>!
+static Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.WithArazzoOptions(this Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>! builder, System.Action<Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions!>! configure) -> Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>!
