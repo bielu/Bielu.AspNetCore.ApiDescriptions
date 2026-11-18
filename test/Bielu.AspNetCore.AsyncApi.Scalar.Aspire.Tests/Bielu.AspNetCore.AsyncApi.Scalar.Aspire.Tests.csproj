@@ -18,6 +18,7 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Kafka" />
     <PackageReference Include="Aspire.Hosting.Testing" />
+    <PackageReference Include="Microsoft.Playwright" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="xunit" />
@@ -29,6 +30,14 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <!-- The container test probes for a browser the same way the Arazzo Scalar browser tests do, so both skip alike
+       without one. Its API is a file-based app Aspire runs, which is not part of this assembly. -->
+  <ItemGroup>
+    <Compile Remove="Fixtures\ArazzoHost\**" />
+    <None Include="Fixtures\ArazzoHost\**" />
+    <Compile Include="..\Bielu.AspNetCore.Arazzo.Scalar.Tests\Browser\BrowserFactAttribute.cs" Link="Fixtures\BrowserFactAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>

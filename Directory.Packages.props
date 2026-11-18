@@ -73,9 +73,11 @@
     <!-- Scalar API reference UI (AsyncAPI rendering) -->
     <!-- Scalar.AspNetCore 3.0.1 is the first release bundling @scalar/api-reference 1.80.0, whose plugin
          `documentTypes` API the Arazzo plugin needs. 2.16.17 / 0.11.12 were the first carrying `PluginUrls`,
-         which the Aspire console packages use to register their plugin against the stock Scalar bundle. -->
+         which the Aspire console packages use to register their plugin against the stock Scalar bundle.
+         Scalar.Aspire 1.0.2 is the first whose container image bundles @scalar/api-reference 1.80.0 or later
+         (it ships 1.81.0; 0.15.0 shipped 1.78.1), so the Arazzo plugin renders in the Aspire Scalar resource. -->
     <PackageVersion Include="Scalar.AspNetCore" Version="3.0.1" />
-    <PackageVersion Include="Scalar.Aspire" Version="0.15.0" />
+    <PackageVersion Include="Scalar.Aspire" Version="1.0.2" />
     <!-- Referenced directly by the projects that pull in Aspire.Hosting, to lift the MessagePack that
          StreamJsonRpc drags in (2.5.301/2.5.302) past GHSA-qhrr-8q5h-9q3h, patched in 2.5.303. Even the
          latest stable StreamJsonRpc (2.25.29) still depends on 2.5.302, and transitive pinning is

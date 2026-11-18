@@ -339,8 +339,9 @@ the page global and the module URL) accepts the same names: `x-` followed by a n
 anything else, such as `x-` alone or `page`; the JavaScript entry points ignore it.
 
 > [!IMPORTANT]
-> The plugin needs `@scalar/api-reference` 1.80.0 or later in the Scalar container image. An older image
-> shows an Arazzo source as an empty OpenAPI document.
+> The plugin needs `@scalar/api-reference` 1.80.0 or later in the Scalar container image. The package depends on
+> Scalar.Aspire 1.0.2 or later, whose image ships 1.81.0; Scalar.Aspire 0.15.0 and earlier ship an older one,
+> which shows an Arazzo source as an empty OpenAPI document.
 
 ## Without ASP.NET Core
 
