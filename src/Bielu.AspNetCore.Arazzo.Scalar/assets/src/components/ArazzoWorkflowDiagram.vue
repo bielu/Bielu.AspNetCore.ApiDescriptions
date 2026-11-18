@@ -7,10 +7,12 @@ import {
   type LaidOutEdge,
   type LaidOutNode,
   GROUP_LABEL_HEIGHT,
+  GROUP_LABEL_INSET,
   retryBadge,
   retryBadgeWidth,
   SPEC_MARKER_WIDTH,
   WORKFLOW_TOGGLE_WIDTH,
+  truncateLabel,
   type WorkflowLayout,
 } from '../helpers/workflow-graph'
 
@@ -67,16 +69,21 @@ const measureScale = () => {
 
 let observer: ResizeObserver | undefined
 let observedWidth = 0
+let observedHeight = 0
 onMounted(() => {
   measureScale()
   if (typeof ResizeObserver !== 'undefined' && viewport.value) {
     observedWidth = viewport.value.clientWidth
+    observedHeight = viewport.value.clientHeight
     observer = new ResizeObserver(() => {
-      // Only a change of the box's width (a resized window) rescales; the box growing taller around an
-      // expanded workflow does not.
+      // Inline, only a change of the box's width (a resized window) rescales: the box growing taller around an
+      // expanded workflow does not. In `fit` mode the box is the window, so its height counts too, or a
+      // shorter window would clip a graph scaled to the old height.
       const width = viewport.value?.clientWidth ?? 0
-      if (width !== observedWidth) {
+      const height = viewport.value?.clientHeight ?? 0
+      if (width !== observedWidth || (props.fit && height !== observedHeight)) {
         observedWidth = width
+        observedHeight = height
         measureScale()
       }
     })
@@ -345,11 +352,12 @@ const label = computed(() =>
             :width="group.width"
             :x="group.x - group.width / 2"
             :y="group.y - group.height / 2" />
+          <title v-if="truncateLabel(group.label) !== group.label">{{ group.label }}</title>
           <text
             dominant-baseline="central"
-            :x="group.x - group.width / 2 + 10"
+            :x="group.x - group.width / 2 + GROUP_LABEL_INSET"
             :y="group.y - group.height / 2 + GROUP_LABEL_HEIGHT / 2">
-            {{ group.label }}
+            {{ truncateLabel(group.label) }}
           </text>
         </g>
 

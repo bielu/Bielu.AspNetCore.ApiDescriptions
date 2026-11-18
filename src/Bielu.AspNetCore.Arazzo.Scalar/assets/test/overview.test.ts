@@ -61,7 +61,7 @@ describe('buildWorkflowGraph', () => {
           successCriteria: [{ condition: '$statusCode == 201' }],
           onSuccess: [{ name: 'done', type: 'end', criteria: [{ condition: '$response.body#/done == true' }] }],
           onFailure: [
-            { name: 'again', type: 'retry', stepId: 'create', retryLimit: 3 },
+            { name: 'again', type: 'retry', stepId: 'create', retryLimit: 3, criteria: [{ condition: '$statusCode == 503' }] },
             { reference: '$components.failureActions.giveUp' },
           ],
         },
@@ -83,7 +83,7 @@ describe('buildWorkflowGraph', () => {
       { from: 'confirm', to: SUCCESS_NODE_ID, kind: 'success' },
     ])
     // A retry of the step itself is a badge on its box, not a loop back into it.
-    expect(graph.nodes[0]!.retries).toEqual([{ label: 'otherwise — retry, ≤ 3×', action: 'again', retryLimit: 3 }])
+    expect(graph.nodes[0]!.retries).toEqual([{ label: '$statusCode == 503 — retry, ≤ 3×', action: 'again', retryLimit: 3 }])
   })
 
   it('does not repeat a dependsOn arrow an action already draws', () => {

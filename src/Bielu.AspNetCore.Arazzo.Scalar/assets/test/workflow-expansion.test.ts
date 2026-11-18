@@ -207,7 +207,7 @@ describe('expanding workflow nodes', () => {
     const workflow: ArazzoWorkflow = { workflowId: 'wf', steps: [{ stepId: 'getAccount', onFailure: failures() }] }
     const doc: ArazzoDocument = { arazzo: '1.1.0', workflows: [workflow, signIn] }
     const signInNode = workflowNodeId('', 'signIn')
-    const row = [signInNode, endNodeId('', 'showForbiddenPage'), endNodeId('', 'showErrorPage'), SUCCESS_NODE_ID]
+    const row = [signInNode, endNodeId('', 'name:showForbiddenPage'), endNodeId('', 'name:showErrorPage'), SUCCESS_NODE_ID]
     const orderOf = (expanded: Set<string>) => {
       const layout = layoutWorkflowGraph(buildWorkflowGraph(doc, workflow, undefined, { expanded }))
       return [...row].sort((a, b) => layout.nodes.find((node) => node.id === a)!.x - layout.nodes.find((node) => node.id === b)!.x)
@@ -246,7 +246,7 @@ describe('expanding workflow nodes', () => {
     const layout = layoutWorkflowGraph(buildWorkflowGraph(doc, workflow))
 
     // Assert: the row under getAccount, left to right.
-    const row = [endNodeId('', 'showForbiddenPage'), workflowNodeId('', 'signIn'), endNodeId('', 'showErrorPage'), 'next']
+    const row = [endNodeId('', 'name:showForbiddenPage'), workflowNodeId('', 'signIn'), endNodeId('', 'name:showErrorPage'), 'next']
     const xs = row.map((id) => layout.nodes.find((node) => node.id === id)!.x)
     expect(xs).toEqual([...xs].sort((a, b) => a - b))
   })
@@ -257,7 +257,7 @@ describe('expanding workflow nodes', () => {
       workflowId: 'signIn',
       steps: [
         { stepId: 'authorize' },
-        { stepId: 'exchangeCode', onFailure: [{ name: 'signInFailed', type: 'end' }, { name: 'tryAgain', type: 'end', criteria: [{ condition: '$statusCode == 429' }] }] },
+        { stepId: 'exchangeCode', onFailure: [{ name: 'tryAgain', type: 'end', criteria: [{ condition: '$statusCode == 429' }] }, { name: 'signInFailed', type: 'end' }] },
       ],
     }
     const workflow: ArazzoWorkflow = { workflowId: 'wf', steps: [{ stepId: 'getAccount', onFailure: failures() }] }
@@ -270,10 +270,10 @@ describe('expanding workflow nodes', () => {
 
     // Assert
     const x = (id: string) => layout.nodes.find((node) => node.id === id)!.x
-    expect(x(endNodeId(`${signInNode}/`, 'signInFailed'))).toBeLessThan(x(endNodeId(`${signInNode}/`, 'tryAgain')))
-    expect(x(endNodeId(`${signInNode}/`, 'tryAgain'))).toBeLessThan(x(`${signInNode}/${SUCCESS_NODE_ID}`))
-    expect(x(signInNode)).toBeLessThan(x(endNodeId('', 'showForbiddenPage')))
-    expect(x(endNodeId('', 'showErrorPage'))).toBeLessThan(x(SUCCESS_NODE_ID))
+    expect(x(endNodeId(`${signInNode}/`, 'name:tryAgain'))).toBeLessThan(x(endNodeId(`${signInNode}/`, 'name:signInFailed')))
+    expect(x(endNodeId(`${signInNode}/`, 'name:signInFailed'))).toBeLessThan(x(`${signInNode}/${SUCCESS_NODE_ID}`))
+    expect(x(signInNode)).toBeLessThan(x(endNodeId('', 'name:showForbiddenPage')))
+    expect(x(endNodeId('', 'name:showErrorPage'))).toBeLessThan(x(SUCCESS_NODE_ID))
   })
 
   it('starts the arrow out of an expanded workflow below its group, not across it', () => {
@@ -335,10 +335,10 @@ describe('end nodes', () => {
 
     // Assert
     expect(graph.nodes.filter((node) => node.kind === 'failure').map((node) => [node.id, node.label])).toEqual([
-      [endNodeId('', 'showForbiddenPage'), 'showForbiddenPage'],
-      [endNodeId('', 'showErrorPage'), 'showErrorPage'],
+      [endNodeId('', 'name:showForbiddenPage'), 'showForbiddenPage'],
+      [endNodeId('', 'name:showErrorPage'), 'showErrorPage'],
     ])
-    expect(graph.edges).toContainEqual({ from: 'getAccount', to: endNodeId('', 'showErrorPage'), kind: 'failure', label: 'otherwise', action: 'showErrorPage' })
+    expect(graph.edges).toContainEqual({ from: 'getAccount', to: endNodeId('', 'name:showErrorPage'), kind: 'failure', label: 'otherwise', action: 'showErrorPage' })
   })
 
   it('labels end nodes with the configured extension when the action has it', () => {
@@ -388,14 +388,14 @@ describe('implicit success', () => {
       'getAccount',
       workflowNodeId('', 'signIn'),
       SUCCESS_NODE_ID,
-      endNodeId('', 'showForbiddenPage'),
-      endNodeId('', 'showErrorPage'),
+      endNodeId('', 'name:showForbiddenPage'),
+      endNodeId('', 'name:showErrorPage'),
     ])
     expect(graph.edges).toEqual([
       { from: 'getAccount', to: workflowNodeId('', 'signIn'), kind: 'failure', label: '$statusCode == 401 — retry, ≤ 1×', action: 'signIn' },
       { from: workflowNodeId('', 'signIn'), to: 'getAccount', kind: 'return' },
-      { from: 'getAccount', to: endNodeId('', 'showForbiddenPage'), kind: 'failure', label: '$statusCode == 403', action: 'showForbiddenPage' },
-      { from: 'getAccount', to: endNodeId('', 'showErrorPage'), kind: 'failure', label: 'otherwise', action: 'showErrorPage' },
+      { from: 'getAccount', to: endNodeId('', 'name:showForbiddenPage'), kind: 'failure', label: '$statusCode == 403', action: 'showForbiddenPage' },
+      { from: 'getAccount', to: endNodeId('', 'name:showErrorPage'), kind: 'failure', label: 'otherwise', action: 'showErrorPage' },
       { from: 'getAccount', to: SUCCESS_NODE_ID, kind: 'success', label: '$statusCode == 200' },
     ])
   })

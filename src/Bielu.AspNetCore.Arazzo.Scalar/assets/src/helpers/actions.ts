@@ -35,3 +35,12 @@ export const effectiveFailureActions = (
 
 /** An action without criteria always applies: nothing after it in document order is ever reached. */
 export const isUnconditional = (action: ArazzoSuccessAction | ArazzoFailureAction): boolean => !action.criteria?.length
+
+/**
+ * The actions that can run: Arazzo runs the first one whose criteria hold, so the actions after the first one
+ * without criteria never do. The conditional actions before it are kept.
+ */
+export const reachableActions = <T extends ArazzoSuccessAction | ArazzoFailureAction>(actions: T[]): T[] => {
+  const first = actions.findIndex(isUnconditional)
+  return first < 0 ? actions : actions.slice(0, first + 1)
+}

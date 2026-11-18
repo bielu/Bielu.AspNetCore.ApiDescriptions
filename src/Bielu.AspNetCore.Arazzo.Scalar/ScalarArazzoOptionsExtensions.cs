@@ -81,10 +81,10 @@ public static class ScalarArazzoOptionsExtensions
         var arazzo = new ScalarArazzoOptions();
         configure(arazzo);
         ArgumentException.ThrowIfNullOrEmpty(arazzo.AssetsPath, nameof(configure));
-        if (arazzo.EndLabelExtension is { } extension && !extension.StartsWith("x-", StringComparison.Ordinal))
+        if (arazzo.EndLabelExtension is { } extension && (extension.Length <= 2 || !extension.StartsWith("x-", StringComparison.Ordinal)))
         {
             throw new ArgumentException(
-                $"EndLabelExtension '{extension}' is not a specification extension: it must start with 'x-'.",
+                $"EndLabelExtension '{extension}' is not a specification extension: it must be 'x-' followed by a name.",
                 nameof(configure));
         }
 

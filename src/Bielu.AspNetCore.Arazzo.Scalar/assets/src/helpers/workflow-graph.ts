@@ -1,6 +1,6 @@
 import dagre from '@dagrejs/dagre'
 import type { ArazzoCriterion, ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoSuccessAction, ArazzoWorkflow } from '../types'
-import { effectiveFailureActions, effectiveSuccessActions, isUnconditional } from './actions'
+import { effectiveFailureActions, effectiveSuccessActions, isUnconditional, reachableActions } from './actions'
 import type { SpecFamily } from './target-spec'
 
 /**
@@ -79,8 +79,12 @@ export type WorkflowGraphOptions = {
   endLabelExtension?: string
 }
 
-export const SUCCESS_NODE_ID = '__workflow_success__'
-export const FAILURE_NODE_ID = '__workflow_failure__'
+/**
+ * The ids of the synthetic nodes contain `:`, which a `stepId` cannot (Arazzo: `[A-Za-z0-9_\-]+`), so a
+ * step can never share an id with an end node, a workflow node or another synthetic box.
+ */
+export const SUCCESS_NODE_ID = '::success'
+export const FAILURE_NODE_ID = '::failure'
 
 /** The id of the node for the workflow `workflowId` that actions in the scope `prefix` invoke. */
 export const workflowNodeId = (prefix: string, workflowId: string): string => `${prefix}__workflow__:${workflowId}`
@@ -146,9 +150,11 @@ export const localWorkflow = (document: ArazzoDocument, workflowId: string | und
 const endLabelOf = (action: ArazzoFailureAction, extension: string | undefined): { key: string; label: string; named: boolean } => {
   const value = extension ? (action as Record<string, unknown>)[extension] : undefined
   if (typeof value === 'string' || typeof value === 'number') {
-    return { key: `${extension}=${value}`, label: String(value), named: true }
+    // Tagged by where the key comes from, so an action named `x-page=blocked` never shares a node with one whose
+    // `x-page` is `blocked`; actions with the same extension value still share theirs.
+    return { key: `extension:${extension}=${value}`, label: String(value), named: true }
   }
-  return { key: action.name ?? '', label: action.name || 'Failed', named: false }
+  return { key: `name:${action.name ?? ''}`, label: action.name || 'Failed', named: false }
 }
 
 type Scope = {
@@ -245,8 +251,9 @@ const addScope = (
     graph.nodes.push(node)
   }
 
-  const successActions = new Map(steps.map((step) => [step.stepId, effectiveSuccessActions(document, workflow, step)]))
-  const failureActions = new Map(steps.map((step) => [step.stepId, effectiveFailureActions(document, workflow, step)]))
+  // Only the actions that can run: none after the first one without criteria.
+  const successActions = new Map(steps.map((step) => [step.stepId, reachableActions(effectiveSuccessActions(document, workflow, step))]))
+  const failureActions = new Map(steps.map((step) => [step.stepId, reachableActions(effectiveFailureActions(document, workflow, step))]))
   /** Steps whose success always leads where one of their actions says, never on to the next step. */
   const decidesOnSuccess = (step: ArazzoStep): boolean => successActions.get(step.stepId)!.some(isUnconditional)
   const hasActions = (step: ArazzoStep): boolean =>
@@ -329,7 +336,9 @@ const addScope = (
     for (const step of steps) {
       for (const dependency of step.dependsOn ?? []) {
         const source = steps.find((candidate) => candidate.stepId === dependency)
-        if (!source || explicit.has(`${dependency}->${step.stepId}`)) {
+        // As in document order: a dependency whose success action always applies goes where that action
+        // says, so drawing this step as what runs next would be wrong.
+        if (!source || explicit.has(`${dependency}->${step.stepId}`) || decidesOnSuccess(source)) {
           continue
         }
         const label = hasActions(source) ? describeCriteria(source.successCriteria) : undefined
@@ -428,6 +437,10 @@ const LABEL_HEIGHT = 18
 export const WORKFLOW_TOGGLE_WIDTH = 22
 /** Room above a group's steps for its label. */
 export const GROUP_LABEL_HEIGHT = 22
+/** Where a group's label starts, from the group's left edge. */
+export const GROUP_LABEL_INSET = 10
+/** Matches the group label's font size in `ArazzoDocument.vue`. */
+const GROUP_LABEL_CHAR_WIDTH = 6.7
 /** Long conditions are cut, so a single arrow cannot stretch the whole diagram sideways. */
 export const MAX_EDGE_LABEL_LENGTH = 48
 
@@ -589,7 +602,9 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
     for (const [scope, from] of fromPath) {
       const match = toPath.find(([candidate]) => candidate === scope)
       if (match) {
-        if (match[1] !== from) {
+        // An arrow between two boxes inside the same expanded workflow stands for nothing at this level; a step's
+        // own arrow to itself (a `goto` back to it) is a real loop, which dagre routes.
+        if (match[1] !== from || edge.from === edge.to) {
           const list = edgesByScope.get(scope) ?? []
           list.push({ index, from, to: match[1] })
           edgesByScope.set(scope, list)
@@ -688,9 +703,9 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
         })
       }
     }
-    for (const { index } of edgesByScope.get(scope) ?? []) {
+    for (const { index, from, to } of edgesByScope.get(scope) ?? []) {
       const edge = graph.edges[index]!
-      const placed = layout.edge({ v: layout.edges().find((e) => e.name === String(index))!.v, w: layout.edges().find((e) => e.name === String(index))!.w, name: String(index) }) as
+      const placed = layout.edge({ v: from, w: to, name: String(index) }) as
         | { points?: Point[]; x?: number; y?: number; width?: number }
         | undefined
       result.edges.set(index, {
@@ -708,7 +723,12 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
       const head = result.boxes.get(owner)!
       const inner = [...result.boxes.entries()].filter(([id]) => id !== owner).map(([, box]) => box)
       const left = Math.min(...inner.map((box) => box.x - box.width / 2)) - GROUP_PADDING
-      const right = Math.max(...inner.map((box) => box.x + box.width / 2)) + GROUP_PADDING
+      // Wide enough for the group's label (cut like an arrow's label; the full id is in its tooltip).
+      const label = groups.find((candidate) => candidate.id === scope)?.label ?? ''
+      const right = Math.max(
+        Math.max(...inner.map((box) => box.x + box.width / 2)) + GROUP_PADDING,
+        left + GROUP_LABEL_INSET + truncateLabel(label).length * GROUP_LABEL_CHAR_WIDTH + GROUP_PADDING,
+      )
       const top = Math.max(head.y + head.height / 2 + 6, Math.min(...inner.map((box) => box.y - box.height / 2)) - GROUP_LABEL_HEIGHT)
       const bottom = Math.max(...inner.map((box) => box.y + box.height / 2)) + GROUP_PADDING
       result.groups.set(scope, { x: (left + right) / 2, y: (top + bottom) / 2, width: right - left, height: bottom - top })

@@ -1091,6 +1091,12 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-diagram-node-workflow > text {
   font-style: italic;
 }
+/* Keyboard focus wins over the workflow, expanded and cycle outlines above and below, which would otherwise hide it. */
+.bielu-arazzo .ba-diagram-node.ba-diagram-node:focus-visible > rect:first-of-type {
+  stroke: var(--scalar-color-accent);
+  stroke-width: 3.5;
+  stroke-dasharray: none;
+}
 .bielu-arazzo .ba-diagram-node-expanded > rect:first-of-type {
   stroke: var(--scalar-color-accent);
 }

@@ -105,6 +105,7 @@ public class ScalarArazzoOptionsExtensionsTests
     [Theory]
     [InlineData("")]
     [InlineData("page")]
+    [InlineData("x-")]
     public void WithArazzoOptions_EndLabelExtensionNotAnExtension_Throws(string extension)
     {
         // Act / Assert

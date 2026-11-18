@@ -15,7 +15,8 @@ export type ArazzoPluginOptions = {
 /** The window global the .NET package assigns the options to. */
 export const PLUGIN_OPTIONS_GLOBAL = '__BIELU_SCALAR_ARAZZO__'
 
-const isExtensionName = (value: unknown): value is string => typeof value === 'string' && value.length > 0
+/** A specification extension name: `x-` followed by a name. .NET (`WithArazzoOptions`) applies the same rule. */
+const isExtensionName = (value: unknown): value is string => typeof value === 'string' && value.startsWith('x-') && value.length > 2
 
 /** Keeps only well-formed options; anything else (it is untyped input) is dropped. */
 const sanitize = (value: unknown): ArazzoPluginOptions | undefined => {

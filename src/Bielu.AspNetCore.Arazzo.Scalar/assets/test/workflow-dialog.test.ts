@@ -120,7 +120,7 @@ describe('the inline overview with an expanded workflow', () => {
     // Arrange
     const withActions: Workflow = {
       workflowId: 'trackOrder',
-      steps: [{ stepId: 'status', operationId: 'getOrder', onFailure: [{ name: 'giveUp', type: 'end' }, { name: 'gone', type: 'end', criteria: [{ condition: '$statusCode == 410' }] }] }],
+      steps: [{ stepId: 'status', operationId: 'getOrder', onFailure: [{ name: 'gone', type: 'end', criteria: [{ condition: '$statusCode == 410' }] }, { name: 'giveUp', type: 'end' }] }],
     }
     wrapper = mount(ArazzoWorkflow, {
       attachTo: globalThis.document.body,
