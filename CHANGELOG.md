@@ -19,6 +19,12 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [3.1.1] - 2026-11-18
+
+### Patch Changes
+
+- [#287](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/287) [`bbe3dc0`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/bbe3dc056628c27e4ae8253698e1bd9996309d53) Thanks [@bielu](https://github.com/bielu)! - Update all five dotnet new templates to reference Bielu libraries 3.1.0, including the API, worker and contracts projects in asyncapi-sln.
+
 ## [3.1.0] - 2026-11-18
 
 ### Minor Changes
