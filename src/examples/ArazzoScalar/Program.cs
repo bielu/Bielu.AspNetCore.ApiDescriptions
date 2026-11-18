@@ -27,11 +27,31 @@ builder.Services.AddArazzo(options =>
     options.AddOpenApiSource("orders", "v1");
     options.AddAsyncApiSource("events", "v1");
 
+    // The shop's pages, for the "Pages" view of the workflow overview: steps say which page the customer is on
+    // (x-page), actions which page they land on, and workflows, steps and actions carry plain-language labels
+    // (x-label). See ShopPages and the WithArazzoOptions call below.
+    options.WithExtension(ShopPages.Pages, new JsonObject
+    {
+        ["cart"] = new JsonObject { ["title"] = "Cart", ["route"] = "/cart" },
+        ["checkout"] = new JsonObject { ["title"] = "Checkout", ["route"] = "/checkout" },
+        ["payment"] = new JsonObject { ["title"] = "Payment", ["route"] = "/checkout/payment" },
+        ["paymentDeclined"] = new JsonObject { ["title"] = "Payment declined", ["route"] = "/checkout/declined" },
+        ["confirmation"] = new JsonObject { ["title"] = "Order confirmed", ["route"] = "/orders/{id}/confirmation" },
+        ["order"] = new JsonObject { ["title"] = "Order status", ["route"] = "/orders/{id}" },
+        ["unavailable"] = new JsonObject { ["title"] = "Order unavailable", ["route"] = "/orders/unavailable" },
+    });
+
     // A reusable failure action, referred to below with OnFailureReference.
-    options.AddComponentFailureAction("unavailable", new ArazzoFailureAction { Name = "unavailable", Type = "end" });
+    options.AddComponentFailureAction("unavailable", new ArazzoFailureAction
+    {
+        Name = "unavailable",
+        Type = "end",
+        Extensions = new Dictionary<string, JsonNode?> { [ShopPages.Page] = "unavailable", [ShopPages.Label] = "Sold out" },
+    });
 
     options.AddWorkflow("placeOrder", workflow => workflow
         .WithSummary("Place an order and announce it")
+        .WithExtension(ShopPages.Label, "Place an order")
         .WithDescription(
             "Creates the order over HTTP, publishes `orderPlaced`, asks for payment, and waits for the payment and the stock reservation to come back as messages.")
         .WithInputs<PlaceOrderInputs>(new JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -41,6 +61,8 @@ builder.Services.AddArazzo(options =>
         .Step("create", step => step
             .Operation("createOrder")
             .WithDescription("Create the order.")
+            .WithExtension(ShopPages.Page, "checkout")
+            .WithExtension(ShopPages.Label, "Place the order")
             // A payload template whose values are filled in from the inputs before the request is sent.
             .Payload(new JsonObject { ["sku"] = null, ["quantity"] = 1 }, "application/json")
             .Replacement("/sku", "$inputs.sku")
@@ -51,6 +73,7 @@ builder.Services.AddArazzo(options =>
                 Name = "rejected",
                 Type = "end",
                 Criteria = [new ArazzoCriterion { Condition = "$statusCode == 400" }],
+                Extensions = new Dictionary<string, JsonNode?> { [ShopPages.Page] = "cart", [ShopPages.Label] = "Invalid order" },
             })
             .Output("orderId", "$response.body#/id")
             // A Selector Object output (Arazzo 1.1): JSONPath over the response body.
@@ -58,11 +81,15 @@ builder.Services.AddArazzo(options =>
         .Step("announce", step => step
             .Channel("events", "orderPlaced", ArazzoStepAction.Send)
             .WithDescription("Tell the rest of the system about the new order.")
+            .WithExtension(ShopPages.Page, "checkout")
+            .WithExtension(ShopPages.Label, "Announce the order")
             .PayloadExpression("$steps.create.outputs")
             .DependsOn("create"))
         .Step("requestPayment", step => step
             .Channel("events", "paymentRequested", ArazzoStepAction.Send)
             .WithDescription("Ask the payment service to charge the order total.")
+            .WithExtension(ShopPages.Page, "payment")
+            .WithExtension(ShopPages.Label, "Ask for payment")
             .Payload(new JsonObject { ["orderId"] = null, ["amount"] = 0, ["currency"] = "EUR" }, "application/json")
             .Replacement("/orderId", "$steps.create.outputs.orderId")
             .Replacement("/amount", "$steps.create.outputs.total")
@@ -70,6 +97,8 @@ builder.Services.AddArazzo(options =>
         .Step("paymentCompleted", step => step
             .Channel("events", "paymentCompleted", ArazzoStepAction.Receive)
             .WithDescription("Wait for the payment result for this order.")
+            .WithExtension(ShopPages.Page, "payment")
+            .WithExtension(ShopPages.Label, "Wait for the payment")
             .WithCorrelationId("$steps.create.outputs.orderId")
             .WithTimeout(60_000)
             .SuccessCriteria(
@@ -81,12 +110,15 @@ builder.Services.AddArazzo(options =>
                 Name = "declined",
                 Type = "end",
                 Criteria = [new ArazzoCriterion { Condition = "$message.payload.status == 'Declined'" }],
+                Extensions = new Dictionary<string, JsonNode?> { [ShopPages.Page] = "paymentDeclined", [ShopPages.Label] = "Card declined" },
             })
             .Output("paymentId", "$message.payload.paymentId")
             .DependsOn("requestPayment"))
         .Step("stockReserved", step => step
             .Channel("events", "inventoryReserved", ArazzoStepAction.Receive)
             .WithDescription("Wait until the warehouse has reserved the stock.")
+            .WithExtension(ShopPages.Page, "confirmation")
+            .WithExtension(ShopPages.Label, "Reserve the stock")
             .WithCorrelationId("$steps.create.outputs.orderId")
             .WithTimeout(120_000)
             .Output("reservationExpiresAt", "$message.payload.expiresAt")
@@ -97,6 +129,7 @@ builder.Services.AddArazzo(options =>
 
     options.AddWorkflow("trackOrder", workflow => workflow
         .WithSummary("Follow an order to shipment")
+        .WithExtension(ShopPages.Label, "Follow an order")
         .Step("place", step => step
             .Workflow("placeOrder")
             .WithDescription("Reuse the placeOrder workflow.")
@@ -104,6 +137,8 @@ builder.Services.AddArazzo(options =>
         .Step("status", step => step
             .Operation("getOrder")
             .WithDescription("Check the order status.")
+            .WithExtension(ShopPages.Page, "order")
+            .WithExtension(ShopPages.Label, "Check the order")
             // A Selector Object parameter: JSON Pointer into the outputs of the reused workflow.
             .Parameter(new ArazzoParameter
             {
@@ -127,6 +162,7 @@ builder.Services.AddArazzo(options =>
             {
                 Name = "notYetVisible",
                 Type = "retry",
+                Extensions = new Dictionary<string, JsonNode?> { [ShopPages.Label] = "Not visible yet" },
                 StepId = "status",
                 RetryAfter = 2,
                 RetryLimit = 3,
@@ -137,6 +173,7 @@ builder.Services.AddArazzo(options =>
             {
                 Name = "cancelled",
                 Type = "goto",
+                Extensions = new Dictionary<string, JsonNode?> { [ShopPages.Label] = "Order cancelled" },
                 WorkflowId = "placeOrder",
                 Criteria = [new ArazzoCriterion { Condition = "$statusCode == 410" }],
                 Parameters =
@@ -151,6 +188,8 @@ builder.Services.AddArazzo(options =>
         .Step("shipped", step => step
             .Channel("events", "orderShipped", ArazzoStepAction.Receive)
             .WithDescription("Wait for the shipment notification.")
+            .WithExtension(ShopPages.Page, "order")
+            .WithExtension(ShopPages.Label, "Wait for shipping")
             .WithCorrelationId("$message.header.orderId")
             .WithTimeout(30_000)));
 });
@@ -171,7 +210,13 @@ app.MapScalarApiReference(options => options
     .AddAsyncApiDocument("v1", "Events")
     .AddArazzoDocument("v1", "Workflows")
     .AddDocument("field-reference", "Arazzo field reference", "/fixtures/field-reference.arazzo.json")
-    .WithArazzo());
+    .WithArazzoOptions(arazzo =>
+    {
+        // Offers the "Technical | Pages" toggle on the workflow overview.
+        arazzo.PagesExtension = ShopPages.Pages;
+        arazzo.PageExtension = ShopPages.Page;
+        arazzo.LabelExtension = ShopPages.Label;
+    }));
 
 app.MapPost("/orders", (OrderRequest request) =>
         Results.Created($"/orders/{Guid.NewGuid()}", new Order(Guid.NewGuid(), request.Sku, request.Quantity, request.Quantity * 9.99m)))
@@ -183,6 +228,14 @@ app.MapGet("/orders/{id:guid}", (Guid id) => Results.Ok(new Order(id, "SKU-1", 1
 app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 
 app.Run();
+
+/// <summary>The specification extensions the shop describes its pages with, for the Pages view.</summary>
+internal static class ShopPages
+{
+    public const string Pages = "x-shop-pages";
+    public const string Page = "x-page";
+    public const string Label = "x-label";
+}
 
 internal sealed record PlaceOrderInputs(string Sku, int Quantity, ShippingAddress ShipTo);
 

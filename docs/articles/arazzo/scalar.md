@@ -63,11 +63,15 @@ app.MapScalarApiReference(options => options
 | Option | Default | Effect |
 | --- | --- | --- |
 | `EndLabelExtension` | none | A specification extension (`x-…`) on `end` failure actions whose value names the end node they lead to in the workflow overview, in place of the action's name. Actions without it keep their name. |
+| `PagesExtension` | none | [Pages view](#pages-view): a document-level extension holding the map of pages. |
+| `PageExtension` | none | Pages view: the extension naming the page of a step (the user is on it) or of an action (they land on it). May be the same key as `EndLabelExtension`. |
+| `LabelExtension` | none | Pages view: the extension holding a plain-language label on workflows, steps and actions. |
 | `AssetsPath` | `/bielu/scalar/arazzo` | Where `MapScalarArazzoAssets` serves the script. |
 
 The options are written to the page as `window.__BIELU_SCALAR_ARAZZO__`, which the plugin reads when it
 starts. With the npm package, pass them to `createArazzoPlugin({ endLabelExtension: 'x-page' })`; with
-Scalar's `pluginUrls`, put them on the module URL (`scalar-plugin.mjs?endLabelExtension=x-page`).
+Scalar's `pluginUrls`, put them on the module URL (`scalar-plugin.mjs?endLabelExtension=x-page`). Every
+option except `AssetsPath` names a specification extension and must start with `x-`.
 
 ## What is rendered
 
@@ -189,6 +193,79 @@ outputs, workflow outputs a later workflow reads, and a reusable failure action.
 serves a hand-written "Arazzo field reference" document (`wwwroot/fixtures`) that uses every field of
 Arazzo 1.1, so the view is checked against fields the example's workflows don't use. For what the
 builders can and cannot produce, see [Authoring coverage](overview.md#authoring-coverage).
+
+## Pages view
+
+For readers who think in screens rather than operations, the workflow overview can show the pages a user
+goes through. Describe the app's pages once on the document, then say which page each step is on and which
+page each action lands on, with plain-language labels:
+
+```json
+{
+  "arazzo": "1.1.0",
+  "x-shop-pages": {
+    "checkout": { "title": "Checkout", "route": "/checkout" },
+    "payment": { "title": "Payment", "route": "/checkout/payment", "description": "Card details." },
+    "paymentDeclined": { "title": "Payment declined", "route": "/checkout/declined" }
+  },
+  "workflows": [{
+    "workflowId": "placeOrder",
+    "x-label": "Place an order",
+    "steps": [
+      { "stepId": "create", "operationId": "createOrder", "x-page": "checkout", "x-label": "Place the order" },
+      {
+        "stepId": "paymentCompleted", "channelPath": "…", "x-page": "payment", "x-label": "Wait for the payment",
+        "onFailure": [{ "name": "declined", "type": "end", "x-page": "paymentDeclined", "x-label": "Card declined" }]
+      }
+    ]
+  }]
+}
+```
+
+```csharp
+app.MapScalarApiReference(options => options
+    .AddArazzoDocument("v1", "Workflows")
+    .WithArazzoOptions(arazzo =>
+    {
+        arazzo.PagesExtension = "x-shop-pages";
+        arazzo.PageExtension = "x-page";
+        arazzo.LabelExtension = "x-label";
+    }));
+```
+
+With the fluent API, add them with `WithExtension` on the options, workflows and steps, and through an
+action's `Extensions`; the [`ArazzoScalar` example](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/ArazzoScalar)
+does. When any of the three options is set and the document uses it, the overview (inline and full window)
+gets a **Technical | Pages** toggle. Technical, the view described above, is the default; the choice applies
+to every workflow on the page and is remembered in the browser.
+
+![The trackOrder overview in the Pages view, with placeOrder expanded: steps in labelled page bands (Checkout, Payment, Order confirmed, Order status), plain-language labels, and failure ends named after the page they show](../../images/arazzo/scalar-pages-view.png)
+
+In the Pages view:
+
+- Steps are grouped into bands, one per page, titled with the page's title and route ("Payment ·
+  /checkout/payment"). Consecutive steps on the same page share a band; steps without a page are in a muted
+  "No page" band. A band never covers boxes that aren't its steps: when other boxes sit between them, each
+  step gets a band of its own. An expanded workflow's steps get their own bands inside its box. A band is
+  centered on its steps and as wide as its title, and the layout keeps that room free, so a long route over a
+  short step stays inside its workflow's box and clear of the branch beside it. A title and route longer
+  than 64 characters are cut with "…"; the band's tooltip has them in full.
+- Boxes show the step's label, or its `stepId` when it has none; the `stepId` is in the tooltip. A workflow
+  node shows the label (or the summary) of the workflow it calls.
+- Arrows show the action's label, or its criteria (or "otherwise") when it has none. The arrow to Success
+  after the last step reads "done".
+- An end node is named after the page its actions land on (from `PageExtension`, or `EndLabelExtension`),
+  with their label under it, when every arrow into it lands on that page; Success then shows that page
+  with a ✓. When the arrows into one end node land on different pages (paid orders on Confirmation,
+  pending ones on Review, or two steps' `rejected` actions on pages of their own), or one of them has no
+  page (the "done" arrow after the last step), the end node keeps its generic name and each arrow ends with
+  its own page ("→ Confirmation").
+- Everything else is as in the Technical view: the same order, colors and arrows, and expanding and
+  collapsing keeps the zoom and the node under the pointer. Switching views keeps the zoom too. The legend
+  explains the bands and end pages.
+- Whether the toggle appears counts the actions every step runs, so a page on a workflow-level
+  `successActions`/`failureActions` entry is enough.
+- The step list shows each step's page and label above its heading.
 
 ## Which spec a step targets
 

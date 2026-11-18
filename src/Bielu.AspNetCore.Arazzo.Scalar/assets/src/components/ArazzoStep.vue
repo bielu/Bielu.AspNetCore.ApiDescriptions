@@ -26,6 +26,8 @@ const props = defineProps<{
   eventBus?: PluginEventBus
   /** workflowId → the sidebar id of that workflow's section, so a step that invokes one can link to it. */
   workflowNavIds?: Record<string, string>
+  /** Pages view: the page the step is on ("Order list · /orders") and its plain-language label. */
+  page?: { page?: string; label?: string }
   /** "Collapse steps" / "Expand steps" of the workflow: each new `version` sets every step to `open`. */
   expandSignal?: { open: boolean; version: number }
 }>()
@@ -243,6 +245,11 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
         </svg>
       </button>
       <div class="ba-step-heading">
+        <div
+          v-if="page && (page.page || page.label)"
+          class="ba-step-page">
+          <span v-if="page.page" class="ba-badge ba-page-badge">{{ page.page }}</span> <span v-if="page.label">{{ page.label }}</span>
+        </div>
         <div v-if="open && heading.title !== step.stepId" class="ba-kicker ba-step-id">{{ step.stepId }}</div>
         <ArazzoAnchor
           :eventBus="eventBus"

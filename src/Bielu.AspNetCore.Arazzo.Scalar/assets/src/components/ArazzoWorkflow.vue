@@ -5,10 +5,12 @@ import { resolveLocalRef } from '../helpers/extensions'
 import { renderMarkdown } from '../helpers/markdown'
 import type { WorkflowView } from '../helpers/navigation'
 import { resolveReusables } from '../helpers/reusable'
+import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
 import { pluginOptions } from '../helpers/plugin-options'
 import { resolveStepTarget } from '../helpers/resolve-target'
 import { targetSpec } from '../helpers/target-spec'
-import { buildWorkflowGraph, layoutWorkflowGraph } from '../helpers/workflow-graph'
+import { setWorkflowView, workflowView } from '../helpers/view-mode'
+import { buildWorkflowGraph, layoutWorkflowGraph, type WorkflowView as OverviewView } from '../helpers/workflow-graph'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
@@ -77,6 +79,42 @@ const toggleWorkflow = (nodeId: string) => {
   expandedWorkflows.value = next
 }
 
+/** Where the Pages view finds pages and labels (the plugin's options). */
+const pagesConfig = computed((): PagesConfig => {
+  const options = pluginOptions()
+  return {
+    pagesExtension: options.pagesExtension,
+    pageExtension: options.pageExtension,
+    labelExtension: options.labelExtension,
+    endLabelExtension: options.endLabelExtension,
+  }
+})
+
+/** The Technical | Pages toggle is offered only when the pages options are set and this document uses them. */
+const pagesAvailable = computed(() => pagesInUse(props.document, pagesConfig.value))
+
+const overviewView = computed((): OverviewView => (pagesAvailable.value ? workflowView() : 'technical'))
+
+const views: { value: OverviewView; label: string }[] = [
+  { value: 'technical', label: 'Technical' },
+  { value: 'pages', label: 'Pages' },
+]
+
+/** Pages view: each step's page (title and route) and plain-language label, for the step list. */
+const stepPages = computed(() => {
+  if (overviewView.value !== 'pages') {
+    return {}
+  }
+  const registry = pageRegistry(props.document, pagesConfig.value)
+  return Object.fromEntries(
+    props.view.steps.map(({ step }) => {
+      const page = pageOf(step, pagesConfig.value)
+      const route = page ? registry[page]?.route : undefined
+      return [step.stepId, { page: page ? [pageTitle(registry, page), route].filter(Boolean).join(' · ') : undefined, label: labelOf(step, pagesConfig.value) }]
+    }),
+  )
+})
+
 /** Each step box is marked with the spec its target is described in. */
 const diagram = computed(() =>
   layoutWorkflowGraph(
@@ -84,7 +122,12 @@ const diagram = computed(() =>
       props.document,
       workflow.value,
       (step) => targetSpec(props.document, step, resolveStepTarget(props.document, step, props.documents), props.documents)?.family,
-      { expanded: expandedWorkflows.value, endLabelExtension: pluginOptions().endLabelExtension },
+      {
+        expanded: expandedWorkflows.value,
+        endLabelExtension: pluginOptions().endLabelExtension,
+        view: overviewView.value,
+        pages: pagesConfig.value,
+      },
     ),
   ),
 )
@@ -211,6 +254,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
               :documents="documents"
               :eventBus="eventBus"
               :expandSignal="expandSignal"
+              :page="stepPages[entry.step.stepId]"
               :step="entry.step"
               :workflowNavIds="workflowNavIds" />
           </li>
@@ -239,6 +283,18 @@ const closeOnBackdrop = (event: MouseEvent) => {
         <div class="ba-overview">
           <div class="ba-overview-header">
             <div class="ba-overview-title">Workflow overview</div>
+            <div
+              v-if="pagesAvailable"
+              aria-label="Overview view"
+              class="ba-view-toggle"
+              role="group">
+              <button
+                v-for="option in views"
+                :key="option.value"
+                :aria-pressed="overviewView === option.value"
+                type="button"
+                @click="setWorkflowView(option.value)">{{ option.label }}</button>
+            </div>
             <button
               aria-label="Expand workflow diagram"
               class="ba-icon-button"
@@ -263,7 +319,9 @@ const closeOnBackdrop = (event: MouseEvent) => {
             :stepSectionIds="stepSectionIds"
             @toggleWorkflow="toggleWorkflow" />
           <div class="ba-overview-footer">
-            <ArazzoSpecLegend :layout="diagram" />
+            <ArazzoSpecLegend
+              :layout="diagram"
+              :view="overviewView" />
             <span class="ba-muted ba-overview-hint">Select a step to view details</span>
           </div>
         </div>
@@ -278,7 +336,21 @@ const closeOnBackdrop = (event: MouseEvent) => {
       <div class="ba-dialog-header">
         <div class="ba-overview-title">Workflow overview · {{ workflow.summary || workflow.workflowId }}</div>
         <div class="ba-dialog-actions">
-          <ArazzoSpecLegend :layout="diagram" />
+          <div
+            v-if="pagesAvailable"
+            aria-label="Overview view"
+            class="ba-view-toggle"
+            role="group">
+            <button
+              v-for="option in views"
+              :key="option.value"
+              :aria-pressed="overviewView === option.value"
+              type="button"
+              @click="setWorkflowView(option.value)">{{ option.label }}</button>
+          </div>
+          <ArazzoSpecLegend
+            :layout="diagram"
+            :view="overviewView" />
           <button
             class="ba-toggle"
             type="button"

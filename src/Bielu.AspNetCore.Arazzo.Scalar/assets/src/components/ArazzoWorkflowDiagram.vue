@@ -6,6 +6,7 @@ import { specLabel } from '../helpers/target-spec'
 import {
   type LaidOutEdge,
   type LaidOutNode,
+  BAND_LABEL_HEIGHT,
   GROUP_LABEL_HEIGHT,
   GROUP_LABEL_INSET,
   retryBadge,
@@ -219,14 +220,15 @@ const opensByToggling = (node: LaidOutNode): boolean => node.kind === 'workflow'
 
 const onNodeClick = (node: LaidOutNode) => (opensByToggling(node) ? toggleWorkflow(node) : openStep(node))
 
-/** A step's own title, then the retries of the step itself, one per line. */
+/** A box's title (with the technical id behind a Pages label), then the retries of the step itself, one per line. */
 const nodeTitle = (node: LaidOutNode): string | undefined => {
-  const title = baseTitle(node)
+  const base = technicalTitle(node)
+  const title = node.technical && node.technical !== node.label ? [base, `(${node.technical})`].filter(Boolean).join(' ') : base
   const retries = (node.retries ?? []).map((retry) => `Retries itself: ${retry.label}${retry.action ? ` (${retry.action})` : ''}`)
   return retries.length ? [title, ...retries].filter(Boolean).join('\n') : title
 }
 
-const baseTitle = (node: LaidOutNode): string | undefined => {
+const technicalTitle = (node: LaidOutNode): string | undefined => {
   if (node.kind === 'workflow') {
     const what = node.stepId ? `Step ${node.label} invokes workflow ${node.workflowId}` : `Workflow ${node.workflowId}`
     if (node.cycle) {
@@ -321,6 +323,7 @@ const label = computed(() =>
       <svg
         :aria-label="label"
         role="group"
+        :data-scale="baseScale"
         :style="svgStyle"
         :viewBox="viewBox"
         :width="layout.width"
@@ -362,6 +365,24 @@ const label = computed(() =>
         </g>
 
         <g
+          v-for="band in layout.bands ?? []"
+          :key="band.id"
+          class="ba-diagram-band"
+          :class="{ 'ba-diagram-band-none': !band.pageId }">
+          <title v-if="band.pageId">Page {{ band.pageId }}: {{ [band.title, band.route].filter(Boolean).join(' · ') }}</title>
+          <rect
+            :height="band.height"
+            rx="6"
+            :width="band.width"
+            :x="band.x - band.width / 2"
+            :y="band.y - band.height / 2" />
+          <text
+            dominant-baseline="central"
+            :x="band.x - band.width / 2 + 8"
+            :y="band.y - band.height / 2 + BAND_LABEL_HEIGHT / 2 + 2">{{ band.label }}</text>
+        </g>
+
+        <g
           v-for="(edge, index) in layout.edges"
           :key="`edge-${index}`">
           <path
@@ -371,7 +392,7 @@ const label = computed(() =>
           <g
             v-if="edge.label && edge.labelPosition"
             class="ba-diagram-edge-label">
-            <title v-if="edge.action">{{ edge.action }}</title>
+            <title v-if="edge.action || edge.page">{{ [edge.action, edge.page && edge.label].filter(Boolean).join(': ') }}</title>
             <rect
               :height="18"
               rx="3"
@@ -432,9 +453,14 @@ const label = computed(() =>
             dominant-baseline="central"
             text-anchor="middle"
             :x="labelX(node)"
-            :y="node.y">
-            {{ node.label }}
-          </text>
+            :y="node.subtitle ? node.y - 8 : node.y">{{ node.label }}</text>
+          <text
+            v-if="node.subtitle"
+            class="ba-diagram-subtitle"
+            dominant-baseline="central"
+            text-anchor="middle"
+            :x="labelX(node)"
+            :y="node.y + 9">{{ node.subtitle }}</text>
           <g
             v-if="retryBadge(node)"
             class="ba-diagram-retry">

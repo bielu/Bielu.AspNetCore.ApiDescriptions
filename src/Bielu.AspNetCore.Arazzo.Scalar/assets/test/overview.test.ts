@@ -108,7 +108,7 @@ describe('buildWorkflowGraph', () => {
 
   it('returns an empty graph for a workflow without steps', () => {
     // Arrange / Act / Assert
-    expect(buildWorkflowGraph(documentWith({ workflowId: 'wf' }), undefined)).toEqual({ nodes: [], edges: [], groups: [] })
+    expect(buildWorkflowGraph(documentWith({ workflowId: 'wf' }), undefined)).toEqual({ nodes: [], edges: [], groups: [], bands: [] })
   })
 })
 

@@ -75,6 +75,49 @@ public class ScalarArazzoOptionsExtensionsTests
     }
 
     [Fact]
+    public void WithArazzoOptions_PagesOptions_AreWrittenToTheGlobal()
+    {
+        // Arrange
+        var options = new ScalarOptions();
+
+        // Act
+        options.WithArazzoOptions(arazzo =>
+        {
+            arazzo.PagesExtension = "x-shop-pages";
+            arazzo.PageExtension = "x-page";
+            arazzo.LabelExtension = "x-label";
+        });
+
+        // Assert
+        options.HeadContent.ShouldNotBeNull().ShouldContain(
+            $"window.{ScalarArazzoOptionsExtensions.GlobalVariableName} = {{\"pagesExtension\":\"x-shop-pages\",\"pageExtension\":\"x-page\",\"labelExtension\":\"x-label\"}};");
+    }
+
+    [Theory]
+    [InlineData("pages")]
+    [InlineData("page")]
+    [InlineData("label")]
+    public void WithArazzoOptions_PagesOptionNotAnExtension_Throws(string option)
+    {
+        // Act / Assert
+        Should.Throw<ArgumentException>(() => new ScalarOptions().WithArazzoOptions(arazzo =>
+        {
+            switch (option)
+            {
+                case "pages":
+                    arazzo.PagesExtension = "shop-pages";
+                    break;
+                case "page":
+                    arazzo.PageExtension = "page";
+                    break;
+                default:
+                    arazzo.LabelExtension = "label";
+                    break;
+            }
+        }));
+    }
+
+    [Fact]
     public void WithArazzoOptions_ConfiguredAssetsPathWithoutOptions_WritesNoGlobal()
     {
         // Arrange

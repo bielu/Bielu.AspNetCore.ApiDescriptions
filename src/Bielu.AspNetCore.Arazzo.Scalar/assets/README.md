@@ -59,6 +59,10 @@ Options (all optional):
 createArazzoPlugin({
   // Name the end node of an `end` failure action after the value of this extension, not the action's name.
   endLabelExtension: 'x-page',
+  // The Pages view (a "Technical | Pages" toggle on the overview, offered when the document uses these):
+  pagesExtension: 'x-shop-pages', // document: page id -> { title, route, description }
+  pageExtension: 'x-page', // steps: the page the user is on; actions: the page they land on
+  labelExtension: 'x-label', // workflows, steps and actions: a plain-language label
 })
 ```
 
@@ -74,7 +78,7 @@ ignored:
 
 1. `createArazzoPlugin(options)`.
 2. The `window.__BIELU_SCALAR_ARAZZO__` page global, which the `<script>` entry reads.
-3. The query string of the `scalar-plugin.mjs` URL (`scalar-plugin.mjs?endLabelExtension=x-page`), the
+3. The query string of the `scalar-plugin.mjs` URL (`scalar-plugin.mjs?endLabelExtension=x-page&pagesExtension=x-shop-pages&…`), the
    only input the `pluginUrls` entry has.
 
 So if the page global sets `endLabelExtension: 'x-page'` and the module URL sets
