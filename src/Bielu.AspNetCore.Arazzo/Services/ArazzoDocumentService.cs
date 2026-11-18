@@ -39,7 +39,7 @@ internal sealed class ArazzoDocumentService(
     private async Task<ArazzoDocument> BuildAsync(ArazzoOptions options, CancellationToken cancellationToken)
     {
         // Without WithInfo, the info defaults as an AsyncAPI document's does: "{application} | {document}", 1.0.0.
-        var info = options.Info ?? new ArazzoInfo
+        var info = options.Info is { } configuredInfo ? ArazzoModelCopy.Copy(configuredInfo) : new ArazzoInfo
         {
             Title = services.GetService<IHostEnvironment>() is { } environment
                 ? $"{environment.ApplicationName} | {options.DocumentName}"
@@ -47,15 +47,17 @@ internal sealed class ArazzoDocumentService(
             Version = ArazzoDefaults.DefaultInfoVersion,
         };
 
+        // Each build gets its own copy of the configured model, so a transformer that changed it and then threw
+        // (or was cancelled) cannot leave its change in the options for the next attempt.
         var document = new ArazzoDocument
         {
             Arazzo = options.Version.ToVersionString(),
             Self = options.Self,
             Info = info,
-            SourceDescriptions = [.. options.SourceDescriptions],
-            Workflows = [.. options.Workflows],
-            Components = options.Components,
-            Extensions = options.Extensions,
+            SourceDescriptions = [.. options.SourceDescriptions.Select(ArazzoModelCopy.Copy)],
+            Workflows = [.. options.Workflows.Select(ArazzoModelCopy.Copy)],
+            Components = options.Components is { } components ? ArazzoModelCopy.Copy(components) : null,
+            Extensions = ArazzoModelCopy.CopyExtensions(options.Extensions),
         };
 
         // Transformers run on the object model before validation, so what they add is validated like the rest.
