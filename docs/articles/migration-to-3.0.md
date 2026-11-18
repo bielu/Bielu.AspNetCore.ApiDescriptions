@@ -18,6 +18,8 @@
 |--------------|-----|
 | An output (step or workflow) whose value is a literal, such as `"outputs": { "count": 3 }` | Outputs are runtime expressions or Selector Objects: use an expression such as `$response.body#/count` |
 | A Selector Object (as a parameter value, payload, payload replacement value or output) in a document declaring `arazzo: 1.0.x` | Declare `1.1.0` (`ArazzoOptions.Version = ArazzoVersion.V1_1`, the default), or use a runtime expression |
+| `parameters` on a success or failure action (inline or in `components`) in a `1.0.x` document | Declare `1.1.0`, which added them, or drop them |
+| An `in` on a success or failure action parameter. These parameters go to the workflow the action names, so the spec forbids `in` | Remove `in` |
 | `targetSelectorType` on a payload replacement in a `1.0.x` document | Declare `1.1.0`, or drop it |
 | In a `1.0.x` document, the other 1.1 additions: an `asyncapi` source description; the `channelPath`, `action`, `correlationId`, `timeout` or `dependsOn` step fields; the `querystring` parameter location; the `jsonpointer` criterion type or the `rfc9535` JSONPath version | Declare `1.1.0`. A document that uses AsyncAPI steps already needs 1.1, which introduced them |
 | `$self` in a `1.0.x` document, or a `$self` with a `#fragment` | Declare `1.1.0`; remove the fragment |

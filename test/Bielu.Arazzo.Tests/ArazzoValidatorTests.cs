@@ -619,6 +619,7 @@ public class ArazzoValidatorTests
             "/components/parameters/shared/value",
             "/workflows/0/parameters/0/value",
             "/workflows/0/outputs/id",
+            "/workflows/0/steps/0/onFailure/0/parameters", // action parameters are themselves a 1.1 addition
             "/workflows/0/steps/0/onFailure/0/parameters/0/value",
             "/workflows/0/steps/0/requestBody/payload",
             "/workflows/0/steps/0/requestBody/replacements/0/targetSelectorType",
@@ -730,6 +731,145 @@ public class ArazzoValidatorTests
             "/workflows/0/successActions/0/criteria/0/type",
             "/components/parameters/q/in",
             "/components/failureActions/stop/criteria/0/type",
+        ], ignoreOrder: true);
+    }
+
+    private static ArazzoDocument DocumentWithActionParameters(string arazzo)
+    {
+        static List<ArazzoReferenceable<ArazzoParameter>> Parameters() =>
+            [ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = "orderId", Value = "$steps.s1.outputs.orderId" })];
+
+        var document = MinimalValidDocument();
+        document.Arazzo = arazzo;
+        var workflow = document.Workflows[0];
+        workflow.SuccessActions = [ArazzoReferenceable<ArazzoSuccessAction>.Of(new ArazzoSuccessAction { Name = "next", Type = ArazzoSuccessActionType.Goto, WorkflowId = "wf", Parameters = Parameters() })];
+        workflow.FailureActions = [ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoFailureAction { Name = "recover", Type = ArazzoFailureActionType.Goto, WorkflowId = "wf", Parameters = Parameters() })];
+        workflow.Steps[0].OnSuccess = [ArazzoReferenceable<ArazzoSuccessAction>.Of(new ArazzoSuccessAction { Name = "next", Type = ArazzoSuccessActionType.Goto, WorkflowId = "wf", Parameters = Parameters() })];
+        workflow.Steps[0].OnFailure = [ArazzoReferenceable<ArazzoFailureAction>.Of(new ArazzoFailureAction { Name = "retry", Type = ArazzoFailureActionType.Retry, WorkflowId = "wf", Parameters = Parameters() })];
+        document.Components = new ArazzoComponents
+        {
+            Parameters = new Dictionary<string, ArazzoParameter> { ["orderId"] = new() { Name = "orderId", Value = "$inputs.orderId" } },
+            SuccessActions = new Dictionary<string, ArazzoSuccessAction>
+            {
+                ["next"] = new()
+                {
+                    Name = "next",
+                    Type = ArazzoSuccessActionType.Goto,
+                    WorkflowId = "wf",
+                    Parameters = [ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoReusableObject { Reference = "$components.parameters.orderId" })],
+                },
+            },
+            FailureActions = new Dictionary<string, ArazzoFailureAction>
+            {
+                ["recover"] = new() { Name = "recover", Type = ArazzoFailureActionType.Goto, WorkflowId = "wf", Parameters = Parameters() },
+            },
+        };
+        return document;
+    }
+
+    [Fact]
+    public void Validate_ActionParametersInArazzo11Document_ReturnsNoErrors()
+    {
+        // Act
+        var errors = ArazzoValidator.Validate(DocumentWithActionParameters("1.1.0"));
+
+        // Assert
+        errors.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData("1.0.0")]
+    [InlineData("1.0.1")]
+    public void Validate_ActionParametersInArazzo10Document_ReturnsAnErrorPerAction(string arazzo)
+    {
+        // Act
+        var errors = ArazzoValidator.Validate(DocumentWithActionParameters(arazzo));
+
+        // Assert
+        errors.Select(e => e.Path).ShouldBe(
+        [
+            "/components/successActions/next/parameters",
+            "/components/failureActions/recover/parameters",
+            "/workflows/0/successActions/0/parameters",
+            "/workflows/0/failureActions/0/parameters",
+            "/workflows/0/steps/0/onSuccess/0/parameters",
+            "/workflows/0/steps/0/onFailure/0/parameters",
+        ], ignoreOrder: true);
+        errors.ShouldAllBe(e => e.Message == "parameters on a success or failure action requires Arazzo 1.1.0 or later.");
+    }
+
+    [Fact]
+    public void Validate_ActionParameterWithIn_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        document.Workflows[0].Steps[0].OnSuccess =
+        [
+            ArazzoReferenceable<ArazzoSuccessAction>.Of(new ArazzoSuccessAction
+            {
+                Name = "next",
+                Type = ArazzoSuccessActionType.Goto,
+                WorkflowId = "wf",
+                Parameters = [ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = "id", In = ArazzoParameterLocation.Query, Value = "$inputs.id" })],
+            }),
+        ];
+        document.Components = new ArazzoComponents
+        {
+            FailureActions = new Dictionary<string, ArazzoFailureAction>
+            {
+                ["recover"] = new()
+                {
+                    Name = "recover",
+                    Type = ArazzoFailureActionType.Goto,
+                    WorkflowId = "wf",
+                    Parameters = [ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = "id", In = ArazzoParameterLocation.Header, Value = "$inputs.id" })],
+                },
+            },
+        };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.Select(e => e.Path).ShouldBe(
+        [
+            "/components/failureActions/recover/parameters/0/in",
+            "/workflows/0/steps/0/onSuccess/0/parameters/0/in",
+        ], ignoreOrder: true);
+        errors.ShouldAllBe(e => e.Message.Contains("in MUST NOT be used"));
+    }
+
+    [Fact]
+    public void Validate_SuccessActionParameterReferenceThatDoesNotResolve_ReturnsError()
+    {
+        // Arrange
+        var document = MinimalValidDocument();
+        var missing = ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoReusableObject { Reference = "$components.parameters.missing" });
+        document.Workflows[0].SuccessActions =
+        [
+            ArazzoReferenceable<ArazzoSuccessAction>.Of(new ArazzoSuccessAction { Name = "next", Type = ArazzoSuccessActionType.Goto, WorkflowId = "wf", Parameters = [missing] }),
+        ];
+        document.Workflows[0].Steps[0].OnSuccess =
+        [
+            ArazzoReferenceable<ArazzoSuccessAction>.Of(new ArazzoSuccessAction { Name = "next", Type = ArazzoSuccessActionType.Goto, WorkflowId = "wf", Parameters = [missing] }),
+        ];
+        document.Components = new ArazzoComponents
+        {
+            SuccessActions = new Dictionary<string, ArazzoSuccessAction>
+            {
+                ["next"] = new() { Name = "next", Type = ArazzoSuccessActionType.Goto, WorkflowId = "wf", Parameters = [missing] },
+            },
+        };
+
+        // Act
+        var errors = ArazzoValidator.Validate(document);
+
+        // Assert
+        errors.Select(e => e.Path).ShouldBe(
+        [
+            "/components/successActions/next/parameters/0/reference",
+            "/workflows/0/successActions/0/parameters/0/reference",
+            "/workflows/0/steps/0/onSuccess/0/parameters/0/reference",
         ], ignoreOrder: true);
     }
 

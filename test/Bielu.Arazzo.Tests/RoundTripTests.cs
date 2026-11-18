@@ -109,6 +109,113 @@ public class RoundTripTests
         AssertMatchesSample(result.Document!);
     }
 
+    private const string ActionParametersJson = """
+        {
+          "arazzo": "1.1.0",
+          "info": { "title": "t", "version": "1.0.0" },
+          "sourceDescriptions": [ { "name": "api", "url": "https://example.com/openapi.json", "type": "openapi" } ],
+          "workflows": [
+            {
+              "workflowId": "placeOrder",
+              "steps": [
+                {
+                  "stepId": "create",
+                  "operationId": "$sourceDescriptions.api.createOrder",
+                  "onSuccess": [
+                    {
+                      "name": "track",
+                      "type": "goto",
+                      "workflowId": "trackOrder",
+                      "parameters": [
+                        { "name": "orderId", "value": "$response.body#/id" },
+                        { "reference": "$components.parameters.tenant" }
+                      ]
+                    }
+                  ],
+                  "onFailure": [
+                    {
+                      "name": "recover",
+                      "type": "retry",
+                      "workflowId": "refreshToken",
+                      "parameters": [ { "name": "scope", "value": "orders" } ]
+                    }
+                  ]
+                }
+              ]
+            },
+            { "workflowId": "trackOrder", "steps": [ { "stepId": "get", "operationId": "$sourceDescriptions.api.getOrder" } ] },
+            { "workflowId": "refreshToken", "steps": [ { "stepId": "refresh", "operationId": "$sourceDescriptions.api.refresh" } ] }
+          ],
+          "components": {
+            "parameters": { "tenant": { "name": "tenant", "value": "$inputs.tenant" } },
+            "successActions": {
+              "track": { "name": "track", "type": "goto", "workflowId": "trackOrder", "parameters": [ { "name": "orderId", "value": "$inputs.orderId" } ] }
+            }
+          }
+        }
+        """;
+
+    [Theory]
+    [InlineData("json")]
+    [InlineData("yaml")]
+    public void WriteAndRead_Arazzo11ActionParameters_RoundTrip(string format)
+    {
+        // Arrange
+        var read = ArazzoStringReader.Read(ActionParametersJson);
+        read.Diagnostics.Errors.ShouldBeEmpty();
+
+        // Act
+        var serialized = format == "json" ? ArazzoJsonWriter.Write(read.Document!) : ArazzoYamlWriter.Write(read.Document!);
+        var result = ArazzoStringReader.Read(serialized);
+
+        // Assert
+        result.Diagnostics.Errors.ShouldBeEmpty();
+        var step = result.Document!.Workflows[0].Steps[0];
+        var onSuccess = step.OnSuccess!.ShouldHaveSingleItem().Value!;
+        onSuccess.Extensions.ShouldBeNull();
+        onSuccess.Parameters!.Count.ShouldBe(2);
+        onSuccess.Parameters[0].Value!.Name.ShouldBe("orderId");
+        onSuccess.Parameters[0].Value!.Value.Expression.ShouldBe("$response.body#/id");
+        onSuccess.Parameters[1].Reference!.Reference.ShouldBe("$components.parameters.tenant");
+        var onFailure = step.OnFailure!.ShouldHaveSingleItem().Value!;
+        onFailure.Parameters!.ShouldHaveSingleItem().Value!.Value.Literal!.GetValue<string>().ShouldBe("orders");
+        var component = result.Document.Components!.SuccessActions!["track"];
+        component.Parameters!.ShouldHaveSingleItem().Value!.Value.Expression.ShouldBe("$inputs.orderId");
+        Bielu.Arazzo.Validation.ArazzoValidator.Validate(result.Document).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Read_Arazzo10YamlWithActionParameters_ReadsThemAndFailsValidation()
+    {
+        // Arrange
+        const string yaml = """
+            arazzo: 1.0.1
+            info: { title: t, version: 1.0.0 }
+            sourceDescriptions:
+              - { name: api, url: https://example.com/openapi.json, type: openapi }
+            workflows:
+              - workflowId: wf
+                steps:
+                  - stepId: s1
+                    operationId: $sourceDescriptions.api.op
+                    onSuccess:
+                      - name: again
+                        type: goto
+                        workflowId: wf
+                        parameters:
+                          - { name: id, value: $response.body#/id }
+            """;
+
+        // Act
+        var result = ArazzoStringReader.Read(yaml);
+        var errors = Bielu.Arazzo.Validation.ArazzoValidator.Validate(result.Document!);
+
+        // Assert
+        result.Diagnostics.Errors.ShouldBeEmpty();
+        result.Document!.Workflows[0].Steps[0].OnSuccess![0].Value!.Parameters.ShouldHaveSingleItem();
+        errors.ShouldHaveSingleItem().Path.ShouldBe("/workflows/0/steps/0/onSuccess/0/parameters");
+    }
+
     private static void AssertMatchesSample(ArazzoDocument document)
     {
         document.Arazzo.ShouldBe("1.1.0");

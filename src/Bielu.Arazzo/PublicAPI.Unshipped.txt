@@ -102,3 +102,5 @@ virtual Bielu.Arazzo.ArazzoSourceResolver<TDocument>.TryResolveOperationPath(TDo
 *REMOVED*const Bielu.Arazzo.Models.ArazzoStepAction.Send = "send" -> string!
 *REMOVED*const Bielu.Arazzo.Models.ArazzoSuccessActionType.End = "end" -> string!
 *REMOVED*const Bielu.Arazzo.Models.ArazzoSuccessActionType.Goto = "goto" -> string!
+Bielu.Arazzo.Models.ArazzoSuccessAction.Parameters.get -> System.Collections.Generic.IList<Bielu.Arazzo.Models.ArazzoReferenceable<Bielu.Arazzo.Models.ArazzoParameter!>!>?
+Bielu.Arazzo.Models.ArazzoSuccessAction.Parameters.set -> void
