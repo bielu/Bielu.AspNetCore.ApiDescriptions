@@ -27,6 +27,11 @@ Chore-only PRs (CI, formatting, tests) can record an empty changeset:
 npx changeset add --empty
 ```
 
+A PR that only changes documentation (Markdown files, `docs/`, the licence, issue templates) needs no
+changeset. When such a PR adds none, CI skips every pull-request job for it, the changeset check
+included. Adding a changeset (for example, for a `PACKAGE.md` change worth a release note) brings back
+the full run.
+
 ## How the NuGet version is applied
 
 Changesets is npm-native, so the NuGet suite is represented by a private placeholder package,

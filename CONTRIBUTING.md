@@ -205,7 +205,8 @@ npx changeset
 Pick the affected package(s) and a bump level (patch/minor/major), then write a short, user-facing
 summary. All NuGet packages in this repo share one version, so for any NuGet change select the single
 `bielu-aspnetcore-asyncapi` entry — one bump covers the whole suite. Chore-only PRs (CI, formatting,
-tests) can record an empty changeset with `npx changeset add --empty`. See
+tests) can record an empty changeset with `npx changeset add --empty`. A PR that only changes
+documentation (Markdown, `docs/`) needs no changeset: without one, CI skips it entirely. See
 [`.changeset/README.md`](./.changeset/README.md) for details.
 
 ## Release Process
