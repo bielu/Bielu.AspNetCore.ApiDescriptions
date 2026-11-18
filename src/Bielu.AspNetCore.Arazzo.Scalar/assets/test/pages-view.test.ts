@@ -131,8 +131,8 @@ describe('the Pages view of the graph', () => {
     const graph = pages(browseOrders)
 
     // Assert
-    expect(graph.nodes.find((node) => node.id === endNodeId('', 'showForbiddenPage'))).toMatchObject({ label: 'No permission', subtitle: 'No permission', page: 'forbidden' })
-    expect(graph.nodes.find((node) => node.id === endNodeId('', 'showErrorPage'))).toMatchObject({ label: 'Something went wrong', page: 'error' })
+    expect(graph.nodes.find((node) => node.id === endNodeId('', 'name:showForbiddenPage'))).toMatchObject({ label: 'No permission', subtitle: 'No permission', page: 'forbidden' })
+    expect(graph.nodes.find((node) => node.id === endNodeId('', 'name:showErrorPage'))).toMatchObject({ label: 'Something went wrong', page: 'error' })
   })
 
   it('names the Success node after the page a success end action lands on, with a check mark', () => {
