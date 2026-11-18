@@ -187,13 +187,64 @@ public class ArazzoDocumentTransformerTests
     }
 
     [Fact]
+    public async Task GetArazzoDocumentAsync_SuccessActionParameters_SurviveGenerationAndSerialization()
+    {
+        // Arrange
+        static ArazzoSuccessAction Next(string name) => new()
+        {
+            Name = name,
+            Type = ArazzoSuccessActionType.Goto,
+            WorkflowId = "wf",
+            Parameters =
+            [
+                ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = "orderId", Value = "$inputs.orderId" }),
+                ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoReusableObject { Reference = "$components.parameters.tenant" }),
+            ],
+        };
+        var provider = BuildProvider(options => options
+            .AddComponentParameter("tenant", new ArazzoParameter { Name = "tenant", Value = "$inputs.tenant" })
+            .AddComponentSuccessAction("shared", Next("shared"))
+            .AddWorkflow("chained", wf => wf
+                .OnSuccess(Next("workflowNext"))
+                .OnSuccessReference("shared")
+                .Step("step", s => s
+                    .Operation("createOrder")
+                    .OnSuccess(Next("stepNext"))
+                    .OnSuccessReference("shared"))));
+
+        // Act
+        var document = await provider.GetArazzoDocumentAsync();
+        var json = JsonNode.Parse(ArazzoJsonWriter.Write(document))!;
+
+        // Assert
+        var workflow = json["workflows"]!.AsArray().Single(w => w!["workflowId"]!.GetValue<string>() == "chained")!;
+        var actions = new Dictionary<string, JsonNode?>
+        {
+            ["components"] = json["components"]!["successActions"]!["shared"],
+            ["workflow"] = workflow["successActions"]![0],
+            ["step"] = workflow["steps"]![0]!["onSuccess"]![0],
+        };
+        foreach (var (location, action) in actions)
+        {
+            var parameters = action!["parameters"].ShouldNotBeNull(location).AsArray();
+            parameters.Count.ShouldBe(2, location);
+            parameters[0]!["name"]!.GetValue<string>().ShouldBe("orderId", location);
+            parameters[0]!["value"]!.GetValue<string>().ShouldBe("$inputs.orderId", location);
+            parameters[1]!["reference"]!.GetValue<string>().ShouldBe("$components.parameters.tenant", location);
+        }
+
+        workflow["successActions"]![1]!["reference"]!.GetValue<string>().ShouldBe("$components.successActions.shared");
+        workflow["steps"]![0]!["onSuccess"]![1]!["reference"]!.GetValue<string>().ShouldBe("$components.successActions.shared");
+    }
+
+    [Fact]
     public void ArazzoModelCopy_CopiesEveryConfiguredValueIntoNewInstances()
     {
         // Arrange
         var selector = new ArazzoSelector { Context = "$response.body", Selector = "$.id", Type = new ArazzoSelectorType { Type = "jsonpath", Version = "rfc9535" }, Extensions = new Dictionary<string, JsonNode?> { ["x-s"] = 1 } };
         var criterion = new ArazzoCriterion { Context = "$response.body", Condition = "$.ok", Type = new ArazzoSelectorType { Type = "jsonpath" }, Extensions = new Dictionary<string, JsonNode?> { ["x-c"] = 1 } };
         var parameter = new ArazzoParameter { Name = "id", In = ArazzoParameterLocation.Path, Value = ArazzoValue.FromSelector(selector), Extensions = new Dictionary<string, JsonNode?> { ["x-p"] = 1 } };
-        var success = new ArazzoSuccessAction { Name = "next", Type = ArazzoSuccessActionType.Goto, StepId = "s2", Criteria = [criterion], Extensions = new Dictionary<string, JsonNode?> { ["x-sa"] = 1 } };
+        var success = new ArazzoSuccessAction { Name = "next", Type = ArazzoSuccessActionType.Goto, WorkflowId = "other", Parameters = [ArazzoReferenceable<ArazzoParameter>.Of(new ArazzoParameter { Name = "orderId", Value = "$inputs.orderId" })], Criteria = [criterion], Extensions = new Dictionary<string, JsonNode?> { ["x-sa"] = 1 } };
         var failure = new ArazzoFailureAction
         {
             Name = "retry",
