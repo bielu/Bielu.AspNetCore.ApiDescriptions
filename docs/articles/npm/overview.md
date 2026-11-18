@@ -14,9 +14,28 @@ and no ASP.NET Core app.
 All four need `@scalar/api-reference`. The Arazzo plugin needs 1.80.0 or later, the first release
 with plugin `documentTypes`.
 
-Each package ships the same plugin three ways:
+## Ways to load each package
 
-- **An ES module** to import and pass to `createApiReference({ plugins: [...] })`.
-- **A `<script>` bundle** that adds itself to every `Scalar.createApiReference` call on the page.
-- **`dist/scalar-plugin.mjs`**, whose default export is the plugin, for Scalar's `pluginUrls` option.
-  This is how the .NET Aspire packages add the plugins to the Scalar container.
+The packages don't all ship the same entry points. These are the ones a package can be loaded through:
+
+- **ES module import.** Import the factory from the package root and pass its plugin to
+  `createApiReference({ plugins: [...] })`.
+- **`<script>` bundle** (`dist/plugin.js`). Adds itself to every `Scalar.createApiReference` call on the page. Load it
+  after Scalar's own script.
+- **Standalone bundle** (`dist/standalone.js`). Scalar and the plugin in one file.
+- **`pluginUrls` module** (`dist/scalar-plugin.mjs`). An ES module whose default export is the plugin, for Scalar's
+  `pluginUrls` option. This is how the .NET Aspire packages add a plugin to the Scalar container. Use it with
+  `createApiReference` from Scalar's ES module build. With `@scalar/api-reference` 1.80.0,
+  `window.Scalar.createApiReference` from the CDN `<script>` did not load `pluginUrls` in our tests.
+
+| Package | ES module import | `<script>` bundle | Standalone bundle | `pluginUrls` module |
+|---------|------------------|-------------------|-------------------|---------------------|
+| `@bielu/scalar-arazzo` | `import { createArazzoPlugin } from '@bielu/scalar-arazzo'` (1.1.0 or later) | `dist/plugin.js` | — | `dist/scalar-plugin.mjs` |
+| `@bielu/scalar-signalr` | — (the package root is the `<script>` bundle) | `dist/plugin.js` | `dist/standalone.js` | `dist/scalar-plugin.mjs` |
+| `@bielu/scalar-grpc` | `import { createGrpcPlugin } from '@bielu/scalar-grpc'` | `dist/plugin.js` | `dist/standalone.js` | `dist/scalar-plugin.mjs` |
+| `@bielu/scalar-broker` | `import { createBrokerPlugin } from '@bielu/scalar-broker'`, plus the server bridge | `dist/plugin.js`, plus the server bridge | — | — |
+
+- **Broker.** The console talks to the bridge an ASP.NET Core app mounts with `MapScalarBrokerAssets()` in every
+  mode, so it ships no standalone bundle or `pluginUrls` module.
+- **SignalR from a static page.** Load `dist/standalone.js`, or load `dist/plugin.js` after Scalar's own script, or
+  pass `dist/scalar-plugin.mjs` to `pluginUrls`.
