@@ -232,7 +232,8 @@ const addScope = (
     return node
   }
   let usesSuccess = false
-  const failureEnds: { from: string; action: ArazzoFailureAction }[] = []
+  /** End failure actions, with their arrow already in place (document order); it learns its end node below. */
+  const failureEnds: { from: string; action: ArazzoFailureAction; edge: WorkflowGraphEdge }[] = []
 
   for (const step of steps) {
     const from = at(step.stepId)
@@ -249,7 +250,9 @@ const addScope = (
     }
     for (const action of resolveReusables<ArazzoFailureAction>(document, step.onFailure)) {
       if (action.type === 'end') {
-        failureEnds.push({ from, action })
+        const edge = actionEdge(from, '', 'failure', action)
+        actionEdges.push(edge)
+        failureEnds.push({ from, action, edge })
       } else if (action.stepId && stepIds.has(action.stepId)) {
         explicit.add(`${step.stepId}->${action.stepId}`)
         actionEdges.push(actionEdge(from, at(action.stepId), 'failure', action, retryExtra(action)))
@@ -268,7 +271,7 @@ const addScope = (
   const distinct = new Set(ends.map((entry) => entry.end.key))
   const separate = ends.some((entry) => entry.end.named) || distinct.size > 1
   const endNodes = new Map<string, WorkflowGraphNode>()
-  for (const { from, action, end } of ends) {
+  for (const { action, end, edge } of ends) {
     const id = separate ? endNodeId(prefix, end.key) : at(FAILURE_NODE_ID)
     let node = endNodes.get(id)
     if (!node) {
@@ -278,7 +281,7 @@ const addScope = (
     if (node.actions && action.name && !node.actions.includes(action.name)) {
       node.actions.push(action.name)
     }
-    actionEdges.push(actionEdge(from, id, 'failure', action))
+    edge.to = id
   }
 
   const nextEdges: WorkflowGraphEdge[] = []
@@ -390,72 +393,308 @@ export const MAX_EDGE_LABEL_LENGTH = 48
 export const truncateLabel = (label: string): string =>
   label.length > MAX_EDGE_LABEL_LENGTH ? `${label.slice(0, MAX_EDGE_LABEL_LENGTH - 1)}…` : label
 
-/** Lays the graph out top-down with dagre, the layout engine Mermaid's flowcharts use. */
+const nodeWidth = (node: WorkflowGraphNode): number =>
+  node.kind === 'step'
+    ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) + (node.spec ? SPEC_MARKER_WIDTH : 0)
+    : node.kind === 'workflow'
+      ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) +
+        (node.spec ? SPEC_MARKER_WIDTH : 0) +
+        (node.expandable || node.cycle ? WORKFLOW_TOGGLE_WIDTH : 0)
+      : Math.max(84, node.label.length * NODE_CHAR_WIDTH + 28)
+
+/** Room around an expanded workflow's steps inside its group box. */
+const GROUP_PADDING = 12
+
+type Box = { x: number; y: number; width: number; height: number }
+
+/** One level of the layout: the top-level workflow, or the steps of one expanded workflow node. */
+type ScopeLayout = {
+  width: number
+  height: number
+  /** Node id → its box, relative to the scope's top-left corner. */
+  boxes: Map<string, Box>
+  /** Edge index → its route and label, relative to the scope's top-left corner. */
+  edges: Map<number, { points: Point[]; labelPosition?: Point; labelWidth: number }>
+  /** Group id → its box, relative to the scope's top-left corner. */
+  groups: Map<string, Box>
+}
+
+/** Which way an arrow leaves its box: failure paths left, then next steps and gotos, Success rightmost. */
+const sidePriority = (edge: WorkflowGraphEdge): number => {
+  if (edge.kind === 'failure') {
+    return 0
+  }
+  if (edge.kind === 'expand') {
+    return 1
+  }
+  return edge.kind === 'success' && edge.to.endsWith(SUCCESS_NODE_ID) ? 3 : 2
+}
+
+/**
+ * Numbers the boxes of one level left to right: a depth-first walk from the entry boxes (the level's head first)
+ * that takes each box's arrows by {@link sidePriority}, keeping document order within a priority. Arrows back to
+ * an earlier box (`return`) don't lead anywhere new, so the walk skips them.
+ */
+const orderSlots = (
+  layout: dagre.graphlib.Graph,
+  edges: { edge: WorkflowGraphEdge; from: string; to: string }[],
+  head: string | undefined,
+): Map<string, number> => {
+  const forward = edges.filter(({ edge }) => edge.kind !== 'return')
+  const outgoing = new Map<string, { edge: WorkflowGraphEdge; to: string }[]>()
+  const hasIncoming = new Set<string>()
+  for (const { edge, from, to } of forward) {
+    outgoing.set(from, [...(outgoing.get(from) ?? []), { edge, to }])
+    hasIncoming.add(to)
+  }
+  const slots = new Map<string, number>()
+  const visit = (id: string) => {
+    if (slots.has(id)) {
+      return
+    }
+    slots.set(id, slots.size)
+    const next = [...(outgoing.get(id) ?? [])]
+      .map((entry, index) => ({ ...entry, index }))
+      .sort((a, b) => sidePriority(a.edge) - sidePriority(b.edge) || a.index - b.index)
+    for (const { to } of next) {
+      visit(to)
+    }
+  }
+  if (head) {
+    visit(head)
+  }
+  for (const id of layout.nodes()) {
+    if (!hasIncoming.has(id)) {
+      visit(id)
+    }
+  }
+  for (const id of layout.nodes()) {
+    visit(id)
+  }
+  return slots
+}
+
+const shift = (point: Point, dx: number, dy: number): Point => ({ x: point.x + dx, y: point.y + dy })
+
+/**
+ * Lays the graph out top-down with dagre, the layout engine Mermaid's flowcharts use.
+ *
+ * An expanded workflow is laid out on its own, its node on top and its steps below it, and that whole block
+ * takes the node's place in the level above. The level above therefore has the same nodes and arrows whether
+ * the workflow is expanded or not, and since dagre orders a row by its arrows alone (not by the sizes of the
+ * boxes), expanding or collapsing a workflow never moves the boxes beside it to the other side.
+ */
 export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
   const groups = graph.groups ?? []
-  const layout = new dagre.graphlib.Graph({ multigraph: true, compound: groups.length > 0 })
-  layout.setGraph({ rankdir: 'TB', nodesep: 32, ranksep: 44, edgesep: 16, marginx: 8, marginy: 8 })
-  layout.setDefaultEdgeLabel(() => ({}))
-
-  for (const group of groups) {
-    layout.setNode(group.id, { paddingTop: GROUP_LABEL_HEIGHT, paddingLeft: 12, paddingRight: 12, paddingBottom: 12 })
-  }
-  for (const group of groups) {
-    if (group.parent) {
-      layout.setParent(group.id, group.parent)
-    }
-  }
+  const nodesById = new Map(graph.nodes.map((node) => [node.id, node]))
+  /** Group id → the expanded workflow node it belongs to. */
+  const ownerOf = new Map<string, string>()
   for (const node of graph.nodes) {
-    const width =
-      node.kind === 'step'
-        ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) + (node.spec ? SPEC_MARKER_WIDTH : 0)
-        : node.kind === 'workflow'
-          ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) +
-            (node.spec ? SPEC_MARKER_WIDTH : 0) +
-            (node.expandable || node.cycle ? WORKFLOW_TOGGLE_WIDTH : 0)
-          : Math.max(84, node.label.length * NODE_CHAR_WIDTH + 28)
-    layout.setNode(node.id, { width, height: NODE_HEIGHT })
-    if (node.group) {
-      layout.setParent(node.id, node.group)
+    if (node.expanded && groups.some((group) => group.id === groupId(node.id))) {
+      ownerOf.set(groupId(node.id), node.id)
     }
   }
+  const scopeOfNode = (id: string): string => nodesById.get(id)?.group ?? ''
+
+  /** Where a node takes part in the layout, innermost level first: [level, the box that stands for it there]. */
+  const pathOf = (id: string): [string, string][] => {
+    const path: [string, string][] = []
+    if (ownerOf.has(groupId(id))) {
+      path.push([groupId(id), id])
+    }
+    let scope = scopeOfNode(id)
+    let standIn = id
+    for (;;) {
+      path.push([scope, standIn])
+      const owner = scope ? ownerOf.get(scope) : undefined
+      if (!owner) {
+        return path
+      }
+      standIn = owner
+      scope = scopeOfNode(owner)
+    }
+  }
+
+  /** Each edge is laid out on the innermost level that holds both of its ends (or the blocks they are in). */
+  const edgesByScope = new Map<string, { index: number; from: string; to: string }[]>()
   graph.edges.forEach((edge, index) => {
-    const label = edge.label ? truncateLabel(edge.label) : ''
-    layout.setEdge(
-      edge.from,
-      edge.to,
-      label ? { width: label.length * LABEL_CHAR_WIDTH + 12, height: LABEL_HEIGHT, labelpos: 'c' } : {},
-      String(index),
-    )
+    const fromPath = pathOf(edge.from)
+    const toPath = pathOf(edge.to)
+    for (const [scope, from] of fromPath) {
+      const match = toPath.find(([candidate]) => candidate === scope)
+      if (match) {
+        if (match[1] !== from) {
+          const list = edgesByScope.get(scope) ?? []
+          list.push({ index, from, to: match[1] })
+          edgesByScope.set(scope, list)
+        }
+        return
+      }
+    }
   })
 
-  dagre.layout(layout)
+  const layoutScope = (scope: string): ScopeLayout => {
+    const owner = scope ? ownerOf.get(scope) : undefined
+    const members = graph.nodes.filter((node) => (node.group ?? '') === scope)
+    const blocks = new Map<string, ScopeLayout>()
+    for (const node of members) {
+      if (ownerOf.has(groupId(node.id))) {
+        blocks.set(node.id, layoutScope(groupId(node.id)))
+      }
+    }
 
-  const info = layout.graph()
-  return {
-    width: info.width ?? 0,
-    height: info.height ?? 0,
-    groups: groups.map((group) => {
-      const placed = layout.node(group.id)
-      return { ...group, x: placed.x, y: placed.y, width: placed.width, height: placed.height }
-    }),
-    nodes: graph.nodes.map((node) => {
-      const placed = layout.node(node.id)
-      return { ...node, x: placed.x, y: placed.y, width: placed.width, height: placed.height }
-    }),
-    edges: graph.edges.map((edge, index) => {
-      const placed = layout.edge({ v: edge.from, w: edge.to, name: String(index) }) as
+    const layout = new dagre.graphlib.Graph({ multigraph: true })
+    const margin = owner ? GROUP_PADDING : 8
+    layout.setGraph({ rankdir: 'TB', nodesep: 32, ranksep: 44, edgesep: 16, marginx: margin, marginy: owner ? 0 : margin })
+    layout.setDefaultEdgeLabel(() => ({}))
+    if (owner) {
+      // The expanded workflow's own node heads its block.
+      layout.setNode(owner, { width: nodeWidth(nodesById.get(owner)!), height: NODE_HEIGHT })
+    }
+    for (const node of members) {
+      const block = blocks.get(node.id)
+      layout.setNode(node.id, block ? { width: block.width, height: block.height } : { width: nodeWidth(node), height: NODE_HEIGHT })
+    }
+    for (const { index, from, to } of edgesByScope.get(scope) ?? []) {
+      const edge = graph.edges[index]!
+      const label = edge.label ? truncateLabel(edge.label) : ''
+      const options: Record<string, unknown> = label ? { width: label.length * LABEL_CHAR_WIDTH + 12, height: LABEL_HEIGHT, labelpos: 'c' } : {}
+      // Leave room under the workflow's node for the group's label.
+      if (owner && from === owner && edge.kind === 'expand') {
+        options.minlen = 2
+      }
+      layout.setEdge(from, to, options, String(index))
+    }
+
+    // Fix the order of each row instead of letting dagre minimise crossings, so it is the same in every render:
+    // number the boxes by walking from the entry steps, taking each box's failure paths first (in document
+    // order), then its next steps and gotos, then Success; then sort every row by those numbers.
+    const slots = orderSlots(layout, (edgesByScope.get(scope) ?? []).map(({ index, from, to }) => ({ edge: graph.edges[index]!, from, to })), owner)
+    const slotOf = (id: string, node: { edgeObj?: { v: string; w: string } }): number => {
+      if (slots.has(id)) {
+        return slots.get(id)!
+      }
+      // A dummy box dagre adds for a long arrow or its label: keep it beside the box the arrow leads to.
+      return node.edgeObj ? (slots.get(node.edgeObj.w) ?? 0) - 0.5 + (slots.get(node.edgeObj.v) ?? 0) / 1e6 : Number.MAX_SAFE_INTEGER
+    }
+    dagre.layout(layout, {
+      customOrder: (internal: dagre.graphlib.Graph) => {
+        const rows = new Map<number, string[]>()
+        for (const id of internal.nodes()) {
+          const rank = internal.node(id)?.rank
+          if (typeof rank === 'number') {
+            rows.set(rank, [...(rows.get(rank) ?? []), id])
+          }
+        }
+        for (const row of rows.values()) {
+          row
+            .sort((a, b) => slotOf(a, internal.node(a) as never) - slotOf(b, internal.node(b) as never))
+            .forEach((id, index) => {
+              // `order` is the attribute dagre's own ordering phase sets; its typings leave it out.
+              ;(internal.node(id) as { order?: number }).order = index
+            })
+        }
+      },
+    } as never)
+
+    const result: ScopeLayout = { width: 0, height: 0, boxes: new Map(), edges: new Map(), groups: new Map() }
+    for (const id of layout.nodes()) {
+      const placed = layout.node(id)
+      const block = blocks.get(id)
+      if (!block) {
+        result.boxes.set(id, { x: placed.x, y: placed.y, width: placed.width, height: placed.height })
+        continue
+      }
+      // Place the block's contents where dagre put the block.
+      const dx = placed.x - block.width / 2
+      const dy = placed.y - block.height / 2
+      for (const [inner, box] of block.boxes) {
+        result.boxes.set(inner, { ...box, ...shift(box, dx, dy) })
+      }
+      for (const [inner, box] of block.groups) {
+        result.groups.set(inner, { ...box, ...shift(box, dx, dy) })
+      }
+      for (const [index, route] of block.edges) {
+        result.edges.set(index, {
+          ...route,
+          points: route.points.map((point) => shift(point, dx, dy)),
+          labelPosition: route.labelPosition ? shift(route.labelPosition, dx, dy) : undefined,
+        })
+      }
+    }
+    for (const { index } of edgesByScope.get(scope) ?? []) {
+      const edge = graph.edges[index]!
+      const placed = layout.edge({ v: layout.edges().find((e) => e.name === String(index))!.v, w: layout.edges().find((e) => e.name === String(index))!.w, name: String(index) }) as
         | { points?: Point[]; x?: number; y?: number; width?: number }
         | undefined
+      result.edges.set(index, {
+        points: placed?.points ?? [],
+        labelPosition: edge.label && typeof placed?.x === 'number' && typeof placed?.y === 'number' ? { x: placed.x, y: placed.y } : undefined,
+        labelWidth: placed?.width ?? 0,
+      })
+    }
+
+    const info = layout.graph()
+    result.width = info.width ?? 0
+    result.height = info.height ?? 0
+    if (owner) {
+      // The group box: around the steps, below the workflow's node, with room for its label on top.
+      const head = result.boxes.get(owner)!
+      const inner = [...result.boxes.entries()].filter(([id]) => id !== owner).map(([, box]) => box)
+      const left = Math.min(...inner.map((box) => box.x - box.width / 2)) - GROUP_PADDING
+      const right = Math.max(...inner.map((box) => box.x + box.width / 2)) + GROUP_PADDING
+      const top = Math.max(head.y + head.height / 2 + 6, Math.min(...inner.map((box) => box.y - box.height / 2)) - GROUP_LABEL_HEIGHT)
+      const bottom = Math.max(...inner.map((box) => box.y + box.height / 2)) + GROUP_PADDING
+      result.groups.set(scope, { x: (left + right) / 2, y: (top + bottom) / 2, width: right - left, height: bottom - top })
+      result.height = Math.max(result.height, bottom)
+      result.width = Math.max(result.width, right, head.x + head.width / 2 + GROUP_PADDING)
+    }
+    return result
+  }
+
+  const top = layoutScope('')
+
+  /** Arrows that end at an expanded workflow's node, or start inside its block, are joined to the real box. */
+  const attach = (edge: WorkflowGraphEdge, points: Point[]): Point[] => {
+    if (points.length < 2) {
+      return points
+    }
+    const result = [...points]
+    const target = top.boxes.get(edge.to)
+    if (target && ownerOf.has(groupId(edge.to))) {
+      const last = result[result.length - 1]!
+      const above = last.y <= target.y
+      result[result.length - 1] = { x: target.x, y: target.y + (above ? -1 : 1) * (target.height / 2) }
+    }
+    // An arrow out of an expanded workflow (its next step, say) leaves from under its group, once its steps are
+    // done, as dagre routed it; only an arrow from a box inside a group (a return from the inner Success) is
+    // joined to that box.
+    const source = ownerOf.has(groupId(edge.from)) ? undefined : top.boxes.get(edge.from)
+    const first = result[0]!
+    if (source && (Math.abs(first.x - source.x) > source.width / 2 + 1 || Math.abs(first.y - source.y) > source.height / 2 + 1)) {
+      // Laid out from the block the source is in: start at the source box itself.
+      result.unshift({ x: source.x, y: source.y + (first.y >= source.y ? 1 : -1) * (source.height / 2) })
+    }
+    return result
+  }
+
+  return {
+    width: top.width,
+    height: top.height,
+    groups: groups.flatMap((group) => {
+      const box = top.groups.get(group.id)
+      return box ? [{ ...group, ...box }] : []
+    }),
+    nodes: graph.nodes.map((node) => ({ ...node, ...(top.boxes.get(node.id) ?? { x: 0, y: 0, width: nodeWidth(node), height: NODE_HEIGHT }) })),
+    edges: graph.edges.map((edge, index) => {
+      const route = top.edges.get(index)
       return {
         ...edge,
         label: edge.label ? truncateLabel(edge.label) : undefined,
-        points: placed?.points ?? [],
-        labelPosition:
-          edge.label && typeof placed?.x === 'number' && typeof placed?.y === 'number' ? { x: placed.x, y: placed.y } : undefined,
-        labelWidth: placed?.width ?? 0,
+        points: attach(edge, route?.points ?? []),
+        labelPosition: route?.labelPosition,
+        labelWidth: route?.labelWidth ?? 0,
       }
     }),
   }
 }
-

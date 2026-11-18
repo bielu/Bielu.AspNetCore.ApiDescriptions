@@ -250,6 +250,47 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         (await diagram.Locator(".ba-diagram-group").CountAsync()).ShouldBe(0);
     }
 
+    [BrowserTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Overview_KeepsTheToggledNodeInPlaceAndTheZoom_WhenExpandingAndCollapsing(bool fullScreen)
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · loadAccount" });
+        if (fullScreen)
+        {
+            await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+        }
+
+        var diagram = workflow.Locator(fullScreen ? "dialog[open] .ba-diagram" : ".ba-overview .ba-diagram");
+        await diagram.ScrollIntoViewIfNeededAsync();
+        var toggle = diagram.Locator("[data-node-id='__workflow__:signIn'] .ba-diagram-toggle");
+        var step = diagram.Locator("[data-node-id='getAccount'] rect").First;
+        var before = await toggle.BoundingBoxAsync();
+        var stepBefore = await step.BoundingBoxAsync();
+
+        // Act
+        await toggle.ClickAsync();
+        var expanded = await toggle.BoundingBoxAsync();
+        var stepExpanded = await step.BoundingBoxAsync();
+        await toggle.ClickAsync();
+        var collapsed = await toggle.BoundingBoxAsync();
+        var stepCollapsed = await step.BoundingBoxAsync();
+
+        // Assert: the toggle stays under the pointer, and nothing is rescaled.
+        foreach (var after in new[] { expanded, collapsed })
+        {
+            Math.Abs(after!.X - before!.X).ShouldBeLessThan(2);
+            Math.Abs(after.Y - before.Y).ShouldBeLessThan(2);
+        }
+
+        foreach (var after in new[] { stepExpanded, stepCollapsed })
+        {
+            Math.Abs(after!.Width - stepBefore!.Width).ShouldBeLessThan(1);
+        }
+    }
+
     [BrowserFact]
     public async Task WorkflowStep_ShowsTheStepsOfItsWorkflowInline()
     {

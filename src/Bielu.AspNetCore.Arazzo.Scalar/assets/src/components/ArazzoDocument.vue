@@ -1019,8 +1019,8 @@ onBeforeUnmount(() => {
 }
 .bielu-arazzo .ba-diagram svg {
   display: block;
-  max-width: 100%;
-  height: auto;
+  /* Sized by the diagram itself (its scale is kept across expanding and collapsing workflows). */
+  max-width: none;
   overflow: visible;
 }
 .bielu-arazzo .ba-diagram-node rect {

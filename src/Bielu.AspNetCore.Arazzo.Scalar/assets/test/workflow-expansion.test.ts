@@ -202,6 +202,101 @@ describe('expanding workflow nodes', () => {
     expect(graph.nodes[0]).toMatchObject({ cycle: true, expanded: false })
   })
 
+  it('keeps the order of a step\'s branches when the workflow one of them invokes is expanded or collapsed', () => {
+    // Arrange: a step that retries through signIn, ends on two pages, and succeeds implicitly.
+    const workflow: ArazzoWorkflow = { workflowId: 'wf', steps: [{ stepId: 'getAccount', onFailure: failures() }] }
+    const doc: ArazzoDocument = { arazzo: '1.1.0', workflows: [workflow, signIn] }
+    const signInNode = workflowNodeId('', 'signIn')
+    const row = [signInNode, endNodeId('', 'showForbiddenPage'), endNodeId('', 'showErrorPage'), SUCCESS_NODE_ID]
+    const orderOf = (expanded: Set<string>) => {
+      const layout = layoutWorkflowGraph(buildWorkflowGraph(doc, workflow, undefined, { expanded }))
+      return [...row].sort((a, b) => layout.nodes.find((node) => node.id === a)!.x - layout.nodes.find((node) => node.id === b)!.x)
+    }
+
+    // Act
+    const collapsed = orderOf(new Set())
+    const expanded = orderOf(new Set([signInNode]))
+    const collapsedAgain = orderOf(new Set())
+
+    // Assert
+    expect(expanded).toEqual(collapsed)
+    expect(collapsedAgain).toEqual(collapsed)
+  })
+
+  it('puts a step\'s failure paths on the left, in document order, and its success paths on the right', () => {
+    // Arrange: the end actions come before the retry in this step's onFailure.
+    const workflow: ArazzoWorkflow = {
+      workflowId: 'wf',
+      steps: [
+        {
+          stepId: 'getAccount',
+          onFailure: [
+            { name: 'showForbiddenPage', type: 'end', criteria: [{ condition: '$statusCode == 403' }] },
+            { name: 'signIn', type: 'retry', workflowId: 'signIn', criteria: [{ condition: '$statusCode == 401' }] },
+            { name: 'showErrorPage', type: 'end' },
+          ],
+          onSuccess: [{ name: 'more', type: 'goto', stepId: 'next', criteria: [{ condition: '$response.body#/more' }] }],
+        },
+        { stepId: 'next', dependsOn: ['getAccount'] },
+      ],
+    }
+    const doc: ArazzoDocument = { arazzo: '1.1.0', workflows: [workflow, signIn] }
+
+    // Act
+    const layout = layoutWorkflowGraph(buildWorkflowGraph(doc, workflow))
+
+    // Assert: the row under getAccount, left to right.
+    const row = [endNodeId('', 'showForbiddenPage'), workflowNodeId('', 'signIn'), endNodeId('', 'showErrorPage'), 'next']
+    const xs = row.map((id) => layout.nodes.find((node) => node.id === id)!.x)
+    expect(xs).toEqual([...xs].sort((a, b) => a - b))
+  })
+
+  it('orders the row under a step the same way inside an expanded workflow, and keeps Success rightmost', () => {
+    // Arrange: signing in can fail at exchangeCode.
+    const failingSignIn: ArazzoWorkflow = {
+      workflowId: 'signIn',
+      steps: [
+        { stepId: 'authorize' },
+        { stepId: 'exchangeCode', onFailure: [{ name: 'signInFailed', type: 'end' }, { name: 'tryAgain', type: 'end', criteria: [{ condition: '$statusCode == 429' }] }] },
+      ],
+    }
+    const workflow: ArazzoWorkflow = { workflowId: 'wf', steps: [{ stepId: 'getAccount', onFailure: failures() }] }
+    const signInNode = workflowNodeId('', 'signIn')
+
+    // Act
+    const layout = layoutWorkflowGraph(
+      buildWorkflowGraph({ arazzo: '1.1.0', workflows: [workflow, failingSignIn] }, workflow, undefined, { expanded: new Set([signInNode]) }),
+    )
+
+    // Assert
+    const x = (id: string) => layout.nodes.find((node) => node.id === id)!.x
+    expect(x(endNodeId(`${signInNode}/`, 'signInFailed'))).toBeLessThan(x(endNodeId(`${signInNode}/`, 'tryAgain')))
+    expect(x(endNodeId(`${signInNode}/`, 'tryAgain'))).toBeLessThan(x(`${signInNode}/${SUCCESS_NODE_ID}`))
+    expect(x(signInNode)).toBeLessThan(x(endNodeId('', 'showForbiddenPage')))
+    expect(x(endNodeId('', 'showErrorPage'))).toBeLessThan(x(SUCCESS_NODE_ID))
+  })
+
+  it('starts the arrow out of an expanded workflow below its group, not across it', () => {
+    // Act
+    const layout = layoutWorkflowGraph(buildWorkflowGraph(document, browseOrders, undefined, { expanded: new Set(['loadAccount']) }))
+
+    // Assert
+    const group = layout.groups.find((candidate) => candidate.id === 'loadAccount::group')!
+    const next = layout.edges.find((edge) => edge.from === 'loadAccount' && edge.to === 'listOrders')!
+    expect(next.points[0]!.y).toBeGreaterThanOrEqual(group.y + group.height / 2 - 1)
+  })
+
+  it('opens an expanded workflow\'s group below its node', () => {
+    // Act
+    const layout = layoutWorkflowGraph(buildWorkflowGraph(document, browseOrders, undefined, { expanded: new Set(['loadAccount']) }))
+
+    // Assert
+    const node = layout.nodes.find((candidate) => candidate.id === 'loadAccount')!
+    const group = layout.groups.find((candidate) => candidate.id === 'loadAccount::group')!
+    expect(group.y - group.height / 2).toBeGreaterThan(node.y + node.height / 2)
+    expect(Math.abs(group.x - node.x)).toBeLessThan(group.width / 2)
+  })
+
   it('lays groups out around their nodes', () => {
     // Act
     const layout = layoutWorkflowGraph(buildWorkflowGraph(document, browseOrders, undefined, { expanded: new Set(['loadAccount']) }))

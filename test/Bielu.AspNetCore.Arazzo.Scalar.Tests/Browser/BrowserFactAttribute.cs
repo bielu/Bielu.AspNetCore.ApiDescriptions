@@ -20,6 +20,18 @@ public sealed class BrowserFactAttribute : FactAttribute
     }
 }
 
+/// <summary>The <see cref="TheoryAttribute"/> counterpart of <see cref="BrowserFactAttribute"/>.</summary>
+public sealed class BrowserTheoryAttribute : TheoryAttribute
+{
+    public BrowserTheoryAttribute()
+    {
+        if (BrowserAvailability.LaunchOptions is null)
+        {
+            Skip = "Requires Playwright's Chromium (pwsh bin/Debug/net10.0/playwright.ps1 install chromium) or Google Chrome.";
+        }
+    }
+}
+
 internal static class BrowserAvailability
 {
     private static readonly Lazy<BrowserTypeLaunchOptions?> _launchOptions = new(Probe);

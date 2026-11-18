@@ -106,6 +106,11 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
   light and dark themes. From the keyboard, the focused overview pans with the arrow keys, zooms with
   `+`/`-` and resets with `0`; Tab reaches each step box, and Enter opens the step. Each step box has a
   colored marker for the spec its target is described in, explained by a legend in the corner.
+  - **Order.** The boxes under a step are always in the same order: its failure paths on the left, in the
+    order of its `onFailure` actions (so a `retry` through a workflow and the end nodes appear as written),
+    then the steps it continues to (`dependsOn`, document order, or a `goto`), and Success on the right. The
+    same rule holds inside an expanded workflow, and expanding or collapsing one never reorders the boxes
+    beside it.
   - **Ends.** `end` success actions lead to one Success node, and so does the last step (or a step no
     other step depends on) when it has no `onSuccess` of its own, since Arazzo ends a workflow
     successfully after its last step; that arrow is labeled with the step's success criteria when they
@@ -122,9 +127,10 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     or Space presses it): it shows that workflow's steps inside the diagram, in a box of their own entered
     from the workflow node, with their own arrows and ends. Workflows inside it expand the same way. A
     workflow that is already expanded further up the path is not expanded again: it is marked `↻` (a cycle).
-    `−` hides the steps again, along with anything expanded inside them. While a workflow is expanded,
-    the overview beside the steps may grow to the height of the window (and pans beyond that), and it
-    keeps its zoom and position; the full-window view stays open. Workflows of other documents
+    `−` hides the steps again, along with anything expanded inside them. The workflow's steps open below its
+    node, which stays where it was under the pointer; the zoom is kept (the overview is scaled to fit only
+    when it is shown, reset or resized), and the full-window view stays open. While a workflow is expanded,
+    the overview beside the steps may grow to the height of the window, and pans beyond that. Workflows of other documents
     (`$sourceDescriptions.<name>.<workflowId>`) can't be expanded.
 - For each step: the operation, channel or workflow it targets, with that target's description and
   its own parameters. A step that invokes a workflow of the same document has a "Show its steps"

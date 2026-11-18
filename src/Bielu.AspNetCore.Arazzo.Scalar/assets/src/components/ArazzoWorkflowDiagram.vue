@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { STEP_EXPAND_EVENT } from '../helpers/navigation'
 import { INITIAL_PAN_ZOOM, panBy, panZoomForKey, type PanZoomState, zoomAt } from '../helpers/pan-zoom'
 import { specLabel } from '../helpers/target-spec'
@@ -33,12 +33,55 @@ const emit = defineEmits<{
   openStep: [stepId: string]
 }>()
 
-/** In `fit` mode the SVG fills the box and its viewBox keeps the proportions; the caps stop a tiny graph from ballooning. */
-const fitStyle = computed(() =>
-  props.fit
-    ? { width: '100%', height: '100%', maxWidth: `${props.layout.width * 2}px`, maxHeight: `${props.layout.height * 2}px` }
-    : undefined,
-)
+/**
+ * The scale the graph is drawn at. It is measured when the view is shown, reset, or its box changes width:
+ * inline, the graph shrinks to the box's width (never grows); in `fit` mode it fills the box (at most twice its
+ * natural size). It is not measured again when the graph changes, so expanding or collapsing a workflow never
+ * zooms the view the reader has set.
+ */
+const baseScale = ref(1)
+const svgStyle = computed(() => ({
+  width: `${props.layout.width * baseScale.value}px`,
+  height: `${props.layout.height * baseScale.value}px`,
+}))
+
+const measureScale = () => {
+  const box = viewport.value
+  if (!box || !props.layout.width || !props.layout.height) {
+    return
+  }
+  const style = getComputedStyle(box)
+  const width = box.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0')
+  const height = box.clientHeight - parseFloat(style.paddingTop || '0') - parseFloat(style.paddingBottom || '0')
+  if (width <= 0) {
+    return
+  }
+  baseScale.value = props.fit
+    ? height > 0
+      ? Math.min(width / props.layout.width, height / props.layout.height, 2)
+      : baseScale.value
+    : Math.min(width / props.layout.width, 1)
+}
+
+let observer: ResizeObserver | undefined
+let observedWidth = 0
+onMounted(() => {
+  measureScale()
+  if (typeof ResizeObserver !== 'undefined' && viewport.value) {
+    observedWidth = viewport.value.clientWidth
+    observer = new ResizeObserver(() => {
+      // Only a change of the box's width (a resized window) rescales; the box growing taller around an
+      // expanded workflow does not.
+      const width = viewport.value?.clientWidth ?? 0
+      if (width !== observedWidth) {
+        observedWidth = width
+        measureScale()
+      }
+    })
+    observer.observe(viewport.value)
+  }
+})
+onBeforeUnmount(() => observer?.disconnect())
 
 const markerPrefix = `ba-arrow-${useId()}`
 
@@ -51,7 +94,27 @@ let moved = false
 
 const resetView = () => {
   panZoom.value = { ...INITIAL_PAN_ZOOM }
+  measureScale()
 }
+
+/** The workflow node just toggled and where it was on screen, so the relaid-out graph can be moved back under it. */
+let anchor: { id: string; left: number; top: number } | undefined
+
+const nodeElement = (id: string): Element | null | undefined =>
+  viewport.value?.querySelector(`[data-node-id="${id.replace(/["\\]/g, '\\$&')}"]`)
+
+watch(
+  () => props.layout,
+  () => {
+    const pending = anchor
+    anchor = undefined
+    const after = pending && nodeElement(pending.id)?.getBoundingClientRect()
+    if (pending && after) {
+      panZoom.value = panBy(panZoom.value, pending.left - after.left, pending.top - after.top)
+    }
+  },
+  { flush: 'post' },
+)
 
 defineExpose({ resetView })
 
@@ -122,6 +185,8 @@ const onNodeKeydown = (event: KeyboardEvent, node: LaidOutNode) => {
 
 const toggleWorkflow = (node: LaidOutNode) => {
   if (node.expandable && !moved) {
+    const before = nodeElement(node.id)?.getBoundingClientRect()
+    anchor = before ? { id: node.id, left: before.left, top: before.top } : undefined
     emit('toggleWorkflow', node.id)
   }
 }
@@ -231,7 +296,7 @@ const label = computed(() =>
       <svg
         :aria-label="label"
         role="group"
-        :style="fitStyle"
+        :style="svgStyle"
         :viewBox="viewBox"
         :width="layout.width"
         :height="layout.height">
