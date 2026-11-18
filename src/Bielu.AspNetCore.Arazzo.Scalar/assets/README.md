@@ -49,9 +49,12 @@ Scalar.createApiReference('#app', {
 })
 ```
 
-As a `<script>` tag (`dist/plugin.js`), which hooks `window.Scalar.createApiReference` and adds the
-plugin to every API Reference on the page; or through Scalar's `pluginUrls` with
-`dist/scalar-plugin.mjs`.
+The package root is an ES module: importing it registers the Arazzo document element, and the
+plugin is added where you pass it, as above.
+
+As a `<script>` tag (`dist/plugin.js`, the package's default file on unpkg and jsDelivr), which hooks
+`window.Scalar.createApiReference` and adds the plugin to every API Reference on the page; or through
+Scalar's `pluginUrls` with `dist/scalar-plugin.mjs`, whose default export is the plugin.
 
 ASP.NET Core apps use the
 [Bielu.AspNetCore.Arazzo.Scalar](https://www.nuget.org/packages/Bielu.AspNetCore.Arazzo.Scalar)

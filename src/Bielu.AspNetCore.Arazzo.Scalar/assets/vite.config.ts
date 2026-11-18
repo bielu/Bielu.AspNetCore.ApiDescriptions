@@ -25,7 +25,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     lib: {
-      entry: fileURLToPath(new URL('./src/index.ts', import.meta.url)),
+      entry: fileURLToPath(new URL('./src/script.ts', import.meta.url)),
       name: 'BieluScalarArazzo',
       formats: ['iife'],
       fileName: () => 'plugin.js',
