@@ -130,3 +130,20 @@ describe('landing pages in the Pages view', () => {
     expect(pagesInUse({ arazzo: '1.1.0', workflows: [workflow] }, { pageExtension: 'x-page' })).toBe(true)
   })
 })
+
+describe('offering the Pages view', () => {
+  const withLanding = {
+    arazzo: '1.1.0',
+    workflows: [{ workflowId: 'wf', steps: [{ stepId: 'pay', onFailure: [{ name: 'declined', type: 'end', 'x-landing': 'rejected' }] }] }],
+  } as unknown as ArazzoDocument
+
+  it('counts an end action whose landing page comes from the end-label extension', () => {
+    // Act / Assert: two distinct keys, and the action only has the end-label one.
+    expect(pagesInUse(withLanding, { pageExtension: 'x-page', endLabelExtension: 'x-landing' })).toBe(true)
+  })
+
+  it('stays Technical-only when only the end-label extension is configured', () => {
+    // Act / Assert
+    expect(pagesInUse(withLanding, { endLabelExtension: 'x-landing' })).toBe(false)
+  })
+})

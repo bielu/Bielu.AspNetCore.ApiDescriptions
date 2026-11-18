@@ -65,7 +65,8 @@ const workflowUses = (document: ArazzoDocument, workflow: ArazzoWorkflow, config
       Boolean(labelOf(step, config) || pageOf(step, config)) ||
       // The actions a step runs, workflow-level ones included: an inherited action with a page counts.
       [...effectiveSuccessActions(document, workflow, step), ...effectiveFailureActions(document, workflow, step)].some((action) =>
-        Boolean(labelOf(action, config) || (config.pageExtension && pageOf(action, { pageExtension: config.pageExtension }, true))),
+        // The same landing page the graph draws: the page extension, else the end-label extension's value.
+        Boolean(labelOf(action, config) || pageOf(action, config, true)),
       ),
   )
 
