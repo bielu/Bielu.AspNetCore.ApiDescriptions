@@ -168,6 +168,12 @@ By default (`ArazzoOptions.ValidateSourceReferencesOnStartup = true`), every ste
 documents once at app startup — a renamed channel or operation throws `ArazzoStartupValidationException`
 and fails startup, rather than failing the first time a workflow actually runs in production.
 
+Only steps whose source is self-wired (`AddOpenApiSource`/`AddAsyncApiSource`) are checked. A source added
+by URL alone with `AddSourceDescription`, such as another service's OpenAPI document, isn't fetched at
+startup, so steps that target it are not checked; a step naming a source the document doesn't declare at
+all still fails. A qualified `operationId` (`$sourceDescriptions.<name>.<operationId>`) is checked against
+the source it names, the same way.
+
 The documents can also be written at build time with `dotnet getdocument`, next to the OpenAPI and AsyncAPI ones; see
 [Build-time document generation](../build-time-generation.md#arazzo-documents). The tool starts the app, so the same
 validation fails the build when a step references something that no longer exists.
