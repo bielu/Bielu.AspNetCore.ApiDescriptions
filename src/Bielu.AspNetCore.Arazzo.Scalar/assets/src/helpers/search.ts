@@ -34,7 +34,7 @@ const workflowText = (workflow: ArazzoWorkflow, pages?: SearchPages): string =>
  * The fields a reader would search a step by: its id and description, and what it targets; with the Pages view
  * configured, also its label, its page's title and route, and the labels and landing pages of its actions.
  */
-const stepText = (step: ArazzoStep, workflow: ArazzoWorkflow, pages?: SearchPages): string => {
+const stepText = (step: ArazzoStep, workflow: ArazzoWorkflow, pages?: SearchPages & { registry: Record<string, PageInfo> }): string => {
   const fields: (string | undefined)[] = [
     step.stepId,
     step.description,
@@ -45,7 +45,7 @@ const stepText = (step: ArazzoStep, workflow: ArazzoWorkflow, pages?: SearchPage
     step.action,
   ]
   if (pages) {
-    const registry = pageRegistry(pages.document, pages.config)
+    const { registry } = pages
     fields.push(labelOf(step, pages.config), ...pageWords(registry, pageOf(step, pages.config)))
     const actions = [...effectiveSuccessActions(pages.document, workflow, step), ...effectiveFailureActions(pages.document, workflow, step)]
     for (const action of actions) {
@@ -73,15 +73,18 @@ export const filterWorkflows = (views: WorkflowView[], query: string, pages?: Se
     return undefined
   }
 
+  // The Pages view's words count only when one of its options is set; the page map is read once per filter pass.
+  const { pagesExtension, pageExtension, labelExtension } = pages?.config ?? {}
+  const withPages = pages && (pagesExtension || pageExtension || labelExtension) ? { ...pages, registry: pageRegistry(pages.document, pages.config) } : undefined
   const filter: WorkflowFilter = { workflows: new Set(), steps: new Set(), matchingSteps: 0, totalSteps: 0 }
   for (const view of views) {
     filter.totalSteps += view.steps.length
-    const ownText = workflowText(view.workflow, pages)
+    const ownText = workflowText(view.workflow, withPages)
     const workflowMatches = terms.every((term) => ownText.includes(term))
     const steps = workflowMatches
       ? view.steps
       : view.steps.filter((entry) => {
-          const text = stepText(entry.step, view.workflow, pages)
+          const text = stepText(entry.step, view.workflow, withPages)
           return terms.every((term) => text.includes(term) || ownText.includes(term)) && terms.some((term) => text.includes(term))
         })
     if (workflowMatches || steps.length > 0) {

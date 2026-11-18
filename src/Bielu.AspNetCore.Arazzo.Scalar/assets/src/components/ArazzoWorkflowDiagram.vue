@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
-import { STEP_EXPAND_EVENT, STEP_REVEAL_EVENT } from '../helpers/navigation'
+import { expandStepEvent, STEP_REVEAL_EVENT } from '../helpers/navigation'
 import { INITIAL_PAN_ZOOM, panBy, panZoomForKey, type PanZoomState, zoomAt } from '../helpers/pan-zoom'
 import { specLabel } from '../helpers/target-spec'
 import {
@@ -270,7 +270,9 @@ const openStep = async (node: LaidOutNode) => {
   viewport.value?.dispatchEvent(new CustomEvent(STEP_REVEAL_EVENT, { bubbles: true, detail: { sectionId: id } }))
   await nextTick()
   const section = document.getElementById(id)
-  section?.dispatchEvent(new CustomEvent(STEP_EXPAND_EVENT))
+  section?.dispatchEvent(expandStepEvent())
+  // The step and the workflow it belongs to open on that render; only then can it be scrolled to and focused.
+  await nextTick()
   section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   section?.querySelector<HTMLElement>('.ba-step-toggle')?.focus({ preventScroll: true })
 }

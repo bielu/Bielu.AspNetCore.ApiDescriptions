@@ -92,3 +92,55 @@ describe('opening steps from the overview', () => {
     expect(place().style.display).toBe('none')
   })
 })
+
+describe('opening a step of a closed workflow in the classic layout', () => {
+  const mountClassic = async () => {
+    wrapper = mount(ArazzoDocument, {
+      attachTo: globalThis.document.body,
+      props: {
+        document,
+        documentName: 'd',
+        documents: {},
+        navigation: traverseArazzoDocument({ documentId: 'd', document: document as unknown as Record<string, unknown> }),
+        options: { layout: 'classic' },
+      },
+    })
+    await flushPromises()
+    // Close checkout's section, which hides its steps.
+    const close = wrapper.findAll('[id="d/workflow/checkout"] .ba-workflow-header button').find((button) => button.text() === 'Collapse')!
+    await close.trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  const checkoutBody = (view: VueWrapper) => view.find('[id="d/workflow/checkout"] .ba-workflow-content').element as HTMLElement
+
+  it('opens the workflow, then focuses the step, from the inline overview', async () => {
+    // Arrange
+    const view = await mountClassic()
+    expect(checkoutBody(view).style.display).toBe('none')
+    await press(view, '[id="d/workflow/orders"] .ba-overview [data-node-id="place"] .ba-diagram-toggle')
+
+    // Act
+    await press(view, '[id="d/workflow/orders"] .ba-overview [data-node-id="place/pay"]')
+
+    // Assert
+    expect(checkoutBody(view).style.display).not.toBe('none')
+    const focused = globalThis.document.activeElement as HTMLElement
+    expect(focused.closest('section.ba-step')!.id).toBe(sectionId('checkout', 'pay'))
+  })
+
+  it('does the same from the full-window overview', async () => {
+    // Arrange
+    const view = await mountClassic()
+    expect(checkoutBody(view).style.display).toBe('none')
+    await press(view, '[id="d/workflow/orders"] dialog [data-node-id="place"] .ba-diagram-toggle')
+
+    // Act
+    await press(view, '[id="d/workflow/orders"] dialog [data-node-id="place/pay"]')
+
+    // Assert
+    expect(checkoutBody(view).style.display).not.toBe('none')
+    expect((globalThis.document.activeElement as HTMLElement).closest('section.ba-step')!.id).toBe(sectionId('checkout', 'pay'))
+  })
+})

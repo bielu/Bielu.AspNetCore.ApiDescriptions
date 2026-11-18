@@ -14,6 +14,12 @@ export const STEP_KIND = 'step'
 export const STEP_EXPAND_EVENT = 'bielu-arazzo:expand-step'
 
 /**
+ * Dispatched on a step's section to open it: it bubbles, so the workflow the step belongs to opens too (in the classic
+ * layout a closed workflow hides its steps).
+ */
+export const expandStepEvent = (): CustomEvent => new CustomEvent(STEP_EXPAND_EVENT, { bubbles: true })
+
+/**
  * Bubbles up from the overview diagram before it opens a step (`detail.sectionId`), so the document shows that
  * step's section, and its workflow's, even while the filter hides them.
  */

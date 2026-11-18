@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
 import { resolveLocalRef } from '../helpers/extensions'
 import { renderMarkdown } from '../helpers/markdown'
-import type { WorkflowView } from '../helpers/navigation'
+import { STEP_EXPAND_EVENT, type WorkflowView } from '../helpers/navigation'
 import { resolveReusables } from '../helpers/reusable'
 import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
 import { pluginOptions } from '../helpers/plugin-options'
@@ -151,6 +151,16 @@ const toggle = () => {
   props.eventBus?.emit('toggle:nav-item', { id: props.view.id, open: open.value })
 }
 
+/** A step of this workflow asked to open (`STEP_EXPAND_EVENT` bubbling up from it): show the workflow's body too. */
+const root = ref<HTMLElement>()
+const openForStep = () => {
+  if (classic.value && !open.value) {
+    toggle()
+  }
+}
+onMounted(() => root.value?.addEventListener(STEP_EXPAND_EVENT, openForStep))
+onBeforeUnmount(() => root.value?.removeEventListener(STEP_EXPAND_EVENT, openForStep))
+
 /**
  * Folds or unfolds every step of the workflow at once; each step can still be toggled on its own
  * afterwards. A new `version` is what the steps react to, so pressing the button twice works.
@@ -180,6 +190,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
 <template>
   <section
     :id="view.id"
+    ref="root"
     class="ba-workflow"
     :class="{ 'ba-workflow-classic': classic, 'ba-workflow-closed': classic && !open }"
     :data-nav-id="view.id">

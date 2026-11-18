@@ -46,8 +46,11 @@ watch(
 
 /** The overview diagram asks a step to open before it scrolls to it (`STEP_EXPAND_EVENT`). */
 const section = ref<HTMLElement>()
-const expand = () => {
-  open.value = true
+const expand = (event: Event) => {
+  // The event bubbles on to the workflow; it is this step's to handle here, not a nested one's.
+  if (event.target === section.value) {
+    open.value = true
+  }
 }
 onMounted(() => section.value?.addEventListener(STEP_EXPAND_EVENT, expand))
 onBeforeUnmount(() => section.value?.removeEventListener(STEP_EXPAND_EVENT, expand))
