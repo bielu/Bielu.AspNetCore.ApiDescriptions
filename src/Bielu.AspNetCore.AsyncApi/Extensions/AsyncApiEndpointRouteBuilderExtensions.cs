@@ -36,10 +36,6 @@ public static class AsyncApiEndpointRouteBuilderExtensions
         [StringSyntax("Route")] string pattern = AsyncApiGeneratorConstants.DefaultAsyncApiRoute)
     {
         var options = endpoints.ServiceProvider.GetRequiredService<IOptionsMonitor<AsyncApiOptions>>();
-        // Kept, although nothing reads it, so the obsolete property behaves as before until it is removed.
-#pragma warning disable CS0618 // Type or member is obsolete
-        options.CurrentValue.DocumentRoutePattern = pattern;
-#pragma warning restore CS0618
         // Mapped as a RequestDelegate rather than as a parameter-bound lambda. The lambda overload goes
         // through RequestDelegateFactory, which inspects the handler's signature reflectively to infer
         // parameter binding and response writing — and under Native AOT that fails outright, asking the

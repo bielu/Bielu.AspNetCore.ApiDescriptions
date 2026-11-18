@@ -1,12 +1,13 @@
 ﻿# Migrating to 3.0
 
-3.0 changes what some documents contain and which documents count as valid, so behavior can change without a compile error. The [changelog](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/CHANGELOG.md) lists every change.
+3.0 removes API that 2.x marked obsolete, and changes what some documents contain and which documents count as valid, so some changes show up as compile errors and others only at runtime. The [changelog](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/blob/main/CHANGELOG.md) lists every change.
 
 ## Checklist
 
 1. Update every `Bielu.*` package to 3.0. They are versioned together, so mixing 2.x and 3.0 packages isn't supported.
 2. Validate your Arazzo documents against 3.0 (`dotnet arazzo validate`, or start the app); see [Stricter Arazzo validation](#stricter-arazzo-validation).
-3. If you use `AddAsyncApiForApiVersions()`, check each version's AsyncAPI document; see [API versioning: documents are filtered by version](#api-versioning-documents-are-filtered-by-version).
+3. Fix the compile errors from the [removed members](#removed-members).
+4. If you use `AddAsyncApiForApiVersions()`, check each version's AsyncAPI document; see [API versioning: documents are filtered by version](#api-versioning-documents-are-filtered-by-version).
 
 ## Stricter Arazzo validation
 
@@ -35,3 +36,9 @@ What to check:
 - A channel that is missing from a version it belongs to: declare that version on its class or method, or mark it `[ApiVersionNeutral]` to keep it in every version.
 - An unversioned controller in an app with `AssumeDefaultVersionWhenUnspecified`: Asp.Versioning maps it to the default version, so its channels now appear only in that version's document. Mark it `[ApiVersionNeutral]` if it belongs to all of them.
 - `AddIncludedChannel` calls in the `configure` callback that only existed to work around the missing filtering can go.
+
+## Removed members
+
+| Removed | Use instead |
+|---------|-------------|
+| `AsyncApiOptions.DocumentRoutePattern` (obsolete since 2.0; nothing read it) | Nothing: the route is the pattern passed to `MapAsyncApi(pattern)` |
