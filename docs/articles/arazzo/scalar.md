@@ -239,7 +239,7 @@ does. When any of the three options is set and the document uses it, the overvie
 gets a **Technical | Pages** toggle. Technical, the view described above, is the default; the choice applies
 to every workflow on the page and is remembered in the browser.
 
-![The trackOrder overview in the Pages view, with placeOrder expanded: steps in labelled page bands (Checkout, Payment, Order confirmed, Order status), plain-language labels, and failure ends named after the page they show](../../images/arazzo/scalar-pages-view.jpg)
+![The trackOrder overview in the Pages view, with placeOrder expanded: steps in labelled page bands (Checkout, Payment, Order confirmed, Order status), plain-language labels, and failure ends named after the page they show](../../images/arazzo/scalar-pages-view.png)
 
 In the Pages view:
 
