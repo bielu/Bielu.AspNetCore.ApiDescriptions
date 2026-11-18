@@ -38,9 +38,9 @@ export const isUnconditional = (action: ArazzoSuccessAction | ArazzoFailureActio
 
 /**
  * The actions that can run: Arazzo runs the first one whose criteria hold, so the actions after the first one
- * without criteria never do. The conditional actions before it are kept.
+ * without criteria never do, except after a retry exhausts its limit. The conditional actions before it are kept.
  */
 export const reachableActions = <T extends ArazzoSuccessAction | ArazzoFailureAction>(actions: T[]): T[] => {
-  const first = actions.findIndex(isUnconditional)
+  const first = actions.findIndex((action) => action.type !== 'retry' && isUnconditional(action))
   return first < 0 ? actions : actions.slice(0, first + 1)
 }

@@ -6,7 +6,7 @@ import { renderMarkdown } from '../helpers/markdown'
 import { STEP_EXPAND_EVENT, type WorkflowView } from '../helpers/navigation'
 import { resolveReusables } from '../helpers/reusable'
 import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
-import { pluginOptions } from '../helpers/plugin-options'
+import type { ArazzoPluginOptions } from '../helpers/plugin-options'
 import { resolveStepTarget } from '../helpers/resolve-target'
 import { targetSpec } from '../helpers/target-spec'
 import { setWorkflowView, workflowView } from '../helpers/view-mode'
@@ -22,6 +22,7 @@ import ArazzoStep from './ArazzoStep.vue'
 import ArazzoWorkflowDiagram from './ArazzoWorkflowDiagram.vue'
 
 const props = defineProps<{
+  arazzoOptions?: ArazzoPluginOptions
   view: WorkflowView
   document: ArazzoDocument
   documents: Record<string, unknown>
@@ -88,7 +89,7 @@ const toggleWorkflow = (nodeId: string) => {
 
 /** Where the Pages view finds pages and labels (the plugin's options). */
 const pagesConfig = computed((): PagesConfig => {
-  const options = pluginOptions()
+  const options = props.arazzoOptions ?? {}
   return {
     pagesExtension: options.pagesExtension,
     pageExtension: options.pageExtension,
@@ -132,7 +133,7 @@ const diagram = computed(() =>
       (step, owner) => targetSpec(owner, step, resolveStepTarget(owner, step, props.documents), props.documents)?.family,
       {
         expanded: expandedWorkflows.value,
-        endLabelExtension: pluginOptions().endLabelExtension,
+        endLabelExtension: props.arazzoOptions?.endLabelExtension,
         view: overviewView.value,
         pages: pagesConfig.value,
         documents: props.documents,

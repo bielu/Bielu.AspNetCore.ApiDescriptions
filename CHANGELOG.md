@@ -17,6 +17,8 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 ## [Unreleased]
 
+- Keep Arazzo Scalar options local to each plugin instance and show failure fallback paths after retries exhaust their limit. Verify packed npm entry points and declarations after builds.
+
 _Nothing yet._
 
 ## [3.0.0] - 2026-11-18
