@@ -34,27 +34,11 @@ public class OperationActionTests
         public void Receive()
         {
         }
-
-#pragma warning disable CS0618 // The obsolete attributes are what is under test.
-        [Channel("light/subscribed")]
-        [SubscribeOperation(typeof(LightMeasured), OperationId = "subscribeOperation")]
-        public void Subscribe()
-        {
-        }
-
-        [Channel("light/published")]
-        [PublishOperation(typeof(LightMeasured), OperationId = "publishOperation")]
-        public void Publish()
-        {
-        }
-#pragma warning restore CS0618
     }
 
     [Theory]
     [InlineData("sendOperation", AsyncApiAction.Send)]
     [InlineData("receiveOperation", AsyncApiAction.Receive)]
-    [InlineData("subscribeOperation", AsyncApiAction.Send)]
-    [InlineData("publishOperation", AsyncApiAction.Receive)]
     public async Task GetAsyncApiDocument_OperationAttribute_SetsMatchingAction(string operationId, AsyncApiAction expected)
     {
         // Act
@@ -72,10 +56,6 @@ public class OperationActionTests
         new SendOperationAttribute(typeof(LightMeasured)).OperationType.ShouldBe(OperationType.Send);
         new ReceiveOperationAttribute().OperationType.ShouldBe(OperationType.Receive);
         new ReceiveOperationAttribute(typeof(LightMeasured), "tag").OperationType.ShouldBe(OperationType.Receive);
-#pragma warning disable CS0618 // The obsolete attributes are what is under test.
-        new SubscribeOperationAttribute(typeof(LightMeasured)).OperationType.ShouldBe(OperationType.Send);
-        new PublishOperationAttribute(typeof(LightMeasured), "tag").OperationType.ShouldBe(OperationType.Receive);
-#pragma warning restore CS0618
     }
 
     private static async Task<AsyncApiDocument> GetDocumentAsync()

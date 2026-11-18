@@ -42,3 +42,5 @@ What to check:
 | Removed | Use instead |
 |---------|-------------|
 | `AsyncApiOptions.DocumentRoutePattern` (obsolete since 2.0; nothing read it) | Nothing: the route is the pattern passed to `MapAsyncApi(pattern)` |
+| `[PublishOperation]` (obsolete since 2.0) | `[ReceiveOperation]`: a 2.x publish operation is one where the application receives |
+| `[SubscribeOperation]` (obsolete since 2.0) | `[SendOperation]`: a 2.x subscribe operation is one where the application sends |

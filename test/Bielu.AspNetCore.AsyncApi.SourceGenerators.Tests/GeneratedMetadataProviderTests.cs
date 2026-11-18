@@ -91,10 +91,6 @@ public class GeneratedMetadataProviderTests
             [ReceiveOperation(typeof(InvoiceRequested), OperationId = "invoiceRequestedOperation")]
             public void Requested() { }
 
-            [Channel("invoices/legacy-requested")]
-            [PublishOperation(typeof(InvoiceRequested), OperationId = "invoiceLegacyRequestedOperation")]
-            public void LegacyRequested() { }
-
             [Channel("invoices/archived")]
             [ArchivesInvoice(ArchiveReason.Expired, 1.5, "invoices", OperationId = "invoiceArchivedOperation", Archive = "cold storage")]
             public void Archived() { }
@@ -209,7 +205,6 @@ public class GeneratedMetadataProviderTests
     [Theory]
     [InlineData("invoiceIssuedOperation", AsyncApiAction.Send)]
     [InlineData("invoiceRequestedOperation", AsyncApiAction.Receive)]
-    [InlineData("invoiceLegacyRequestedOperation", AsyncApiAction.Receive)]
     [InlineData("invoiceArchivedOperation", AsyncApiAction.Send)]
     public async Task GetAsyncApiDocument_GeneratedProvider_SetsOperationAction(string operationId, AsyncApiAction expected)
     {
