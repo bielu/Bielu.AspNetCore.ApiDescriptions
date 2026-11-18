@@ -311,8 +311,8 @@ const closeOnBackdrop = (event: MouseEvent) => {
         fit
         :layout="diagram"
         :stepSectionIds="stepSectionIds"
-        @toggleWorkflow="toggleWorkflow"
-        @click.capture="(event: MouseEvent) => (event.target as Element).closest('.ba-diagram-link') && dialog?.close()" />
+        @openStep="dialog?.close()"
+        @toggleWorkflow="toggleWorkflow" />
     </dialog>
   </section>
 </template>

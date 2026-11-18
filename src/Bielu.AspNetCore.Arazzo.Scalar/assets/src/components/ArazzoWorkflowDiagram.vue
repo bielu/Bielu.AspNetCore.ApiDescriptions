@@ -29,6 +29,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   /** A workflow node's +/− was used: show or hide the steps of the workflow it invokes. */
   toggleWorkflow: [nodeId: string]
+  /** A step box was used to open its step, so a full-screen view can get out of the way. */
+  openStep: [stepId: string]
 }>()
 
 /** In `fit` mode the SVG fills the box and its viewBox keeps the proportions; the caps stop a tiny graph from ballooning. */
@@ -163,6 +165,7 @@ const nodeTitle = (node: LaidOutNode): string | undefined => {
 const openStep = (node: LaidOutNode) => {
   const id = sectionOf(node)
   if (isStepLink(node) && id && !moved) {
+    emit('openStep', node.id)
     const section = document.getElementById(id)
     section?.dispatchEvent(new CustomEvent(STEP_EXPAND_EVENT))
     section?.scrollIntoView({ behavior: 'smooth', block: 'start' })

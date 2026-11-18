@@ -226,6 +226,31 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
     }
 
     [BrowserFact]
+    public async Task FullScreenOverview_StaysOpenAndZoomed_WhenAWorkflowNodeIsCollapsed()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" });
+        await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+        var dialog = workflow.Locator("dialog[open]");
+        var diagram = dialog.Locator(".ba-diagram");
+        await diagram.HoverAsync();
+        await page.Mouse.WheelAsync(0, -100);
+        var canvas = dialog.Locator(".ba-diagram-canvas");
+        var zoomed = await canvas.EvaluateAsync<string>("canvas => canvas.style.transform");
+
+        // Act
+        await diagram.GetByRole(AriaRole.Button, new() { Name = "Show the steps of workflow loadAccount" }).ClickAsync();
+        await diagram.GetByRole(AriaRole.Button, new() { Name = "Hide the steps of workflow loadAccount" }).ClickAsync();
+
+        // Assert
+        zoomed.ShouldContain("scale(1.1)");
+        (await dialog.CountAsync()).ShouldBe(1);
+        (await canvas.EvaluateAsync<string>("canvas => canvas.style.transform")).ShouldBe(zoomed);
+        (await diagram.Locator(".ba-diagram-group").CountAsync()).ShouldBe(0);
+    }
+
+    [BrowserFact]
     public async Task WorkflowStep_ShowsTheStepsOfItsWorkflowInline()
     {
         // Arrange
