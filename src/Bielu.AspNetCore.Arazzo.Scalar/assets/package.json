@@ -5,10 +5,13 @@
   "license": "MIT",
   "author": "Arkadiusz Biel",
   "type": "module",
-  "main": "./dist/plugin.js",
-  "module": "./dist/plugin.js",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
   "types": "./dist/types/index.d.ts",
+  "unpkg": "./dist/plugin.js",
+  "jsdelivr": "./dist/plugin.js",
   "files": [
+    "dist/index.mjs",
     "dist/plugin.js",
     "dist/scalar-plugin.mjs",
     "dist/types",
@@ -18,9 +21,12 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "default": "./dist/plugin.js"
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     },
-    "./scalar-plugin.mjs": "./dist/scalar-plugin.mjs"
+    "./plugin.js": "./dist/plugin.js",
+    "./scalar-plugin.mjs": "./dist/scalar-plugin.mjs",
+    "./package.json": "./package.json"
   },
   "keywords": [
     "scalar",
@@ -38,12 +44,13 @@
   "scripts": {
     "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm run build",
     "prebuild": "npm run build:core",
-    "build": "vite build && npm run build:module && vue-tsc -p tsconfig.json",
+    "build": "vite build && npm run build:module && npm run build:library && vue-tsc -p tsconfig.json",
     "build:module": "vite build --config vite.config.module.ts",
     "pretypecheck": "npm run build:core",
     "typecheck": "vue-tsc --noEmit && vue-tsc -p tsconfig.contract.json",
     "test": "vitest run",
-    "dev": "vite build --watch"
+    "dev": "vite build --watch",
+    "build:library": "vite build --config vite.config.library.ts"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.8",

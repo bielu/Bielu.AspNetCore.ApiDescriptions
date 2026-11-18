@@ -1,6 +1,6 @@
-import { installScalarPluginHook, registerConsoleElement } from '@bielu/scalar-core'
+import { registerConsoleElement } from '@bielu/scalar-core'
 import ArazzoDocument from './components/ArazzoDocument.vue'
-import { ARAZZO_ELEMENT_SPEC, createArazzoPlugin } from './plugin'
+import { ARAZZO_ELEMENT_SPEC } from './plugin'
 
 export { isArazzoDocument, traverseArazzoDocument } from './helpers/navigation'
 export { resolveStepTarget } from './helpers/resolve-target'
@@ -9,9 +9,7 @@ export { arazzoDocumentType, createArazzoPlugin } from './plugin'
 export type { ApiReferencePlugin, ArazzoDocumentType } from './plugin'
 export type { ArazzoDocument, ArazzoStep, ArazzoWorkflow, PluginNavigationEntry } from './types'
 
-// The `<script>`-tag entry: register the document element and hook `window.Scalar.createApiReference`
-// so every Scalar API Reference on the page gets the Arazzo document type.
+// The package root (`import { createArazzoPlugin } from '@bielu/scalar-arazzo'`, built as `dist/index.mjs`):
+// register the element the document type renders, and leave adding the plugin to the caller. The
+// `<script>`-tag entry (src/script.ts) also hooks `window.Scalar.createApiReference`.
 registerConsoleElement(ARAZZO_ELEMENT_SPEC, ArazzoDocument)
-installScalarPluginHook({ pluginName: ARAZZO_ELEMENT_SPEC.pluginName, wrappedFlag: '__bieluArazzoWrapped' }, () =>
-  createArazzoPlugin(),
-)
