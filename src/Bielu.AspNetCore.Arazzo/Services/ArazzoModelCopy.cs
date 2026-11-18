@@ -106,6 +106,7 @@ internal static class ArazzoModelCopy
         Type = action.Type,
         WorkflowId = action.WorkflowId,
         StepId = action.StepId,
+        Parameters = CopyReferenceables(action.Parameters, Copy),
         Criteria = CopyList(action.Criteria, Copy),
         Extensions = CopyExtensions(action.Extensions),
     };
