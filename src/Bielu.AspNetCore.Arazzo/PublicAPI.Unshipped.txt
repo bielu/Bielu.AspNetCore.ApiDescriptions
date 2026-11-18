@@ -51,3 +51,5 @@ override Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.TryResolv
 *REMOVED*Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.TryResolveChannelPath(object! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
 *REMOVED*Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.TryResolveOperation(object! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
 *REMOVED*Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.TryResolveOperationPath(object! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.WithDescription(string! description) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+const Bielu.AspNetCore.Arazzo.ArazzoDefaults.DefaultInfoVersion = "1.0.0" -> string!

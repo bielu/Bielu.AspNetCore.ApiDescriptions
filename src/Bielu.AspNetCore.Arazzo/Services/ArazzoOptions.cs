@@ -198,11 +198,24 @@ public sealed class ArazzoOptions
         return this;
     }
 
+    /// <summary>
+    /// Sets the description of the document's <c>info</c> object, creating the <c>info</c> with the default title
+    /// and version when it isn't set yet, as <c>AsyncApiOptions.WithDescription</c> does.
+    /// </summary>
+    /// <param name="description">The description; CommonMark syntax may be used.</param>
+    public ArazzoOptions WithDescription(string description)
+    {
+        ArgumentNullException.ThrowIfNull(description);
+        Info ??= new ArazzoInfo { Title = DocumentName, Version = ArazzoDefaults.DefaultInfoVersion };
+        Info.Description = description;
+        return this;
+    }
+
     /// <summary>Configures the document's <c>info</c> object.</summary>
     public ArazzoOptions WithInfo(Action<ArazzoInfo> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
-        Info ??= new ArazzoInfo { Title = DocumentName, Version = "1.0.0" };
+        Info ??= new ArazzoInfo { Title = DocumentName, Version = ArazzoDefaults.DefaultInfoVersion };
         configure(Info);
         return this;
     }
