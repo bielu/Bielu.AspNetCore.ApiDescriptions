@@ -42,13 +42,17 @@ export const targetNavigationId = (
   target: StepTarget | undefined,
   documents: Record<string, unknown>,
 ): string | undefined => {
-  if (!target || target.kind === 'workflow' || !target.documentName) {
+  if (!target || !target.documentName) {
     return undefined
   }
   const root = (documents[target.documentName] as { 'x-scalar-navigation'?: unknown } | undefined)?.['x-scalar-navigation']
 
   let entry: NavigationEntry | undefined
-  if (target.kind === 'operation') {
+  if (target.kind === 'workflow') {
+    // A workflow of another Arazzo document: its entry is the one `traverseArazzoDocument` gave it there.
+    const workflowId = target.workflow?.workflowId
+    entry = workflowId ? findEntry(root, (candidate) => typeof candidate.id === 'string' && candidate.id.endsWith(`/workflow/${workflowId}`)) : undefined
+  } else if (target.kind === 'operation') {
     const method = target.method?.toLowerCase()
     entry = findEntry(
       root,

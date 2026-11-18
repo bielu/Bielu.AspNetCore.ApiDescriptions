@@ -1,12 +1,19 @@
 import type { ArazzoDocument, ArazzoSourceDescription, ArazzoStep, ArazzoWorkflow } from '../types'
+import { normalizeArazzoDocument } from './normalize'
 
 type AnyRecord = Record<string, any>
 
-/** A step that invokes another workflow of the same Arazzo document. */
+/** A step that invokes a workflow: one of this Arazzo document, or (`$sourceDescriptions.<name>.<id>`) of another loaded one. */
 export type WorkflowTarget = {
   kind: 'workflow'
   identifier: string
   workflow: ArazzoWorkflow | undefined
+  /** The workspace name of the Arazzo document the workflow is in, when it is another loaded document. */
+  documentName?: string
+  /** For `$sourceDescriptions.<name>.<id>`: the source description it names. */
+  sourceName?: string
+  /** The `arazzo` version of the document the workflow was found in. */
+  version?: string
 }
 
 /** A step that calls an OpenAPI operation of a loaded sibling document. */
@@ -112,7 +119,10 @@ export const findDocumentByUrl = (
   source: ArazzoSourceDescription,
 ): LoadedDocument | undefined => {
   const page = pageUrl()
-  const wanted = absoluteUrl(source.url, absoluteUrl(arazzo['x-scalar-original-source-url'], page) ?? page)
+  // Arazzo's base URI: the document's `$self` when it has one (itself resolved against where the document was
+  // retrieved from), else the retrieval URL.
+  const retrieved = absoluteUrl(arazzo['x-scalar-original-source-url'], page) ?? page
+  const wanted = absoluteUrl(source.url, absoluteUrl(arazzo.$self, retrieved) ?? retrieved)
   if (!wanted) {
     return undefined
   }
@@ -268,6 +278,78 @@ const findByPointer = (
 }
 
 /**
+ * Whether every document the Arazzo document can resolve into is loaded: each of its source descriptions, and the
+ * Arazzo sources of every Arazzo document reached through them, so a workflow called across documents can be drawn
+ * all the way down. Each document is visited once, so sources that call back into each other end.
+ */
+export const sourcesLoaded = (arazzo: ArazzoDocument, documents: Record<string, unknown>): boolean => {
+  const visited = new Set<ArazzoDocument>()
+  const queue: { document: ArazzoDocument; root: boolean }[] = [{ document: arazzo, root: true }]
+  for (let next = queue.shift(); next; next = queue.shift()) {
+    if (visited.has(next.document)) {
+      continue
+    }
+    visited.add(next.document)
+    for (const source of next.document.sourceDescriptions ?? []) {
+      // Beyond the document itself only Arazzo sources matter: they hold the workflows drawn inside it.
+      if (!next.root && source.type !== 'arazzo') {
+        continue
+      }
+      const loaded = findDocumentByUrl(next.document, documents, source)
+      if (!loaded) {
+        return false
+      }
+      const other = typeof loaded.document.arazzo === 'string' ? normalizeArazzoDocument(loaded.document) : undefined
+      if (other) {
+        queue.push({ document: other, root: false })
+      }
+    }
+  }
+  return true
+}
+
+/** `$sourceDescriptions.<name>.<workflowId>`: a workflow of the Arazzo document a source description names. */
+export const QUALIFIED_WORKFLOW = /^\$sourceDescriptions\.([^.]+)\.(.+)$/
+
+/** A workflow found by its `workflowId`, with the Arazzo document it belongs to. */
+export type ResolvedWorkflow = {
+  /** The document the workflow is in: its components, page registry and step targets resolve there. */
+  document: ArazzoDocument
+  workflow: ArazzoWorkflow
+  /** The workspace name of that document, when it is not the document the lookup started from. */
+  documentName?: string
+}
+
+/**
+ * Finds the workflow a `workflowId` names: a plain id in `arazzo` itself, or a qualified
+ * `$sourceDescriptions.<name>.<id>` in the Arazzo document that source description points at, when Scalar
+ * has loaded it. A qualified id always means the other document, even when `arazzo` has a workflow of
+ * the same id. `undefined` when the workflow is not found or its document is not loaded.
+ */
+export const resolveWorkflow = (
+  arazzo: ArazzoDocument,
+  workflowId: string | undefined,
+  documents: Record<string, unknown> = {},
+): ResolvedWorkflow | undefined => {
+  if (!workflowId) {
+    return undefined
+  }
+  const qualified = QUALIFIED_WORKFLOW.exec(workflowId)
+  if (!qualified) {
+    const workflow = workflowId.startsWith('$') ? undefined : arazzo.workflows?.find((candidate) => candidate.workflowId === workflowId)
+    return workflow ? { document: arazzo, workflow } : undefined
+  }
+  const source = arazzo.sourceDescriptions?.find((candidate) => candidate.name === qualified[1])
+  if (!source || (source.type && source.type !== 'arazzo')) {
+    return undefined
+  }
+  const loaded = findDocumentByUrl(arazzo, documents, source)
+  const other = loaded ? normalizeArazzoDocument(loaded.document) : undefined
+  const workflow = other?.workflows?.find((candidate) => candidate.workflowId === qualified[2])
+  return other && workflow ? { document: other, workflow, documentName: loaded!.name } : undefined
+}
+
+/**
  * Resolves whichever of `operationId`/`operationPath`/`channelPath`/`workflowId` a step declares.
  * Never throws: when the target's document is not loaded (or the id was renamed) the result still
  * carries the raw `identifier`, with the resolved fields left `undefined`.
@@ -278,10 +360,15 @@ export const resolveStepTarget = (
   documents: Record<string, unknown>,
 ): StepTarget | undefined => {
   if (step.workflowId) {
+    const resolved = resolveWorkflow(arazzo, step.workflowId, documents)
+    const sourceName = QUALIFIED_WORKFLOW.exec(step.workflowId)?.[1]
     return {
       kind: 'workflow',
       identifier: step.workflowId,
-      workflow: arazzo.workflows?.find((workflow) => workflow.workflowId === step.workflowId),
+      workflow: resolved?.workflow,
+      ...(resolved?.documentName ? { documentName: resolved.documentName } : {}),
+      ...(sourceName ? { sourceName } : {}),
+      ...(resolved ? { version: resolved.document.arazzo } : {}),
     }
   }
 

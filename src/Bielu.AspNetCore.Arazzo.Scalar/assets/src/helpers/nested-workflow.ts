@@ -1,5 +1,5 @@
 import type { ArazzoDocument, ArazzoStep } from '../types'
-import { localWorkflow } from './workflow-graph'
+import { resolveWorkflow } from './resolve-target'
 
 /** One step of an invoked workflow, as the step list shows it: its id and what it calls. */
 export type NestedStepSummary = {
@@ -23,9 +23,14 @@ const summarise = (step: ArazzoStep): NestedStepSummary => {
 
 /**
  * The steps of the workflow a step invokes, for the step list to show inline (read-only, one level: a nested
- * step that invokes a workflow is named, not expanded). Only workflows of this document have steps to show.
+ * step that invokes a workflow is named, not expanded). The workflow is this document's, or, for
+ * `$sourceDescriptions.<name>.<id>`, that of another Arazzo document in `documents`.
  */
-export const nestedWorkflowSteps = (document: ArazzoDocument, step: ArazzoStep): NestedWorkflowSummary | undefined => {
-  const workflow = localWorkflow(document, step.workflowId)
+export const nestedWorkflowSteps = (
+  document: ArazzoDocument,
+  step: ArazzoStep,
+  documents: Record<string, unknown> = {},
+): NestedWorkflowSummary | undefined => {
+  const workflow = resolveWorkflow(document, step.workflowId, documents)?.workflow
   return workflow?.steps?.length ? { workflowId: workflow.workflowId, steps: workflow.steps.map(summarise) } : undefined
 }

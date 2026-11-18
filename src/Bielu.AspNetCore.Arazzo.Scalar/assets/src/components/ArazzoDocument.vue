@@ -4,6 +4,7 @@ import { renderMarkdown } from '../helpers/markdown'
 import { type DocumentWatch, watchDocuments } from '../helpers/document-watch'
 import { componentsEntryId, STEP_REVEAL_EVENT, toWorkflowViews } from '../helpers/navigation'
 import { normalizeArazzoDocument } from '../helpers/normalize'
+import { sourcesLoaded } from '../helpers/resolve-target'
 import { pluginOptions } from '../helpers/plugin-options'
 import { filterWorkflows } from '../helpers/search'
 import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
@@ -127,9 +128,11 @@ const refreshDocuments = (): boolean => {
   return true
 }
 
-/** Every source description (other than another Arazzo document) has a loaded document to resolve into. */
-const allSourcesLoaded = () =>
-  sources.value.every((summary) => summary.family === 'arazzo' || summary.documentName !== undefined)
+/**
+ * Every source description has a loaded document to resolve into, Arazzo ones included, and so do the Arazzo
+ * sources of the Arazzo documents they lead to: a workflow called in another document can load after this one.
+ */
+const allSourcesLoaded = () => (arazzo.value ? sourcesLoaded(arazzo.value, props.documents ?? {}) : true)
 watch(
   () => props.documents,
   () => {
@@ -314,6 +317,7 @@ onBeforeUnmount(() => {
       v-show="!filter || filter.workflows.has(view.id)"
       :key="view.id"
       :stepSectionIds="stepSectionIds"
+      :documentName="documentName"
       :visibleSteps="filter?.steps"
       :document="arazzo!"
       :documents="loadedDocuments"

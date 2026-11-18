@@ -37,6 +37,8 @@ const props = defineProps<{
    * the overview opens that workflow's step. Only this workflow's steps when absent.
    */
   stepSectionIds?: Record<string, Record<string, string>>
+  /** The workspace name of this Arazzo document, so the overview knows a workflow of another document that calls back into it. */
+  documentName?: string
 }>()
 
 const workflow = computed(() => props.view.workflow)
@@ -126,12 +128,15 @@ const diagram = computed(() =>
     buildWorkflowGraph(
       props.document,
       workflow.value,
-      (step) => targetSpec(props.document, step, resolveStepTarget(props.document, step, props.documents), props.documents)?.family,
+      // A step of an expanded workflow from another Arazzo document resolves its target in that document.
+      (step, owner) => targetSpec(owner, step, resolveStepTarget(owner, step, props.documents), props.documents)?.family,
       {
         expanded: expandedWorkflows.value,
         endLabelExtension: pluginOptions().endLabelExtension,
         view: overviewView.value,
         pages: pagesConfig.value,
+        documents: props.documents,
+        documentName: props.documentName,
       },
     ),
   ),

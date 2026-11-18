@@ -139,19 +139,30 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     its criteria and limit (`$statusCode == 401 — retry, ≤ 1×`), and an arrow back to the step, which runs
     again afterwards; a `goto` gets only the arrow there. When the retried workflow is expanded, the arrow
     back starts at its own Success node, where control returns to the step.
-  - **Expanding workflows.** A workflow node of the same document has a `+` button (Tab reaches it, Enter
+  - **Expanding workflows.** A workflow node whose workflow is found has a `+` button (Tab reaches it, Enter
     or Space presses it): it shows that workflow's steps inside the diagram, in a box of their own entered
     from the workflow node, with their own arrows and ends. Workflows inside it expand the same way. A
     workflow that is already expanded further up the path is not expanded again: it is marked `↻` (a cycle).
     `−` hides the steps again, along with anything expanded inside them. The workflow's steps open below its
     node, which stays where it was under the pointer; the zoom is kept (the overview is scaled to fit only
     when it is shown, reset or resized), and the full-window view stays open. While a workflow is expanded,
-    the overview beside the steps may grow to the height of the window, and pans beyond that. Workflows of other documents
-    (`$sourceDescriptions.<name>.<workflowId>`) can't be expanded.
+    the overview beside the steps may grow to the height of the window, and pans beyond that.
+  - **Workflows of other documents.** A call such as `$sourceDescriptions.identity.signIn` expands too when
+    the Arazzo document that source names is loaded on the same Scalar page, for example a second Arazzo
+    source published by the service that owns the workflow. A qualified call always goes to that document,
+    even when this one has a workflow with the same id. Its steps resolve in their own document: its
+    reusable actions, its page registry in the Pages view, and its step targets. The cycle check counts the
+    document as well as the workflow, so a call back into this document is marked `↻`. The group is labelled
+    with the readable form, `identity.signIn`, and so is the node when the document isn't loaded, in which
+    case it can't be expanded. Boxes inside it have no step section on this page, so they don't open one. The document may load after this one: the view keeps checking until every source, and every Arazzo source of the
+    documents those lead to, is loaded. A relative source URL resolves against the document's `` when it has one,
+    as Arazzo specifies, else against the URL it was loaded from. The step badge shows the called document's Arazzo
+    version, and the step counts under that source in Sources.
 - For each step: the operation, channel or workflow it targets, with that target's description and
-  its own parameters. A step that invokes a workflow of the same document has a "Show its steps"
-  button that lists that workflow's steps (each with what it calls) under the target, read-only and one
-  level deep; the target link goes to the workflow itself. An AsyncAPI step also shows the message it sends or receives: its payload as
+  its own parameters. A step that invokes a workflow has a "Show its steps" button that lists that
+  workflow's steps (each with what it calls) under the target, read-only and one level deep. This includes a
+  workflow of another loaded Arazzo document. The target link goes to the workflow itself, in its own
+  document when it is another one. An AsyncAPI step also shows the message it sends or receives: its payload as
   a property list (references followed into the AsyncAPI document), its content type, and its first
   example payload; a payload in another schema format, such as Avro, is shown as written. Then come
   the step's parameters, request body, success criteria,

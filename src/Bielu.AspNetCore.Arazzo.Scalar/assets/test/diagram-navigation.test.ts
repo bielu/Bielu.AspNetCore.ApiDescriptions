@@ -144,3 +144,43 @@ describe('opening a step of a closed workflow in the classic layout', () => {
     expect((globalThis.document.activeElement as HTMLElement).closest('section.ba-step')!.id).toBe(sectionId('checkout', 'pay'))
   })
 })
+
+describe('steps of another Arazzo document in the overview', () => {
+  it('are not links, even when this document has a step with the same id', async () => {
+    // Arrange: orders calls identity's signIn; orders' own signIn also has an `authorize` step.
+    const orders = {
+      arazzo: '1.1.0',
+      info: { title: 'Orders', version: '1.0.0' },
+      'x-scalar-original-source-url': 'https://shop.test/orders.arazzo.json',
+      sourceDescriptions: [{ name: 'identity', url: '/identity.arazzo.json', type: 'arazzo' }],
+      workflows: [
+        { workflowId: 'placeOrder', steps: [{ stepId: 'login', workflowId: '$sourceDescriptions.identity.signIn' }] },
+        { workflowId: 'signIn', steps: [{ stepId: 'authorize', operationId: 'legacy' }] },
+      ],
+    } as unknown as Document
+    const identity = {
+      arazzo: '1.1.0',
+      'x-scalar-original-source-url': 'https://shop.test/identity.arazzo.json',
+      workflows: [{ workflowId: 'signIn', steps: [{ stepId: 'authorize', operationId: 'authorize' }] }],
+    }
+    wrapper = mount(ArazzoDocument, {
+      attachTo: globalThis.document.body,
+      props: {
+        document: orders,
+        documentName: 'orders',
+        documents: { orders, identity },
+        navigation: traverseArazzoDocument({ documentId: 'orders', document: orders as unknown as Record<string, unknown> }),
+      },
+    })
+    await flushPromises()
+
+    // Act
+    await press(wrapper, '.ba-overview [data-node-id="login"] .ba-diagram-toggle')
+
+    // Assert
+    const nested = wrapper.find('.ba-overview [data-node-id="login/authorize"]')
+    expect(nested.exists()).toBe(true)
+    expect(nested.attributes('role')).toBeUndefined()
+    expect(wrapper.find('.ba-overview [data-node-id="login"]').attributes('role')).toBe('link')
+  })
+})
