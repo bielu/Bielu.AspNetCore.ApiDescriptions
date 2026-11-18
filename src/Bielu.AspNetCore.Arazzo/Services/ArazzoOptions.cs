@@ -221,11 +221,11 @@ public sealed class ArazzoOptions
     }
 
     /// <summary>Adds a source description pointing at an arbitrary URL. Prefer <see cref="AddAsyncApiSource"/>/<see cref="AddOpenApiSource"/> to self-wire against a document served by this same app.</summary>
-    public ArazzoOptions AddSourceDescription(string name, string url, string type)
+    public ArazzoOptions AddSourceDescription(string name, string url, ArazzoSourceDescriptionType type)
     {
         ArazzoIdentifier.Validate(name, nameof(name));
         ArgumentException.ThrowIfNullOrEmpty(url);
-        ArgumentException.ThrowIfNullOrEmpty(type);
+        ArgumentException.ThrowIfNullOrEmpty(type.Value, nameof(type));
         SourceDescriptions.Add(new ArazzoSourceDescription { Name = name, Url = url, Type = type });
         return this;
     }
@@ -362,5 +362,5 @@ public sealed class ArazzoOptions
     }
 
     /// <summary>Associates a self-wired source description with the document name it resolves against at runtime.</summary>
-    internal readonly record struct SourceWiring(string SourceName, string SourceType, string DocumentName);
+    internal readonly record struct SourceWiring(string SourceName, ArazzoSourceDescriptionType SourceType, string DocumentName);
 }

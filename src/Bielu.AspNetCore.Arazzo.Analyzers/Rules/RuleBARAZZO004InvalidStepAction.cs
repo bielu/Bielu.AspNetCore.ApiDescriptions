@@ -30,7 +30,8 @@ internal static class RuleBARAZZO004InvalidStepAction
             return;
         }
 
-        if (ArazzoSymbols.Argument(invocation, "action")?.Value is { ConstantValue: { HasValue: true, Value: string action } } value
+        if (ArazzoSymbols.Argument(invocation, "action")?.Value is { } value
+            && ArazzoSymbols.ConstantString(value) is { } action
             && action is not (ArazzoSymbols.SendAction or ArazzoSymbols.ReceiveAction))
         {
             context.ReportDiagnostic(Diagnostic.Create(Descriptor, value.Syntax.GetLocation(), action));

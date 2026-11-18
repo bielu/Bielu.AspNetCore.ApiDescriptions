@@ -8,7 +8,7 @@ public sealed class ArazzoSuccessAction : IArazzoSerializable, IArazzoExtensible
     public required string Name { get; set; }
 
     /// <summary>"end" or "goto".</summary>
-    public required string Type { get; set; }
+    public required ArazzoSuccessActionType Type { get; set; }
 
     /// <summary>Only when Type is "goto". Mutually exclusive with <see cref="StepId"/>.</summary>
     public string? WorkflowId { get; set; }
@@ -26,17 +26,11 @@ public sealed class ArazzoSuccessAction : IArazzoSerializable, IArazzoExtensible
         writer.WritePropertyName("name");
         writer.WriteValue(Name);
         writer.WritePropertyName("type");
-        writer.WriteValue(Type);
+        writer.WriteValue(Type.Value);
         writer.WriteOptionalProperty("workflowId", WorkflowId);
         writer.WriteOptionalProperty("stepId", StepId);
         writer.WriteOptionalArrayProperty("criteria", Criteria, c => c.SerializeAsV1(writer));
         writer.WriteExtensions(Extensions);
         writer.WriteEndObject();
     }
-}
-
-public static class ArazzoSuccessActionType
-{
-    public const string End = "end";
-    public const string Goto = "goto";
 }

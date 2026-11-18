@@ -171,7 +171,7 @@ public class ArazzoSelfWiringTests
 
     private sealed class AlwaysResolvesOpenApiResolver : ArazzoSourceResolver<Microsoft.OpenApi.OpenApiDocument>
     {
-        public override string SourceType => ArazzoSourceDescriptionType.OpenApi;
+        public override string SourceType => ArazzoSourceDescriptionType.OpenApi.Value;
 
         public override bool TryResolveOperation(Microsoft.OpenApi.OpenApiDocument document, string operationId, out JsonNode? operation)
         {

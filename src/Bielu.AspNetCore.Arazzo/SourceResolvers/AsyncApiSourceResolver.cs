@@ -13,7 +13,7 @@ namespace Bielu.AspNetCore.Arazzo.SourceResolvers;
 public sealed class AsyncApiSourceResolver : ArazzoSourceResolver<AsyncApiDocument>
 {
     /// <inheritdoc />
-    public override string SourceType => ArazzoSourceDescriptionType.AsyncApi;
+    public override string SourceType => ArazzoSourceDescriptionType.AsyncApi.Value;
 
     /// <inheritdoc />
     public override bool TryResolveOperation(AsyncApiDocument document, string operationId, out JsonNode? operation)
