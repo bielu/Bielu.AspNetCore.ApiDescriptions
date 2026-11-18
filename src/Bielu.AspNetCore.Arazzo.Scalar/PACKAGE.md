@@ -32,6 +32,9 @@ app.MapScalarApiReference(options =>
 > (`@scalar/api-reference` 1.80.0, [scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816)). Older
 > versions ignore the plugin and show an Arazzo source as an empty OpenAPI document.
 
+For the Scalar resource of a .NET Aspire AppHost, use
+[Bielu.AspNetCore.Arazzo.Scalar.Aspire](https://www.nuget.org/packages/Bielu.AspNetCore.Arazzo.Scalar.Aspire).
+
 ## Documentation
 
 - [Arazzo in Scalar](https://apidescriptions.bielu.pl/articles/arazzo/scalar.html)

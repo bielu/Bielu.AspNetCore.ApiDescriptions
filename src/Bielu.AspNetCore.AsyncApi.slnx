@@ -84,6 +84,7 @@
   <Project Path="Bielu.AspNetCore.ApiDescriptions/Bielu.AspNetCore.ApiDescriptions.csproj" />
   <Project Path="Bielu.AspNetCore.Arazzo.Overlay/Bielu.AspNetCore.Arazzo.Overlay.csproj" />
   <Project Path="Bielu.AspNetCore.Arazzo.Scalar/Bielu.AspNetCore.Arazzo.Scalar.csproj" />
+  <Project Path="Bielu.AspNetCore.Arazzo.Scalar.Aspire/Bielu.AspNetCore.Arazzo.Scalar.Aspire.csproj" />
   <Project Path="Bielu.AspNetCore.Arazzo/Bielu.AspNetCore.Arazzo.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Attributes/Bielu.AspNetCore.AsyncApi.Attributes.csproj" />
   <Project Path="Bielu.AspNetCore.AsyncApi.Avro/Bielu.AspNetCore.AsyncApi.Avro.csproj" />

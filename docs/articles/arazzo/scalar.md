@@ -147,6 +147,37 @@ The spec is also shown as a color (blue for OpenAPI, purple for AsyncAPI, gray f
 taken from Scalar's theme, but the badge text and the diagram's legend and tooltips always name it,
 so the color is never the only cue.
 
+## .NET Aspire
+
+`Bielu.AspNetCore.Arazzo.Scalar.Aspire` does the same for the Scalar resource of a .NET Aspire AppHost
+(`Scalar.Aspire`), where the API Reference runs in a container rather than in your app:
+
+```sh
+dotnet add package Bielu.AspNetCore.Arazzo.Scalar.Aspire
+```
+
+```csharp
+var api = builder.AddProject<Projects.Orders>("api");
+
+builder.AddScalarApiReference()
+    .WithArazzo()
+    .WithApiReference(api, options => options
+        .AddDocument("v1", "Orders")
+        .AddArazzoDocument("v1", "Workflows"));
+```
+
+`WithArazzo` registers the plugin through Scalar's `PluginUrls` option, which loads it as an ES module
+before the API Reference mounts, so the container keeps its own Scalar bundle. By default the module is
+`dist/scalar-plugin.mjs` from jsDelivr, pinned to the `@bielu/scalar-arazzo` version released with the
+package; pass `pluginUrl:` to load it from somewhere else. `AddArazzoDocument` adds the document the API
+serves with `MapArazzo()` (`/arazzo/{documentName}.json` by default) as a source of that API reference,
+next to its OpenAPI and AsyncAPI documents. The app itself doesn't need `Bielu.AspNetCore.Arazzo.Scalar`
+for this: the container renders the documents.
+
+> [!IMPORTANT]
+> The plugin needs `@scalar/api-reference` 1.80.0 or later in the Scalar container image. An older image
+> shows an Arazzo source as an empty OpenAPI document.
+
 ## Without ASP.NET Core
 
 The bundle is also published to npm as `@bielu/scalar-arazzo`:
