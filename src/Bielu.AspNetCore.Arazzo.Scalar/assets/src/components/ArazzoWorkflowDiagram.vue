@@ -369,7 +369,7 @@ const label = computed(() =>
           :key="band.id"
           class="ba-diagram-band"
           :class="{ 'ba-diagram-band-none': !band.pageId }">
-          <title v-if="band.pageId">Page {{ band.pageId }}</title>
+          <title v-if="band.pageId">Page {{ band.pageId }}: {{ [band.title, band.route].filter(Boolean).join(' · ') }}</title>
           <rect
             :height="band.height"
             rx="6"
@@ -379,7 +379,7 @@ const label = computed(() =>
           <text
             dominant-baseline="central"
             :x="band.x - band.width / 2 + 8"
-            :y="band.y - band.height / 2 + BAND_LABEL_HEIGHT / 2 + 2">{{ [band.title, band.route].filter(Boolean).join(' · ') }}</text>
+            :y="band.y - band.height / 2 + BAND_LABEL_HEIGHT / 2 + 2">{{ band.label }}</text>
         </g>
 
         <g
@@ -392,7 +392,7 @@ const label = computed(() =>
           <g
             v-if="edge.label && edge.labelPosition"
             class="ba-diagram-edge-label">
-            <title v-if="edge.action">{{ edge.action }}</title>
+            <title v-if="edge.action || edge.page">{{ [edge.action, edge.page && edge.label].filter(Boolean).join(': ') }}</title>
             <rect
               :height="18"
               rx="3"

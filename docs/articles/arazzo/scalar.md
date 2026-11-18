@@ -246,16 +246,25 @@ In the Pages view:
 - Steps are grouped into bands, one per page, titled with the page's title and route ("Payment ·
   /checkout/payment"). Consecutive steps on the same page share a band; steps without a page are in a muted
   "No page" band. A band never covers boxes that aren't its steps: when other boxes sit between them, each
-  step gets a band of its own. An expanded workflow's steps get their own bands inside its box.
+  step gets a band of its own. An expanded workflow's steps get their own bands inside its box. A band is
+  centered on its steps and as wide as its title, and the layout keeps that room free, so a long route over a
+  short step stays inside its workflow's box and clear of the branch beside it. A title and route longer
+  than 64 characters are cut with "…"; the band's tooltip has them in full.
 - Boxes show the step's label, or its `stepId` when it has none; the `stepId` is in the tooltip. A workflow
   node shows the label (or the summary) of the workflow it calls.
 - Arrows show the action's label, or its criteria (or "otherwise") when it has none. The arrow to Success
   after the last step reads "done".
-- An end node is named after the page the action lands on (from `PageExtension`, or `EndLabelExtension`),
-  with the action's label under it. Success shows the page a success `end` action lands on, with a ✓.
+- An end node is named after the page its actions land on (from `PageExtension`, or `EndLabelExtension`),
+  with their label under it, when every arrow into it lands on that page; Success then shows that page
+  with a ✓. When the arrows into one end node land on different pages (paid orders on Confirmation,
+  pending ones on Review, or two steps' `rejected` actions on pages of their own), or one of them has no
+  page (the "done" arrow after the last step), the end node keeps its generic name and each arrow ends with
+  its own page ("→ Confirmation").
 - Everything else is as in the Technical view: the same order, colors and arrows, and expanding and
   collapsing keeps the zoom and the node under the pointer. Switching views keeps the zoom too. The legend
   explains the bands and end pages.
+- Whether the toggle appears counts the actions every step runs, so a page on a workflow-level
+  `successActions`/`failureActions` entry is enough.
 - The step list shows each step's page and label above its heading.
 
 ## Which spec a step targets

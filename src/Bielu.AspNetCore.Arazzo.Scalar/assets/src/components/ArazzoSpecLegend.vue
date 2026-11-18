@@ -22,8 +22,12 @@ const returns = computed(() => props.layout.edges.some((edge) => edge.kind === '
 const pages = computed(() => props.view === 'pages')
 const pageBands = computed(() => pages.value && (props.layout.bands ?? []).some((band) => band.pageId))
 const noPageBands = computed(() => pages.value && (props.layout.bands ?? []).some((band) => !band.pageId))
-const successPage = computed(() => pages.value && props.layout.nodes.some((node) => node.kind === 'success' && node.page))
-const failurePages = computed(() => pages.value && props.layout.nodes.some((node) => node.kind === 'failure' && node.page))
+/** An end node names its page, or (when its arrows land on different pages) each arrow names its own. */
+const landsOnPage = (kind: 'success' | 'failure'): boolean =>
+  props.layout.nodes.some((node) => node.kind === kind && node.page) ||
+  props.layout.edges.some((edge) => edge.page && props.layout.nodes.some((node) => node.id === edge.to && node.kind === kind))
+const successPage = computed(() => pages.value && landsOnPage('success'))
+const failurePages = computed(() => pages.value && landsOnPage('failure'))
 
 const name = (family: SpecFamily): string => (family === 'arazzo' ? 'Workflow' : specLabel({ family, version: undefined }))
 </script>

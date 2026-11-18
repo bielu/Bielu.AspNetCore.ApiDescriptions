@@ -59,6 +59,12 @@ export type WorkflowGraphEdge = {
   kind: 'next' | 'success' | 'failure' | 'return' | 'expand'
   /** For an `onSuccess`/`onFailure` arrow: the action's name, which the label leaves out when it shows criteria. */
   action?: string
+  /**
+   * Pages view: the page an arrow into an end node lands on, when that end node is shared with arrows landing
+   * elsewhere (its label then ends with "→ <page title>"). When every arrow into an end node lands on the same
+   * page, the end node carries the page instead.
+   */
+  page?: string
 }
 
 /** An expanded workflow: a box drawn around the steps of the workflow a workflow node invokes. */
@@ -342,8 +348,8 @@ const addScope = (
     return node
   }
   let usesSuccess = false
-  /** Pages view: the page a success end action of this scope lands on, which names the Success node. */
-  let successPage: string | undefined
+  /** Pages view: every arrow into an end node, with the page and caption its action lands on. */
+  const landings: { edge: WorkflowGraphEdge; page?: string; caption?: string }[] = []
   /** End failure actions, with their arrow already in place (document order); it learns its end node below. */
   const failureEnds: { from: string; action: ArazzoFailureAction; edge: WorkflowGraphEdge }[] = []
 
@@ -352,8 +358,9 @@ const addScope = (
     for (const action of successActions.get(step.stepId)!) {
       if (action.type === 'end') {
         usesSuccess = true
-        successPage ??= inPages ? pageOf(action, config, true) : undefined
-        actionEdges.push(edgeFor(from, at(SUCCESS_NODE_ID), 'success', action))
+        const edge = edgeFor(from, at(SUCCESS_NODE_ID), 'success', action)
+        actionEdges.push(edge)
+        landings.push({ edge, page: pageOf(action, config, true) })
       } else if (action.stepId && stepIds.has(action.stepId)) {
         explicit.add(`${step.stepId}->${action.stepId}`)
         actionEdges.push(edgeFor(from, at(action.stepId), 'success', action))
@@ -366,6 +373,7 @@ const addScope = (
         const edge = edgeFor(from, '', 'failure', action)
         actionEdges.push(edge)
         failureEnds.push({ from, action, edge })
+        landings.push({ edge, page: pageOf(action, config, true), caption: plainLabel(action) })
       } else if (action.type === 'retry' && !action.workflowId && (!action.stepId || action.stepId === step.stepId)) {
         const node = stepNodes.get(step.stepId)!
         node.retries = [...(node.retries ?? []), selfRetry(action)]
@@ -395,12 +403,6 @@ const addScope = (
     let node = endNodes.get(id)
     if (!node) {
       node = inGroup({ id, label: separate ? end.label : 'Failed', kind: 'failure', ...(separate ? { actions: [] } : {}) })
-      if (inPages) {
-        // The page the end shows names it; the action's label says why.
-        const page = pageOf(action, config, true)
-        const subtitle = plainLabel(action)
-        node = { ...node, ...(page ? { label: pageTitle(registry, page), page } : {}), ...(subtitle ? { subtitle } : {}) }
-      }
       endNodes.set(id, node)
     }
     if (node.actions && action.name && !node.actions.includes(action.name)) {
@@ -443,24 +445,44 @@ const addScope = (
     }
     usesSuccess = true
     const criteria = describeCriteria(step.successCriteria)
-    const edge: WorkflowGraphEdge = { from: at(step.stepId), to: at(SUCCESS_NODE_ID), kind: 'success' }
-    implicitEdges.push(
-      inPages ? { ...edge, label: DONE_LABEL } : criteria && criteria.length <= MAX_EDGE_LABEL_LENGTH ? { ...edge, label: criteria } : edge,
-    )
+    const base: WorkflowGraphEdge = { from: at(step.stepId), to: at(SUCCESS_NODE_ID), kind: 'success' }
+    const edge = inPages ? { ...base, label: DONE_LABEL } : criteria && criteria.length <= MAX_EDGE_LABEL_LENGTH ? { ...base, label: criteria } : base
+    implicitEdges.push(edge)
+    landings.push({ edge })
   }
 
   graph.nodes.push(...[...invoked.values()])
-  if (usesSuccess) {
-    graph.nodes.push(
-      inGroup({
-        id: at(SUCCESS_NODE_ID),
-        label: successPage ? `${pageTitle(registry, successPage)} ✓` : 'Success',
-        kind: 'success',
-        ...pageField(successPage),
-      }),
-    )
+  const successNode: WorkflowGraphNode | undefined = usesSuccess ? inGroup({ id: at(SUCCESS_NODE_ID), label: 'Success', kind: 'success' }) : undefined
+  if (successNode) {
+    graph.nodes.push(successNode)
   }
   graph.nodes.push(...endNodes.values())
+
+  if (inPages) {
+    // An end node names the page it shows only when every arrow into it lands there; otherwise it stays
+    // generic and each arrow names its own page, so no outcome borrows another's destination.
+    for (const node of [...(successNode ? [successNode] : []), ...endNodes.values()]) {
+      const incoming = landings.filter(({ edge }) => edge.to === node.id)
+      const pages = new Set(incoming.map(({ page }) => page))
+      const [page] = pages
+      if (pages.size === 1 && page !== undefined) {
+        node.label = node.kind === 'success' ? `${pageTitle(registry, page)} ✓` : pageTitle(registry, page)
+        node.page = page
+        const captions = new Set(incoming.map(({ caption }) => caption))
+        const [caption] = captions
+        if (captions.size === 1 && caption) {
+          node.subtitle = caption
+        }
+        continue
+      }
+      for (const landing of incoming) {
+        if (landing.page !== undefined) {
+          landing.edge.label = [landing.edge.label, `→ ${pageTitle(registry, landing.page)}`].filter(Boolean).join(' ')
+          landing.edge.page = landing.page
+        }
+      }
+    }
+  }
   graph.edges.push(...nextEdges, ...actionEdges, ...implicitEdges)
 
   if (inPages) {
@@ -531,7 +553,14 @@ export type LaidOutEdge = WorkflowGraphEdge & { points: Point[]; labelPosition?:
 
 export type LaidOutGroup = WorkflowGraphGroup & { x: number; y: number; width: number; height: number }
 
-export type LaidOutBand = WorkflowGraphBand & { x: number; y: number; width: number; height: number }
+export type LaidOutBand = WorkflowGraphBand & {
+  x: number
+  y: number
+  width: number
+  height: number
+  /** The page title and route as drawn: cut with "…" past {@link MAX_BAND_LABEL_LENGTH}, in full in the tooltip. */
+  label: string
+}
 
 export type WorkflowLayout = {
   width: number
@@ -563,6 +592,19 @@ const GROUP_LABEL_CHAR_WIDTH = 6.7
 export const BAND_LABEL_HEIGHT = 18
 /** Matches a band title's font size in `ArazzoDocument.vue`. */
 const BAND_CHAR_WIDTH = 6
+/** Room around a band's steps, and on either side of its title. */
+const BAND_PADDING = 8
+/** A band's title and route are cut past this, so one long route cannot push the diagram far sideways. */
+export const MAX_BAND_LABEL_LENGTH = 64
+
+/** "Checkout · /checkout/payment": what a band's top line says, cut to {@link MAX_BAND_LABEL_LENGTH}. */
+const bandLabel = (band: WorkflowGraphBand): string => {
+  const full = [band.title, band.route].filter(Boolean).join(' · ')
+  return full.length > MAX_BAND_LABEL_LENGTH ? `${full.slice(0, MAX_BAND_LABEL_LENGTH - 1)}…` : full
+}
+
+/** How wide a band must be for its title to fit. */
+const bandLabelWidth = (band: WorkflowGraphBand): number => bandLabel(band).length * BAND_CHAR_WIDTH + 2 * BAND_PADDING
 /** A box with a second line (an end node's subtitle in the Pages view) is taller. */
 const SUBTITLE_NODE_HEIGHT = 48
 const nodeHeight = (node: WorkflowGraphNode): number => (node.subtitle ? SUBTITLE_NODE_HEIGHT : NODE_HEIGHT)
@@ -621,6 +663,11 @@ type ScopeLayout = {
   edges: Map<number, { points: Point[]; labelPosition?: Point; labelWidth: number }>
   /** Group id → its box, relative to the scope's top-left corner. */
   groups: Map<string, Box>
+  /**
+   * Node id → the room laid out for it, when wider than its box: a step's page band, title included, which
+   * neighbours and the enclosing group keep clear of.
+   */
+  room: Map<string, Box>
 }
 
 /** Which way an arrow leaves its box: failure paths left, then next steps and gotos, Success rightmost. */
@@ -681,6 +728,21 @@ const orderSlots = (
 const shift = (point: Point, dx: number, dy: number): Point => ({ x: point.x + dx, y: point.y + dy })
 
 /**
+ * Keeps an arrow's ends on the boxes it joins: a band's step is laid out wider than its box, so dagre can end a
+ * slanted arrow on the edge of that room, beside the box.
+ */
+const onBoxes = (points: Point[], from: Box | undefined, to: Box | undefined): Point[] => {
+  if (points.length < 2) {
+    return points
+  }
+  const clamp = (point: Point, box: Box | undefined): Point =>
+    box && Math.abs(point.y - box.y) >= box.height / 2 - 1
+      ? { ...point, x: Math.min(Math.max(point.x, box.x - box.width / 2 + 4), box.x + box.width / 2 - 4) }
+      : point
+  return points.map((point, index) => (index === 0 ? clamp(point, from) : index === points.length - 1 ? clamp(point, to) : point))
+}
+
+/**
  * Lays the graph out top-down with dagre, the layout engine Mermaid's flowcharts use.
  *
  * An expanded workflow is laid out on its own, its node on top and its steps below it, and that whole block
@@ -699,6 +761,21 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
     }
   }
   const scopeOfNode = (id: string): string => nodesById.get(id)?.group ?? ''
+
+  /**
+   * Pages view: the width a band's step takes in the layout, so the band around it, centered on the step and
+   * wide enough for its title, fits between its neighbours and inside its group. The steps of one band are
+   * mostly stacked, so each reserves the band's width.
+   */
+  const bandRoom = new Map<string, number>()
+  for (const band of graph.bands ?? []) {
+    for (const id of band.nodes) {
+      const node = nodesById.get(id)
+      if (node) {
+        bandRoom.set(id, Math.max(nodeWidth(node) + 2 * BAND_PADDING, bandLabelWidth(band)))
+      }
+    }
+  }
 
   /** Where a node takes part in the layout, innermost level first: [level, the box that stands for it there]. */
   const pathOf = (id: string): [string, string][] => {
@@ -761,7 +838,10 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
     }
     for (const node of members) {
       const block = blocks.get(node.id)
-      layout.setNode(node.id, block ? { width: block.width, height: block.height } : { width: nodeWidth(node), height: nodeHeight(node) })
+      layout.setNode(
+        node.id,
+        block ? { width: block.width, height: block.height } : { width: Math.max(nodeWidth(node), bandRoom.get(node.id) ?? 0), height: nodeHeight(node) },
+      )
     }
     for (const { index, from, to } of edgesByScope.get(scope) ?? []) {
       const edge = graph.edges[index]!
@@ -805,12 +885,17 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
       },
     } as never)
 
-    const result: ScopeLayout = { width: 0, height: 0, boxes: new Map(), edges: new Map(), groups: new Map() }
+    const result: ScopeLayout = { width: 0, height: 0, boxes: new Map(), edges: new Map(), groups: new Map(), room: new Map() }
     for (const id of layout.nodes()) {
       const placed = layout.node(id)
       const block = blocks.get(id)
       if (!block) {
-        result.boxes.set(id, { x: placed.x, y: placed.y, width: placed.width, height: placed.height })
+        // A band's step was laid out as wide as its band: draw the box at its own width, and keep the room.
+        const width = bandRoom.has(id) ? nodeWidth(nodesById.get(id)!) : placed.width
+        result.boxes.set(id, { x: placed.x, y: placed.y, width, height: placed.height })
+        if (width !== placed.width) {
+          result.room.set(id, { x: placed.x, y: placed.y, width: placed.width, height: placed.height })
+        }
         continue
       }
       // Place the block's contents where dagre put the block.
@@ -821,6 +906,9 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
       }
       for (const [inner, box] of block.groups) {
         result.groups.set(inner, { ...box, ...shift(box, dx, dy) })
+      }
+      for (const [inner, box] of block.room) {
+        result.room.set(inner, { ...box, ...shift(box, dx, dy) })
       }
       for (const [index, route] of block.edges) {
         result.edges.set(index, {
@@ -836,7 +924,7 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
         | { points?: Point[]; x?: number; y?: number; width?: number }
         | undefined
       result.edges.set(index, {
-        points: placed?.points ?? [],
+        points: onBoxes(placed?.points ?? [], result.boxes.get(from), result.boxes.get(to)),
         labelPosition: edge.label && typeof placed?.x === 'number' && typeof placed?.y === 'number' ? { x: placed.x, y: placed.y } : undefined,
         labelWidth: placed?.width ?? 0,
       })
@@ -848,7 +936,8 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
     if (owner) {
       // The group box: around the steps, below the workflow's node, with room for its label on top.
       const head = result.boxes.get(owner)!
-      const inner = [...result.boxes.entries()].filter(([id]) => id !== owner).map(([, box]) => box)
+      // Around each step's room (its page band) rather than its box, so a band never sticks out of the group.
+      const inner = [...result.boxes.entries()].filter(([id]) => id !== owner).map(([id, box]) => result.room.get(id) ?? box)
       const left = Math.min(...inner.map((box) => box.x - box.width / 2)) - GROUP_PADDING
       // Wide enough for the group's label (cut like an arrow's label; the full id is in its tooltip).
       const label = groups.find((candidate) => candidate.id === scope)?.label ?? ''
@@ -909,14 +998,18 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
       if (!members.length) {
         return []
       }
-      const title = [band.title, band.route].filter(Boolean).join(' · ')
-      /** A band around some boxes, with its page title on top and room for that title. */
+      const label = bandLabel(band)
+      /**
+       * A band around some boxes, with its page title on top: widened evenly on both sides when the title is
+       * wider than the boxes, into the room the layout kept for it.
+       */
       const around = (boxes: Box[]): Box => {
-        const left = Math.min(...boxes.map((box) => box.x - box.width / 2)) - 8
-        const right = Math.max(left + title.length * BAND_CHAR_WIDTH + 16, Math.max(...boxes.map((box) => box.x + box.width / 2)) + 8)
+        const left = Math.min(...boxes.map((box) => box.x - box.width / 2)) - BAND_PADDING
+        const right = Math.max(...boxes.map((box) => box.x + box.width / 2)) + BAND_PADDING
+        const width = Math.max(right - left, bandLabelWidth(band))
         const topEdge = Math.min(...boxes.map((box) => box.y - box.height / 2)) - BAND_LABEL_HEIGHT - 4
         const bottom = Math.max(...boxes.map((box) => box.y + box.height / 2)) + 6
-        return { x: (left + right) / 2, y: (topEdge + bottom) / 2, width: right - left, height: bottom - topEdge }
+        return { x: (left + right) / 2, y: (topEdge + bottom) / 2, width, height: bottom - topEdge }
       }
       const covers = (box: Box): boolean =>
         [...top.boxes.entries()].some(
@@ -928,11 +1021,11 @@ export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
         )
       const whole = around(members.map((member) => member.box))
       if (!covers(whole)) {
-        return [{ ...band, ...whole }]
+        return [{ ...band, ...whole, label }]
       }
       // The steps are apart, with other boxes between them: one band per step rather than one that would
       // seem to put those boxes on the page too.
-      return members.map((member, index) => ({ ...band, id: `${band.id}/${index}`, nodes: [member.id], ...around([member.box]) }))
+      return members.map((member, index) => ({ ...band, id: `${band.id}/${index}`, nodes: [member.id], ...around([member.box]), label }))
     }),
     edges: graph.edges.map((edge, index) => {
       const route = top.edges.get(index)
