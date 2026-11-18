@@ -1,6 +1,6 @@
 import dagre from '@dagrejs/dagre'
 import type { ArazzoCriterion, ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoSuccessAction, ArazzoWorkflow } from '../types'
-import { resolveReusables } from './reusable'
+import { effectiveFailureActions, effectiveSuccessActions, isUnconditional } from './actions'
 import type { SpecFamily } from './target-spec'
 
 /**
@@ -27,6 +27,17 @@ export type WorkflowGraphNode = {
   stepId?: string
   /** For an end node: the actions that lead to it, for its tooltip. */
   actions?: string[]
+  /** For a step: the `retry` failure actions that run the step itself again (no `stepId` or `workflowId`). */
+  retries?: WorkflowGraphRetry[]
+}
+
+/** A `retry` of the step itself, drawn as a badge on the step's box rather than as an arrow. */
+export type WorkflowGraphRetry = {
+  /** The action's criteria, or "otherwise", with its limit and delay: the same text a retry arrow carries. */
+  label: string
+  action?: string
+  retryLimit?: number
+  retryAfter?: number
 }
 
 /** An arrow between two nodes. `kind` says why it is drawn, so success and failure paths can be told apart. */
@@ -35,8 +46,8 @@ export type WorkflowGraphEdge = {
   to: string
   label?: string
   /**
-   * `next`/`success`/`failure` as before; `return` goes back from a workflow a `retry` action invoked to
-   * the step that retries; `expand` goes from an expanded workflow node into its first steps.
+   * `next`/`success`/`failure` as before; `return` goes back from the step or workflow a `retry` action
+   * runs to the step that retries; `expand` goes from an expanded workflow node into its first steps.
    */
   kind: 'next' | 'success' | 'failure' | 'return' | 'expand'
   /** For an `onSuccess`/`onFailure` arrow: the action's name, which the label leaves out when it shows criteria. */
@@ -106,14 +117,26 @@ const actionEdge = (
   return action.name ? { ...edge, action: action.name } : edge
 }
 
+/** "retry, ≤ 3×, after 2s": a retry's limit and delay, worded as the step details word them. */
 const retryExtra = (action: ArazzoFailureAction): string | undefined => {
   if (action.type !== 'retry') {
     return undefined
   }
-  return typeof action.retryLimit === 'number' ? `retry, ≤ ${action.retryLimit}×` : 'retry'
+  return [
+    'retry',
+    typeof action.retryLimit === 'number' ? `≤ ${action.retryLimit}×` : '',
+    typeof action.retryAfter === 'number' ? `after ${action.retryAfter}s` : '',
+  ]
+    .filter(Boolean)
+    .join(', ')
 }
 
-const hasActions = (step: ArazzoStep): boolean => Boolean(step.onSuccess?.length || step.onFailure?.length)
+const selfRetry = (action: ArazzoFailureAction): WorkflowGraphRetry => ({
+  label: actionLabel(action, retryExtra(action)),
+  ...(action.name ? { action: action.name } : {}),
+  ...(typeof action.retryLimit === 'number' ? { retryLimit: action.retryLimit } : {}),
+  ...(typeof action.retryAfter === 'number' ? { retryAfter: action.retryAfter } : {}),
+})
 
 /** A workflow of this document, by a plain id; `$sourceDescriptions.<name>.<id>` names one in another document. */
 export const localWorkflow = (document: ArazzoDocument, workflowId: string | undefined): ArazzoWorkflow | undefined =>
@@ -140,17 +163,20 @@ type Scope = {
 /**
  * Builds the overview of a workflow's steps, the same graph the in-core Scalar POC drew with Mermaid.
  *
+ * A step's actions are the ones Arazzo runs: its `onSuccess`/`onFailure` plus the workflow's
+ * `successActions`/`failureActions` it doesn't override by name, Reusable Objects resolved.
+ *
  * Two kinds of arrows, never drawn twice for the same pair of steps:
- * - `onSuccess`/`onFailure` actions give labeled arrows to their `goto`/`retry` step or workflow, or to an
- *   end node for `end`. They are the only conditional arrows: `dependsOn` records prerequisites, not which
- *   branch is taken.
+ * - Actions give labeled arrows to their `goto`/`retry` step or workflow, or to an end node for `end`.
+ *   They are the only conditional arrows: `dependsOn` records prerequisites, not which branch is taken.
  * - Everything else follows `dependsOn`, labeled with the source step's `successCriteria` when that
  *   step branches, so every arrow out of a branch point reads the same way. When no step declares
- *   `dependsOn`, the steps are chained in document order, the order Arazzo runs them in by default.
+ *   `dependsOn`, the steps are chained in document order, the order Arazzo runs them in by default,
+ *   except after a step whose success action always applies (no criteria): that action decides instead.
  *
  * Workflows are nodes of their own: a step that invokes one, and one node per workflow that `goto`/`retry`
- * actions invoke (shared by every step that does). A `retry` through a workflow also gets an arrow back to
- * the step, since the step runs again once the workflow is done. A workflow node of this document can be
+ * actions invoke (shared by every step that does). A `retry` through another step or a workflow also gets
+ * an arrow back to the step, since the step runs again once that is done. A workflow node of this document can be
  * expanded (`options.expanded`): its steps are then drawn in a group, recursively, except a workflow that is
  * already on the expansion path, which stays collapsed and is marked as a cycle.
  *
@@ -158,8 +184,8 @@ type Scope = {
  * cannot be told apart (one name, no end-label extension); otherwise each gets its own end node, named after
  * the action or the value of `options.endLabelExtension`.
  *
- * A retry with neither `stepId` nor `workflowId` retries the step itself; a self-loop on the box adds
- * nothing its label would not say, so none is drawn.
+ * A retry with neither `stepId` nor `workflowId` retries the step itself: rather than a self-loop, the step
+ * carries it in `retries`, drawn as a badge with its limit and delay.
  */
 export const buildWorkflowGraph = (
   document: ArazzoDocument,
@@ -209,15 +235,22 @@ const addScope = (
     return node
   }
 
+  const stepNodes = new Map<string, WorkflowGraphNode>()
   for (const step of steps) {
     const spec = specOf?.(step)
-    if (step.workflowId) {
-      graph.nodes.push(workflowNode(at(step.stepId), step.stepId, step.workflowId, { stepId: step.stepId, ...(spec ? { spec } : {}) }))
-      continue
-    }
-    const node: WorkflowGraphNode = inGroup({ id: at(step.stepId), label: step.stepId, kind: 'step', stepId: step.stepId })
-    graph.nodes.push(spec ? { ...node, spec } : node)
+    const node: WorkflowGraphNode = step.workflowId
+      ? workflowNode(at(step.stepId), step.stepId, step.workflowId, { stepId: step.stepId, ...(spec ? { spec } : {}) })
+      : inGroup({ id: at(step.stepId), label: step.stepId, kind: 'step', stepId: step.stepId, ...(spec ? { spec } : {}) })
+    stepNodes.set(step.stepId, node)
+    graph.nodes.push(node)
   }
+
+  const successActions = new Map(steps.map((step) => [step.stepId, effectiveSuccessActions(document, workflow, step)]))
+  const failureActions = new Map(steps.map((step) => [step.stepId, effectiveFailureActions(document, workflow, step)]))
+  /** Steps whose success always leads where one of their actions says, never on to the next step. */
+  const decidesOnSuccess = (step: ArazzoStep): boolean => successActions.get(step.stepId)!.some(isUnconditional)
+  const hasActions = (step: ArazzoStep): boolean =>
+    Boolean(successActions.get(step.stepId)!.length || failureActions.get(step.stepId)!.length)
 
   const stepIds = new Set(steps.map((step) => step.stepId))
   const explicit = new Set<string>()
@@ -237,7 +270,7 @@ const addScope = (
 
   for (const step of steps) {
     const from = at(step.stepId)
-    for (const action of resolveReusables<ArazzoSuccessAction>(document, step.onSuccess)) {
+    for (const action of successActions.get(step.stepId)!) {
       if (action.type === 'end') {
         usesSuccess = true
         actionEdges.push(actionEdge(from, at(SUCCESS_NODE_ID), 'success', action))
@@ -248,14 +281,20 @@ const addScope = (
         actionEdges.push(actionEdge(from, invokedNode(action.workflowId).id, 'success', action))
       }
     }
-    for (const action of resolveReusables<ArazzoFailureAction>(document, step.onFailure)) {
+    for (const action of failureActions.get(step.stepId)!) {
       if (action.type === 'end') {
         const edge = actionEdge(from, '', 'failure', action)
         actionEdges.push(edge)
         failureEnds.push({ from, action, edge })
+      } else if (action.type === 'retry' && !action.workflowId && (!action.stepId || action.stepId === step.stepId)) {
+        const node = stepNodes.get(step.stepId)!
+        node.retries = [...(node.retries ?? []), selfRetry(action)]
       } else if (action.stepId && stepIds.has(action.stepId)) {
         explicit.add(`${step.stepId}->${action.stepId}`)
         actionEdges.push(actionEdge(from, at(action.stepId), 'failure', action, retryExtra(action)))
+        if (action.type === 'retry') {
+          actionEdges.push({ from: at(action.stepId), to: from, kind: 'return' })
+        }
       } else if (action.workflowId) {
         const target = invokedNode(action.workflowId).id
         actionEdges.push(actionEdge(from, target, 'failure', action, retryExtra(action)))
@@ -299,17 +338,19 @@ const addScope = (
     }
   } else {
     for (let index = 1; index < steps.length; index++) {
-      nextEdges.push({ from: at(steps[index - 1]!.stepId), to: at(steps[index]!.stepId), kind: 'next' })
+      if (!decidesOnSuccess(steps[index - 1]!)) {
+        nextEdges.push({ from: at(steps[index - 1]!.stepId), to: at(steps[index]!.stepId), kind: 'next' })
+      }
     }
   }
 
-  // Arazzo ends a workflow successfully after its last step: draw that for every step that doesn't decide
-  // where it goes on success itself and that nothing runs after (the last step, or one no step depends on).
+  // Arazzo ends a workflow successfully after its last step: draw that for every step that nothing runs after
+  // (the last step, or one no step depends on), unless one of its success actions always applies instead.
   const dependedOn = new Set(steps.flatMap((step) => step.dependsOn ?? []))
   const lastSteps = usesDependsOn ? steps.filter((step) => !dependedOn.has(step.stepId)) : steps.slice(-1)
   const implicitEdges: WorkflowGraphEdge[] = []
   for (const step of lastSteps) {
-    if (resolveReusables<ArazzoSuccessAction>(document, step.onSuccess).length) {
+    if (decidesOnSuccess(step)) {
       continue
     }
     usesSuccess = true
@@ -393,13 +434,38 @@ export const MAX_EDGE_LABEL_LENGTH = 48
 export const truncateLabel = (label: string): string =>
   label.length > MAX_EDGE_LABEL_LENGTH ? `${label.slice(0, MAX_EDGE_LABEL_LENGTH - 1)}…` : label
 
+/**
+ * The badge a step that retries itself carries: "↻ ≤ 3× 2s" for one retry, "↻ 2 retries" for several (the
+ * tooltip lists them). `undefined` for a step without one.
+ */
+export const retryBadge = (node: WorkflowGraphNode): string | undefined => {
+  const retries = node.retries ?? []
+  if (retries.length > 1) {
+    return `↻ ${retries.length} retries`
+  }
+  const [retry] = retries
+  if (!retry) {
+    return undefined
+  }
+  return ['↻', typeof retry.retryLimit === 'number' ? `≤ ${retry.retryLimit}×` : '', typeof retry.retryAfter === 'number' ? `${retry.retryAfter}s` : '']
+    .filter(Boolean)
+    .join(' ')
+}
+
+/** The width of a step's retry badge, drawn inside the right end of its box; 0 without one. */
+export const retryBadgeWidth = (node: WorkflowGraphNode): number => {
+  const badge = retryBadge(node)
+  return badge ? badge.length * LABEL_CHAR_WIDTH + 14 : 0
+}
+
 const nodeWidth = (node: WorkflowGraphNode): number =>
   node.kind === 'step'
-    ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) + (node.spec ? SPEC_MARKER_WIDTH : 0)
+    ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) + (node.spec ? SPEC_MARKER_WIDTH : 0) + retryBadgeWidth(node)
     : node.kind === 'workflow'
       ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) +
         (node.spec ? SPEC_MARKER_WIDTH : 0) +
-        (node.expandable || node.cycle ? WORKFLOW_TOGGLE_WIDTH : 0)
+        (node.expandable || node.cycle ? WORKFLOW_TOGGLE_WIDTH : 0) +
+        retryBadgeWidth(node)
       : Math.max(84, node.label.length * NODE_CHAR_WIDTH + 28)
 
 /** Room around an expanded workflow's steps inside its group box. */

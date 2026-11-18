@@ -79,10 +79,11 @@ describe('buildWorkflowGraph', () => {
       { from: 'create', to: 'confirm', kind: 'next', label: '$statusCode == 201' },
       { from: 'create', to: SUCCESS_NODE_ID, kind: 'success', label: '$response.body#/done == true', action: 'done' },
       // Actions without criteria are the catch-all: "otherwise", with the action's name kept for the tooltip.
-      { from: 'create', to: 'create', kind: 'failure', label: 'otherwise — retry, ≤ 3×', action: 'again' },
       { from: 'create', to: FAILURE_NODE_ID, kind: 'failure', label: 'otherwise', action: 'giveUp' },
       { from: 'confirm', to: SUCCESS_NODE_ID, kind: 'success' },
     ])
+    // A retry of the step itself is a badge on its box, not a loop back into it.
+    expect(graph.nodes[0]!.retries).toEqual([{ label: 'otherwise — retry, ≤ 3×', action: 'again', retryLimit: 3 }])
   })
 
   it('does not repeat a dependsOn arrow an action already draws', () => {

@@ -1036,6 +1036,15 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-diagram-link {
   cursor: pointer;
 }
+/* A step that retries itself: a pill inside the right end of its box, in orange, as a retry is not yet a failure. */
+.bielu-arazzo .ba-diagram-node .ba-diagram-retry rect {
+  fill: color-mix(in srgb, var(--scalar-color-orange, #c2700c) 12%, var(--scalar-background-1));
+  stroke: color-mix(in srgb, var(--scalar-color-orange, #c2700c) 45%, transparent);
+}
+.bielu-arazzo .ba-diagram-node .ba-diagram-retry text {
+  fill: var(--scalar-color-2);
+  font-size: 10.5px;
+}
 .bielu-arazzo .ba-diagram-link:hover rect {
   stroke: var(--scalar-color-accent);
 }

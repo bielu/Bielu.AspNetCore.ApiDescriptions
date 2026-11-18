@@ -7,6 +7,8 @@ import {
   type LaidOutEdge,
   type LaidOutNode,
   GROUP_LABEL_HEIGHT,
+  retryBadge,
+  retryBadgeWidth,
   SPEC_MARKER_WIDTH,
   WORKFLOW_TOGGLE_WIDTH,
   type WorkflowLayout,
@@ -210,7 +212,14 @@ const opensByToggling = (node: LaidOutNode): boolean => node.kind === 'workflow'
 
 const onNodeClick = (node: LaidOutNode) => (opensByToggling(node) ? toggleWorkflow(node) : openStep(node))
 
+/** A step's own title, then the retries of the step itself, one per line. */
 const nodeTitle = (node: LaidOutNode): string | undefined => {
+  const title = baseTitle(node)
+  const retries = (node.retries ?? []).map((retry) => `Retries itself: ${retry.label}${retry.action ? ` (${retry.action})` : ''}`)
+  return retries.length ? [title, ...retries].filter(Boolean).join('\n') : title
+}
+
+const baseTitle = (node: LaidOutNode): string | undefined => {
   if (node.kind === 'workflow') {
     const what = node.stepId ? `Step ${node.label} invokes workflow ${node.workflowId}` : `Workflow ${node.workflowId}`
     if (node.cycle) {
@@ -260,9 +269,18 @@ const edgePath = (edge: LaidOutEdge): string => {
 const specName = (family: NonNullable<LaidOutNode['spec']>): string =>
   family === 'arazzo' ? 'Workflow' : specLabel({ family, version: undefined })
 
-/** The label sits between the spec marker on the left and the toggle on the right. */
+/** The toggle's width on the right of a workflow node; 0 for any other box. */
+const toggleWidth = (node: LaidOutNode): number => (node.kind === 'workflow' && (node.expandable || node.cycle) ? WORKFLOW_TOGGLE_WIDTH : 0)
+
+/** The label sits between the spec marker on the left and the retry badge and toggle on the right. */
 const labelX = (node: LaidOutNode): number =>
-  node.x + (node.spec ? SPEC_MARKER_WIDTH / 2 : 0) - (node.kind === 'workflow' && (node.expandable || node.cycle) ? WORKFLOW_TOGGLE_WIDTH / 2 : 0)
+  node.x + (node.spec ? SPEC_MARKER_WIDTH / 2 : 0) - (toggleWidth(node) + retryBadgeWidth(node)) / 2
+
+/** The retry badge's box: right of the label, left of the toggle, vertically centered. */
+const retryBadgeBox = (node: LaidOutNode) => {
+  const width = retryBadgeWidth(node) - 6
+  return { x: node.x + node.width / 2 - toggleWidth(node) - width - 4, y: node.y - 9, width, height: 18 }
+}
 
 const viewBox = computed(() => `0 0 ${Math.max(props.layout.width, 1)} ${Math.max(props.layout.height, 1)}`)
 
@@ -409,6 +427,23 @@ const label = computed(() =>
             :y="node.y">
             {{ node.label }}
           </text>
+          <g
+            v-if="retryBadge(node)"
+            class="ba-diagram-retry">
+            <rect
+              :height="retryBadgeBox(node).height"
+              rx="9"
+              :width="retryBadgeBox(node).width"
+              :x="retryBadgeBox(node).x"
+              :y="retryBadgeBox(node).y" />
+            <text
+              dominant-baseline="central"
+              text-anchor="middle"
+              :x="retryBadgeBox(node).x + retryBadgeBox(node).width / 2"
+              :y="node.y">
+              {{ retryBadge(node) }}
+            </text>
+          </g>
           <g
             v-if="node.kind === 'workflow' && (node.expandable || node.cycle)"
             :aria-expanded="node.expandable ? node.expanded : undefined"

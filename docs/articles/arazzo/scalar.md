@@ -106,17 +106,25 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
   light and dark themes. From the keyboard, the focused overview pans with the arrow keys, zooms with
   `+`/`-` and resets with `0`; Tab reaches each step box, and Enter opens the step. Each step box has a
   colored marker for the spec its target is described in, explained by a legend in the corner.
+  - **Actions.** A step's branches are the actions Arazzo runs for it: its own `onSuccess`/`onFailure`
+    plus the workflow's `successActions`/`failureActions`, which apply to every step. A step that declares
+    an action with the same name overrides the workflow's for that step only. A success action without
+    criteria always applies, so no arrow continues to the next step in document order after it.
   - **Order.** The boxes under a step are always in the same order: its failure paths on the left, in the
     order of its `onFailure` actions (so a `retry` through a workflow and the end nodes appear as written),
     then the steps it continues to (`dependsOn`, document order, or a `goto`), and Success on the right. The
     same rule holds inside an expanded workflow, and expanding or collapsing one never reorders the boxes
     beside it.
   - **Ends.** `end` success actions lead to one Success node, and so does the last step (or a step no
-    other step depends on) when it has no `onSuccess` of its own, since Arazzo ends a workflow
+    other step depends on) unless one of its success actions always applies (has no criteria), since Arazzo ends a workflow
     successfully after its last step; that arrow is labeled with the step's success criteria when they
     are short. `end` failure actions lead to one Failed node while they can't be told apart; when they
     have different names, each gets its own end node named after the action, or after the value of the
     extension set with [`EndLabelExtension`](#options).
+  - **Retries.** A `retry` through another step gets an arrow to that step and one back, since the
+    retrying step runs again afterwards. A `retry` of the step itself (no `stepId` or `workflowId`) is a
+    `↻` badge on the step's box with its limit and delay (`↻ ≤ 3× 2s`); hovering the box lists its
+    criteria.
   - **Workflows.** A workflow that a step invokes (`workflowId`), or that a `goto`/`retry` action invokes,
     is a node of its own, drawn with a thick outline and listed in the legend. Actions invoking the same
     workflow share one node. A `retry` through a workflow gets an arrow to the workflow node, labeled with
