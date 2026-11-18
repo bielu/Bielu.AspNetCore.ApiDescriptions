@@ -14,6 +14,30 @@ the page surface, with consistent disclosures for nested properties, examples an
 Requires `@scalar/api-reference` 1.80.0 or later, the first version with plugin `documentTypes`
 ([scalar/scalar#10816](https://github.com/scalar/scalar/pull/10816)).
 
+## Quick start
+
+```sh
+npm install @scalar/api-reference @bielu/scalar-arazzo
+```
+
+```js
+import { createApiReference } from '@scalar/api-reference'
+import '@scalar/api-reference/style.css'
+import { createArazzoPlugin } from '@bielu/scalar-arazzo'
+
+createApiReference('#app', {
+  sources: [
+    { title: 'Workflows', url: '/arazzo.json' }, // an Arazzo document
+    { title: 'Pets', url: '/openapi.json' }, // the OpenAPI document its steps call
+  ],
+  plugins: [createArazzoPlugin()],
+})
+```
+
+The [Arazzo for Scalar guide](https://apidescriptions.bielu.pl/articles/npm/scalar-arazzo.html) has the full walkthrough, with sample documents and what
+to expect. It also covers the `<script>` and `pluginUrls` entry points, the options (including the
+Technical | Pages views) and troubleshooting.
+
 ## What it shows
 
 - Every field of Arazzo 1.0 and 1.1: workflows, steps, inputs, parameters, request bodies with
@@ -36,54 +60,6 @@ Requires `@scalar/api-reference` 1.80.0 or later, the first version with plugin 
 The plugin follows semantic versioning from 1.0.0. Its public surface is `createArazzoPlugin`,
 `arazzoDocumentType`, the `<script>` and `pluginUrls` entry points, and the exported types. The
 rendered markup and its CSS classes are not part of it.
-
-## Usage
-
-As a plugin:
-
-```ts
-import { createArazzoPlugin } from '@bielu/scalar-arazzo'
-
-Scalar.createApiReference('#app', {
-  sources: [
-    { title: 'Pets', url: '/openapi/v1.json' },
-    { title: 'Workflows', url: '/arazzo/v1.json' },
-  ],
-  plugins: [createArazzoPlugin()],
-})
-```
-
-Options (all optional):
-
-```ts
-createArazzoPlugin({
-  // Name the end node of an `end` failure action after the value of this extension, not the action's name.
-  endLabelExtension: 'x-page',
-  // The Pages view (a "Technical | Pages" toggle on the overview, offered when the document uses these):
-  pagesExtension: 'x-shop-pages', // document: page id -> { title, route, description }
-  pageExtension: 'x-page', // steps: the page the user is on; actions: the page they land on
-  labelExtension: 'x-label', // workflows, steps and actions: a plain-language label
-})
-```
-
-The package root is an ES module: importing it registers the Arazzo document element, and the
-plugin is added where you pass it, as above.
-
-As a `<script>` tag (`dist/plugin.js`, the package's default file on unpkg and jsDelivr), which hooks
-`window.Scalar.createApiReference` and adds the plugin to every API Reference on the page; or through
-Scalar's `pluginUrls` with `dist/scalar-plugin.mjs`, whose default export is the plugin.
-
-The options can reach the plugin three ways. The first one that is set wins, and the others are then
-ignored:
-
-1. `createArazzoPlugin(options)`.
-2. The `window.__BIELU_SCALAR_ARAZZO__` page global, which the `<script>` entry reads.
-3. The query string of the `scalar-plugin.mjs` URL (`scalar-plugin.mjs?endLabelExtension=x-page&pagesExtension=x-shop-pages&…`), the
-   only input the `pluginUrls` entry has.
-
-So if the page global sets `endLabelExtension: 'x-page'` and the module URL sets
-`?endLabelExtension=x-screen`, the plugin uses `x-page`. Each value must be a specification extension
-(`x-` followed by a name); anything else is ignored, so a bad value falls through to the next source.
 
 ASP.NET Core apps use the
 [Bielu.AspNetCore.Arazzo.Scalar](https://www.nuget.org/packages/Bielu.AspNetCore.Arazzo.Scalar)

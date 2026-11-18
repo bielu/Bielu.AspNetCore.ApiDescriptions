@@ -349,7 +349,8 @@ anything else, such as `x-` alone or `page`; the JavaScript entry points ignore 
 
 ## Without ASP.NET Core
 
-The bundle is also published to npm as `@bielu/scalar-arazzo`:
+The bundle is also published to npm as `@bielu/scalar-arazzo`. [Arazzo for Scalar](../npm/scalar-arazzo.md)
+walks through it from a JavaScript app, with its options and other entry points:
 
 ```ts
 import { createArazzoPlugin } from '@bielu/scalar-arazzo'
