@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
+        <IsAspireHost>false</IsAspireHost>
+        <RootNamespace>Bielu.AspNetCore.Arazzo.Scalar.Aspire</RootNamespace>
+        <Description>Aspire hosting helper that renders Arazzo workflows in a Scalar.Aspire API Reference resource by pointing it at the @bielu/scalar-arazzo bundle.</Description>
+        <PackageTags>scalar;arazzo;workflows;aspire;api-reference</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Scalar.Aspire" />
+        <PackageReference Include="MessagePack" />
+    </ItemGroup>
+
+    <!-- Generates the ScalarPluginBundleVersion constant from the npm package's version, so
+         DefaultPluginUrl pins the @bielu/scalar-arazzo version released from this commit. -->
+    <PropertyGroup>
+        <ScalarPluginPackageJsonPath>$(MSBuildProjectDirectory)/../Bielu.AspNetCore.Arazzo.Scalar/assets/package.json</ScalarPluginPackageJsonPath>
+    </PropertyGroup>
+    <Import Project="..\Bielu.AspNetCore.AsyncApi.Scalar\build\ScalarPluginBundleVersion.targets" />
+
+</Project>

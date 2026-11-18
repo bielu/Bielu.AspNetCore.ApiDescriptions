@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Bielu.AspNetCore.Arazzo.Scalar.Aspire\Bielu.AspNetCore.Arazzo.Scalar.Aspire.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Scalar.Broker\Bielu.AspNetCore.AsyncApi.Scalar.Broker.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka\Bielu.AspNetCore.AsyncApi.Scalar.Broker.Kafka.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire\Bielu.AspNetCore.AsyncApi.Scalar.Grpc.Aspire.csproj" IsAspireProjectResource="false" />
