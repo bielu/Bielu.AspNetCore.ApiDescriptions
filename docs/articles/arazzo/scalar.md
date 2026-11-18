@@ -96,7 +96,9 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
 - The document's `info`, its `$self` URL (Arazzo 1.1) and its `sourceDescriptions`. Each source shows its spec and version, whether
   it is loaded in the page, and how many steps use it, and the header counts the steps per spec.
 - A filter box under the header that narrows the workflows and steps by id, summary, description,
-  target or action (every word must match), keeping each step's number. Scalar's own search (Ctrl+K)
+  target or action (every word must match), keeping each step's number. With the [Pages view](#pages-view)
+  configured, it also finds the labels, page titles and routes it shows: a step's own, and those of the
+  actions it runs. Scalar's own search (Ctrl+K)
   does not index plugin documents yet.
 - One sidebar entry per workflow, with one child entry per step. Sidebar clicks, deep links and
   scroll position stay in sync, as they do for operations.
@@ -108,7 +110,9 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
   branch's label shows the action's name. Drag to pan,
   scroll to zoom, click a step to jump to it, or expand it to fill the window. It follows Scalar's
   light and dark themes. From the keyboard, the focused overview pans with the arrow keys, zooms with
-  `+`/`-` and resets with `0`; Tab reaches each step box, and Enter opens the step. Each step box has a
+  `+`/`-` and resets with `0`; Tab reaches each step box, and Enter opens the step: its section unfolds,
+  scrolls into view and takes keyboard focus. A step inside an expanded workflow opens in that workflow's
+  own section, and a step the filter hides is shown until the filter changes. Each step box has a
   colored marker for the spec its target is described in, explained by a legend in the corner.
   - **Actions.** A step's branches are the actions Arazzo runs for it: its own `onSuccess`/`onFailure`
     plus the workflow's `successActions`/`failureActions`, which apply to every step. A step that declares

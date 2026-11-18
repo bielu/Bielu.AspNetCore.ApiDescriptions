@@ -13,6 +13,12 @@ export const STEP_KIND = 'step'
  */
 export const STEP_EXPAND_EVENT = 'bielu-arazzo:expand-step'
 
+/**
+ * Bubbles up from the overview diagram before it opens a step (`detail.sectionId`), so the document shows that
+ * step's section, and its workflow's, even while the filter hides them.
+ */
+export const STEP_REVEAL_EVENT = 'bielu-arazzo:reveal-step'
+
 /** `PluginNavigationEntry.kind` of the entry for the document's reusable components. */
 export const COMPONENTS_KIND = 'components'
 

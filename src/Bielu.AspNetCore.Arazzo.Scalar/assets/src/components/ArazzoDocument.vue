@@ -2,8 +2,9 @@
 import { computed, nextTick, onBeforeUnmount, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { renderMarkdown } from '../helpers/markdown'
 import { type DocumentWatch, watchDocuments } from '../helpers/document-watch'
-import { componentsEntryId, toWorkflowViews } from '../helpers/navigation'
+import { componentsEntryId, STEP_REVEAL_EVENT, toWorkflowViews } from '../helpers/navigation'
 import { normalizeArazzoDocument } from '../helpers/normalize'
+import { pluginOptions } from '../helpers/plugin-options'
 import { filterWorkflows } from '../helpers/search'
 import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
 import type { ArazzoDocument, PluginEventBus, PluginNavigationEntry } from '../types'
@@ -60,7 +61,40 @@ const documentExtensions = computed(() => ({ ...info.value, ...arazzo.value }))
 
 /** The text in the filter box; the workflows and steps it leaves are `filter`, everything when empty. */
 const query = ref('')
-const filter = computed(() => filterWorkflows(workflows.value, query.value))
+const matches = computed(() =>
+  filterWorkflows(workflows.value, query.value, arazzo.value ? { document: arazzo.value, config: pluginOptions() } : undefined),
+)
+
+/**
+ * Steps opened from an overview while the filter hid them: shown, with their workflow, on top of what the filter
+ * leaves, until the query changes. Otherwise a box would open a section nobody can see.
+ */
+const revealed = ref<ReadonlySet<string>>(new Set())
+watch(query, () => {
+  revealed.value = new Set()
+})
+const filter = computed(() => {
+  const current = matches.value
+  if (!current || revealed.value.size === 0) {
+    return current
+  }
+  const steps = new Set([...current.steps, ...revealed.value])
+  const owners = workflows.value.filter((view) => view.steps.some((entry) => revealed.value.has(entry.id))).map((view) => view.id)
+  return { ...current, steps, workflows: new Set([...current.workflows, ...owners]) }
+})
+const onRevealStep = (event: Event) => {
+  const sectionId = (event as CustomEvent<{ sectionId?: string }>).detail?.sectionId
+  if (sectionId && matches.value && !matches.value.steps.has(sectionId)) {
+    revealed.value = new Set([...revealed.value, sectionId])
+  }
+}
+onMounted(() => root.value?.addEventListener(STEP_REVEAL_EVENT, onRevealStep))
+onBeforeUnmount(() => root.value?.removeEventListener(STEP_REVEAL_EVENT, onRevealStep))
+
+/** workflowId → stepId → section id, so an overview box opens its step in whichever workflow it belongs to. */
+const stepSectionIds = computed(() =>
+  Object.fromEntries(workflows.value.map((view) => [view.workflow.workflowId, Object.fromEntries(view.steps.map((entry) => [entry.step.stepId, entry.id]))])),
+)
 
 /** workflowId → its section's sidebar id, so a step that invokes a workflow links to it. */
 const workflowNavIds = computed(() => Object.fromEntries(workflows.value.map((view) => [view.workflow.workflowId, view.id])))
@@ -279,6 +313,7 @@ onBeforeUnmount(() => {
       v-for="view in workflows"
       v-show="!filter || filter.workflows.has(view.id)"
       :key="view.id"
+      :stepSectionIds="stepSectionIds"
       :visibleSteps="filter?.steps"
       :document="arazzo!"
       :documents="loadedDocuments"

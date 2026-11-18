@@ -32,6 +32,11 @@ const props = defineProps<{
   workflowNavIds?: Record<string, string>
   /** The steps a filter leaves on screen, by sidebar id; every step when absent. */
   visibleSteps?: Set<string>
+  /**
+   * workflowId → stepId → section id for every workflow of the document, so a step inside an expanded workflow in
+   * the overview opens that workflow's step. Only this workflow's steps when absent.
+   */
+  stepSectionIds?: Record<string, Record<string, string>>
 }>()
 
 const workflow = computed(() => props.view.workflow)
@@ -132,7 +137,9 @@ const diagram = computed(() =>
   ),
 )
 
-const stepSectionIds = computed(() => Object.fromEntries(props.view.steps.map((entry) => [entry.step.stepId, entry.id])))
+const stepSectionIds = computed(
+  () => props.stepSectionIds ?? { [workflow.value.workflowId]: Object.fromEntries(props.view.steps.map((entry) => [entry.step.stepId, entry.id])) },
+)
 
 const classic = computed(() => props.layout === 'classic')
 
@@ -317,6 +324,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
           <ArazzoWorkflowDiagram
             :layout="diagram"
             :stepSectionIds="stepSectionIds"
+            :workflowId="workflow.workflowId"
             @toggleWorkflow="toggleWorkflow" />
           <div class="ba-overview-footer">
             <ArazzoSpecLegend
@@ -383,6 +391,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
         fit
         :layout="diagram"
         :stepSectionIds="stepSectionIds"
+        :workflowId="workflow.workflowId"
         @openStep="dialog?.close()"
         @toggleWorkflow="toggleWorkflow" />
     </dialog>
