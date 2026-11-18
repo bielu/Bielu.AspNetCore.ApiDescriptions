@@ -25,6 +25,7 @@ Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Parameter(Bielu.Arazzo.Models
 Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.SuccessCriteria(Bielu.Arazzo.Models.ArazzoCriterion! criterion) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.WithExtension(string! name, System.Text.Json.Nodes.JsonNode? value) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.WithRequestBodyExtension(string! name, System.Text.Json.Nodes.JsonNode? value) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Workflow(string! sourceName, string! workflowId) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.OnFailure(Bielu.Arazzo.Models.ArazzoFailureAction! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.OnFailureReference(string! componentName) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!
 Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder.OnSuccess(Bielu.Arazzo.Models.ArazzoSuccessAction! action) -> Bielu.AspNetCore.Arazzo.Services.ArazzoWorkflowBuilder!

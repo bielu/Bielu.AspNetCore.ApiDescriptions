@@ -109,6 +109,28 @@ public sealed class ArazzoStepBuilder
         return this;
     }
 
+    /// <summary>
+    /// Targets a workflow of another Arazzo document, the source description named <paramref name="sourceName"/>
+    /// (of type <c>arazzo</c>), as <c>$sourceDescriptions.{sourceName}.{workflowId}</c>. Mutually exclusive with
+    /// <see cref="Operation"/>, <see cref="OperationPath"/>, and <see cref="Channel"/>.
+    /// </summary>
+    /// <param name="sourceName">The source description of the other Arazzo document.</param>
+    /// <param name="workflowId">The workflow's id in that document.</param>
+    /// <example>
+    /// <code>
+    /// options.AddSourceDescription("payments", "https://example.com/payments.arazzo.json", ArazzoSourceDescriptionType.Arazzo);
+    /// options.AddWorkflow("checkout", wf => wf.Step("pay", s => s.Workflow("payments", "chargeCard")));
+    /// </code>
+    /// </example>
+    public ArazzoStepBuilder Workflow(string sourceName, string workflowId)
+    {
+        ArazzoIdentifier.Validate(sourceName, nameof(sourceName));
+        ArazzoIdentifier.Validate(workflowId, nameof(workflowId));
+        EnsureNoTargetSet(nameof(Workflow));
+        WorkflowIdValue = $"$sourceDescriptions.{sourceName}.{workflowId}";
+        return this;
+    }
+
     /// <summary>Throws if a target is already set, since <c>Operation</c>/<c>OperationPath</c>/<c>Channel</c>/<c>Workflow</c> are mutually exclusive — including calling the same method twice.</summary>
     private void EnsureNoTargetSet(string methodName)
     {
