@@ -5,13 +5,14 @@
 ## Checklist
 
 1. Update every `Bielu.*` package to 3.0. They are versioned together, so mixing 2.x and 3.0 packages isn't supported.
-2. Validate your Arazzo documents against 3.0 (`dotnet arazzo validate`, or start the app); see [Stricter Arazzo validation](#stricter-arazzo-validation).
-3. Fix the compile errors from the [removed members](#removed-members).
-4. If you use `AddAsyncApiForApiVersions()`, check each version's AsyncAPI document; see [API versioning: documents are filtered by version](#api-versioning-documents-are-filtered-by-version).
+2. If your app references `Scalar.AspNetCore` directly, update it to 3.0.1 or later. The 3.0 Scalar packages (`Bielu.AspNetCore.AsyncApi.Scalar*`, `Bielu.AspNetCore.Arazzo.Scalar`) depend on 3.0.1, the first release with the Scalar plugin API the Arazzo plugin uses. A direct 2.x reference makes restore fail with a package downgrade error (NU1605).
+3. Validate your Arazzo documents against 3.0; see [Stricter Arazzo validation](#stricter-arazzo-validation). Starting the app checks a document only if source-reference validation is on (`ValidateSourceReferencesOnStartup`, the default) and the document has a self-wired source (`AddAsyncApiSource` or `AddOpenApiSource`). For any other document, run `dotnet arazzo validate` on it, or generate it at build time (`dotnet getdocument`).
+4. Fix the compile errors from the [removed members](#removed-members).
+5. If you use `AddAsyncApiForApiVersions()`, check each version's AsyncAPI document; see [API versioning: documents are filtered by version](#api-versioning-documents-are-filtered-by-version).
 
 ## Stricter Arazzo validation
 
-`ArazzoValidator` now rejects documents the Arazzo Specification does not allow. It runs in `dotnet arazzo validate`, and when `AddArazzo` builds a document, so an invalid document now fails app startup and `dotnet getdocument` too.
+`ArazzoValidator` now rejects documents the Arazzo Specification does not allow. It runs in `dotnet arazzo validate`, and whenever `AddArazzo` builds a document, so an invalid document also fails `dotnet getdocument` and the request for it (`MapArazzo`). It fails app startup only when startup builds the document: with `ValidateSourceReferencesOnStartup` on (the default) and at least one self-wired source.
 
 | Now an error | Fix |
 |--------------|-----|
