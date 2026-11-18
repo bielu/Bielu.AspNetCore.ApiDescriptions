@@ -221,7 +221,12 @@ const sectionOf = (node: LaidOutNode): string | undefined => {
   if (!node.stepId) {
     return undefined
   }
-  const workflowId = node.group ? props.layout.groups.find((group) => group.id === node.group)?.workflowId : props.workflowId
+  const group = node.group ? props.layout.groups.find((candidate) => candidate.id === node.group) : undefined
+  // A workflow of another Arazzo document has no step sections on this page.
+  if (group?.documentName) {
+    return undefined
+  }
+  const workflowId = node.group ? group?.workflowId : props.workflowId
   return workflowId ? props.stepSectionIds[workflowId]?.[node.stepId] : undefined
 }
 

@@ -314,6 +314,7 @@ onBeforeUnmount(() => {
       v-show="!filter || filter.workflows.has(view.id)"
       :key="view.id"
       :stepSectionIds="stepSectionIds"
+      :documentName="documentName"
       :visibleSteps="filter?.steps"
       :document="arazzo!"
       :documents="loadedDocuments"

@@ -66,7 +66,7 @@ const targetName = computed(() => (target.value ? targetDisplayName(target.value
  */
 const targetLink = computed((): { href: string; external: boolean; navId: string } | undefined => {
   const value = target.value
-  if (value?.kind === 'workflow') {
+  if (value?.kind === 'workflow' && !value.documentName) {
     const navId = props.workflowNavIds?.[value.identifier]
     return navId ? { href: `#${navId}`, external: false, navId } : undefined
   }
@@ -219,7 +219,7 @@ const onFailure = computed(() => resolveReusables<ArazzoFailureAction>(props.doc
 const description = computed(() => renderMarkdown(heading.value.description))
 
 /** For a step that invokes a workflow of this document: that workflow's steps, shown read-only on demand. */
-const nested = computed(() => nestedWorkflowSteps(props.document, props.step))
+const nested = computed(() => nestedWorkflowSteps(props.document, props.step, props.documents))
 const nestedOpen = ref(false)
 const nestedId = `${props.id}/nested`
 const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes workflow' : kind === 'channel' ? 'uses channel' : 'calls')

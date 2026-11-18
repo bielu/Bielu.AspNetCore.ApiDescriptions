@@ -2,6 +2,7 @@ import dagre from '@dagrejs/dagre'
 import type { ArazzoCriterion, ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoSuccessAction, ArazzoWorkflow } from '../types'
 import { effectiveFailureActions, effectiveSuccessActions, isUnconditional, reachableActions } from './actions'
 import { labelOf, pageOf, pageRegistry, pageTitle, type PagesConfig } from './pages'
+import { QUALIFIED_WORKFLOW, resolveWorkflow } from './resolve-target'
 import type { SpecFamily } from './target-spec'
 
 /**
@@ -74,6 +75,11 @@ export type WorkflowGraphGroup = {
   workflowId: string
   /** The group this one is nested in, when it was expanded from inside another expanded workflow. */
   parent?: string
+  /**
+   * The workspace name of the Arazzo document the group's workflow is in, when that is another document than the
+   * one drawn: its steps have no section on this page.
+   */
+  documentName?: string
 }
 
 /** Pages view: consecutive steps on the same page (or on none), drawn as one labelled band. */
@@ -117,6 +123,22 @@ export type WorkflowGraphOptions = {
   view?: WorkflowView
   /** Where the Pages view finds pages and labels. */
   pages?: PagesConfig
+  /**
+   * The documents Scalar has loaded, by workspace name, so a `$sourceDescriptions.<name>.<workflowId>` workflow
+   * of another loaded Arazzo document can be expanded too.
+   */
+  documents?: Record<string, unknown>
+  /**
+   * The workspace name of the document drawn, so a workflow of another document that calls back into it is
+   * recognised as already on the expansion path.
+   */
+  documentName?: string
+}
+
+/** How a workflow id reads on a box: `identity.signIn` for `$sourceDescriptions.identity.signIn`, else as written. */
+export const workflowLabel = (workflowId: string): string => {
+  const qualified = QUALIFIED_WORKFLOW.exec(workflowId)
+  return qualified ? `${qualified[1]}.${qualified[2]}` : workflowId
 }
 
 /**
@@ -186,10 +208,6 @@ const selfRetry = (action: ArazzoFailureAction): WorkflowGraphRetry => ({
   ...(typeof action.retryAfter === 'number' ? { retryAfter: action.retryAfter } : {}),
 })
 
-/** A workflow of this document, by a plain id; `$sourceDescriptions.<name>.<id>` names one in another document. */
-export const localWorkflow = (document: ArazzoDocument, workflowId: string | undefined): ArazzoWorkflow | undefined =>
-  workflowId && !workflowId.startsWith('$') ? document.workflows?.find((workflow) => workflow.workflowId === workflowId) : undefined
-
 /** What an `end` failure action's end node is called: the extension's value when configured and present, else its name. */
 const endLabelOf = (action: ArazzoFailureAction, extension: string | undefined): { key: string; label: string; named: boolean } => {
   const value = extension ? (action as Record<string, unknown>)[extension] : undefined
@@ -206,8 +224,13 @@ type Scope = {
   prefix: string
   /** The group the scope's nodes are drawn in. */
   group?: string
-  /** The workflows on the expansion path, the drawn one first: expanding one of them again would never end. */
+  /**
+   * The workflows on the expansion path, the drawn one first, as `<document>#<workflowId>`: expanding one of them
+   * again would never end. Keyed by document too, so a workflow of another document with the same id is no cycle.
+   */
   path: string[]
+  /** The workspace name of the document the scope's workflow is in (`options.documentName`, or empty, for the one drawn). */
+  documentKey: string
 }
 
 /**
@@ -226,9 +249,11 @@ type Scope = {
  *
  * Workflows are nodes of their own: a step that invokes one, and one node per workflow that `goto`/`retry`
  * actions invoke (shared by every step that does). A `retry` through another step or a workflow also gets
- * an arrow back to the step, since the step runs again once that is done. A workflow node of this document can be
- * expanded (`options.expanded`): its steps are then drawn in a group, recursively, except a workflow that is
- * already on the expansion path, which stays collapsed and is marked as a cycle.
+ * an arrow back to the step, since the step runs again once that is done. A workflow node can be expanded
+ * (`options.expanded`) when its workflow is found: in this document, or for `$sourceDescriptions.<name>.<id>` in
+ * the Arazzo document that source names, when it is among `options.documents`. Its steps are then drawn in a
+ * group, resolved in their own document, recursively, except a workflow already on the expansion path (the same
+ * workflow of the same document), which stays collapsed and is marked as a cycle.
  *
  * `end` success actions lead to one Success node. `end` failure actions lead to one Failed node while they
  * cannot be told apart (one name, no end-label extension); otherwise each gets its own end node, named after
@@ -240,14 +265,15 @@ type Scope = {
 export const buildWorkflowGraph = (
   document: ArazzoDocument,
   workflow: ArazzoWorkflow | undefined,
-  specOf?: (step: ArazzoStep) => SpecFamily | undefined,
+  specOf?: (step: ArazzoStep, document: ArazzoDocument) => SpecFamily | undefined,
   options: WorkflowGraphOptions = {},
 ): WorkflowGraph => {
   const graph: WorkflowGraph = { nodes: [], edges: [], groups: [], bands: [] }
   if (!workflow?.steps?.length) {
     return graph
   }
-  addScope(graph, document, workflow, { prefix: '', path: [workflow.workflowId] }, specOf, options)
+  const documentKey = options.documentName ?? ''
+  addScope(graph, document, workflow, { prefix: '', path: [`${documentKey}#${workflow.workflowId}`], documentKey }, specOf, options)
   return graph
 }
 
@@ -257,7 +283,7 @@ const addScope = (
   document: ArazzoDocument,
   workflow: ArazzoWorkflow,
   scope: Scope,
-  specOf: ((step: ArazzoStep) => SpecFamily | undefined) | undefined,
+  specOf: ((step: ArazzoStep, document: ArazzoDocument) => SpecFamily | undefined) | undefined,
   options: WorkflowGraphOptions,
 ): string[] => {
   const steps = workflow.steps ?? []
@@ -274,17 +300,23 @@ const addScope = (
   const plainLabel = (of: object | undefined): string | undefined => (inPages ? labelOf(of, config) : undefined)
   /** What a workflow is called in the Pages view: its label, else its summary. */
   const workflowName = (workflowId: string): string | undefined => {
-    const target = localWorkflow(document, workflowId)
+    const target = resolveWorkflow(document, workflowId, options.documents)?.workflow
     return target ? (labelOf(target, config) ?? target.summary) : undefined
+  }
+  /** Where a workflow this scope invokes is, and its key on the expansion path. */
+  const lookUp = (workflowId: string) => {
+    const resolved = resolveWorkflow(document, workflowId, options.documents)
+    const documentKey = resolved?.documentName ?? scope.documentKey
+    return resolved ? { ...resolved, documentKey, key: `${documentKey}#${resolved.workflow.workflowId}` } : undefined
   }
   const edgeFor = (from: string, to: string, kind: 'success' | 'failure', action: ArazzoSuccessAction | ArazzoFailureAction, extra?: string) =>
     actionEdge(from, to, kind, action, extra, plainLabel(action))
 
-  /** A node for a workflow this scope invokes; expandable when it is one of this document's. */
+  /** A node for a workflow this scope invokes; expandable when it is found, in this document or another loaded one. */
   const workflowNode = (id: string, label: string, workflowId: string, extra: Partial<WorkflowGraphNode> = {}): WorkflowGraphNode => {
-    const local = localWorkflow(document, workflowId)
-    const cycle = Boolean(local && scope.path.includes(workflowId))
-    const expandable = Boolean(local && !cycle && local.steps?.length)
+    const target = lookUp(workflowId)
+    const cycle = Boolean(target && scope.path.includes(target.key))
+    const expandable = Boolean(target && !cycle && target.workflow.steps?.length)
     const node: WorkflowGraphNode = inGroup({
       id,
       label,
@@ -301,7 +333,7 @@ const addScope = (
 
   const stepNodes = new Map<string, WorkflowGraphNode>()
   for (const step of steps) {
-    const spec = specOf?.(step)
+    const spec = specOf?.(step, document)
     const pages = inPages ? { technical: step.stepId, ...pageField(pageOf(step, config)) } : {}
     const node: WorkflowGraphNode = step.workflowId
       ? workflowNode(
@@ -339,7 +371,7 @@ const addScope = (
     if (!node) {
       node = workflowNode(
         workflowNodeId(prefix, workflowId),
-        (inPages && workflowName(workflowId)) || workflowId,
+        (inPages && workflowName(workflowId)) || workflowLabel(workflowId),
         workflowId,
         { ...(specOf ? { spec: 'arazzo' } : {}), ...(inPages ? { technical: workflowId } : {}) },
       )
@@ -507,22 +539,24 @@ const addScope = (
   }
 
   for (const node of workflowNodes) {
-    const nested = node.expanded ? localWorkflow(document, node.workflowId) : undefined
+    const nested = node.expanded && node.workflowId ? lookUp(node.workflowId) : undefined
     if (!nested) {
       continue
     }
     const nestedGroup: WorkflowGraphGroup = {
       id: groupId(node.id),
-      label: (inPages && workflowName(node.workflowId!)) || node.workflowId!,
+      label: (inPages && workflowName(node.workflowId!)) || workflowLabel(node.workflowId!),
       workflowId: node.workflowId!,
       ...(group ? { parent: group } : {}),
+      ...(nested.documentKey !== (options.documentName ?? '') ? { documentName: nested.documentKey } : {}),
     }
     graph.groups.push(nestedGroup)
+    // The nested workflow's components, page registry and step targets resolve in its own document.
     const entries = addScope(
       graph,
-      document,
-      nested,
-      { prefix: `${node.id}/`, group: nestedGroup.id, path: [...scope.path, nested.workflowId] },
+      nested.document,
+      nested.workflow,
+      { prefix: `${node.id}/`, group: nestedGroup.id, path: [...scope.path, nested.key], documentKey: nested.documentKey },
       specOf,
       options,
     )

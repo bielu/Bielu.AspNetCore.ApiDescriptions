@@ -48,9 +48,10 @@ Technical | Pages views) and troubleshooting.
 - Links from each step to the operation or channel it calls in its own document, and for AsyncAPI
   steps the message payload they send or receive.
 - Workflows a step or a `goto`/`retry` action invokes as nodes of their own in the flowchart, with an
-  arrow back for a `retry`. A `+` on a workflow node of the same document shows its steps inside the
-  flowchart (recursively, never re-expanding a workflow already on the path), and a step that invokes
-  one can list that workflow's steps inline. Distinct `end` failure actions get end nodes of their own.
+  arrow back for a `retry`. A `+` on a workflow node shows its steps inside the flowchart
+  (recursively, never re-expanding a workflow already on the path), and a step that invokes one can
+  list that workflow's steps inline. This works for workflows of the same document and, through
+  `$sourceDescriptions.<name>.<workflowId>`, of another Arazzo document loaded on the page. Distinct `end` failure actions get end nodes of their own.
 - Collapsible steps and a filter for workflows and steps. The overview can be used from the
   keyboard, and the layout works at phone width. A malformed document renders what it can instead
   of failing.
