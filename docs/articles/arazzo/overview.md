@@ -269,14 +269,14 @@ readers and writers, and rendered by the Scalar plugin.
 | Object | Fields the builders author | Not authored by the builders |
 |--------|----------------------------|------------------------------|
 | Document | `arazzo` (`Version`), `$self`, `info` (with its extensions via `WithInfo(Action)`), `sourceDescriptions`, `workflows`, `components`, `x-*` | — |
-| Source Description | `name`, `url`, `type` | `x-*` |
+| Source Description | `name`, `url`, `type`, `x-*` (`WithSourceDescriptionExtension`) | — |
 | Workflow | `workflowId`, `summary`, `description`, `inputs` (schema or `$ref`), `dependsOn`, `steps`, `successActions`, `failureActions`, `outputs`, `parameters`, `x-*` | — |
-| Step | every target (`operationId`, `operationPath`, `channelPath` + `action`, `workflowId`), `description`, `parameters`, `requestBody`, `successCriteria`, `onSuccess`, `onFailure`, `outputs`, `timeout`, `correlationId`, `dependsOn`, `x-*` | `workflowId` of a workflow in another Arazzo source description (`$sourceDescriptions.{name}.{workflowId}`): `Workflow(...)` takes only local ids. `x-*` on success criteria |
-| Request Body | `contentType`, `payload` (literal, expression or selector), `replacements` | `x-*` |
-| Payload Replacement | `target`, `targetSelectorType`, `value` (literal, expression or selector) | `x-*` |
-| Parameter, Success Action, Failure Action, Selector, Criterion | every field, by passing the model object (`Parameter(ArazzoParameter)`, `OnSuccess(ArazzoSuccessAction)`, and so on) | `x-*` on a criterion added with `SuccessCriteria(...)` |
+| Step | every target (`operationId`, `operationPath`, `channelPath` + `action`, `workflowId`), `description`, `parameters`, `requestBody`, `successCriteria` (with `x-*` through `SuccessCriteria(ArazzoCriterion)`), `onSuccess`, `onFailure`, `outputs`, `timeout`, `correlationId`, `dependsOn`, `x-*` | `workflowId` of a workflow in another Arazzo source description (`$sourceDescriptions.{name}.{workflowId}`): `Workflow(...)` takes only local ids |
+| Request Body | `contentType`, `payload` (literal, expression or selector), `replacements`, `x-*` (`WithRequestBodyExtension`) | — |
+| Payload Replacement | `target`, `targetSelectorType`, `value` (literal, expression or selector), `x-*` (`Replacement(ArazzoPayloadReplacement)`) | — |
+| Parameter, Success Action, Failure Action, Selector, Criterion | every field, by passing the model object (`Parameter(ArazzoParameter)`, `OnSuccess(ArazzoSuccessAction)`, and so on) | — |
 | Reusable Object | `reference`, and `value` for parameters | — |
-| Components | `inputs`, `parameters`, `successActions`, `failureActions` | `x-*` |
+| Components | `inputs`, `parameters`, `successActions`, `failureActions`, `x-*` (`WithComponentsExtension`) | — |
 
 ### Identifying workflows and steps by type
 
