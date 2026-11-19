@@ -6,6 +6,7 @@ using Bielu.AspNetCore.Arazzo.Scalar.Aspire;
 using Bielu.AspNetCore.Arazzo.Scalar.Tests.Browser;
 using Bielu.AspNetCore.AsyncApi.Scalar.Aspire.Tests.Fixtures;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Playwright;
 using Scalar.Aspire;
 using Shouldly;
@@ -30,6 +31,10 @@ public class ScalarArazzoAspireContainerTests(ITestOutputHelper output)
         {
             return; // No browser to drive: nothing to observe (the attribute already needs Docker).
         }
+
+        // `dotnet test` runs the net10.0 and net11.0 assemblies at once, and with both starting a Scalar container
+        // together one of them failed to start on CI. One run at a time, across processes.
+        await using var containerLock = await AcquireMachineLockAsync(TimeSpan.FromMinutes(10));
 
         // Arrange: Aspire runs the API (a file-based app serving the documents and the built plugin module) on a fixed
         // port, so the plugin URL can name it before the app starts.
@@ -65,22 +70,10 @@ public class ScalarArazzoAspireContainerTests(ITestOutputHelper output)
                 return Task.CompletedTask;
             });
 
+        // The resources' own logs, and the orchestrator's, go to the test output, so a failure to start says why.
+        builder.Services.AddLogging(logging => logging.AddProvider(new TestOutputLoggerProvider(output)));
+
         await using var app = await builder.BuildAsync();
-        // The resources' own logs go to the test output, so a failure to start says why.
-        var logger = app.Services.GetRequiredService<ResourceLoggerService>();
-        foreach (var resource in new[] { "shop", "scalar" })
-        {
-            _ = Task.Run(async () =>
-            {
-                await foreach (var batch in logger.WatchAsync(resource))
-                {
-                    foreach (var line in batch)
-                    {
-                        output.WriteLine($"[{resource}] {line.Content}");
-                    }
-                }
-            });
-        }
 
         // Bounded, so a resource that never starts fails the test in minutes rather than hanging the run.
         using var startTimeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
@@ -133,6 +126,28 @@ public class ScalarArazzoAspireContainerTests(ITestOutputHelper output)
         (await overview.Locator(".ba-diagram-band text").AllTextContentsAsync()).ShouldContain("Checkout page · /checkout");
         (await overview.Locator("[data-node-id='create'] > text").First.TextContentAsync()).ShouldBe("Place the order");
         (await overview.Locator(".ba-diagram-node-failure > text").First.TextContentAsync()).ShouldBe("Declined page");
+    }
+
+    /// <summary>
+    /// An exclusive lock on a file in the temp directory, held until disposed. Exclusive file sharing is enforced
+    /// across processes on every platform (.NET takes an advisory <c>flock</c> on Unix), so concurrent test processes
+    /// wait for each other.
+    /// </summary>
+    private static async Task<FileStream> AcquireMachineLockAsync(TimeSpan timeout)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "bielu-scalar-arazzo-aspire-container-test.lock");
+        var deadline = DateTime.UtcNow + timeout;
+        while (true)
+        {
+            try
+            {
+                return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+            }
+        }
     }
 
     private static int FreePort()
