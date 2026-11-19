@@ -1,6 +1,6 @@
 {
   "arazzo": "1.1.0",
-  "$self": "https://example.test/fixtures/field-reference.arazzo.json",
+  "$self": "/fixtures/field-reference.arazzo.json",
   "info": {
     "title": "Arazzo field reference",
     "summary": "Every Arazzo 1.1 field, in one document.",
