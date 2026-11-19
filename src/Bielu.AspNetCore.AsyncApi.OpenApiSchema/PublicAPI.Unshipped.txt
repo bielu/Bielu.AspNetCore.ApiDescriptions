@@ -1,0 +1,9 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.OpenApiSchema.AsyncApiOpenApiSchemaOptionsExtensions
+Bielu.AspNetCore.AsyncApi.OpenApiSchema.OpenApiSchemaPayloadOptions
+Bielu.AspNetCore.AsyncApi.OpenApiSchema.OpenApiSchemaPayloadOptions.ForMessages(params string![]! messageKeys) -> Bielu.AspNetCore.AsyncApi.OpenApiSchema.OpenApiSchemaPayloadOptions!
+Bielu.AspNetCore.AsyncApi.OpenApiSchema.OpenApiSchemaPayloadOptions.MessageFilter.get -> System.Func<string!, bool>?
+Bielu.AspNetCore.AsyncApi.OpenApiSchema.OpenApiSchemaPayloadOptions.MessageFilter.set -> void
+Bielu.AspNetCore.AsyncApi.OpenApiSchema.OpenApiSchemaPayloadOptions.OpenApiSchemaPayloadOptions() -> void
+const Bielu.AspNetCore.AsyncApi.OpenApiSchema.OpenApiSchemaPayloadOptions.SchemaFormat = "application/vnd.oai.openapi;version=3.0.0" -> string!
+static Bielu.AspNetCore.AsyncApi.OpenApiSchema.AsyncApiOpenApiSchemaOptionsExtensions.AddOpenApiSchemaPayloads(this Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions! options, System.Action<Bielu.AspNetCore.AsyncApi.OpenApiSchema.OpenApiSchemaPayloadOptions!>? configure = null) -> Bielu.AspNetCore.AsyncApi.Services.AsyncApiOptions!

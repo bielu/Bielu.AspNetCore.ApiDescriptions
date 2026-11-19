@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.OpenApiSchema</RootNamespace>
+        <IsAotCompatible>true</IsAotCompatible>
+        <Description>Describes AsyncAPI message payloads as OpenAPI 3.0 Schema Objects (schemaFormat application/vnd.oai.openapi;version=3.0.0), converted from the generated JSON Schemas, so tools built for OpenAPI read event payloads the way they read HTTP bodies.</Description>
+        <PackageTags>asyncapi;openapi;schema;schemaformat;aspnetcore</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.OpenApiSchema.Tests" />
+    </ItemGroup>
+
+</Project>
