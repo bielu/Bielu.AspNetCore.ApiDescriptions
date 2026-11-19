@@ -254,7 +254,7 @@ public sealed class ArazzoOptions
         return this;
     }
 
-    /// <summary>Adds a source description pointing at an arbitrary URL. Prefer <see cref="AddAsyncApiSource"/>/<see cref="AddOpenApiSource"/> to self-wire against a document served by this same app.</summary>
+    /// <summary>Adds a source description pointing at an arbitrary URL. Prefer <see cref="AddAsyncApiSource"/>/<see cref="AddOpenApiSource"/> to self-wire against a document served by this same app, or <see cref="AddSelfWiredSource"/> for one an <see cref="Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider"/> supplies.</summary>
     public ArazzoOptions AddSourceDescription(string name, string url, ArazzoSourceDescriptionType type)
     {
         ArazzoIdentifier.Validate(name, nameof(name));
@@ -278,10 +278,8 @@ public sealed class ArazzoOptions
         ArgumentException.ThrowIfNullOrEmpty(sourceName);
         ArgumentException.ThrowIfNullOrEmpty(asyncApiDocumentName);
         var lowercasedDocumentName = asyncApiDocumentName.ToLowerInvariant();
-        AddSourceDescription(sourceName, url ?? $"/asyncapi/{lowercasedDocumentName}.json",
-            ArazzoSourceDescriptionType.AsyncApi);
-        SourceWirings.Add(new SourceWiring(sourceName, ArazzoSourceDescriptionType.AsyncApi, lowercasedDocumentName));
-        return this;
+        return AddSelfWiredSource(sourceName, ArazzoSourceDescriptionType.AsyncApi, lowercasedDocumentName,
+            url ?? $"/asyncapi/{lowercasedDocumentName}.json");
     }
 
     /// <summary>
@@ -297,9 +295,34 @@ public sealed class ArazzoOptions
     {
         ArgumentException.ThrowIfNullOrEmpty(sourceName);
         ArgumentException.ThrowIfNullOrEmpty(openApiDocumentName);
-        AddSourceDescription(sourceName, url ?? $"/openapi/{openApiDocumentName}.json",
-            ArazzoSourceDescriptionType.OpenApi);
-        SourceWirings.Add(new SourceWiring(sourceName, ArazzoSourceDescriptionType.OpenApi, openApiDocumentName));
+        return AddSelfWiredSource(sourceName, ArazzoSourceDescriptionType.OpenApi, openApiDocumentName,
+            url ?? $"/openapi/{openApiDocumentName}.json");
+    }
+
+    /// <summary>
+    /// Adds a source description that self-wires against a document an
+    /// <see cref="Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider"/> supplies. When
+    /// <see cref="ValidateSourceReferencesOnStartup"/> is true, the providers registered for <paramref name="type"/>
+    /// are asked for <paramref name="documentName"/>, and every step referencing this source is validated against the
+    /// document they return. <see cref="AddAsyncApiSource"/> and <see cref="AddOpenApiSource"/> are this method for
+    /// the documents this app serves itself.
+    /// </summary>
+    /// <param name="sourceName">The name this source is referred to as within workflow steps (<c>sourceDescriptions.NAME</c>).</param>
+    /// <param name="type">The source description's <c>type</c>, which selects the document providers and the resolver.</param>
+    /// <param name="documentName">The name the providers know the document by.</param>
+    /// <param name="url">The externally reachable URL the source description advertises.</param>
+    /// <example>
+    /// <code>
+    /// options.AddSelfWiredSource("payments", ArazzoSourceDescriptionType.OpenApi, "payments",
+    ///     "https://payments.example.com/openapi.json");
+    /// </code>
+    /// </example>
+    public ArazzoOptions AddSelfWiredSource(string sourceName, ArazzoSourceDescriptionType type, string documentName,
+        string url)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(documentName);
+        AddSourceDescription(sourceName, url, type);
+        SourceWirings.Add(new SourceWiring(sourceName, type, documentName));
         return this;
     }
 

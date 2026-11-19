@@ -69,7 +69,7 @@ internal sealed class ArazzoDocumentPart
         {
             switch (call.TargetMethod.Name)
             {
-                case "AddSourceDescription" or "AddAsyncApiSource" or "AddOpenApiSource":
+                case "AddSourceDescription" or "AddAsyncApiSource" or "AddOpenApiSource" or "AddSelfWiredSource":
                     var source = ArazzoSymbols.ConstantString(call, call.TargetMethod.Name == "AddSourceDescription" ? "name" : "sourceName");
                     if (source is null)
                     {
