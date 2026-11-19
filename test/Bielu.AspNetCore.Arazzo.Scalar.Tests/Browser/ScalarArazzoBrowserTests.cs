@@ -59,7 +59,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
 
         // Assert
         text.ShouldSatisfyAllConditions(
-            () => text.ShouldContain("Canonical URL https://example.test/fixtures/field-reference.arazzo.json"),
+            () => text.ShouldContain("Canonical URL /fixtures/field-reference.arazzo.json"),
             () => text.ShouldContain("Replacements"),
             () => text.ShouldContain("jsonpath rfc9535"),
             () => text.ShouldContain("xpath xpath-30"),

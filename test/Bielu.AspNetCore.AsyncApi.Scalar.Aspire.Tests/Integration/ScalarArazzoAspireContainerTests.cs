@@ -38,10 +38,15 @@ public class ScalarArazzoAspireContainerTests(ITestOutputHelper output)
 
         await using var builder = DistributedApplicationTestingBuilder.Create();
 #pragma warning disable ASPIRECSHARPAPPS001 // File-based apps are in preview; this one is only a test fixture.
-        var api = builder.AddCSharpApp("shop", Path.Combine("Fixtures", "ArazzoHost", "arazzo-host.cs"))
+        var api = builder.AddCSharpApp("shop", Path.Combine(AppContext.BaseDirectory, "Fixtures", "ArazzoHost", "arazzo-host.cs"))
             .WithHttpEndpoint(port: port, targetPort: port, name: "http", isProxied: false)
-            .WithEnvironment("ASPNETCORE_URLS", "http://localhost:" + port)
-            .WithEnvironment("PLUGIN_MODULE", FindBuiltModule());
+            // Every interface, not only loopback: on Linux the Scalar container reaches the host through the Docker
+            // bridge, which a loopback-only listener refuses (Docker Desktop forwards to loopback, so it hid this).
+            .WithEnvironment("ASPNETCORE_URLS", "http://*:" + port)
+            .WithEnvironment("PLUGIN_MODULE", FindBuiltModule())
+            // A file-based app reports Running while `dotnet run` still builds it: wait until it really serves, or
+            // the browser asks for the plugin module before anything listens and never asks again.
+            .WithHttpHealthCheck("/openapi/v1.json");
 #pragma warning restore ASPIRECSHARPAPPS001
         builder.AddScalarApiReference("scalar")
             .WithArazzoOptions(arazzo =>
@@ -77,7 +82,9 @@ public class ScalarArazzoAspireContainerTests(ITestOutputHelper output)
             });
         }
 
-        await app.StartAsync();
+        // Bounded, so a resource that never starts fails the test in minutes rather than hanging the run.
+        using var startTimeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+        await app.StartAsync(startTimeout.Token);
         await app.ResourceNotifications.WaitForResourceHealthyAsync("shop").WaitAsync(TimeSpan.FromMinutes(5));
         await app.ResourceNotifications.WaitForResourceHealthyAsync("scalar").WaitAsync(TimeSpan.FromMinutes(5));
         var scalarUrl = app.GetEndpoint("scalar", "http");
