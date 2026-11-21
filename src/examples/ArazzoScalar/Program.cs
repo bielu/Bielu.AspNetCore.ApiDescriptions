@@ -157,6 +157,8 @@ builder.Services.AddArazzo(options =>
                 "$[?@.status != 'cancelled']",
                 "$response.body",
                 new ArazzoSelectorType { Type = "jsonpath", Version = "rfc9535" })
+            // Read by the "cancelled" action, which places the order again with the same SKU.
+            .Output("sku", "$response.body#/sku")
             // Freshly placed orders can take a moment to appear: retry a 404 a few times before giving up.
             .OnFailure(new ArazzoFailureAction
             {

@@ -5,6 +5,8 @@ import { renderMarkdown } from '../helpers/markdown'
 /** A JSON Schema's properties as a list; an object property's own properties fold out beneath it. */
 defineProps<{
   rows: SchemaPropertyRow[]
+  /** Gives each top-level property the id `<anchorPrefix>/<name>`, so a Runtime Expression can link to it. */
+  anchorPrefix?: string
 }>()
 </script>
 
@@ -12,8 +14,9 @@ defineProps<{
   <ul class="ba-schema">
     <li
       v-for="row in rows"
+      :id="anchorPrefix ? `${anchorPrefix}/${row.name}` : undefined"
       :key="row.name"
-      class="ba-schema-property">
+      class="ba-schema-property ba-anchor-target">
       <div class="ba-schema-heading">
         <code class="ba-schema-name">{{ row.name }}</code>
         <span class="ba-schema-type">{{ row.type }}</span>

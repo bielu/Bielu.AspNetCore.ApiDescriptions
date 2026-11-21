@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { provideExpressionScope } from '../helpers/expression-scope'
+import { inputsAnchor, outputsAnchor, workflowOutputConsumers } from '../helpers/expressions'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
 import { resolveLocalRef } from '../helpers/extensions'
 import { renderMarkdown } from '../helpers/markdown'
 import { STEP_EXPAND_EVENT, type WorkflowView } from '../helpers/navigation'
-import { resolveReusables } from '../helpers/reusable'
+import { resolveReusables, resolveReusablesWithReference } from '../helpers/reusable'
 import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
 import type { ArazzoPluginOptions } from '../helpers/plugin-options'
 import { resolveStepTarget } from '../helpers/resolve-target'
@@ -40,6 +42,8 @@ const props = defineProps<{
   stepSectionIds?: Record<string, Record<string, string>>
   /** The workspace name of this Arazzo document, so the overview knows a workflow of another document that calls back into it. */
   documentName?: string
+  /** The components section's sidebar id, so `$components` expressions link to it. */
+  componentsId?: string
 }>()
 
 const workflow = computed(() => props.view.workflow)
@@ -52,14 +56,19 @@ const inputs = computed(() => resolveLocalRef(props.document, workflow.value.inp
 const inputRows = computed(() => schemaPropertyRows(inputs.value))
 
 const parameters = computed(() =>
-  resolveReusables<ArazzoParameter>(props.document, workflow.value.parameters).map((parameter) => ({
-    name: parameter.name,
-    value: parameter.value,
-    location: parameter.in,
+  resolveReusablesWithReference<ArazzoParameter>(props.document, workflow.value.parameters).map(({ entry, reference }) => ({
+    name: entry.name,
+    value: entry.value,
+    location: entry.in,
+    reference,
   })),
 )
 
-const outputs = computed(() => Object.entries(workflow.value.outputs ?? {}).map(([name, value]) => ({ name, value })))
+/** Each output with the steps of other workflows that read it (`$workflows.<id>.outputs.<name>`). */
+const outputs = computed(() => {
+  const consumers = workflowOutputConsumers(expressionScope.value)
+  return Object.entries(workflow.value.outputs ?? {}).map(([name, value]) => ({ name, value, usedBy: consumers[name] }))
+})
 
 const successActions = computed(() =>
   resolveReusables<ArazzoSuccessAction>(props.document, workflow.value.successActions),
@@ -146,6 +155,16 @@ const diagram = computed(() =>
 const stepSectionIds = computed(
   () => props.stepSectionIds ?? { [workflow.value.workflowId]: Object.fromEntries(props.view.steps.map((entry) => [entry.step.stepId, entry.id])) },
 )
+
+/** The scope the workflow's Runtime Expressions are read in, for every value, condition and payload under it. */
+const expressionScope = computed(() => ({
+  document: props.document,
+  workflow: workflow.value,
+  workflowNavIds: { ...props.workflowNavIds, [workflow.value.workflowId]: props.view.id },
+  stepSectionIds: stepSectionIds.value,
+  componentsId: props.componentsId,
+}))
+provideExpressionScope(() => expressionScope.value)
 
 const classic = computed(() => props.layout === 'classic')
 
@@ -251,10 +270,12 @@ const closeOnBackdrop = (event: MouseEvent) => {
       <div class="ba-workflow-main">
         <div
           v-if="workflow.inputs"
-          class="ba-block">
+          :id="inputsAnchor(view.id)"
+          class="ba-block ba-anchor-target">
           <div class="ba-block-title">Inputs</div>
           <ArazzoSchemaProperties
             v-if="inputRows"
+            :anchorPrefix="inputsAnchor(view.id)"
             :rows="inputRows" />
           <pre
             v-else
@@ -297,6 +318,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
 
         <ArazzoKeyValues
           v-if="outputs.length"
+          :anchor="outputsAnchor(view.id)"
           :rows="outputs"
           title="Outputs" />
       </div>
