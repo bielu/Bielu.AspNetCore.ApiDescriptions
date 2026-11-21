@@ -52,19 +52,25 @@ export type ParsedExpression =
   | { source: 'sourceDescriptions'; name: string }
   | { source: 'other' }
 
-/** A name ends where a JSON Pointer (`#/…`) or a deeper path (`.…`) into its value starts. */
+/** A name ends where a JSON Pointer (`#/…`) into its value starts. */
 const nameOf = (value: string | undefined): string | undefined => value?.split('#')[0] || undefined
 
+/** The parts after the first `count`, joined back: a name may itself contain dots (`order.id`). */
+const restOf = (parts: string[], count: number): string | undefined =>
+  parts.length > count ? nameOf(parts.slice(count).join('.')) : undefined
+
 /**
- * Reads the parts of a Runtime Expression that point into the Arazzo document. Step and workflow ids
- * are `[A-Za-z0-9_\-]+` (the spec's recommendation), so a `.` always separates the parts.
+ * Reads the parts of a Runtime Expression that point into the Arazzo document. Step, workflow and
+ * source description ids are `[A-Za-z0-9_\-]+` (the spec's recommendation), and so are the field
+ * (`outputs`) and component kind after them, so a `.` separates those. The name that follows is
+ * everything up to an optional JSON Pointer, dots included: the grammar's `name` is `*( CHAR )`.
  */
 export const parseExpression = (expression: string): ParsedExpression => {
   const [head, ...parts] = expression.split('.')
   switch (head) {
     case '$inputs':
     case '$outputs': {
-      const name = nameOf(parts[0])
+      const name = restOf(parts, 0)
       return name ? { source: head === '$inputs' ? 'inputs' : 'outputs', name } : { source: 'other' }
     }
     case '$steps':
@@ -74,12 +80,12 @@ export const parseExpression = (expression: string): ParsedExpression => {
         return { source: 'other' }
       }
       const field = nameOf(parts[1])
-      const name = nameOf(parts[2])
+      const name = field && !parts[1]!.includes('#') ? restOf(parts, 2) : undefined
       return head === '$steps' ? { source: 'steps', stepId: id, field, name } : { source: 'workflows', workflowId: id, field, name }
     }
     case '$components': {
       const kind = nameOf(parts[0])
-      return kind ? { source: 'components', kind, name: nameOf(parts[1]) } : { source: 'other' }
+      return kind ? { source: 'components', kind, name: parts[0]!.includes('#') ? undefined : restOf(parts, 1) } : { source: 'other' }
     }
     case '$sourceDescriptions': {
       const name = nameOf(parts[0])
@@ -222,19 +228,26 @@ export const resolveExpression = (expression: string, scope: ExpressionScope): E
   }
 }
 
-/** Fields that are prose, not values: a `$inputs.x` mentioned in a description is not read. */
+/** Fields of Arazzo objects that are prose, not values: a `$inputs.x` mentioned in a description is not read. */
 const PROSE = new Set(['description', 'summary', 'title'])
 
-/** Every string inside a value, keys of prose fields skipped. */
-const stringsIn = (value: unknown, out: string[]): string[] => {
+/** Fields of Arazzo objects whose value is the API's data (a parameter's value, a request payload), any shape. */
+const DATA = new Set(['payload', 'value'])
+
+/**
+ * Every string inside a value. On Arazzo objects (`metadata`), prose fields are skipped; inside data
+ * (a payload, a parameter value, an outputs map) every key is the API's or the author's own, so a
+ * `title` there is read like any other field.
+ */
+const stringsIn = (value: unknown, out: string[], metadata = true): string[] => {
   if (typeof value === 'string') {
     out.push(value)
   } else if (Array.isArray(value)) {
-    value.forEach((item) => stringsIn(item, out))
+    value.forEach((item) => stringsIn(item, out, metadata))
   } else if (value && typeof value === 'object') {
     for (const [key, item] of Object.entries(value)) {
-      if (!PROSE.has(key) && !key.startsWith('x-scalar-')) {
-        stringsIn(item, out)
+      if (!key.startsWith('x-scalar-') && !(metadata && PROSE.has(key))) {
+        stringsIn(item, out, metadata && !DATA.has(key))
       }
     }
   }
@@ -261,24 +274,26 @@ export const stepExpressions = (document: ArazzoDocument, step: ArazzoStep): str
       step.successCriteria,
       withReusables(document, step.onSuccess),
       withReusables(document, step.onFailure),
-      step.outputs,
-      step.correlationId,
     ],
     [],
   )
+  stringsIn([step.outputs, step.correlationId], strings, false)
   return strings.flatMap(expressionsIn)
 }
 
 /** The Runtime Expressions a workflow reads outside its steps: its parameters, actions and outputs. */
 export const workflowExpressions = (document: ArazzoDocument, workflow: ArazzoWorkflow): string[] =>
   stringsIn(
-    [
-      withReusables(document, workflow.parameters),
-      withReusables(document, workflow.successActions),
-      withReusables(document, workflow.failureActions),
-      workflow.outputs,
-    ],
-    [],
+    workflow.outputs,
+    stringsIn(
+      [
+        withReusables(document, workflow.parameters),
+        withReusables(document, workflow.successActions),
+        withReusables(document, workflow.failureActions),
+      ],
+      [],
+    ),
+    false,
   ).flatMap(expressionsIn)
 
 /** Something that reads an output: a step (with its section) or the workflow's own outputs. */
@@ -292,7 +307,8 @@ export const stepOutputConsumers = (
   scope: ExpressionScope & { workflow: ArazzoWorkflow },
   stepId: string,
 ): Record<string, OutputConsumer[]> => {
-  const consumers: Record<string, OutputConsumer[]> = {}
+  // Prototype-free, so an output named `constructor` or `toString` starts with no consumers.
+  const consumers: Record<string, OutputConsumer[]> = Object.create(null)
   const add = (name: string, consumer: OutputConsumer) => {
     const list = (consumers[name] ??= [])
     if (!list.some((entry) => entry.label === consumer.label)) {
@@ -326,7 +342,7 @@ export const stepOutputConsumers = (
  * (`$workflows.<id>.outputs.<name>`), labelled `workflow / step`.
  */
 export const workflowOutputConsumers = (scope: ExpressionScope & { workflow: ArazzoWorkflow }): Record<string, OutputConsumer[]> => {
-  const consumers: Record<string, OutputConsumer[]> = {}
+  const consumers: Record<string, OutputConsumer[]> = Object.create(null)
   const workflowId = scope.workflow.workflowId
   for (const other of scope.document.workflows ?? []) {
     for (const step of other.steps ?? []) {
