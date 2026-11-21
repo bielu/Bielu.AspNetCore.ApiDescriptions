@@ -54,8 +54,8 @@ Add `tailwindcss` and `@tailwindcss/vite` to the plugin's `devDependencies`, put
 next to `vue({ customElement: true })` in its Vite config, and include the file from the component
 with `<style src="../style.css"></style>`. Vue then hands the compiled CSS to
 `registerConsoleElement`, which injects it once. Write class names in full rather than building
-them from pieces, or Tailwind will not find them. `@bielu/scalar-broker` is converted; the SignalR
-and gRPC consoles still use scoped CSS on the `--scalar-*` variables.
+them from pieces, or Tailwind will not find them. `@bielu/scalar-broker` and `@bielu/scalar-signalr` are converted; the
+gRPC console still uses scoped CSS on the `--scalar-*` variables.
 
 ## Building
 
