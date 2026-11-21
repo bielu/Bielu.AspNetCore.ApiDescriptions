@@ -796,6 +796,16 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-export-status:empty {
   display: none;
 }
+/* A workflow's example input: a copy button over the JSON. */
+.bielu-arazzo .ba-example-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.bielu-arazzo .ba-example-warning {
+  margin: 6px 0;
+}
 /* Diagnostics: the header's folding list, and each step's own problems. */
 .bielu-arazzo .ba-diagnostics {
   margin: 16px 0;
