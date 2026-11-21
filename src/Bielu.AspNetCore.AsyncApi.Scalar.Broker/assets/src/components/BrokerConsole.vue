@@ -313,7 +313,7 @@ onBeforeUnmount(stopTail)
 }
 
 .bielu-broker__status--error {
-  color: #b3261e;
+  color: var(--scalar-color-red);
 }
 
 .bielu-broker__description {
@@ -347,15 +347,15 @@ onBeforeUnmount(stopTail)
 }
 
 .bielu-broker__log-in {
-  border-left-color: #2e7d32;
+  border-left-color: var(--scalar-color-green);
 }
 
 .bielu-broker__log-out {
-  border-left-color: #1565c0;
+  border-left-color: var(--scalar-color-blue);
 }
 
 .bielu-broker__log-sys {
-  border-left-color: #b3261e;
+  border-left-color: var(--scalar-color-red);
 }
 
 .bielu-broker__time {
