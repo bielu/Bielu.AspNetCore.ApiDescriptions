@@ -18,12 +18,14 @@ public class JsonSchemaToOpenApiConverterTests
 
         // Assert
         converted.ContainsKey("type").ShouldBeFalse();
-        converted["anyOf"]!.AsArray().Select(branch => branch!["type"]!.GetValue<string>()).ShouldBe(["string", "integer"]);
-        converted["nullable"]!.GetValue<bool>().ShouldBeTrue();
+        var anyOf = converted["anyOf"]!.AsArray();
+        anyOf.Take(2).Select(branch => branch!["type"]!.GetValue<string>()).ShouldBe(["string", "integer"]);
+        anyOf[2]!["enum"]!.AsArray().ShouldHaveSingleItem().ShouldBeNull();
+        converted.ContainsKey("nullable").ShouldBeFalse();
     }
 
     [Fact]
-    public void Convert_OneOfWithANullBranch_DropsItForNullable()
+    public void Convert_OneOfWithANullBranch_KeepsItAsANullOnlyBranch()
     {
         // Arrange
         var schema = new AsyncApiJsonSchema
@@ -35,8 +37,12 @@ public class JsonSchemaToOpenApiConverterTests
         var converted = Convert(schema);
 
         // Assert
-        converted["oneOf"]!.AsArray().ShouldHaveSingleItem()!["type"]!.GetValue<string>().ShouldBe("string");
-        converted["nullable"]!.GetValue<bool>().ShouldBeTrue();
+        var oneOf = converted["oneOf"]!.AsArray();
+        oneOf.Count.ShouldBe(2);
+        oneOf[0]!["enum"]!.AsArray().ShouldHaveSingleItem().ShouldBeNull();
+        oneOf[0]!.AsObject().ContainsKey("nullable").ShouldBeFalse();
+        oneOf[1]!["type"]!.GetValue<string>().ShouldBe("string");
+        converted.ContainsKey("nullable").ShouldBeFalse();
     }
 
     [Fact]
@@ -67,7 +73,7 @@ public class JsonSchemaToOpenApiConverterTests
         var converted = Convert(new AsyncApiJsonSchema { Type = SchemaType.Null });
 
         // Assert
-        converted["nullable"]!.GetValue<bool>().ShouldBeTrue();
+        converted.ContainsKey("nullable").ShouldBeFalse();
         converted["enum"]!.AsArray().ShouldHaveSingleItem().ShouldBeNull();
     }
 
@@ -223,7 +229,7 @@ public class JsonSchemaToOpenApiConverterTests
         item["minProperties"]!.GetValue<int>().ShouldBe(1);
         item["maxProperties"]!.GetValue<int>().ShouldBe(3);
         item["allOf"]![0]!["writeOnly"]!.GetValue<bool>().ShouldBeTrue();
-        item["not"]!["nullable"]!.GetValue<bool>().ShouldBeTrue();
+        item["not"]!["enum"]!.AsArray().ShouldHaveSingleItem().ShouldBeNull();
     }
 
     [Fact]
@@ -249,6 +255,167 @@ public class JsonSchemaToOpenApiConverterTests
         converted["$ref"]!.GetValue<string>().ShouldBe("#/components/schemas/missing");
     }
 
+    [Fact]
+    public void Convert_EnumWithNullAndATypeExcludingNull_DropsTheNull()
+    {
+        // Arrange
+        var schema = new AsyncApiJsonSchema { Type = SchemaType.String, Enum = [new AsyncApiAny("ok"), new AsyncApiAny((JsonNode?)null)] };
+
+        // Act
+        var converted = Convert(schema);
+
+        // Assert
+        converted.ContainsKey("nullable").ShouldBeFalse();
+        converted["enum"]!.AsArray().ShouldHaveSingleItem()!.GetValue<string>().ShouldBe("ok");
+    }
+
+    [Fact]
+    public void Convert_EnumWithNullAndANullableType_KeepsTheNull()
+    {
+        // Arrange
+        var schema = new AsyncApiJsonSchema
+        {
+            Type = SchemaType.String | SchemaType.Null,
+            Enum = [new AsyncApiAny("ok"), new AsyncApiAny((JsonNode?)null)],
+        };
+
+        // Act
+        var converted = Convert(schema);
+
+        // Assert
+        converted["nullable"]!.GetValue<bool>().ShouldBeTrue();
+        converted["enum"]!.AsArray().Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public void Convert_EnumWithNullAndNoType_KeepsTheNull()
+    {
+        // Act
+        var converted = Convert(new AsyncApiJsonSchema { Enum = [new AsyncApiAny(1), new AsyncApiAny((JsonNode?)null)] });
+
+        // Assert
+        converted.ContainsKey("nullable").ShouldBeFalse();
+        converted["enum"]!.AsArray().Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public void Convert_ArrayWithoutItems_WritesUnconstrainedItems()
+    {
+        // Act
+        var converted = Convert(new AsyncApiJsonSchema { Type = SchemaType.Array });
+
+        // Assert
+        converted["items"]!.AsObject().Count.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Convert_SeveralTypesWithArray_PutsItemsOnTheArrayBranch()
+    {
+        // Arrange
+        var schema = new AsyncApiJsonSchema
+        {
+            Type = SchemaType.Array | SchemaType.String,
+            Items = new AsyncApiJsonSchema { Type = SchemaType.Integer },
+        };
+
+        // Act
+        var converted = Convert(schema);
+
+        // Assert
+        converted.ContainsKey("items").ShouldBeFalse();
+        var anyOf = converted["anyOf"]!.AsArray();
+        anyOf[0]!["type"]!.GetValue<string>().ShouldBe("array");
+        anyOf[0]!["items"]!["type"]!.GetValue<string>().ShouldBe("integer");
+        anyOf[1]!.AsObject().ContainsKey("items").ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Convert_SeveralTypesWithArrayAndNoItems_WritesUnconstrainedItems()
+    {
+        // Act
+        var converted = Convert(new AsyncApiJsonSchema { Type = SchemaType.Array | SchemaType.String });
+
+        // Assert
+        converted["anyOf"]![0]!["items"]!.AsObject().Count.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Convert_ConstAndEnum_KeepsTheValuesBothAllow()
+    {
+        // Arrange
+        var schema = new AsyncApiJsonSchema { Enum = [new AsyncApiAny(1), new AsyncApiAny(2)], Const = new AsyncApiAny(1) };
+
+        // Act
+        var converted = Convert(schema);
+
+        // Assert
+        converted["enum"]!.AsArray().ShouldHaveSingleItem()!.GetValue<int>().ShouldBe(1);
+    }
+
+    [Fact]
+    public void Convert_ConstOutsideEnum_AllowsNothing()
+    {
+        // Arrange
+        var schema = new AsyncApiJsonSchema { Enum = [new AsyncApiAny(1), new AsyncApiAny(2)], Const = new AsyncApiAny(3) };
+
+        // Act
+        var converted = Convert(schema);
+
+        // Assert
+        converted.ContainsKey("enum").ShouldBeFalse();
+        converted["allOf"]!.AsArray().ShouldHaveSingleItem()!["not"]!.AsObject().Count.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Convert_RecursiveReference_PointsAtAnOpenApiComponent()
+    {
+        // Arrange
+        var document = new AsyncApiDocument();
+        document.Components.Schemas["node"] = new AsyncApiMultiFormatSchema
+        {
+            Schema = new AsyncApiJsonSchema
+            {
+                Type = SchemaType.Object,
+                Properties = new Dictionary<string, AsyncApiJsonSchema>
+                {
+                    ["name"] = new() { Type = SchemaType.String | SchemaType.Null },
+                    ["next"] = new AsyncApiJsonSchemaReference("#/components/schemas/node"),
+                },
+            },
+        };
+
+        // Act
+        var converted = new JsonSchemaToOpenApiConverter(document).Convert(new AsyncApiJsonSchemaReference("#/components/schemas/node"));
+
+        // Assert
+        converted.Schema["properties"]!["next"]!["$ref"]!.GetValue<string>().ShouldBe("#/components/schemas/node.openapi/schema");
+        document.Components.Schemas.ContainsKey("node").ShouldBeTrue();
+        var component = document.Components.Schemas["node.openapi"];
+        component.SchemaFormat.ShouldBe(OpenApiSchemaPayloadOptions.SchemaFormat);
+        var openApi = component.Schema.ShouldBeOfType<OpenApiSchemaObject>().Schema;
+        openApi["properties"]!["name"]!["nullable"]!.GetValue<bool>().ShouldBeTrue();
+        openApi["properties"]!["next"]!["$ref"]!.GetValue<string>().ShouldBe("#/components/schemas/node.openapi/schema");
+    }
+
+    [Fact]
+    public void Convert_RecursiveReferenceWhoseCopyKeyIsTaken_PicksAnotherKey()
+    {
+        // Arrange
+        var document = new AsyncApiDocument();
+        document.Components.Schemas["node.openapi"] = new AsyncApiMultiFormatSchema { Schema = new AsyncApiJsonSchema() };
+        document.Components.Schemas["node"] = new AsyncApiMultiFormatSchema
+        {
+            Schema = new AsyncApiJsonSchema { Items = new AsyncApiJsonSchemaReference("#/components/schemas/node") },
+        };
+
+        // Act
+        var converted = new JsonSchemaToOpenApiConverter(document).Convert(new AsyncApiJsonSchemaReference("#/components/schemas/node"));
+
+        // Assert
+        converted.Schema["items"]!["$ref"]!.GetValue<string>().ShouldBe("#/components/schemas/node.openapi2/schema");
+        document.Components.Schemas.ContainsKey("node.openapi2").ShouldBeTrue();
+    }
+
     private static JsonObject Convert(AsyncApiJsonSchema schema) =>
-        new JsonSchemaToOpenApiConverter(new AsyncApiDocument()).Convert(schema);
+        new JsonSchemaToOpenApiConverter(new AsyncApiDocument()).Convert(schema).Schema;
 }

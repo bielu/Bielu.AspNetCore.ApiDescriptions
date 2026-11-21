@@ -2,6 +2,7 @@
 using Bielu.AspNetCore.AsyncApi.OpenApiSchema.Tests.Fixtures;
 using Bielu.AspNetCore.AsyncApi.Services;
 using ByteBard.AsyncAPI;
+using ByteBard.AsyncAPI.Models;
 using Json.Schema;
 using Shouldly;
 using Xunit;
@@ -36,7 +37,7 @@ public class OpenApiSchemaPayloadDocumentTests
     }
 
     [Fact]
-    public async Task AddOpenApiSchemaPayloads_InlinesReferencesAndKeepsARecursiveOneAsARef()
+    public async Task AddOpenApiSchemaPayloads_InlinesReferencesAndPointsARecursiveOneAtAnOpenApiComponent()
     {
         // Act
         using var document = await OpenApiTestApp.GetDocumentAsync(options => options.AddOpenApiSchemaPayloads());
@@ -44,12 +45,58 @@ public class OpenApiSchemaPayloadDocumentTests
         // Assert
         var category = Message(document, "orderPlaced").GetProperty("payload").GetProperty("schema")
             .GetProperty("properties").GetProperty("category");
-        category.GetProperty("nullable").GetBoolean().ShouldBeTrue();
         var child = category.GetProperty("properties").GetProperty("children").GetProperty("items");
         child.GetProperty("type").GetString().ShouldBe("object");
         child.GetProperty("properties").GetProperty("children").GetProperty("items").GetProperty("$ref").GetString()
+            .ShouldBe("#/components/schemas/category.openapi/schema");
+
+        var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
+        schemas.TryGetProperty("category", out _).ShouldBeTrue();
+        var copy = schemas.GetProperty("category.openapi");
+        copy.GetProperty("schemaFormat").GetString().ShouldBe("application/vnd.oai.openapi;version=3.0.0");
+        copy.GetProperty("schema").GetProperty("properties").GetProperty("children").GetProperty("items")
+            .GetProperty("$ref").GetString().ShouldBe("#/components/schemas/category.openapi/schema");
+    }
+
+    [Fact]
+    public async Task AddOpenApiSchemaPayloads_AsyncApi2_PointsARecursiveReferenceAtTheJsonSchemaComponent()
+    {
+        // Act
+        using var document = await OpenApiTestApp.GetDocumentAsync(options =>
+        {
+            options.AsyncApiVersion = AsyncApiVersion.AsyncApi2_0;
+            options.AddOpenApiSchemaPayloads();
+        });
+
+        // Assert
+        var child = Message(document, "orderPlaced").GetProperty("payload").GetProperty("properties")
+            .GetProperty("category").GetProperty("properties").GetProperty("children").GetProperty("items");
+        child.GetProperty("properties").GetProperty("children").GetProperty("items").GetProperty("$ref").GetString()
             .ShouldBe("#/components/schemas/category");
-        document.RootElement.GetProperty("components").GetProperty("schemas").TryGetProperty("category", out _).ShouldBeTrue();
+        var copy = document.RootElement.GetProperty("components").GetProperty("schemas").GetProperty("category.openapi");
+        copy.TryGetProperty("schemaFormat", out _).ShouldBeFalse();
+        copy.GetProperty("properties").GetProperty("children").GetProperty("items").GetProperty("$ref").GetString()
+            .ShouldBe("#/components/schemas/category");
+    }
+
+    [Fact]
+    public async Task AddOpenApiSchemaPayloads_KeepsThePayloadWrapperExtensions()
+    {
+        // Act
+        using var document = await OpenApiTestApp.GetDocumentAsync(options =>
+        {
+            options.AddDocumentTransformer((asyncApi, _, _) =>
+            {
+                asyncApi.Components.Messages["orderPlaced"].Payload.Extensions["x-owner"] = new AsyncApiAny("orders");
+                return Task.CompletedTask;
+            });
+            options.AddOpenApiSchemaPayloads();
+        });
+
+        // Assert
+        var payload = Message(document, "orderPlaced").GetProperty("payload");
+        payload.GetProperty("schemaFormat").GetString().ShouldBe("application/vnd.oai.openapi;version=3.0.0");
+        payload.GetProperty("x-owner").GetString().ShouldBe("orders");
     }
 
     [Fact]

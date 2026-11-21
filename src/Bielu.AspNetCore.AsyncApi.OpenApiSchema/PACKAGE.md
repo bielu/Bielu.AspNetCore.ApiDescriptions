@@ -27,7 +27,7 @@ builder.Services.AddAsyncApi(options => options
 | numeric `exclusiveMinimum` / `exclusiveMaximum` | the bound with `exclusiveMinimum: true` / `exclusiveMaximum: true` |
 | `const`, `examples` | a one-value `enum`, `example` |
 | `discriminator` property name | Discriminator Object |
-| `$ref` to `components/schemas` | written inline (a recursive one stays a `$ref`) |
+| `$ref` to `components/schemas` | written inline (a recursive one points at an OpenAPI copy, `<name>.openapi`) |
 
 The JSON Schema stays under `components/schemas`, and headers stay JSON Schema. The output validates against
 the official AsyncAPI 2.6.0 and 3.1.0 schemas, including their OpenAPI 3.0 Schema Object definition.

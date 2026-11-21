@@ -25,7 +25,8 @@ internal sealed class OpenApiSchemaPayloadDocumentTransformer(OpenApiSchemaPaylo
             message.Payload = new AsyncApiMultiFormatSchema
             {
                 SchemaFormat = OpenApiSchemaPayloadOptions.SchemaFormat,
-                Schema = new OpenApiSchemaObject(converter.Convert(payload)),
+                Schema = converter.Convert(payload),
+                Extensions = multiFormat.Extensions,
             };
         }
 

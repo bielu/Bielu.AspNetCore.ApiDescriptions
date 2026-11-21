@@ -43,11 +43,11 @@ dialect of JSON Schema, so most keywords carry over unchanged. These are rewritt
 | JSON Schema | OpenAPI 3.0 |
 | --- | --- |
 | `"type": ["null", "string"]` | `"type": "string", "nullable": true` |
-| several types, `"type": ["string", "integer"]` | `anyOf` with one `type` per branch |
-| `"type": "null"` | `"nullable": true, "enum": [null]` |
-| a `null` branch in `oneOf` / `anyOf` | dropped, with `"nullable": true` |
+| several types, `"type": ["string", "integer"]` | `anyOf` with one `type` per branch (an `array` branch gets the `items`), and `"enum": [null]` as a branch when `null` is one of them |
+| `"type": "null"` | `"enum": [null]` |
+| a `null` branch in `oneOf` / `anyOf` | kept as an `"enum": [null]` branch |
 | `"exclusiveMinimum": 0` | `"minimum": 0, "exclusiveMinimum": true` (likewise for the maximum) |
-| `const` | a one-value `enum` |
+| `const` | a one-value `enum`; beside an `enum`, the values both allow |
 | `examples` | `example`, the first of them |
 | `"discriminator": "kind"` | `"discriminator": { "propertyName": "kind" }` |
 | `false` schema | `"not": {}`, or `false` as `additionalProperties` |
@@ -59,8 +59,10 @@ OpenAPI 3.0 allows no keywords beyond its own, so `if`/`then`/`else`, `contains`
 ### References
 
 Referenced component schemas are written inline, so the whole payload is in the OpenAPI dialect. A recursive type
-cannot be inlined forever: the reference that would repeat a schema already being written stays a `$ref` to the JSON
-Schema under `components/schemas`. A reference outside `components/schemas`, or one that cannot be resolved, is kept
+cannot be inlined forever: the reference that would repeat a schema already being written points at an OpenAPI copy
+of that component, added under `components/schemas` as `<name>.openapi` with its own `schemaFormat`, so the payload
+never refers to JSON Schema. AsyncAPI 2.6 component schemas cannot declare a schema format, so in a 2.6 document the
+copy is written as the JSON Schema and the reference points at the original component. A reference outside `components/schemas`, or one that cannot be resolved, is kept
 as it is.
 
 ## Options

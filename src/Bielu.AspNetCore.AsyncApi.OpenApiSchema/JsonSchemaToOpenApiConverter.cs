@@ -17,11 +17,20 @@ internal sealed class JsonSchemaToOpenApiConverter(AsyncApiDocument document)
 {
     private const string SchemaReferencePrefix = "#/components/schemas/";
 
+    /// <summary>The suffix of the key of a component schema holding the OpenAPI copy of a recursive one.</summary>
+    internal const string ComponentKeySuffix = ".openapi";
+
     // The component schemas being written, so that a recursive reference stays a $ref instead of looping.
-    private readonly HashSet<string> _inlining = new(StringComparer.Ordinal);
+    private HashSet<string> _inlining = new(StringComparer.Ordinal);
+
+    // The OpenAPI component written for each recursive JSON Schema component, by the JSON Schema component's key.
+    private readonly Dictionary<string, string> _components = new(StringComparer.Ordinal);
+
+    // The AsyncAPI 3 reference to each OpenAPI component, with the AsyncAPI 2 one to write in its place.
+    private readonly Dictionary<string, string> _v2References = new(StringComparer.Ordinal);
 
     /// <summary>Converts a payload schema.</summary>
-    public JsonObject Convert(AsyncApiJsonSchema schema) => ConvertSchema(schema);
+    public OpenApiSchemaObject Convert(AsyncApiJsonSchema schema) => new(ConvertSchema(schema), _v2References);
 
     private JsonObject ConvertSchema(AsyncApiJsonSchema schema)
     {
@@ -32,24 +41,39 @@ internal sealed class JsonSchemaToOpenApiConverter(AsyncApiDocument document)
 
         if (schema is FalseApiSchema)
         {
-            // OpenAPI 3.0 has no boolean schemas: "not anything" says the same.
-            return new JsonObject { ["not"] = new JsonObject() };
+            return Impossible();
         }
 
         var result = new JsonObject();
         AddString(result, "title", schema.Title);
         AddString(result, "description", schema.Description);
 
-        var nullable = schema.Nullable || schema.Type?.HasFlag(SchemaType.Null) == true
-                       || schema.Enum?.Any(value => value?.GetNode() is null) == true;
+        // OpenAPI 3.0's nullable only adds null to the type beside it, so it is written with a single type only.
+        var allowsNull = schema.Nullable || schema.Type?.HasFlag(SchemaType.Null) == true;
         var types = SchemaTypes(schema.Type);
+        var items = schema.Items is { } itemSchema ? ConvertSchema(itemSchema) : null;
         if (types is [var single])
         {
             result["type"] = single;
+            if (single == "array")
+            {
+                // OpenAPI 3.0 requires items beside type array.
+                result["items"] = items ?? new JsonObject();
+            }
         }
         else if (types.Count > 1)
         {
-            result["anyOf"] = new JsonArray(types.Select(type => (JsonNode)new JsonObject { ["type"] = type }).ToArray());
+            var alternatives = types.Select(type => (JsonNode)TypeAlternative(type, items)).ToList();
+            if (allowsNull)
+            {
+                alternatives.Add(NullOnly());
+            }
+
+            result["anyOf"] = new JsonArray(alternatives.ToArray());
+        }
+        else if (items is not null)
+        {
+            result["items"] = items;
         }
 
         AddString(result, "format", schema.Format);
@@ -57,11 +81,6 @@ internal sealed class JsonSchemaToOpenApiConverter(AsyncApiDocument document)
         AddNumber(result, "maxLength", schema.MaxLength);
         AddNumber(result, "minLength", schema.MinLength);
         AddString(result, "pattern", schema.Pattern);
-
-        if (schema.Items is { } items)
-        {
-            result["items"] = ConvertSchema(items);
-        }
 
         AddNumber(result, "maxItems", schema.MaxItems);
         AddNumber(result, "minItems", schema.MinItems);
@@ -97,27 +116,14 @@ internal sealed class JsonSchemaToOpenApiConverter(AsyncApiDocument document)
         AddNumber(result, "minProperties", schema.MinProperties);
 
         AddSchemas(result, "allOf", schema.AllOf);
-        var oneOfIsNullable = AddAlternatives(result, "oneOf", schema.OneOf);
-        var anyOfIsNullable = AddAlternatives(result, "anyOf", schema.AnyOf);
-        nullable |= oneOfIsNullable || anyOfIsNullable;
+        AddAlternatives(result, "oneOf", schema.OneOf);
+        AddAlternatives(result, "anyOf", schema.AnyOf);
         if (schema.Not is { } not)
         {
             result["not"] = ConvertSchema(not);
         }
 
-        if (schema.Enum is { Count: > 0 } values)
-        {
-            result["enum"] = new JsonArray(values.Select(value => value?.GetNode()?.DeepClone()).ToArray());
-        }
-        else if (schema.Const?.GetNode() is { } constant)
-        {
-            result["enum"] = new JsonArray(constant.DeepClone());
-        }
-        else if (schema.Type == SchemaType.Null)
-        {
-            // A schema of type null: the only value it allows.
-            result["enum"] = new JsonArray((JsonNode?)null);
-        }
+        AddEnum(result, schema, types.Count > 0 && !allowsNull);
 
         if (schema.Default?.GetNode() is { } defaultValue)
         {
@@ -134,7 +140,7 @@ internal sealed class JsonSchemaToOpenApiConverter(AsyncApiDocument document)
             result["discriminator"] = new JsonObject { ["propertyName"] = schema.Discriminator };
         }
 
-        if (nullable)
+        if (allowsNull && types.Count == 1)
         {
             result["nullable"] = true;
         }
@@ -169,13 +175,17 @@ internal sealed class JsonSchemaToOpenApiConverter(AsyncApiDocument document)
         }
 
         var key = reference[SchemaReferencePrefix.Length..];
-        if (_inlining.Contains(key)
-            || document.Components?.Schemas?.TryGetValue(key, out var target) != true
+        if (document.Components?.Schemas?.TryGetValue(key, out var target) != true
             || target?.Schema is not AsyncApiJsonSchema targetSchema)
         {
-            // A recursive reference, or one this document cannot resolve: it points at the JSON Schema component,
-            // which stays in the document.
+            // One this document cannot resolve: kept as it is.
             return new JsonObject { ["$ref"] = reference };
+        }
+
+        if (_inlining.Contains(key))
+        {
+            // A recursive reference cannot be inlined forever: it points at an OpenAPI copy of the component.
+            return new JsonObject { ["$ref"] = ComponentReference(key, targetSchema) };
         }
 
         _inlining.Add(key);
@@ -190,35 +200,130 @@ internal sealed class JsonSchemaToOpenApiConverter(AsyncApiDocument document)
     }
 
     /// <summary>
-    /// Writes <c>oneOf</c> or <c>anyOf</c> without its <c>null</c> branches, which OpenAPI 3.0 expresses as
-    /// <c>nullable</c>. Returns whether there was one.
+    /// Returns the reference to the OpenAPI copy of a component schema, adding the copy the first time. In AsyncAPI 3
+    /// the copy is a Multi Format Schema Object declaring the OpenAPI format, so the reference points at its
+    /// <c>schema</c>. AsyncAPI 2 component schemas cannot declare a format, so there the copy is written as the
+    /// original JSON Schema and the reference points at the original component.
     /// </summary>
-    private bool AddAlternatives(JsonObject result, string keyword, IList<AsyncApiJsonSchema>? alternatives)
+    private string ComponentReference(string key, AsyncApiJsonSchema schema)
+    {
+        if (_components.TryGetValue(key, out var existing))
+        {
+            return existing;
+        }
+
+        var schemas = document.Components!.Schemas;
+        var componentKey = key + ComponentKeySuffix;
+        for (var index = 2; schemas.ContainsKey(componentKey); index++)
+        {
+            componentKey = $"{key}{ComponentKeySuffix}{index}";
+        }
+
+        var reference = $"{SchemaReferencePrefix}{componentKey}/schema";
+        _components[key] = reference;
+        _v2References[reference] = SchemaReferencePrefix + key;
+
+        // Reserved before it is converted, so a reference back to it inside resolves to the same copy.
+        var component = new AsyncApiMultiFormatSchema { SchemaFormat = OpenApiSchemaPayloadOptions.SchemaFormat };
+        schemas[componentKey] = component;
+
+        var inlining = _inlining;
+        _inlining = new HashSet<string>(StringComparer.Ordinal) { key };
+        try
+        {
+            component.Schema = new OpenApiSchemaObject(ConvertSchema(schema), _v2References, schema);
+        }
+        finally
+        {
+            _inlining = inlining;
+        }
+
+        return reference;
+    }
+
+    /// <summary>
+    /// Writes <c>oneOf</c> or <c>anyOf</c>. A <c>null</c> branch stays a branch of its own, since <c>nullable</c> on
+    /// this schema would not let null past the other branches.
+    /// </summary>
+    private void AddAlternatives(JsonObject result, string keyword, IList<AsyncApiJsonSchema>? alternatives)
     {
         if (alternatives is not { Count: > 0 })
         {
-            return false;
+            return;
         }
 
-        var nonNull = alternatives.Where(alternative => !IsNullOnly(alternative)).ToList();
-        if (nonNull.Count > 0)
+        var converted = new JsonArray(alternatives.Select(alternative => (JsonNode)ConvertSchema(alternative)).ToArray());
+        if (result[keyword] is JsonArray existing)
         {
-            if (result[keyword] is JsonArray existing)
-            {
-                // The anyOf of several types is there already: both must hold.
-                result.Remove(keyword);
-                result["allOf"] = MergeAllOf(result["allOf"] as JsonArray,
-                    new JsonObject { [keyword] = existing },
-                    new JsonObject { [keyword] = new JsonArray(nonNull.Select(alternative => (JsonNode)ConvertSchema(alternative)).ToArray()) });
-            }
-            else
-            {
-                result[keyword] = new JsonArray(nonNull.Select(alternative => (JsonNode)ConvertSchema(alternative)).ToArray());
-            }
+            // The anyOf of several types is there already: both must hold.
+            result.Remove(keyword);
+            result["allOf"] = MergeAllOf(result["allOf"] as JsonArray,
+                new JsonObject { [keyword] = existing },
+                new JsonObject { [keyword] = converted });
+        }
+        else
+        {
+            result[keyword] = converted;
+        }
+    }
+
+    /// <summary>
+    /// Writes <c>enum</c> from <c>enum</c> and <c>const</c>: the values both allow. A <c>null</c> value is left out
+    /// when the type excludes it. When no value is left, the schema allows nothing.
+    /// </summary>
+    private static void AddEnum(JsonObject result, AsyncApiJsonSchema schema, bool typeExcludesNull)
+    {
+        List<JsonNode?>? values = null;
+        if (schema.Enum is { Count: > 0 } enumValues)
+        {
+            values = enumValues.Select(value => value?.GetNode()).ToList();
         }
 
-        return nonNull.Count < alternatives.Count;
+        if (schema.Const?.GetNode() is { } constant)
+        {
+            values = values is null ? [constant] : values.Where(value => JsonNode.DeepEquals(value, constant)).ToList();
+        }
+        else if (values is null && schema.Type == SchemaType.Null)
+        {
+            // A schema of type null: the only value it allows.
+            values = [null];
+        }
+
+        if (values is null)
+        {
+            return;
+        }
+
+        if (typeExcludesNull)
+        {
+            values.RemoveAll(value => value is null);
+        }
+
+        if (values.Count == 0)
+        {
+            result["allOf"] = MergeAllOf(result["allOf"] as JsonArray, Impossible());
+            return;
+        }
+
+        result["enum"] = new JsonArray(values.Select(value => value?.DeepClone()).ToArray());
     }
+
+    private static JsonObject TypeAlternative(string type, JsonObject? items)
+    {
+        var alternative = new JsonObject { ["type"] = type };
+        if (type == "array")
+        {
+            alternative["items"] = items?.DeepClone() ?? new JsonObject();
+        }
+
+        return alternative;
+    }
+
+    // OpenAPI 3.0 has no type null: an enum of only null allows null and nothing else.
+    private static JsonObject NullOnly() => new() { ["enum"] = new JsonArray((JsonNode?)null) };
+
+    // OpenAPI 3.0 has no boolean schemas: "not anything" says false.
+    private static JsonObject Impossible() => new() { ["not"] = new JsonObject() };
 
     private static JsonArray MergeAllOf(JsonArray? allOf, params JsonObject[] schemas)
     {
@@ -238,9 +343,6 @@ internal sealed class JsonSchemaToOpenApiConverter(AsyncApiDocument document)
             result[keyword] = new JsonArray(schemas.Select(schema => (JsonNode)ConvertSchema(schema)).ToArray());
         }
     }
-
-    private static bool IsNullOnly(AsyncApiJsonSchema schema) =>
-        schema is not AsyncApiJsonSchemaReference && schema.Type == SchemaType.Null;
 
     /// <summary>
     /// Writes the numeric bounds. A numeric <c>exclusiveMinimum</c>/<c>exclusiveMaximum</c> becomes the bound with a
