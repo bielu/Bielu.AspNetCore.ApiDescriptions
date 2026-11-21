@@ -6,22 +6,17 @@
 @container bielu-arazzo (max-width: 560px) {
   .bielu-arazzo .ba-table,
   .bielu-arazzo .ba-table tbody {
-    display: block;
+    @apply block;
   }
   .bielu-arazzo .ba-table tr {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 2px 10px;
-    padding: 6px 0;
-    border-bottom: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+    @apply flex flex-wrap items-baseline gap-y-0.5 gap-x-2.5 py-1.5 px-0 border-b border-b-border;
   }
   .bielu-arazzo .ba-table td {
-    padding: 0;
+    @apply p-0;
     border-bottom: none;
   }
   .bielu-arazzo .ba-table td:last-child:not(:first-child) {
-    flex-basis: 100%;
+    @apply basis-full;
   }
   .bielu-arazzo .ba-replacements td:last-child {
     flex-basis: auto;
@@ -30,48 +25,39 @@
     grid-template-columns: 1fr;
   }
   .bielu-arazzo .ba-key-values dd {
-    margin-bottom: 4px;
+    @apply mb-1;
   }
 }
 .bielu-arazzo .ba-filter {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 12px;
-  margin-top: 20px;
+  @apply flex flex-wrap items-center gap-y-1.5 gap-x-3 mt-5;
 }
 .bielu-arazzo .ba-filter-input {
+  @apply py-1.5 px-2.5 border border-border rounded bg-b-1 text-c-1;
   flex: 1 1 240px;
   max-width: 420px;
-  padding: 6px 10px;
-  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
-  border-radius: var(--scalar-radius, 4px);
-  background: var(--scalar-background-1);
-  color: var(--scalar-color-1);
   font: inherit;
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-filter-input:focus-visible {
-  outline: 2px solid var(--scalar-color-accent);
+  @apply outline-2 outline-c-accent;
   outline-offset: 1px;
 }
 .bielu-arazzo .ba-render-error {
-  margin: 8px 0;
-  padding: 8px 12px;
+  @apply my-2 mx-0 py-2 px-3;
   border: var(--scalar-border-width, 1px) solid var(--scalar-color-red, #d4413b);
-  border-radius: var(--scalar-radius, 4px);
+  @apply rounded;
   background: color-mix(in srgb, var(--scalar-color-red, #d4413b) 10%, transparent);
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-diagram:focus-visible {
-  outline: 2px solid var(--scalar-color-accent);
+  @apply outline-2 outline-c-accent;
   outline-offset: 2px;
 }
 .bielu-arazzo .ba-diagram-node:focus {
   outline: none;
 }
 .bielu-arazzo .ba-diagram-node:focus-visible rect {
-  stroke: var(--scalar-color-accent);
+  @apply stroke-c-accent;
   stroke-width: 2.5;
 }
 .bielu-arazzo .ba-self {
@@ -79,139 +65,100 @@
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-extensions {
-  margin: 8px 0;
+  @apply my-2 mx-0;
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-extensions summary {
-  width: fit-content;
-  color: var(--scalar-color-2);
-  cursor: pointer;
+  @apply w-fit text-c-2 cursor-pointer;
 }
 .bielu-arazzo .ba-extensions summary:hover {
-  color: var(--scalar-color-1);
+  @apply text-c-1;
 }
 .bielu-arazzo .ba-extensions .ba-key-values {
-  margin-top: 4px;
+  @apply mt-1;
 }
 .bielu-arazzo .ba-actions .ba-extensions {
-  flex-basis: 100%;
+  @apply basis-full;
   margin: 0 0 4px 12px;
 }
 .bielu-arazzo .ba-components {
-  margin-top: 48px;
-  padding-top: 32px;
-  border-top: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  @apply mt-12 pt-8 border-t border-t-border;
 }
 .bielu-arazzo .ba-component {
-  margin-bottom: 12px;
+  @apply mb-3;
 }
 .bielu-arazzo .ba-component-name {
-  display: inline-block;
-  margin-bottom: 4px;
-  font-weight: var(--scalar-semibold, 600);
+  @apply inline-block mb-1 font-medium;
 }
 .bielu-arazzo .ba-criterion-type {
-  margin-right: 6px;
-  font-family: var(--scalar-font-code);
+  @apply mr-1.5 font-code;
 }
 .bielu-arazzo .ba-action-parameters {
-  display: grid;
+  @apply grid gap-y-0.5 gap-x-3 basis-full text-c-2;
   grid-template-columns: auto 1fr;
-  gap: 2px 12px;
-  flex-basis: 100%;
   margin: 2px 0 4px 12px;
-  color: var(--scalar-color-2);
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-action-parameters dd {
-  margin: 0;
-  word-break: break-all;
+  @apply m-0 break-all;
 }
 .bielu-arazzo .ba-badge code {
   font-size: inherit;
 }
 .bielu-arazzo .ba-code {
-  margin: 0;
-  padding: 10px 12px;
-  overflow: auto;
-  border-radius: var(--scalar-radius, 4px);
-  background: var(--scalar-background-2);
+  @apply m-0 py-2.5 px-3 overflow-auto rounded bg-b-2;
 }
 .bielu-arazzo .ba-step-title-id {
-  font-family: var(--scalar-font-code);
+  @apply font-code;
 }
 .bielu-arazzo .ba-anchor {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  @apply flex items-center gap-1.5;
 }
 .bielu-arazzo .ba-anchor-button {
-  padding: 0 4px;
+  @apply py-0 px-1 text-c-3 cursor-pointer opacity-0;
   border: none;
   background: none;
-  color: var(--scalar-color-3);
   font-size: var(--scalar-small, 13px);
-  cursor: pointer;
-  opacity: 0;
 }
 .bielu-arazzo .ba-anchor:hover .ba-anchor-button,
 .bielu-arazzo .ba-anchor-button:focus-visible {
-  opacity: 1;
+  @apply opacity-100;
 }
 .bielu-arazzo .ba-anchor-button:hover {
-  color: var(--scalar-color-accent);
+  @apply text-c-accent;
 }
 .bielu-arazzo .ba-workflow-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  @apply flex items-start justify-between gap-4;
 }
 .bielu-arazzo .ba-workflow-heading {
-  min-width: 0;
+  @apply min-w-0;
 }
 .bielu-arazzo .ba-workflow-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: flex-end;
+  @apply flex flex-wrap gap-1.5 justify-end;
 }
 .bielu-arazzo .ba-step-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
+  @apply flex items-start gap-1.5;
 }
 .bielu-arazzo .ba-step-heading {
-  min-width: 0;
-  flex: 1;
+  @apply min-w-0 flex-1;
 }
 .bielu-arazzo .ba-step-toggle {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  margin-top: 2px;
-  padding: 4px;
+  @apply shrink-0 w-6 h-6 mt-0.5 p-1;
   border: none;
-  border-radius: var(--scalar-radius, 4px);
+  @apply rounded;
   background: none;
-  color: var(--scalar-color-3);
-  cursor: pointer;
+  @apply text-c-3 cursor-pointer;
 }
 .bielu-arazzo .ba-step-toggle:hover,
 .bielu-arazzo .ba-step-toggle:focus-visible {
-  color: var(--scalar-color-1);
-  background: var(--scalar-background-2);
+  @apply text-c-1 bg-b-2;
 }
 .bielu-arazzo .ba-step-toggle:focus-visible {
-  outline: 2px solid var(--scalar-color-accent);
+  @apply outline-2 outline-c-accent;
   outline-offset: 1px;
 }
 .bielu-arazzo .ba-chevron {
-  display: block;
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
+  @apply block w-4 h-4 fill-none stroke-current;
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -222,10 +169,8 @@
   transform: none;
 }
 .bielu-arazzo .ba-step-collapsed-summary {
-  margin-top: 4px;
-  color: var(--scalar-color-2);
+  @apply mt-1 text-c-2 wrap-anywhere;
   font-size: var(--scalar-small, 13px);
-  overflow-wrap: anywhere;
 }
 @media (prefers-reduced-motion: reduce) {
   .bielu-arazzo .ba-chevron {
@@ -233,34 +178,20 @@
   }
 }
 .bielu-arazzo .ba-toggle {
-  flex-shrink: 0;
-  padding: 4px 10px;
-  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
-  border-radius: var(--scalar-radius, 4px);
-  background: var(--scalar-background-1);
-  color: var(--scalar-color-2);
+  @apply shrink-0 py-1 px-2.5 border border-border rounded bg-b-1 text-c-2 cursor-pointer;
   font: inherit;
   font-size: var(--scalar-mini, 12px);
-  cursor: pointer;
 }
 .bielu-arazzo .ba-toggle:hover {
-  color: var(--scalar-color-1);
-  background: var(--scalar-background-2);
+  @apply text-c-1 bg-b-2;
 }
 .bielu-arazzo .ba-icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
+  @apply inline-flex items-center justify-center w-6.5 h-6.5 p-0;
   border: none;
-  border-radius: var(--scalar-radius, 4px);
+  @apply rounded;
   background: none;
-  color: var(--scalar-color-2);
-  cursor: pointer;
+  @apply text-c-2 cursor-pointer;
 }
 .bielu-arazzo .ba-icon-button:hover {
-  background: var(--scalar-background-2);
-  color: var(--scalar-color-1);
+  @apply bg-b-2 text-c-1;
 }

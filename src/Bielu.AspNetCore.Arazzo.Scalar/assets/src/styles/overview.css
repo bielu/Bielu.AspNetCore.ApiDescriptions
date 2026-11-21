@@ -1,53 +1,42 @@
 /* The workflow overview diagram: layout, nodes, edges, bands, legend and the pages view. */
 /* Steps on the left and the overview beside them once there is room for both, as in the POC. */
 .bielu-arazzo .ba-workflow-content {
-  display: grid;
+  @apply grid gap-8;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 32px;
 }
 @container bielu-arazzo (min-width: 960px) {
   .bielu-arazzo .ba-workflow-content {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   }
   .bielu-arazzo .ba-overview {
-    position: sticky;
+    @apply sticky;
     top: calc(var(--refs-viewport-offset, 0px) + 24px);
   }
 }
 .bielu-arazzo .ba-workflow-aside {
-  min-width: 0;
-  margin-top: 16px;
+  @apply min-w-0 mt-4;
 }
 .bielu-arazzo .ba-overview {
-  padding: 12px;
-  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
-  border-radius: var(--scalar-radius-lg, 8px);
-  background: var(--scalar-background-1);
+  @apply p-3 border border-border rounded-lg bg-b-1;
 }
 .bielu-arazzo .ba-overview-header,
 .bielu-arazzo .ba-dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  @apply flex items-center justify-between gap-2 mb-2;
 }
 .bielu-arazzo .ba-overview-title {
   font-size: var(--scalar-mini, 12px);
-  font-weight: var(--scalar-bold, 700);
+  @apply font-bold;
   letter-spacing: normal;
-  color: var(--scalar-color-2);
+  @apply text-c-2;
 }
 .bielu-arazzo .ba-overview-hint {
-  margin-top: 6px;
+  @apply mt-1.5;
   font-size: var(--scalar-mini, 12px);
 }
 .bielu-arazzo .ba-diagram {
-  display: flex;
-  justify-content: center;
+  @apply flex justify-center overflow-hidden;
   max-height: min(560px, calc(var(--refs-viewport-height, 100vh) - 140px));
-  overflow: hidden;
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -61,39 +50,27 @@
   cursor: grabbing;
 }
 .bielu-arazzo .ba-diagram-node rect.ba-diagram-spec {
+  @apply stroke-none;
   fill: var(--ba-spec-color);
-  stroke: none;
 }
 /* Under the diagram rather than over it, so it never hides a step box. */
 .bielu-arazzo .ba-overview-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 4px 12px;
-  margin-top: 6px;
+  @apply flex flex-wrap items-baseline justify-between gap-y-1 gap-x-3 mt-1.5;
 }
 .bielu-arazzo .ba-overview-footer .ba-overview-hint {
-  margin-top: 0;
+  @apply mt-0;
 }
 .bielu-arazzo .ba-diagram-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin: 0;
-  padding: 0;
-  color: var(--scalar-color-2);
+  @apply flex flex-wrap gap-y-1 gap-x-3 m-0 p-0 text-c-2;
   font-size: var(--scalar-mini, 12px);
   list-style: none;
 }
 .bielu-arazzo .ba-diagram-legend li {
-  display: flex;
-  align-items: center;
+  @apply flex items-center;
   gap: 5px;
 }
 .bielu-arazzo .ba-diagram-legend-swatch {
-  width: 6px;
-  height: 14px;
+  @apply w-1.5 h-3.5;
   border-radius: 3px;
   background: var(--ba-spec-color);
 }
@@ -102,23 +79,20 @@
   will-change: transform;
 }
 .bielu-arazzo .ba-diagram svg {
-  display: block;
+  @apply block;
   /* Sized by the diagram itself (its scale is kept across expanding and collapsing workflows). */
   max-width: none;
   overflow: visible;
 }
 .bielu-arazzo .ba-diagram-node rect {
-  fill: var(--scalar-background-2);
-  stroke: var(--scalar-border-color);
-  stroke-width: 1;
+  @apply fill-b-2 stroke-border stroke-1;
 }
 .bielu-arazzo .ba-diagram-node text {
-  fill: var(--scalar-color-1);
-  font-family: var(--scalar-font-code);
+  @apply fill-c-1 font-code;
   font-size: 12px;
 }
 .bielu-arazzo .ba-diagram-link {
-  cursor: pointer;
+  @apply cursor-pointer;
 }
 /* A step that retries itself: a pill inside the right end of its box, in orange, as a retry is not yet a failure. */
 .bielu-arazzo .ba-diagram-node .ba-diagram-retry rect {
@@ -126,196 +100,174 @@
   stroke: color-mix(in srgb, var(--scalar-color-orange, #c2700c) 45%, transparent);
 }
 .bielu-arazzo .ba-diagram-node .ba-diagram-retry text {
-  fill: var(--scalar-color-2);
+  @apply fill-c-2;
   font-size: 10.5px;
 }
 .bielu-arazzo .ba-diagram-link:hover rect {
-  stroke: var(--scalar-color-accent);
+  @apply stroke-c-accent;
 }
 .bielu-arazzo .ba-diagram-node-success rect {
+  @apply stroke-green;
   fill: color-mix(in srgb, var(--scalar-color-green, #2e9d4d) 14%, var(--scalar-background-1));
-  stroke: var(--scalar-color-green, #2e9d4d);
 }
 .bielu-arazzo .ba-diagram-node-failure rect {
+  @apply stroke-red;
   fill: color-mix(in srgb, var(--scalar-color-red, #d4413b) 14%, var(--scalar-background-1));
-  stroke: var(--scalar-color-red, #d4413b);
 }
 .bielu-arazzo .ba-diagram-node-success text,
 .bielu-arazzo .ba-diagram-node-failure text {
-  font-family: var(--scalar-font);
-  font-weight: var(--scalar-semibold, 600);
+  @apply font-sans font-medium;
 }
 .bielu-arazzo .ba-diagram-edge {
-  fill: none;
-  stroke: var(--scalar-color-3);
+  @apply fill-none stroke-c-3;
   stroke-width: 1.4;
 }
 .bielu-arazzo .ba-diagram-arrow {
-  fill: var(--scalar-color-3);
+  @apply fill-c-3;
 }
 .bielu-arazzo .ba-diagram-edge.ba-diagram-success {
-  stroke: var(--scalar-color-green, #2e9d4d);
+  @apply stroke-green;
 }
 .bielu-arazzo .ba-diagram-arrow.ba-diagram-success {
-  fill: var(--scalar-color-green, #2e9d4d);
+  @apply fill-green;
 }
 .bielu-arazzo .ba-diagram-edge.ba-diagram-failure {
-  stroke: var(--scalar-color-red, #d4413b);
+  @apply stroke-red;
   stroke-dasharray: 5 3;
 }
 .bielu-arazzo .ba-diagram-arrow.ba-diagram-failure {
-  fill: var(--scalar-color-red, #d4413b);
+  @apply fill-red;
 }
 /* A workflow a step or an action invokes: a thick outline and italic name set it apart from a step that calls an API. */
 .bielu-arazzo .ba-diagram-node-workflow > rect:first-of-type {
-  fill: var(--scalar-background-1);
-  stroke: var(--scalar-border-color);
+  @apply fill-b-1 stroke-border;
   stroke-width: 3;
 }
 .bielu-arazzo .ba-diagram-node-workflow > text {
-  font-style: italic;
+  @apply italic;
 }
 /* Keyboard focus wins over the workflow, expanded and cycle outlines above and below, which would otherwise hide it. */
 .bielu-arazzo .ba-diagram-node.ba-diagram-node:focus-visible > rect:first-of-type {
-  stroke: var(--scalar-color-accent);
+  @apply stroke-c-accent;
   stroke-width: 3.5;
   stroke-dasharray: none;
 }
 .bielu-arazzo .ba-diagram-node-expanded > rect:first-of-type {
-  stroke: var(--scalar-color-accent);
+  @apply stroke-c-accent;
 }
 .bielu-arazzo .ba-diagram-node-cycle > rect:first-of-type {
   stroke-dasharray: 4 3;
 }
 .bielu-arazzo .ba-diagram-toggle {
-  cursor: pointer;
+  @apply cursor-pointer;
 }
 .bielu-arazzo .ba-diagram-toggle rect {
-  fill: var(--scalar-background-2);
-  stroke: var(--scalar-border-color);
-  stroke-width: 1;
+  @apply fill-b-2 stroke-border stroke-1;
 }
 .bielu-arazzo .ba-diagram-toggle text {
-  fill: var(--scalar-color-1);
-  font-family: var(--scalar-font);
+  @apply fill-c-1 font-sans;
   font-size: 12px;
-  font-weight: var(--scalar-semibold, 600);
+  @apply font-medium;
   font-style: normal;
 }
 .bielu-arazzo .ba-diagram-toggle:hover rect,
 .bielu-arazzo .ba-diagram-toggle:focus-visible rect {
-  stroke: var(--scalar-color-accent);
+  @apply stroke-c-accent;
 }
 .bielu-arazzo .ba-diagram-toggle:focus-visible {
   outline: none;
 }
 .bielu-arazzo .ba-diagram-toggle-cycle {
-  cursor: help;
+  @apply cursor-help;
 }
 .bielu-arazzo .ba-diagram-group rect {
   fill: color-mix(in srgb, var(--scalar-color-3) 6%, transparent);
-  stroke: var(--scalar-border-color);
+  @apply stroke-border;
   stroke-dasharray: 3 3;
-  stroke-width: 1;
+  @apply stroke-1;
 }
 .bielu-arazzo .ba-diagram-group text {
-  fill: var(--scalar-color-2);
-  font-family: var(--scalar-font-code);
+  @apply fill-c-2 font-code;
   font-size: 11px;
 }
 /* Back from a workflow a retry ran to the step that runs again. */
 .bielu-arazzo .ba-diagram-edge.ba-diagram-return {
-  stroke: var(--scalar-color-orange, #d97706);
+  @apply stroke-orange;
   stroke-dasharray: 2 3;
 }
 .bielu-arazzo .ba-diagram-arrow.ba-diagram-return {
-  fill: var(--scalar-color-orange, #d97706);
+  @apply fill-orange;
 }
 /* From an expanded workflow node into its first steps. */
 .bielu-arazzo .ba-diagram-edge.ba-diagram-expand {
-  stroke: var(--scalar-color-3);
+  @apply stroke-c-3;
   stroke-dasharray: 1 3;
 }
 .bielu-arazzo .ba-nested {
-  margin-top: 8px;
+  @apply mt-2;
 }
 .bielu-arazzo .ba-nested-steps {
+  @apply pl-5;
   margin: 8px 0 0;
-  padding-left: 20px;
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-nested-steps li {
-  padding: 2px 0;
+  @apply py-0.5 px-0;
 }
 /* Pages view: a band per page, behind the steps the user takes on it. */
 .bielu-arazzo .ba-diagram-band rect {
   fill: color-mix(in srgb, var(--scalar-color-accent) 7%, transparent);
   stroke: color-mix(in srgb, var(--scalar-color-accent) 35%, transparent);
-  stroke-width: 1;
+  @apply stroke-1;
 }
 /* A page title's background: the page under it, so the arrows it sits on pass behind it. */
 .bielu-arazzo .ba-diagram-band-title rect {
   fill: color-mix(in srgb, var(--scalar-color-accent) 7%, var(--scalar-background-1));
 }
 .bielu-arazzo .ba-diagram-band-title.ba-diagram-band-none rect {
-  fill: var(--scalar-background-1);
-  stroke: none;
+  @apply fill-b-1 stroke-none;
 }
 .bielu-arazzo .ba-diagram-band-title text,
 .bielu-arazzo .ba-diagram-band text {
-  fill: var(--scalar-color-2);
-  font-family: var(--scalar-font);
+  @apply fill-c-2 font-sans;
   font-size: 11px;
-  font-weight: var(--scalar-semibold, 600);
+  @apply font-medium;
 }
 .bielu-arazzo .ba-diagram-band-none rect {
   fill: color-mix(in srgb, var(--scalar-color-3) 5%, transparent);
-  stroke: var(--scalar-border-color);
+  @apply stroke-border;
   stroke-dasharray: 3 3;
 }
 .bielu-arazzo .ba-diagram-band-none text {
-  fill: var(--scalar-color-3);
+  @apply fill-c-3;
   font-weight: normal;
-  font-style: italic;
+  @apply italic;
 }
 .bielu-arazzo .ba-diagram-node text.ba-diagram-subtitle {
-  fill: var(--scalar-color-2);
-  font-family: var(--scalar-font);
+  @apply fill-c-2 font-sans;
   font-size: 10.5px;
   font-weight: normal;
 }
 .bielu-arazzo .ba-view-toggle {
-  display: inline-flex;
+  @apply inline-flex;
   margin-left: auto;
-  margin-right: 6px;
-  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
-  border-radius: var(--scalar-radius, 6px);
-  overflow: hidden;
+  @apply mr-1.5 border border-border rounded overflow-hidden;
 }
 .bielu-arazzo .ba-view-toggle button {
-  padding: 2px 8px;
+  @apply py-0.5 px-2 text-c-2 cursor-pointer;
   border: 0;
   background: transparent;
-  color: var(--scalar-color-2);
   font-size: var(--scalar-mini, 12px);
-  cursor: pointer;
 }
 .bielu-arazzo .ba-view-toggle button[aria-pressed='true'] {
-  background: var(--scalar-background-3, var(--scalar-background-2));
-  color: var(--scalar-color-1);
+  @apply bg-b-3 text-c-1;
 }
 .bielu-arazzo .ba-step-page {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 2px;
-  color: var(--scalar-color-2);
+  @apply flex flex-wrap items-center gap-1.5 mb-0.5 text-c-2;
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-diagram-legend-band {
-  width: 14px;
-  height: 10px;
+  @apply w-3.5 h-2.5;
   border: 1px solid color-mix(in srgb, var(--scalar-color-accent) 35%, transparent);
   border-radius: 3px;
   background: color-mix(in srgb, var(--scalar-color-accent) 7%, transparent);
@@ -325,40 +277,33 @@
   background: transparent;
 }
 .bielu-arazzo .ba-diagram-legend-end {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 12px;
+  @apply inline-flex items-center justify-center w-4 h-3;
   border-radius: 6px;
   font-size: 9px;
 }
 .bielu-arazzo .ba-diagram-legend-end-success {
+  @apply text-green;
   border: 1px solid var(--scalar-color-green, #2e9d4d);
-  color: var(--scalar-color-green, #2e9d4d);
 }
 .bielu-arazzo .ba-diagram-legend-end-failure {
   border: 1px solid var(--scalar-color-red, #d4413b);
 }
 .bielu-arazzo .ba-diagram-legend-workflow {
-  width: 14px;
-  height: 12px;
+  @apply w-3.5 h-3;
   border: 3px solid var(--scalar-border-color);
   border-radius: 3px;
   box-sizing: border-box;
 }
 .bielu-arazzo .ba-diagram-legend-line {
-  width: 16px;
+  @apply w-4;
   height: 0;
   border-top: 2px dashed var(--ba-line-color);
 }
 .bielu-arazzo .ba-diagram-edge-label rect {
-  fill: var(--scalar-background-1);
-  stroke: var(--scalar-border-color);
+  @apply fill-b-1 stroke-border;
   stroke-width: 0.5;
 }
 .bielu-arazzo .ba-diagram-edge-label text {
-  fill: var(--scalar-color-2);
-  font-family: var(--scalar-font-code);
+  @apply fill-c-2 font-code;
   font-size: 10.5px;
 }

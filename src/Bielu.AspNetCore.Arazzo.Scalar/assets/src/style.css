@@ -8,6 +8,14 @@
  *
  * The files are imported in the order their rules had in the single block they came from: rules of
  * equal specificity resolve by order, so reordering the imports can change what wins.
+ *
+ * Declarations a Scalar utility reproduces exactly are written as `@apply` (`text-c-2` for
+ * `--scalar-color-2`, `border border-border`, `rounded-lg`, spacing on the 4px grid); the rest stays
+ * plain CSS. Font sizes stay plain because Scalar's `--scalar-small`/`--scalar-mini` are not the
+ * variables its `text-*` utilities use, and so does `list-style: none`, whose shorthand also resets
+ * the marker position a <summary> gets from the browser. Within a rule an `@apply` stays where its
+ * declarations were whenever a plain declaration of the same family follows, so overrides keep their
+ * order.
  */
 @import "@bielu/scalar-core/tailwind.css";
 
