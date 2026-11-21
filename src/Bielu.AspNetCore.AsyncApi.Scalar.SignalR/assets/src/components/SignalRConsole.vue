@@ -575,8 +575,8 @@ onBeforeUnmount(() => void disconnect())
 }
 
 .bsr__pill[data-state='connected'] {
-  background: color-mix(in srgb, #2e7d32 18%, transparent);
-  color: #2e7d32;
+  background: color-mix(in srgb, var(--scalar-color-green) 18%, transparent);
+  color: var(--scalar-color-green);
 }
 
 .bsr__card {

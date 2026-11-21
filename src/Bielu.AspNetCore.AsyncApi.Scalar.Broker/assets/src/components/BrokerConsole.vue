@@ -313,7 +313,7 @@ onBeforeUnmount(stopTail)
 }
 
 .bielu-broker__status--error {
-  color: #b3261e;
+  color: var(--scalar-color-red);
 }
 
 .bielu-broker__description {
@@ -346,16 +346,18 @@ onBeforeUnmount(stopTail)
   word-break: break-word;
 }
 
-.bielu-broker__log-in {
-  border-left-color: #2e7d32;
+/* Qualified with the list class: a bare .bielu-broker__log-in loses to the transparent border
+   set by `.bielu-broker__log li` above, which left every marker invisible. */
+.bielu-broker__log .bielu-broker__log-in {
+  border-left-color: var(--scalar-color-green);
 }
 
-.bielu-broker__log-out {
-  border-left-color: #1565c0;
+.bielu-broker__log .bielu-broker__log-out {
+  border-left-color: var(--scalar-color-blue);
 }
 
-.bielu-broker__log-sys {
-  border-left-color: #b3261e;
+.bielu-broker__log .bielu-broker__log-sys {
+  border-left-color: var(--scalar-color-red);
 }
 
 .bielu-broker__time {
