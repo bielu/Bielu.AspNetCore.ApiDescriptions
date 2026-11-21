@@ -116,6 +116,30 @@ describe('exampleFromSchema', () => {
     expect(exampleWithCheck({ type: 'string', pattern: '^str' })!.needsEdits).toBe(false)
     expect(exampleWithCheck({ type: 'string', pattern: '(?<' })!.needsEdits).toBe(false)
   })
+
+  it('makes arrays as long as minItems asks, within maxItems', () => {
+    // Act / Assert
+    expect(exampleWithCheck({ type: 'array', minItems: 4, items: { type: 'integer' } })).toEqual({ value: [1, 1, 1, 1], needsEdits: false })
+    expect(exampleWithCheck({ type: 'array', maxItems: 0, items: { type: 'integer' } })).toEqual({ value: [], needsEdits: false })
+    expect(exampleWithCheck({ type: 'array', minItems: 3, maxItems: 2, items: { type: 'integer' } })).toEqual({ value: [1, 1], needsEdits: true })
+    // Two equal items cannot be unique.
+    expect(exampleWithCheck({ type: 'array', minItems: 2, uniqueItems: true, items: { type: 'integer' } })!.needsEdits).toBe(true)
+  })
+
+  it('checks the example against the schema, authored or made up', () => {
+    // Arrange
+    const required = { type: 'object', required: ['sku'], properties: { sku: { type: 'string' } } }
+
+    // Act / Assert
+    expect(exampleWithCheck({ ...required, example: { sku: 'SKU-1' } })).toEqual({ value: { sku: 'SKU-1' }, needsEdits: false })
+    expect(exampleWithCheck({ ...required, example: { quantity: 2 } })!.needsEdits).toBe(true)
+    expect(exampleWithCheck({ type: 'integer', multipleOf: 5, minimum: 3 })).toEqual({ value: 5, needsEdits: false })
+    expect(exampleWithCheck({ type: 'integer', multipleOf: 5, minimum: 3, maximum: 4 })!.needsEdits).toBe(true)
+    expect(exampleWithCheck({ type: 'object', properties: { tier: { $ref: '#/$defs/tier' } }, $defs: { tier: { enum: ['gold'] } } })).toEqual({
+      value: { tier: 'gold' },
+      needsEdits: false,
+    })
+  })
 })
 
 describe('the workflow inputs', () => {
