@@ -133,7 +133,10 @@ watch(
   { flush: 'post' },
 )
 
-defineExpose({ resetView })
+/** The rendered `<svg>`, for export. */
+const svgElement = ref<SVGSVGElement>()
+
+defineExpose({ resetView, svg: () => svgElement.value })
 
 const onWheel = (event: WheelEvent) => {
   event.preventDefault()
@@ -356,6 +359,7 @@ const label = computed(() =>
       :class="{ 'ba-diagram-canvas-fit': fit }"
       :style="{ transform: `translate(${panZoom.x}px, ${panZoom.y}px) scale(${panZoom.scale})` }">
       <svg
+        ref="svgElement"
         :aria-label="label"
         role="group"
         :data-scale="baseScale"
