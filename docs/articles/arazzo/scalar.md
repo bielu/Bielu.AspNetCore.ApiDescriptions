@@ -164,7 +164,12 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
   workflow of another loaded Arazzo document. The target link goes to the workflow itself, in its own
   document when it is another one. An AsyncAPI step also shows the message it sends or receives: its payload as
   a property list (references followed into the AsyncAPI document), its content type, and its first
-  example payload; a payload in another schema format, such as Avro, is shown as written. Then come
+  example payload; a payload in another schema format, such as Avro, is shown as written. An OpenAPI step
+  shows what its operation accepts and returns: the request body schema (in the media type the step sends,
+  with the others named), and each response by status, its schema, example and headers folding out. A
+  response the step's success criteria check for (`$statusCode == 201`) is marked "Success criteria", and
+  one an action's criteria check is marked with the action's name; a `4XX` range counts only for codes the
+  operation doesn't declare on their own. Swagger 2.0 body parameters and response schemas are read too. Then come
   the step's parameters, request body, success criteria,
   `onSuccess`/`onFailure` actions and outputs. Arazzo 1.1 steps also show their `timeout` and
   `correlationId`. A criterion that isn't a simple condition is labeled with its language
@@ -184,6 +189,8 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
   requestPayment, workflow outputs"), and a workflow output lists the steps of other workflows that do.
 
   ![The createOrder step: its replacements link to the workflow inputs they read, and each output lists the steps that read it](../../images/arazzo/scalar-expression-links.jpg)
+
+  ![The createOrder step: the operation's request body schema, its 201 response marked as the success criteria with its schema, and its 400 response marked with the rejected action](../../images/arazzo/scalar-operation-exchange.jpg)
 
 - Each step target is labeled with its spec: `OpenAPI`, `AsyncAPI` or `Workflow`, with the version in its tooltip and the Sources table. Channel
   steps also say whether they send or receive. See [Which spec a step targets](#which-spec-a-step-targets).

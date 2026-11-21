@@ -670,8 +670,54 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-criteria-inline .ba-condition {
   color: var(--scalar-color-2);
 }
-.bielu-arazzo .ba-target-message {
+.bielu-arazzo .ba-target-message,
+.bielu-arazzo .ba-target-body,
+.bielu-arazzo .ba-target-responses {
   margin-top: 24px;
+}
+/* An OpenAPI target's responses: one line per status, its schema folding out beneath. */
+.bielu-arazzo .ba-responses {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bielu-arazzo .ba-responses > li {
+  padding: 6px 0;
+  border-bottom: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-response > summary,
+.bielu-arazzo .ba-response-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+.bielu-arazzo .ba-response > summary {
+  cursor: pointer;
+}
+.bielu-arazzo .ba-response[open] > summary {
+  margin-bottom: 6px;
+}
+.bielu-arazzo .ba-response-description {
+  color: var(--scalar-color-2);
+}
+.bielu-arazzo .ba-status {
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-status-2 {
+  color: var(--scalar-color-green, #30a46c);
+}
+.bielu-arazzo .ba-status-3 {
+  color: var(--scalar-color-blue, #0081f1);
+}
+.bielu-arazzo .ba-status-4 {
+  color: var(--scalar-color-orange, #f76b15);
+}
+.bielu-arazzo .ba-status-5 {
+  color: var(--scalar-color-red, #e5484d);
+}
+.bielu-arazzo .ba-response-handled {
+  border-color: var(--scalar-color-green, #30a46c);
 }
 .bielu-arazzo .ba-target-message .ba-block-title code {
   margin: 0 4px;
