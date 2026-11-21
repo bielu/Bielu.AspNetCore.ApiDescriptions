@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
@@ -11,7 +12,8 @@ import { defineConfig } from 'vite'
  */
 export default defineConfig({
   // `customElement: true` compiles the SFCs' styles to strings the element registration injects.
-  plugins: [vue({ customElement: true })],
+  // `tailwindcss()` compiles src/style.css (on Scalar's theme, see @bielu/scalar-core's tailwind.css).
+  plugins: [vue({ customElement: true }), tailwindcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

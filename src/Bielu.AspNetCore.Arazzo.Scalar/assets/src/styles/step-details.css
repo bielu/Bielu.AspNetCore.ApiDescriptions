@@ -1,0 +1,266 @@
+/* Narrow layouts, the filter, render errors, extensions, components, step headers and toggles. */
+/*
+ * Phone width: a table row's cells wrap onto more lines instead of squeezing each column down to a
+ * few characters (a source URL broken mid-word, a parameter description one word per line).
+ */
+@container bielu-arazzo (max-width: 560px) {
+  .bielu-arazzo .ba-table,
+  .bielu-arazzo .ba-table tbody {
+    display: block;
+  }
+  .bielu-arazzo .ba-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    padding: 6px 0;
+    border-bottom: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  }
+  .bielu-arazzo .ba-table td {
+    padding: 0;
+    border-bottom: none;
+  }
+  .bielu-arazzo .ba-table td:last-child:not(:first-child) {
+    flex-basis: 100%;
+  }
+  .bielu-arazzo .ba-replacements td:last-child {
+    flex-basis: auto;
+  }
+  .bielu-arazzo .ba-key-values {
+    grid-template-columns: 1fr;
+  }
+  .bielu-arazzo .ba-key-values dd {
+    margin-bottom: 4px;
+  }
+}
+.bielu-arazzo .ba-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 20px;
+}
+.bielu-arazzo .ba-filter-input {
+  flex: 1 1 240px;
+  max-width: 420px;
+  padding: 6px 10px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius, 4px);
+  background: var(--scalar-background-1);
+  color: var(--scalar-color-1);
+  font: inherit;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-filter-input:focus-visible {
+  outline: 2px solid var(--scalar-color-accent);
+  outline-offset: 1px;
+}
+.bielu-arazzo .ba-render-error {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-color-red, #d4413b);
+  border-radius: var(--scalar-radius, 4px);
+  background: color-mix(in srgb, var(--scalar-color-red, #d4413b) 10%, transparent);
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-diagram:focus-visible {
+  outline: 2px solid var(--scalar-color-accent);
+  outline-offset: 2px;
+}
+.bielu-arazzo .ba-diagram-node:focus {
+  outline: none;
+}
+.bielu-arazzo .ba-diagram-node:focus-visible rect {
+  stroke: var(--scalar-color-accent);
+  stroke-width: 2.5;
+}
+.bielu-arazzo .ba-self {
+  margin: -4px 0 8px;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-extensions {
+  margin: 8px 0;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-extensions summary {
+  width: fit-content;
+  color: var(--scalar-color-2);
+  cursor: pointer;
+}
+.bielu-arazzo .ba-extensions summary:hover {
+  color: var(--scalar-color-1);
+}
+.bielu-arazzo .ba-extensions .ba-key-values {
+  margin-top: 4px;
+}
+.bielu-arazzo .ba-actions .ba-extensions {
+  flex-basis: 100%;
+  margin: 0 0 4px 12px;
+}
+.bielu-arazzo .ba-components {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-component {
+  margin-bottom: 12px;
+}
+.bielu-arazzo .ba-component-name {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-criterion-type {
+  margin-right: 6px;
+  font-family: var(--scalar-font-code);
+}
+.bielu-arazzo .ba-action-parameters {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  flex-basis: 100%;
+  margin: 2px 0 4px 12px;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-action-parameters dd {
+  margin: 0;
+  word-break: break-all;
+}
+.bielu-arazzo .ba-badge code {
+  font-size: inherit;
+}
+.bielu-arazzo .ba-code {
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border-radius: var(--scalar-radius, 4px);
+  background: var(--scalar-background-2);
+}
+.bielu-arazzo .ba-step-title-id {
+  font-family: var(--scalar-font-code);
+}
+.bielu-arazzo .ba-anchor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bielu-arazzo .ba-anchor-button {
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--scalar-color-3);
+  font-size: var(--scalar-small, 13px);
+  cursor: pointer;
+  opacity: 0;
+}
+.bielu-arazzo .ba-anchor:hover .ba-anchor-button,
+.bielu-arazzo .ba-anchor-button:focus-visible {
+  opacity: 1;
+}
+.bielu-arazzo .ba-anchor-button:hover {
+  color: var(--scalar-color-accent);
+}
+.bielu-arazzo .ba-workflow-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.bielu-arazzo .ba-workflow-heading {
+  min-width: 0;
+}
+.bielu-arazzo .ba-workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.bielu-arazzo .ba-step-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.bielu-arazzo .ba-step-heading {
+  min-width: 0;
+  flex: 1;
+}
+.bielu-arazzo .ba-step-toggle {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  padding: 4px;
+  border: none;
+  border-radius: var(--scalar-radius, 4px);
+  background: none;
+  color: var(--scalar-color-3);
+  cursor: pointer;
+}
+.bielu-arazzo .ba-step-toggle:hover,
+.bielu-arazzo .ba-step-toggle:focus-visible {
+  color: var(--scalar-color-1);
+  background: var(--scalar-background-2);
+}
+.bielu-arazzo .ba-step-toggle:focus-visible {
+  outline: 2px solid var(--scalar-color-accent);
+  outline-offset: 1px;
+}
+.bielu-arazzo .ba-chevron {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: rotate(90deg);
+  transition: transform 0.15s ease;
+}
+.bielu-arazzo .ba-step-closed .ba-chevron {
+  transform: none;
+}
+.bielu-arazzo .ba-step-collapsed-summary {
+  margin-top: 4px;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-small, 13px);
+  overflow-wrap: anywhere;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bielu-arazzo .ba-chevron {
+    transition: none;
+  }
+}
+.bielu-arazzo .ba-toggle {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius, 4px);
+  background: var(--scalar-background-1);
+  color: var(--scalar-color-2);
+  font: inherit;
+  font-size: var(--scalar-mini, 12px);
+  cursor: pointer;
+}
+.bielu-arazzo .ba-toggle:hover {
+  color: var(--scalar-color-1);
+  background: var(--scalar-background-2);
+}
+.bielu-arazzo .ba-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: var(--scalar-radius, 4px);
+  background: none;
+  color: var(--scalar-color-2);
+  cursor: pointer;
+}
+.bielu-arazzo .ba-icon-button:hover {
+  background: var(--scalar-background-2);
+  color: var(--scalar-color-1);
+}

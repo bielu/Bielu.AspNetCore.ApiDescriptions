@@ -1,0 +1,203 @@
+/* Spec markers, source descriptions, step targets, parameter tables, criteria and actions. */
+/*
+ * Spec markers: one color per spec, shared by the step badge, the header summary and the overview
+ * diagram, so a mixed OpenAPI/AsyncAPI workflow reads at a glance. The text always names the spec
+ * too, so the color is never the only cue.
+ */
+.bielu-arazzo {
+  --ba-spec-openapi: var(--scalar-color-blue, #2f6fdb);
+  --ba-spec-asyncapi: var(--scalar-color-purple, #8a4fd8);
+  --ba-spec-arazzo: var(--scalar-color-3, #888);
+}
+.bielu-arazzo .ba-spec {
+  --ba-spec-color: var(--scalar-color-3);
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 7px;
+  border: var(--scalar-border-width, 1px) solid transparent;
+  border-radius: var(--scalar-radius, 4px);
+  background: color-mix(in srgb, var(--ba-spec-color) 9%, transparent);
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-mini, 12px);
+  font-weight: var(--scalar-semibold, 600);
+  white-space: nowrap;
+}
+.bielu-arazzo .ba-spec-openapi {
+  --ba-spec-color: var(--ba-spec-openapi);
+}
+.bielu-arazzo .ba-spec-asyncapi {
+  --ba-spec-color: var(--ba-spec-asyncapi);
+}
+.bielu-arazzo .ba-spec-arazzo {
+  --ba-spec-color: var(--ba-spec-arazzo);
+}
+.bielu-arazzo .ba-spec-unresolved {
+  border-color: var(--scalar-border-color);
+  border-style: dashed;
+  background: none;
+}
+.bielu-arazzo .ba-sources-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.bielu-arazzo .ba-spec-counts .ba-spec {
+  margin: 0 0 0 6px;
+  font-weight: normal;
+  background: none;
+  padding: 0;
+  color: var(--scalar-color-3);
+}
+.bielu-arazzo .ba-nowrap {
+  white-space: nowrap;
+}
+.bielu-arazzo .ba-target {
+  margin: 16px 0;
+  padding: 0;
+  min-width: 0;
+}
+.bielu-arazzo .ba-target-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius, 4px);
+  background: var(--scalar-background-2);
+}
+.bielu-arazzo .ba-target-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 8px 0 12px;
+  color: var(--scalar-color-3);
+  font-size: var(--scalar-small, 13px);
+  overflow-wrap: anywhere;
+}
+.bielu-arazzo .ba-target-unresolved .ba-target-header {
+  border-style: dashed;
+}
+.bielu-arazzo .ba-target-label {
+  margin-right: 8px;
+  font-size: var(--scalar-mini, 12px);
+  font-weight: var(--scalar-semibold, 600);
+  color: var(--scalar-color-2);
+  text-transform: uppercase;
+}
+.bielu-arazzo .ba-target-id {
+  margin-right: 8px;
+  word-break: break-all;
+}
+.bielu-arazzo a.ba-target-link {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  color: inherit;
+  text-decoration: none;
+  word-break: normal;
+}
+.bielu-arazzo a.ba-target-link .ba-target-id,
+.bielu-arazzo a.ba-target-link .ba-target-signature {
+  margin-right: 0;
+}
+.bielu-arazzo a.ba-target-link:hover .ba-target-id,
+.bielu-arazzo a.ba-target-link:hover .ba-target-signature,
+.bielu-arazzo a.ba-target-link:focus-visible .ba-target-id {
+  color: var(--scalar-color-accent);
+  text-decoration: underline;
+}
+.bielu-arazzo .ba-target-arrow {
+  color: var(--scalar-color-accent);
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-target-signature {
+  margin-right: 8px;
+  font-family: var(--scalar-font-code);
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-target-summary {
+  margin-top: 4px;
+  color: var(--scalar-color-2);
+}
+.bielu-arazzo .ba-block {
+  margin-top: 16px;
+}
+.bielu-arazzo .ba-block-title {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  font-size: var(--scalar-small, 13px);
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.bielu-arazzo .ba-table td {
+  padding: 6px 8px 6px 0;
+  vertical-align: top;
+  border-bottom: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-required {
+  margin-left: 6px;
+  color: var(--scalar-color-orange, orange);
+  font-size: var(--scalar-mini, 12px);
+}
+.bielu-arazzo .ba-key-values {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  gap: 4px 16px;
+  margin: 0;
+}
+.bielu-arazzo .ba-key-values dt {
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-key-values dd {
+  margin: 0;
+  color: var(--scalar-color-2);
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+.bielu-arazzo .ba-criteria,
+.bielu-arazzo .ba-actions {
+  margin: 0;
+  padding-left: 20px;
+}
+.bielu-arazzo .ba-actions li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.bielu-arazzo .ba-action-name {
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-condition {
+  color: var(--scalar-color-2);
+}
+.bielu-arazzo .ba-criteria li {
+  margin-bottom: 2px;
+}
+.bielu-arazzo .ba-criteria .ba-condition {
+  color: var(--scalar-color-1);
+}
+.bielu-arazzo .ba-criteria-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 0;
+  list-style: none;
+}
+.bielu-arazzo .ba-criteria-inline .ba-condition {
+  color: var(--scalar-color-2);
+}
+.bielu-arazzo .ba-target-message,
+.bielu-arazzo .ba-target-body,
+.bielu-arazzo .ba-target-responses {
+  margin-top: 24px;
+}
