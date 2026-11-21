@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
@@ -14,7 +15,9 @@ import { defineConfig } from 'vite'
  * `emptyOutDir` is off: this build runs after the main build and must not delete its output.
  */
 export default defineConfig({
-  plugins: [vue({ customElement: true })],
+  // `tailwindcss()` compiles src/style.css (Tailwind on Scalar's theme, see @bielu/scalar-core's
+  // tailwind.css) into the component's styles.
+  plugins: [vue({ customElement: true }), tailwindcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

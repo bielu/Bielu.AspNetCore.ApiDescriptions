@@ -1,0 +1,9 @@
+/*
+ * The gRPC console's styles: Tailwind utilities on Scalar's theme (see @bielu/scalar-core's
+ * tailwind.css), generated from the classes in ./components and scoped to the console element.
+ */
+@import "@bielu/scalar-core/tailwind.css";
+
+bielu-grpc-console {
+  @tailwind utilities source("./components");
+}
