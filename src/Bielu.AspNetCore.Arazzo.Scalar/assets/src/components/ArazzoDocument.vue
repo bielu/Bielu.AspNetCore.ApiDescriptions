@@ -1210,6 +1210,15 @@ onBeforeUnmount(() => {
   stroke: color-mix(in srgb, var(--scalar-color-accent) 35%, transparent);
   stroke-width: 1;
 }
+/* A page title's background: the page under it, so the arrows it sits on pass behind it. */
+.bielu-arazzo .ba-diagram-band-title rect {
+  fill: color-mix(in srgb, var(--scalar-color-accent) 7%, var(--scalar-background-1));
+}
+.bielu-arazzo .ba-diagram-band-title.ba-diagram-band-none rect {
+  fill: var(--scalar-background-1);
+  stroke: none;
+}
+.bielu-arazzo .ba-diagram-band-title text,
 .bielu-arazzo .ba-diagram-band text {
   fill: var(--scalar-color-2);
   font-family: var(--scalar-font);
@@ -1313,8 +1322,9 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-dialog {
   /* Scalar's CSS reset zeroes the margin a dialog centers itself with. */
   margin: auto;
-  width: min(1440px, 94vw);
-  height: min(900px, 88vh);
+  /* The whole window: a workflow with an expanded one inside it needs the room. */
+  width: 96vw;
+  height: 92vh;
   max-width: none;
   max-height: none;
   padding: 16px;
@@ -1351,6 +1361,10 @@ onBeforeUnmount(() => {
   justify-content: center;
   width: 100%;
   height: 100%;
+}
+/* Taller than the window at a readable size: start from the top, the reader pans down. */
+.bielu-arazzo .ba-diagram-canvas-fit.ba-diagram-canvas-top {
+  align-items: flex-start;
 }
 .bielu-arazzo .ba-target-parameters {
   margin-top: 12px;
