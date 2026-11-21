@@ -44,7 +44,23 @@ const emit = defineEmits<{
   toggleWorkflow: [nodeId: string]
   /** A step box was used to open its step, so a full-screen view can get out of the way. */
   openStep: [stepId: string]
+  /** Data flow view: an arrow's label was used to show what the values it carries look like. */
+  openFlow: [edge: LaidOutEdge]
 }>()
+
+/** Opens the details of a Data flow arrow, unless the pointer was dragging the view. */
+const openFlow = (edge: LaidOutEdge) => {
+  if (edge.values?.length && !moved) {
+    emit('openFlow', edge)
+  }
+}
+
+const onFlowKeydown = (event: KeyboardEvent, edge: LaidOutEdge) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    emit('openFlow', edge)
+  }
+}
 
 /**
  * The scale the graph is drawn at. It is measured when the view is shown, reset, or its box changes width:
@@ -465,8 +481,15 @@ const label = computed(() =>
             :marker-end="`url(#${markerPrefix}-${edge.kind})`" />
           <g
             v-if="edge.label && edge.labelPosition"
-            class="ba-diagram-edge-label">
-            <title v-if="edgeTitle(edge)">{{ edgeTitle(edge) }}</title>
+            :aria-label="edge.values?.length ? `Show what flows: ${edge.fullLabel ?? edge.label}` : undefined"
+            class="ba-diagram-edge-label"
+            :class="{ 'ba-diagram-link': !!edge.values?.length }"
+            :role="edge.values?.length ? 'button' : undefined"
+            :tabindex="edge.values?.length ? 0 : undefined"
+            @click="openFlow(edge)"
+            @keydown="edge.values?.length && onFlowKeydown($event, edge)">
+            <title v-if="edge.values?.length">Show what flows: {{ edge.fullLabel ?? edge.label }}</title>
+            <title v-else-if="edgeTitle(edge)">{{ edgeTitle(edge) }}</title>
             <rect
               :height="18"
               rx="3"

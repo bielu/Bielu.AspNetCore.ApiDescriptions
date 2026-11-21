@@ -13,6 +13,35 @@
 .bielu-arazzo .ba-dialog[open] {
   @apply flex flex-col;
 }
+/* What a Data flow arrow carries: a panel the size of its content, not the whole window. */
+.bielu-arazzo .ba-dialog.ba-flow-dialog {
+  width: min(640px, 96vw);
+  height: auto;
+  max-height: 85vh;
+  overflow: auto;
+}
+.bielu-arazzo .ba-flow-value + .ba-flow-value {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-flow-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 8px 0;
+}
+.bielu-arazzo .ba-flow-facts dt {
+  color: var(--scalar-color-3);
+}
+.bielu-arazzo .ba-flow-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.bielu-arazzo .ba-diagram-edge-label.ba-diagram-link:hover text,
+.bielu-arazzo .ba-diagram-edge-label:focus-visible text {
+  fill: var(--scalar-color-accent);
+}
 .bielu-arazzo .ba-dialog::backdrop {
   background: rgb(0 0 0 / 0.45);
 }

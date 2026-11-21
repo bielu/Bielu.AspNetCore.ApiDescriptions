@@ -75,6 +75,8 @@ export type WorkflowGraphEdge = {
    * page, the end node carries the page instead.
    */
   page?: string
+  /** Data flow view: the names of the values the arrow carries, which its label lists and its details describe. */
+  values?: string[]
 }
 
 /** An expanded workflow: a box drawn around the steps of the workflow a workflow node invokes. */
