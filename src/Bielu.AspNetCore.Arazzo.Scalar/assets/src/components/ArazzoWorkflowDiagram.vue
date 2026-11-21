@@ -161,7 +161,13 @@ watch(
 /** The rendered `<svg>`, for export. */
 const svgElement = ref<SVGSVGElement>()
 
-defineExpose({ resetView, svg: () => svgElement.value })
+/**
+ * Measures the scale again, keeping the reader's pan and zoom: for when another graph is drawn in its place (a
+ * change of view), which the scale measured for the last one may not fit.
+ */
+const remeasure = () => measureScale()
+
+defineExpose({ resetView, remeasure, svg: () => svgElement.value })
 
 const onWheel = (event: WheelEvent) => {
   event.preventDefault()
@@ -269,6 +275,10 @@ const isStepLink = (node: LaidOutNode): boolean => (node.kind === 'step' || node
 const opensByToggling = (node: LaidOutNode): boolean => node.kind === 'workflow' && !isStepLink(node) && Boolean(node.expandable)
 
 const onNodeClick = (node: LaidOutNode) => (opensByToggling(node) ? toggleWorkflow(node) : openStep(node))
+
+/** An arrow label's tooltip: the action it stands for, the page it lands on, and the whole label when it is shortened. */
+const edgeTitle = (edge: LaidOutEdge): string | undefined =>
+  [edge.action, (edge.page || edge.fullLabel) && (edge.fullLabel ?? edge.label)].filter(Boolean).join(': ') || undefined
 
 /** A box's title (with the technical id behind a Pages label), then the retries of the step itself, one per line. */
 const nodeTitle = (node: LaidOutNode): string | undefined => {
@@ -456,7 +466,7 @@ const label = computed(() =>
           <g
             v-if="edge.label && edge.labelPosition"
             class="ba-diagram-edge-label">
-            <title v-if="edge.action || edge.page">{{ [edge.action, edge.page && edge.label].filter(Boolean).join(': ') }}</title>
+            <title v-if="edgeTitle(edge)">{{ edgeTitle(edge) }}</title>
             <rect
               :height="18"
               rx="3"

@@ -5,9 +5,10 @@ import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
 import { buildDataFlowGraph, dataWorkflowNodeId, INPUTS_NODE_ID, OUTPUTS_NODE_ID } from '../src/helpers/data-flow'
 import { toWorkflowViews, traverseArazzoDocument } from '../src/helpers/navigation'
 import { resetWorkflowView, VIEW_STORAGE_KEY } from '../src/helpers/view-mode'
-import type { ArazzoDocument, ArazzoWorkflow } from '../src/types'
+import { layoutWorkflowGraph, MAX_EDGE_LABEL_LENGTH } from '../src/helpers/workflow-graph'
+import type { ArazzoDocument, ArazzoWorkflow as Workflow } from '../src/types'
 
-const placeOrder: ArazzoWorkflow = {
+const placeOrder: Workflow = {
   workflowId: 'placeOrder',
   inputs: { type: 'object', properties: { sku: { type: 'string' }, quantity: { type: 'integer' } } },
   parameters: [{ name: 'X-Tenant', in: 'header', value: '$inputs.tenant' }],
@@ -28,7 +29,7 @@ const placeOrder: ArazzoWorkflow = {
   outputs: { orderId: '$steps.create.outputs.orderId', paymentId: '$steps.pay.outputs.paymentId', again: '$workflows.placeOrder.outputs.orderId' },
 }
 
-const trackOrder: ArazzoWorkflow = { workflowId: 'trackOrder', steps: [{ stepId: 'status' }], outputs: { status: '$response.body#/status' } }
+const trackOrder: Workflow = { workflowId: 'trackOrder', steps: [{ stepId: 'status' }], outputs: { status: '$response.body#/status' } }
 
 const document: ArazzoDocument = { arazzo: '1.1.0', workflows: [placeOrder, trackOrder] }
 
@@ -68,7 +69,7 @@ describe('buildDataFlowGraph', () => {
 
   it('draws a step that passes nothing, and no inputs or outputs node without flows', () => {
     // Arrange
-    const workflow: ArazzoWorkflow = { workflowId: 'w', steps: [{ stepId: 'only' }] }
+    const workflow: Workflow = { workflowId: 'w', steps: [{ stepId: 'only' }] }
 
     // Act
     const graph = buildDataFlowGraph({ arazzo: '1.1.0', workflows: [workflow] }, workflow)
@@ -80,7 +81,7 @@ describe('buildDataFlowGraph', () => {
 
   it('marks steps with their spec, and draws a step that invokes a workflow as a workflow node', () => {
     // Arrange
-    const workflow: ArazzoWorkflow = { workflowId: 'w', steps: [{ stepId: 'call', operationId: 'x' }, { stepId: 'nested', workflowId: 'other' }] }
+    const workflow: Workflow = { workflowId: 'w', steps: [{ stepId: 'call', operationId: 'x' }, { stepId: 'nested', workflowId: 'other' }] }
 
     // Act
     const graph = buildDataFlowGraph({ arazzo: '1.1.0', workflows: [workflow] }, workflow, (step) => (step.workflowId ? 'arazzo' : 'openapi'))
@@ -100,7 +101,7 @@ describe('buildDataFlowGraph', () => {
 
   it('draws a labelled arrow for an output a payload reads in a field named like prose, and dotted names in full', () => {
     // Arrange
-    const workflow: ArazzoWorkflow = {
+    const workflow: Workflow = {
       workflowId: 'rename',
       steps: [
         { stepId: 'create', outputs: { itemName: '$response.body#/name', 'order.id': '$response.body#/id' } },
@@ -161,5 +162,65 @@ describe('the Data flow view', () => {
 
     // Assert
     expect(wrapper.find(`.ba-overview [data-node-id="${OUTPUTS_NODE_ID}"]`).exists()).toBe(true)
+  })
+
+  it('measures the scale again for the graph of the view switched to', async () => {
+    // Arrange: a box narrower than either graph, so each is scaled to fit its own width.
+    const clientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 100 })
+    try {
+      wrapper = mountWorkflow()
+      await flushPromises()
+      const scale = () => Number(wrapper!.find('.ba-overview [data-scale]').attributes('data-scale'))
+      const dataFlowWidth = layoutWorkflowGraph(buildDataFlowGraph(document, placeOrder)).width
+      expect(scale()).not.toBeCloseTo(100 / dataFlowWidth)
+
+      // Act
+      await wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === 'Data flow')!.trigger('click')
+      await flushPromises()
+
+      // Assert
+      expect(scale()).toBeCloseTo(100 / dataFlowWidth)
+    } finally {
+      if (clientWidth) {
+        Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidth)
+      }
+    }
+  })
+})
+
+describe('a shortened Data flow arrow label', () => {
+  it('keeps every name it carries for the tooltip', () => {
+    // Arrange
+    const workflow: Workflow = {
+      workflowId: 'long',
+      steps: [
+        { stepId: 'create', outputs: { customerAccountIdentifier: '$response.body#/a', shippingAddressIdentifier: '$response.body#/b', total: '$response.body#/c' } },
+        {
+          stepId: 'ship',
+          parameters: [
+            { name: 'a', value: '$steps.create.outputs.customerAccountIdentifier' },
+            { name: 'b', value: '$steps.create.outputs.shippingAddressIdentifier' },
+            { name: 'c', value: '$steps.create.outputs.total' },
+          ],
+        },
+      ],
+    }
+
+    // Act
+    const [edge] = layoutWorkflowGraph(buildDataFlowGraph({ arazzo: '1.1.0', workflows: [workflow] }, workflow)).edges
+
+    // Assert
+    expect(edge!.label!.length).toBe(MAX_EDGE_LABEL_LENGTH)
+    expect(edge!.label).not.toContain('total')
+    expect(edge!.fullLabel).toBe('customerAccountIdentifier, shippingAddressIdentifier, total')
+  })
+
+  it('is left without a full label when it fits', () => {
+    // Act
+    const edges = layoutWorkflowGraph(buildDataFlowGraph(document, placeOrder)).edges
+
+    // Assert
+    expect(edges.every((edge) => edge.fullLabel === undefined)).toBe(true)
   })
 })

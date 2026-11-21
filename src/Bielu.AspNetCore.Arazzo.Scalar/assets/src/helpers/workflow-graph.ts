@@ -662,7 +662,8 @@ export type Point = { x: number; y: number }
 
 export type LaidOutNode = WorkflowGraphNode & { x: number; y: number; width: number; height: number }
 
-export type LaidOutEdge = WorkflowGraphEdge & { points: Point[]; labelPosition?: Point; labelWidth: number }
+/** `fullLabel` is the whole label when the drawn one is shortened, for the arrow's tooltip. */
+export type LaidOutEdge = WorkflowGraphEdge & { points: Point[]; labelPosition?: Point; labelWidth: number; fullLabel?: string }
 
 export type LaidOutGroup = WorkflowGraphGroup & { x: number; y: number; width: number; height: number }
 
@@ -1148,6 +1149,7 @@ export const layoutWorkflowGraph = (logical: WorkflowGraph): WorkflowLayout => {
       return {
         ...edge,
         label: edge.label ? truncateLabel(edge.label) : undefined,
+        ...(edge.label && truncateLabel(edge.label) !== edge.label ? { fullLabel: edge.label } : {}),
         points: attach(edge, route?.points ?? []),
         labelPosition: route?.labelPosition,
         labelWidth: route?.labelWidth ?? 0,

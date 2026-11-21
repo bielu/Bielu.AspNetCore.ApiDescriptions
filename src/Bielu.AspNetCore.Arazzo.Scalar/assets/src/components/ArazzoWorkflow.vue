@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
 import { provideExpressionScope } from '../helpers/expression-scope'
 import { inputsAnchor, outputsAnchor, workflowOutputConsumers } from '../helpers/expressions'
@@ -223,6 +223,17 @@ const toggleSteps = () => {
 const dialog = ref<HTMLDialogElement>()
 const expanded = ref<InstanceType<typeof ArazzoWorkflowDiagram>>()
 const inline = ref<InstanceType<typeof ArazzoWorkflowDiagram>>()
+
+// Another view draws another graph, which the scale measured for the last one may not fit: measure it again,
+// keeping the reader's zoom. Only when the view changes, not the layout, so expanding a workflow keeps its scale.
+watch(
+  overviewView,
+  () => {
+    inline.value?.remeasure()
+    expanded.value?.remeasure()
+  },
+  { flush: 'post' },
+)
 
 const expand = async () => {
   dialog.value?.showModal()
