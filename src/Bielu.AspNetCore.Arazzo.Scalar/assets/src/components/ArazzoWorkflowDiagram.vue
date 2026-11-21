@@ -289,6 +289,9 @@ const technicalTitle = (node: LaidOutNode): string | undefined => {
     }
     return node.expandable ? `${what}. ${node.expanded ? 'Hide' : 'Show'} its steps with the button.` : what
   }
+  if (node.kind === 'data') {
+    return node.id === '::inputs' ? "The workflow's inputs" : "The workflow's outputs"
+  }
   if (node.kind === 'failure' && node.actions?.length) {
     return `Ends the workflow: ${node.actions.join(', ')}`
   }
@@ -524,6 +527,13 @@ const label = computed(() =>
             :width="SPEC_MARKER_WIDTH"
             :x="node.x - node.width / 2 + 1"
             :y="node.y - node.height / 2 + 1" />
+          <rect
+            v-if="node.kind === 'data'"
+            :height="node.height"
+            rx="12"
+            :width="node.width"
+            :x="node.x - node.width / 2"
+            :y="node.y - node.height / 2" />
           <rect
             v-if="node.kind === 'success' || node.kind === 'failure'"
             :height="node.height"

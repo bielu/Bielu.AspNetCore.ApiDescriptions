@@ -59,6 +59,7 @@ Technical | Pages views) and troubleshooting.
   (recursively, never re-expanding a workflow already on the path), and a step that invokes one can
   list that workflow's steps inline. This works for workflows of the same document and, through
   `$sourceDescriptions.<name>.<workflowId>`, of another Arazzo document loaded on the page. Distinct `end` failure actions get end nodes of their own.
+- A Data flow view of the overview: which inputs and outputs each step reads, and from where.
 - Export of the overview as SVG or PNG, or as Mermaid source to paste into Markdown.
 - Collapsible steps and a filter for workflows and steps. The overview can be used from the
   keyboard, and the layout works at phone width. A malformed document renders what it can instead
