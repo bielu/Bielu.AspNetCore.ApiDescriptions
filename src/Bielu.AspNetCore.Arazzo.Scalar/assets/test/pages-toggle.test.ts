@@ -49,23 +49,23 @@ afterEach(() => {
 })
 
 describe('the Technical | Pages toggle', () => {
-  it('is hidden when the pages options are not configured', () => {
+  it('offers no Pages view when the pages options are not configured', () => {
     // Arrange
     options = {}
 
     // Act
     const wrapper = mountWorkflow()
 
-    // Assert
-    expect(wrapper.find('.ba-view-toggle').exists()).toBe(false)
+    // Assert: Technical and Data flow only.
+    expect(wrapper.findAll('.ba-overview .ba-view-toggle button').map((button) => button.text())).toEqual(['Technical', 'Data flow'])
   })
 
-  it('is hidden when the document does not use the pages extensions', () => {
+  it('offers no Pages view when the document does not use the pages extensions', () => {
     // Act
     const wrapper = mountWorkflow({ arazzo: '1.1.0', workflows: [{ workflowId: 'plain', steps: [{ stepId: 'a' }] }] })
 
     // Assert
-    expect(wrapper.find('.ba-view-toggle').exists()).toBe(false)
+    expect(toggle(wrapper, 'Pages')).toBeUndefined()
   })
 
   it('starts on Technical and switches the overview to pages and plain labels', async () => {

@@ -12,7 +12,8 @@ import type { SpecFamily } from './target-spec'
 export type WorkflowGraphNode = {
   id: string
   label: string
-  kind: 'step' | 'workflow' | 'success' | 'failure'
+  /** `data`: the workflow's inputs or outputs, in the data-flow view. */
+  kind: 'step' | 'workflow' | 'success' | 'failure' | 'data'
   /** For a step: the spec its target is described in, drawn as a colored marker. */
   spec?: SpecFamily
   /** For a workflow node: the workflow it invokes (`$sourceDescriptions.<name>.<id>` when in another document). */
@@ -103,7 +104,8 @@ export type WorkflowGraph = {
 }
 
 /** The two ways the overview can be read: the technical flow, or the pages a user goes through. */
-export type WorkflowView = 'technical' | 'pages'
+/** `technical` and `pages` show the order steps run in; `data` the values passed between them. */
+export type WorkflowView = 'technical' | 'pages' | 'data'
 
 /** What a band of steps without a page is called. */
 export const NO_PAGE_TITLE = 'No page'

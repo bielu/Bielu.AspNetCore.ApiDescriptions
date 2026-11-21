@@ -6,7 +6,8 @@ export const VIEW_STORAGE_KEY = 'bielu-arazzo:view'
 
 const stored = (): WorkflowView => {
   try {
-    return globalThis.localStorage?.getItem(VIEW_STORAGE_KEY) === 'pages' ? 'pages' : 'technical'
+    const value = globalThis.localStorage?.getItem(VIEW_STORAGE_KEY)
+    return value === 'pages' || value === 'data' ? value : 'technical'
   } catch {
     // Storage can be blocked (private windows, sandboxed frames): fall back to the default.
     return 'technical'
@@ -14,7 +15,7 @@ const stored = (): WorkflowView => {
 }
 
 /**
- * The overview's view (Technical or Pages), shared by every workflow on the page so switching one switches
+ * The overview's view (Technical, Data flow or Pages), shared by every workflow on the page so switching one switches
  * them all. It starts from the remembered choice, and Technical when there is none.
  */
 const current = ref<WorkflowView>(stored())
