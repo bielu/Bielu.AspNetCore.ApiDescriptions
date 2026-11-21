@@ -2,7 +2,7 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
-import { exampleFromSchema } from '../src/helpers/example-input'
+import { exampleFromSchema, exampleWithCheck } from '../src/helpers/example-input'
 import { toWorkflowViews, traverseArazzoDocument } from '../src/helpers/navigation'
 import type { ArazzoDocument } from '../src/types'
 
@@ -87,7 +87,34 @@ describe('exampleFromSchema', () => {
   it('is undefined without a schema', () => {
     // Act / Assert
     expect(exampleFromSchema(undefined)).toBeUndefined()
+    expect(exampleWithCheck(undefined)).toBeUndefined()
     expect(exampleFromSchema('nope')).toBeUndefined()
+  })
+
+  it('keeps strings within their length bounds', () => {
+    // Arrange
+    const schema = {
+      type: 'object',
+      required: ['code'],
+      properties: { code: { type: 'string', maxLength: 2 }, ref: { type: 'string', minLength: 3, maxLength: 4 }, long: { type: 'string', minLength: 10 } },
+    }
+
+    // Act
+    const example = exampleWithCheck(schema)
+
+    // Assert
+    expect(example).toEqual({ value: { code: 'st', ref: 'stri', long: 'stringxxxx' }, needsEdits: false })
+  })
+
+  it('says the example needs edits when a value cannot satisfy its schema', () => {
+    // Act / Assert
+    expect(exampleWithCheck({ type: 'string', format: 'uuid', maxLength: 8 })).toEqual({ value: '3fa85f64-5717-4562-b3fc-2c963f66afa6', needsEdits: true })
+    expect(exampleWithCheck({ type: 'string', pattern: '^[A-Z]{3}$' })!.needsEdits).toBe(true)
+    expect(exampleWithCheck({ type: 'string', minLength: 5, maxLength: 2 })!.needsEdits).toBe(true)
+    expect(exampleWithCheck({ type: 'integer', minimum: 5, maximum: 3 })!.needsEdits).toBe(true)
+    expect(exampleWithCheck({ type: 'integer', exclusiveMaximum: 1 })!.needsEdits).toBe(true)
+    expect(exampleWithCheck({ type: 'string', pattern: '^str' })!.needsEdits).toBe(false)
+    expect(exampleWithCheck({ type: 'string', pattern: '(?<' })!.needsEdits).toBe(false)
   })
 })
 
@@ -123,6 +150,22 @@ describe('the workflow inputs', () => {
     expect(example.find('pre').text()).toBe(expected)
     expect(writeText).toHaveBeenCalledWith(expected)
     expect(example.text()).toContain('Copied')
+    expect(example.find('.ba-example-warning').exists()).toBe(false)
+  })
+
+  it('say when the example needs edits before use', () => {
+    // Arrange
+    const document: ArazzoDocument = {
+      arazzo: '1.1.0',
+      workflows: [{ workflowId: 'place', inputs: { type: 'object', properties: { code: { type: 'string', pattern: '^[A-Z]{2}$' } } }, steps: [{ stepId: 'a' }] }],
+    }
+    const [view] = toWorkflowViews(document, traverseArazzoDocument({ documentId: 'doc', document: document as unknown as Record<string, unknown> }))
+
+    // Act
+    wrapper = mount(ArazzoWorkflow, { props: { view: view!, document, documents: {} } })
+
+    // Assert
+    expect(wrapper.find('.ba-example-input .ba-example-warning').text()).toContain('edit them before use')
   })
 
   it('offer no example for a workflow without inputs', () => {

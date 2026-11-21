@@ -97,6 +97,23 @@ describe('buildDataFlowGraph', () => {
     expect(buildDataFlowGraph(document, undefined).nodes).toEqual([])
     expect(buildDataFlowGraph(document, { workflowId: 'empty' }).nodes).toEqual([])
   })
+
+  it('draws a labelled arrow for an output a payload reads in a field named like prose, and dotted names in full', () => {
+    // Arrange
+    const workflow: ArazzoWorkflow = {
+      workflowId: 'rename',
+      steps: [
+        { stepId: 'create', outputs: { itemName: '$response.body#/name', 'order.id': '$response.body#/id' } },
+        { stepId: 'retitle', requestBody: { payload: { title: '{$steps.create.outputs.itemName}', ref: '$steps.create.outputs.order.id' } } },
+      ],
+    }
+
+    // Act
+    const graph = buildDataFlowGraph({ arazzo: '1.1.0', workflows: [workflow] }, workflow)
+
+    // Assert
+    expect(graph.edges.map((edge) => `${edge.from} → ${edge.to}: ${edge.label}`)).toEqual(['create → retitle: itemName, order.id'])
+  })
 })
 
 describe('the Data flow view', () => {

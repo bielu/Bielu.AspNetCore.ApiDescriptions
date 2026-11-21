@@ -880,6 +880,9 @@ onBeforeUnmount(() => {
   gap: 8px;
   margin: 6px 0;
 }
+.bielu-arazzo .ba-example-warning {
+  margin: 6px 0;
+}
 /* Diagnostics: the header's folding list, and each step's own problems. */
 .bielu-arazzo .ba-diagnostics {
   margin: 16px 0;
