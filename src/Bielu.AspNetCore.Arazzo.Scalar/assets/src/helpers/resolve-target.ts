@@ -81,7 +81,7 @@ const walk = (root: AnyRecord, segments: string[], depth = 0): unknown =>
  * Follows a `$ref`. Scalar's workspace store exposes the resolved target as `$ref-value`; a plain
  * local `#/…` reference is followed against the document itself as a fallback.
  */
-const deref = (root: AnyRecord, node: unknown, depth = 0): unknown => {
+export const deref = (root: AnyRecord, node: unknown, depth = 0): unknown => {
   if (!isRecord(node) || typeof node.$ref !== 'string' || depth > 16) {
     return node
   }
@@ -424,6 +424,27 @@ const parameterType = (schema: unknown): string => {
 }
 
 /**
+ * The Parameter Objects an OpenAPI operation target accepts, references followed in `root`: the path
+ * item's, overridden by the operation's own (matched on name and location, as OpenAPI and Swagger 2.0
+ * specify), in declaration order.
+ */
+export const operationParameters = (root: AnyRecord, target: OperationTarget): AnyRecord[] => {
+  const pathItem = target.path ? walk(root, ['paths', target.path]) : undefined
+  const declared = [
+    ...(isRecord(pathItem) && Array.isArray(pathItem.parameters) ? pathItem.parameters : []),
+    ...(Array.isArray(target.operation?.parameters) ? target.operation.parameters : []),
+  ]
+  const byKey = new Map<string, AnyRecord>()
+  for (const entry of declared) {
+    const parameter = deref(root, entry)
+    if (isRecord(parameter) && typeof parameter.name === 'string') {
+      byKey.set(`${typeof parameter.in === 'string' ? parameter.in : 'query'}:${parameter.name}`, parameter)
+    }
+  }
+  return [...byKey.values()]
+}
+
+/**
  * The parameters of a resolved target, so a step shows what the operation or channel it calls
  * accepts. OpenAPI: the path item's parameters, overridden by the operation's own (matched on name
  * and location, as OpenAPI specifies). AsyncAPI: the channel's address parameters, always required.
@@ -439,27 +460,16 @@ export const targetParameters = (target: StepTarget | undefined, documents: Reco
   }
 
   if (target.kind === 'operation') {
-    const pathItem = target.path ? walk(root, ['paths', target.path]) : undefined
-    const declared = [
-      ...(isRecord(pathItem) && Array.isArray(pathItem.parameters) ? pathItem.parameters : []),
-      ...(Array.isArray(target.operation?.parameters) ? target.operation.parameters : []),
-    ]
-    const byKey = new Map<string, TargetParameter>()
-    for (const entry of declared) {
-      const parameter = deref(root, entry)
-      if (!isRecord(parameter) || typeof parameter.name !== 'string') {
-        continue
-      }
+    return operationParameters(root, target).map((parameter) => {
       const location = typeof parameter.in === 'string' ? parameter.in : 'query'
-      byKey.set(`${location}:${parameter.name}`, {
+      return {
         name: parameter.name,
         location,
         required: parameter.required === true || location === 'path',
         type: parameterType(deref(root, parameter.schema)),
         description: typeof parameter.description === 'string' ? parameter.description : '',
-      })
-    }
-    return [...byKey.values()]
+      }
+    })
   }
 
   const parameters = isRecord(target.channel?.parameters) ? target.channel.parameters : {}
