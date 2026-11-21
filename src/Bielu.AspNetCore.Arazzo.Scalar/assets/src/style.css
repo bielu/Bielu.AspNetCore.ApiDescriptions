@@ -1,0 +1,22 @@
+/*
+ * The Arazzo view's styles, compiled by Tailwind on Scalar's theme (see @bielu/scalar-core's
+ * tailwind.css), so they can use Scalar's utilities through @apply.
+ *
+ * Unscoped but prefixed: the element renders in the light DOM (shadowRoot: false) so Scalar's design
+ * tokens apply, and only the root component's styles are injected, so the child components' styles
+ * live here too. Every rule sits under `.bielu-arazzo`, so nothing leaks into Scalar's page.
+ *
+ * The files are imported in the order their rules had in the single block they came from: rules of
+ * equal specificity resolve by order, so reordering the imports can change what wins.
+ */
+@import "@bielu/scalar-core/tailwind.css";
+
+@import "./styles/document.css";
+@import "./styles/targets.css";
+@import "./styles/responses.css";
+@import "./styles/diagnostics.css";
+@import "./styles/expressions.css";
+@import "./styles/step-details.css";
+@import "./styles/overview.css";
+@import "./styles/dialog.css";
+@import "./styles/schemas.css";

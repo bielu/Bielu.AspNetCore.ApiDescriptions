@@ -1,0 +1,102 @@
+/* An OpenAPI target's responses (one line per status, its schema folding out beneath) and the overview's export menu. */
+/* An OpenAPI target's responses: one line per status, its schema folding out beneath. */
+.bielu-arazzo .ba-responses {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bielu-arazzo .ba-responses > li {
+  padding: 6px 0;
+  border-bottom: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-response > summary,
+.bielu-arazzo .ba-response-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+.bielu-arazzo .ba-response > summary {
+  cursor: pointer;
+}
+.bielu-arazzo .ba-response[open] > summary {
+  margin-bottom: 6px;
+}
+.bielu-arazzo .ba-response-description {
+  color: var(--scalar-color-2);
+}
+.bielu-arazzo .ba-status {
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-status-2 {
+  color: var(--scalar-color-green, #30a46c);
+}
+.bielu-arazzo .ba-status-3 {
+  color: var(--scalar-color-blue, #0081f1);
+}
+.bielu-arazzo .ba-status-4 {
+  color: var(--scalar-color-orange, #f76b15);
+}
+.bielu-arazzo .ba-status-5 {
+  color: var(--scalar-color-red, #e5484d);
+}
+.bielu-arazzo .ba-response-handled {
+  border-color: var(--scalar-color-green, #30a46c);
+}
+.bielu-arazzo .ba-target-message .ba-block-title code {
+  margin: 0 4px;
+}
+.bielu-arazzo .ba-subtitle {
+  margin: 10px 0 4px;
+  color: var(--scalar-color-2);
+  font-size: var(--scalar-mini, 12px);
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-replacements td:nth-child(2) {
+  width: 1.5em;
+  text-align: center;
+}
+/* The overview's export menu: a small dropdown under its button. */
+.bielu-arazzo .ba-export {
+  position: relative;
+  display: inline-block;
+}
+.bielu-arazzo .ba-export > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.bielu-arazzo .ba-export > summary::-webkit-details-marker {
+  display: none;
+}
+.bielu-arazzo .ba-export-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 4px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius, 4px);
+  background: var(--scalar-background-1);
+  box-shadow: var(--scalar-shadow-1, 0 4px 12px rgb(0 0 0 / 0.2));
+}
+.bielu-arazzo .ba-export-menu button {
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--scalar-radius, 4px);
+  background: none;
+  color: var(--scalar-color-1);
+  font: inherit;
+  font-size: var(--scalar-small, 13px);
+  text-align: left;
+  cursor: pointer;
+}
+.bielu-arazzo .ba-export-menu button:hover,
+.bielu-arazzo .ba-export-menu button:focus-visible {
+  background: var(--scalar-background-2);
+}
+.bielu-arazzo .ba-export-status:empty {
+  display: none;
+}
