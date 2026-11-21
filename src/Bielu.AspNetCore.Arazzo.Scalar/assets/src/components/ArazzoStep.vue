@@ -18,6 +18,7 @@ import ArazzoCriteria from './ArazzoCriteria.vue'
 import ArazzoExpressionText from './ArazzoExpressionText.vue'
 import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
+import ArazzoOperationExchange from './ArazzoOperationExchange.vue'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
 import ArazzoValue from './ArazzoValue.vue'
 
@@ -412,6 +413,13 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
         </table>
       </div>
 
+      <ArazzoOperationExchange
+        v-if="target.kind === 'operation'"
+        :actions="[...onSuccess, ...onFailure]"
+        :contentType="step.requestBody?.contentType"
+        :documents="documents"
+        :successCriteria="step.successCriteria"
+        :target="target" />
       <div
         v-for="message in messages"
         :key="message.name"
