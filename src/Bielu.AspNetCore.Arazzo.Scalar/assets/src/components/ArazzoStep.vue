@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { criterionTypeLabel, formatDuration, formatValue, schemaPropertyRows } from '../helpers/format'
+import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
 import { useExpressionScope } from '../helpers/expression-scope'
 import { outputsAnchor, stepOutputConsumers } from '../helpers/expressions'
 import { renderMarkdown } from '../helpers/markdown'
@@ -217,6 +218,14 @@ const parameters = computed(() =>
 
 const expressionScope = useExpressionScope()
 
+/** What looks wrong in this step, listed at the top of its body and counted beside its heading. */
+const allDiagnostics = useDiagnostics()
+const problems = computed(() => {
+  const workflowId = expressionScope.value?.workflow?.workflowId
+  return workflowId ? (allDiagnostics.value.get(diagnosticKey(workflowId, props.step.stepId)) ?? []) : []
+})
+const severity = computed(() => worstSeverity(problems.value))
+
 /** Each output with the steps (or workflow outputs) of the workflow that read it. */
 const outputs = computed(() => {
   const scope = expressionScope.value
@@ -273,6 +282,13 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
             class="ba-step-title"
             :class="{ 'ba-step-title-id': heading.title === step.stepId }">
             {{ heading.title }}
+            <span
+              v-if="severity"
+              class="ba-step-problems"
+              :class="`ba-diagnostic-${severity}`"
+              :title="problems.map((problem) => problem.message).join('\n')">
+              {{ severity === 'error' ? '✕' : '!' }} {{ problems.length }}
+            </span>
           </h3>
         </ArazzoAnchor>
         <div
@@ -293,6 +309,18 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
       v-show="open"
       :id="bodyId"
       class="ba-step-body">
+    <ul
+      v-if="problems.length"
+      aria-label="Problems in this step"
+      class="ba-step-diagnostics">
+      <li
+        v-for="(problem, index) in problems"
+        :key="index"
+        :class="`ba-diagnostic-${problem.severity}`">
+        <span class="ba-diagnostic-severity">{{ problem.severity }}</span>
+        <span>{{ problem.message }}</span>
+      </li>
+    </ul>
     <div
       v-if="step.dependsOn?.length || typeof step.timeout === 'number' || step.correlationId"
       class="ba-badges">
