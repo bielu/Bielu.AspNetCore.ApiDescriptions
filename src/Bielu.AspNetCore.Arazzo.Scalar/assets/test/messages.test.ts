@@ -1,7 +1,12 @@
+// @vitest-environment happy-dom
+import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import ArazzoStepView from '../src/components/ArazzoStep.vue'
 import { schemaPropertyRows } from '../src/helpers/format'
 import { resolveStepTarget, targetMessages } from '../src/helpers/resolve-target'
 import type { ArazzoDocument, ArazzoStep } from '../src/types'
+
+const PROTO = 'syntax = "proto3";\nmessage Confirmed { string id = 1; }'
 
 const eventsApi = {
   asyncapi: '3.0.0',
@@ -18,6 +23,10 @@ const eventsApi = {
     audit: {
       address: 'audit',
       messages: { auditRecord: { $ref: '#/components/messages/auditRecord' } },
+    },
+    confirmations: {
+      address: 'confirmations',
+      messages: { confirmed: { $ref: '#/components/messages/confirmed' }, untyped: { $ref: '#/components/messages/untyped' } },
     },
   },
   operations: {
@@ -39,6 +48,10 @@ const eventsApi = {
       auditRecord: {
         payload: { schemaFormat: 'application/vnd.apache.avro;version=1.9.0', schema: { type: 'record', name: 'Audit', fields: [] } },
       },
+      confirmed: {
+        payload: { schemaFormat: 'application/vnd.google.protobuf;version=3', schema: PROTO },
+      },
+      untyped: { payload: { schemaFormat: 'application/schema+json;version=draft-07', schema: 'not a schema' } },
     },
     schemas: {
       order: {
@@ -109,6 +122,36 @@ describe('targetMessages', () => {
     // Assert
     expect(message!.schemaFormat).toBe('application/vnd.apache.avro;version=1.9.0')
     expect(message!.payload).toEqual({ type: 'record', name: 'Audit', fields: [] })
+  })
+
+  it('keeps a schema written as text, such as Protobuf source, but not a JSON Schema given as a string', () => {
+    // Arrange / Act
+    const [confirmed, untyped] = messagesOf({ channelPath: '{$sourceDescriptions.events.url}#/channels/confirmations', action: 'receive' })
+
+    // Assert
+    expect(confirmed).toMatchObject({ name: 'confirmed', schemaFormat: 'application/vnd.google.protobuf;version=3', payload: PROTO })
+    expect(untyped).toMatchObject({ name: 'untyped', schemaFormat: undefined, payload: undefined })
+  })
+
+  it('shows a Protobuf payload in the step with its format and source', () => {
+    // Arrange
+    const wrapper = mount(ArazzoStepView, {
+      props: {
+        id: 'doc/step/s',
+        step: { stepId: 's', channelPath: '{$sourceDescriptions.events.url}#/channels/confirmations', action: 'receive' },
+        document: arazzo,
+        documents,
+      },
+    })
+
+    // Act
+    const confirmed = wrapper.findAll('.ba-target-message')[0]!
+
+    // Assert
+    expect(confirmed.text()).toContain('application/vnd.google.protobuf;version=3')
+    expect(confirmed.find('pre.ba-code code').text()).toBe(PROTO)
+    expect(confirmed.find('.ba-schema').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   it('is empty for OpenAPI, workflow and unresolved targets', () => {
