@@ -102,7 +102,10 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
   does not index plugin documents yet.
 - One sidebar entry per workflow, with one child entry per step. Sidebar clicks, deep links and
   scroll position stay in sync, as they do for operations.
-- For each workflow: its inputs (nested properties fold out), shared parameters, steps, success
+- For each workflow: its inputs (nested properties fold out, with an **Example input** to copy: a JSON object
+  made from the inputs schema, taking its `example`, `examples`, `const`, `default` or `enum` where it
+  has one, a sample for known string formats such as `uuid` and `date-time`, and the number for a .NET
+  number also read from a string), shared parameters, steps, success
   and failure actions, and outputs.
 - A workflow overview beside the steps: a flowchart of the steps, with arrows for `dependsOn` (or
   document order) and labeled success and failure branches for `onSuccess`/`onFailure`: each branch

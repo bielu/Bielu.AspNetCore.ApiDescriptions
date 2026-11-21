@@ -87,3 +87,10 @@
 .bielu-arazzo .ba-export-status:empty {
   @apply hidden;
 }
+/* A workflow's example input: a copy button over the JSON. */
+.bielu-arazzo .ba-example-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
