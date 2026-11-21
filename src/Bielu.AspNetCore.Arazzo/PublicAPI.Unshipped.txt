@@ -1,1 +1,5 @@
 ﻿#nullable enable
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddSelfWiredSource(string! sourceName, Bielu.Arazzo.Models.ArazzoSourceDescriptionType type, string! documentName, string! url) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider
+Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider.GetDocumentAsync(string! documentName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<object?>
+Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider.SourceType.get -> string!

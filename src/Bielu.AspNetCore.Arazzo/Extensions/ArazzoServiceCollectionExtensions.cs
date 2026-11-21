@@ -68,5 +68,10 @@ public static class ArazzoServiceCollectionExtensions
         // last one registered per source type.
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IArazzoSourceResolver, OpenApiSourceResolver>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IArazzoSourceResolver, AsyncApiSourceResolver>());
+
+        // The documents those resolvers read. A provider registered later is asked first, so a consumer's own
+        // provider for a type can supply some documents and leave the rest to these.
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IArazzoSourceDocumentProvider, OpenApiSourceDocumentProvider>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IArazzoSourceDocumentProvider, AsyncApiSourceDocumentProvider>());
     }
 }

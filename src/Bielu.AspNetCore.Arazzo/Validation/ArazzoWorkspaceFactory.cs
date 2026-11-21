@@ -1,31 +1,28 @@
 ﻿using Bielu.Arazzo;
-using Bielu.Arazzo.Models;
 using Bielu.AspNetCore.Arazzo.Services;
+using Bielu.AspNetCore.Arazzo.SourceResolvers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Bielu.AspNetCore.Arazzo.Validation;
 
 /// <summary>
-/// Builds an <see cref="ArazzoWorkspace"/> for one document by resolving its self-wired sources against the
-/// live <c>IAsyncApiDocumentProvider</c>/<c>IOpenApiDocumentProvider</c> keyed services registered elsewhere
-/// in the app.
+/// Builds an <see cref="ArazzoWorkspace"/> for one document by asking the registered
+/// <see cref="IArazzoSourceDocumentProvider"/>s for the document behind each self-wired source.
 /// </summary>
 internal sealed class ArazzoWorkspaceFactory(
     [ServiceKey] string documentName,
     IOptionsMonitor<ArazzoOptions> optionsMonitor,
-    IServiceProvider serviceProvider,
-    IEnumerable<IArazzoSourceResolver> resolvers)
+    IEnumerable<IArazzoSourceResolver> resolvers,
+    IEnumerable<IArazzoSourceDocumentProvider> documentProviders)
 {
     /// <summary>
-    /// Builds the workspace for this document. A source wiring whose upstream document provider isn't
-    /// registered (a missing or mistyped <c>AddAsyncApiSource</c>/<c>AddOpenApiSource</c> document name) is
-    /// skipped rather than throwing a raw DI exception; instead a contextual message naming the Arazzo
-    /// document, source-description name, source type, and requested document name is appended to
-    /// <paramref name="errors"/>, so every misconfigured source in the document is reported in one pass.
-    /// The returned <c>FailedSourceNames</c> lets the caller skip re-reporting steps that target one of
-    /// these sources as a separate "did not resolve" failure — the root-cause message above already covers
-    /// them.
+    /// Builds the workspace for this document. A source no provider can supply a document for (a missing or
+    /// mistyped document name, or a source type with no provider) is skipped rather than throwing; instead a
+    /// contextual message naming the Arazzo document, source-description name, source type, and requested document
+    /// name is appended to <paramref name="errors"/>, so every misconfigured source in the document is reported in
+    /// one pass. The returned <c>FailedSourceNames</c> lets the caller skip re-reporting steps that target one of
+    /// these sources as a separate "did not resolve" failure — the root-cause message above already covers them.
     /// </summary>
     public async Task<(ArazzoWorkspace Workspace, HashSet<string> FailedSourceNames)> CreateAsync(
         List<string> errors, CancellationToken cancellationToken)
@@ -37,61 +34,53 @@ internal sealed class ArazzoWorkspaceFactory(
             workspace.RegisterResolver(resolver);
         }
 
+        // Newest first: a provider added after AddArazzo is asked before the built-in one for its type.
+        var providersByType = documentProviders.Reverse()
+            .ToLookup(provider => provider.SourceType, StringComparer.Ordinal);
         var failedSourceNames = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var wiring in options.SourceWirings)
         {
-            var document = wiring.SourceType == ArazzoSourceDescriptionType.AsyncApi
-                ? await ResolveAsyncApiDocumentAsync(wiring, errors, cancellationToken)
-                : wiring.SourceType == ArazzoSourceDescriptionType.OpenApi
-                    ? await ResolveOpenApiDocumentAsync(wiring, errors, cancellationToken)
-                    : throw new InvalidOperationException($"Unsupported self-wired source type '{wiring.SourceType}'.");
-
+            var sourceType = wiring.SourceType.Value;
+            var document = await GetDocumentAsync(providersByType[sourceType], wiring.DocumentName, cancellationToken);
             if (document is not null)
             {
-                workspace.RegisterDocument(wiring.SourceName, wiring.SourceType.Value, document);
+                workspace.RegisterDocument(wiring.SourceName, sourceType, document);
+                continue;
             }
-            else
-            {
-                failedSourceNames.Add(wiring.SourceName);
-            }
+
+            failedSourceNames.Add(wiring.SourceName);
+            errors.Add(providersByType.Contains(sourceType)
+                ? $"{documentName}: source '{wiring.SourceName}' ({sourceType}) references document " +
+                  $"'{wiring.DocumentName}', but no {sourceType} document of that name is registered" +
+                  $"{RegistrationHint(sourceType, wiring.DocumentName)}."
+                : $"{documentName}: source '{wiring.SourceName}' is self-wired as type '{sourceType}', but no " +
+                  $"{nameof(IArazzoSourceDocumentProvider)} is registered for that type.");
         }
 
         return (workspace, failedSourceNames);
     }
 
-    private async Task<object?> ResolveAsyncApiDocumentAsync(
-        ArazzoOptions.SourceWiring wiring, List<string> errors, CancellationToken cancellationToken)
+    private static async Task<object?> GetDocumentAsync(
+        IEnumerable<IArazzoSourceDocumentProvider> providers, string sourceDocumentName,
+        CancellationToken cancellationToken)
     {
-        var provider = serviceProvider
-            .GetKeyedService<Bielu.AspNetCore.AsyncApi.Services.IAsyncApiDocumentProvider>(wiring.DocumentName);
-        if (provider is null)
+        foreach (var provider in providers)
         {
-            errors.Add(MissingProviderError(wiring, "AddAsyncApi"));
-            return null;
+            if (await provider.GetDocumentAsync(sourceDocumentName, cancellationToken) is { } document)
+            {
+                return document;
+            }
         }
 
-        return await provider.GetAsyncApiDocumentAsync(cancellationToken);
+        return null;
     }
 
-    private async Task<object?> ResolveOpenApiDocumentAsync(
-        ArazzoOptions.SourceWiring wiring, List<string> errors, CancellationToken cancellationToken)
+    /// <summary>For the two built-in types, names the call that registers the missing document.</summary>
+    private static string RegistrationHint(string sourceType, string sourceDocumentName) => sourceType switch
     {
-        // Registration is checked separately: on ASP.NET Core 11 the keyed lookup alone succeeds for any name.
-        var provider = OpenApiDocumentRegistrations.IsRegistered(serviceProvider, wiring.DocumentName)
-            ? serviceProvider.GetKeyedService<Microsoft.AspNetCore.OpenApi.IOpenApiDocumentProvider>(wiring.DocumentName)
-            : null;
-        if (provider is null)
-        {
-            errors.Add(MissingProviderError(wiring, "AddOpenApi"));
-            return null;
-        }
-
-        return await provider.GetOpenApiDocumentAsync(cancellationToken);
-    }
-
-    private string MissingProviderError(ArazzoOptions.SourceWiring wiring, string expectedRegistrationMethod) =>
-        $"{documentName}: source '{wiring.SourceName}' ({wiring.SourceType}) references document " +
-        $"'{wiring.DocumentName}', but no {expectedRegistrationMethod}(\"{wiring.DocumentName}\", ...) was " +
-        "registered for it.";
+        "asyncapi" => $" (no AddAsyncApi(\"{sourceDocumentName}\", ...))",
+        "openapi" => $" (no AddOpenApi(\"{sourceDocumentName}\", ...))",
+        _ => string.Empty,
+    };
 }

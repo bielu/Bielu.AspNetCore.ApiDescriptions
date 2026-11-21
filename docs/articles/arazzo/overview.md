@@ -168,11 +168,52 @@ By default (`ArazzoOptions.ValidateSourceReferencesOnStartup = true`), every ste
 documents once at app startup — a renamed channel or operation throws `ArazzoStartupValidationException`
 and fails startup, rather than failing the first time a workflow actually runs in production.
 
-Only steps whose source is self-wired (`AddOpenApiSource`/`AddAsyncApiSource`) are checked. A source added
-by URL alone with `AddSourceDescription`, such as another service's OpenAPI document, isn't fetched at
-startup, so steps that target it are not checked; a step naming a source the document doesn't declare at
-all still fails. A qualified `operationId` (`$sourceDescriptions.<name>.<operationId>`) is checked against
-the source it names, the same way.
+Only steps whose source is self-wired (`AddOpenApiSource`/`AddAsyncApiSource`/`AddSelfWiredSource`) are
+checked. A source added by URL alone with `AddSourceDescription`, such as another service's OpenAPI document,
+isn't fetched at startup, so steps that target it are not checked; a step naming a source the document doesn't
+declare at all still fails. A qualified `operationId` (`$sourceDescriptions.<name>.<operationId>`) is checked
+against the source it names, the same way.
+
+#### Self-wiring other documents
+
+`AddOpenApiSource` and `AddAsyncApiSource` get their documents from an `IArazzoSourceDocumentProvider`, one of
+the two `AddArazzo` registers for `openapi` and `asyncapi`. Register your own provider to validate steps
+against a document the app doesn't serve itself, such as a partner's OpenAPI description shipped with the app,
+and add the source with `AddSelfWiredSource`:
+
+```csharp
+using Bielu.AspNetCore.Arazzo.SourceResolvers;
+
+builder.Services.TryAddEnumerable(
+    ServiceDescriptor.Singleton<IArazzoSourceDocumentProvider, PartnerOpenApiProvider>());
+builder.Services.AddArazzo(options => options
+    .AddOpenApiSource("orders", "v1")
+    .AddSelfWiredSource("payments", ArazzoSourceDescriptionType.OpenApi, "payments",
+        "https://payments.example.com/openapi.json"));
+
+sealed class PartnerOpenApiProvider : IArazzoSourceDocumentProvider
+{
+    public string SourceType => ArazzoSourceDescriptionType.OpenApi.Value;
+
+    public async ValueTask<object?> GetDocumentAsync(string documentName, CancellationToken cancellationToken)
+    {
+        if (documentName != "payments")
+        {
+            return null; // not ours: the next provider for "openapi" is asked
+        }
+
+        await using var stream = File.OpenRead("payments.openapi.json");
+        var result = await OpenApiDocument.LoadAsync(stream, "json", null, cancellationToken);
+        return result.Document;
+    }
+}
+```
+
+Providers for the same type are asked newest first, and the first that returns a document wins, so a provider
+registered after `AddArazzo` can own some document names and leave the rest to the built-in one. The document is
+read by the `IArazzoSourceResolver` registered for the same type, so it must be the type that resolver reads:
+an `OpenApiDocument` for `openapi`, an `AsyncApiDocument` for `asyncapi`. When no provider returns a document,
+startup fails with an error naming the source and the document name.
 
 The documents can also be written at build time with `dotnet getdocument`, next to the OpenAPI and AsyncAPI ones; see
 [Build-time document generation](../build-time-generation.md#arazzo-documents). The tool starts the app, so the same

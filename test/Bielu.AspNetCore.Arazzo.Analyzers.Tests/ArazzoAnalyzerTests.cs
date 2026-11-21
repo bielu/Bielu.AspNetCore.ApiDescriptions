@@ -546,6 +546,40 @@ services.AddArazzo(o => o.AddWorkflow(""w"", w => w
     }
 
     [Fact]
+    public async Task BARAZZO006_SourceDeclaredWithAddSelfWiredSource_NoWarning()
+    {
+        // Arrange
+        var source = @"
+new ServiceCollection().AddArazzo(o => o
+    .AddSelfWiredSource(""payments"", ""openapi"", ""partner"", ""https://example.com/payments.json"")
+    .AddWorkflow(""w"", w => w.Step(""a"", s => s.OperationPath(""payments"", ""/payments"", ""POST""))));
+";
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        diagnostics.Where(d => d.Id == "BARAZZO006").ShouldBeEmpty();
+        diagnostics.Where(d => d.Id == "BARAZZO008").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BARAZZO002_AddSelfWiredSourceWithInvalidSourceName_ReportsError()
+    {
+        // Arrange
+        var source = @"
+new ServiceCollection().AddArazzo(o => o
+    .AddSelfWiredSource(""bad.name"", ""openapi"", ""partner"", ""https://example.com/payments.json""));
+";
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        diagnostics.Where(d => d.Id == "BARAZZO002").Select(Text).ShouldBe(["\"bad.name\""]);
+    }
+
+    [Fact]
     public async Task BARAZZO006_SourceInAnotherDocument_ReportsWarning()
     {
         // Arrange

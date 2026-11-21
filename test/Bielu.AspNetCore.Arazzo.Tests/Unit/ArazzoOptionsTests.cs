@@ -8,6 +8,58 @@ namespace Bielu.AspNetCore.Arazzo.Tests.Unit;
 public class ArazzoOptionsTests
 {
     [Fact]
+    public void AddSelfWiredSource_AddsSourceDescriptionAndWiring()
+    {
+        // Arrange
+        var options = new ArazzoOptions();
+
+        // Act
+        options.AddSelfWiredSource("payments", ArazzoSourceDescriptionType.OpenApi, "Partner", "https://payments.example.com/openapi.json");
+
+        // Assert
+        var source = options.SourceDescriptions.ShouldHaveSingleItem();
+        source.Name.ShouldBe("payments");
+        source.Url.ShouldBe("https://payments.example.com/openapi.json");
+        source.Type.ShouldBe(ArazzoSourceDescriptionType.OpenApi);
+        var wiring = options.SourceWirings.ShouldHaveSingleItem();
+        wiring.SourceName.ShouldBe("payments");
+        wiring.SourceType.ShouldBe(ArazzoSourceDescriptionType.OpenApi);
+        wiring.DocumentName.ShouldBe("Partner"); // passed to providers as given, unlike AddAsyncApiSource
+    }
+
+    [Fact]
+    public void AddAsyncApiSource_WiresTheLowercasedDocumentName()
+    {
+        // Arrange
+        var options = new ArazzoOptions();
+
+        // Act
+        options.AddAsyncApiSource("events", "V1");
+
+        // Assert
+        options.SourceWirings.ShouldHaveSingleItem().DocumentName.ShouldBe("v1");
+    }
+
+    [Theory]
+    [InlineData(null, "partner", "https://example.com/openapi.json")]
+    [InlineData("", "partner", "https://example.com/openapi.json")]
+    [InlineData("payments.v2", "partner", "https://example.com/openapi.json")]
+    [InlineData("payments", null, "https://example.com/openapi.json")]
+    [InlineData("payments", "", "https://example.com/openapi.json")]
+    [InlineData("payments", "partner", null)]
+    [InlineData("payments", "partner", "")]
+    public void AddSelfWiredSource_RejectsInvalidArguments(string? sourceName, string? documentName, string? url)
+    {
+        // Arrange
+        var options = new ArazzoOptions();
+
+        // Act & Assert
+        Should.Throw<ArgumentException>(() =>
+            options.AddSelfWiredSource(sourceName!, ArazzoSourceDescriptionType.OpenApi, documentName!, url!));
+        options.SourceWirings.ShouldBeEmpty();
+    }
+
+    [Fact]
     public void AddAsyncApiSource_DefaultsUrlToAsyncApiRoute()
     {
         var options = new ArazzoOptions();
