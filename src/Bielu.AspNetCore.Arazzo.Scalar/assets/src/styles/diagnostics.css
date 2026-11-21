@@ -1,10 +1,9 @@
 /* The header's folding list of diagnostics, and each step's own problems. */
 /* Diagnostics: the header's folding list, and each step's own problems. */
 .bielu-arazzo .ba-diagnostics {
-  margin: 16px 0;
-  padding: 8px 12px;
+  @apply my-4 mx-0 py-2 px-3;
   border: var(--scalar-border-width, 1px) solid var(--ba-diagnostic-color);
-  border-radius: var(--scalar-radius-lg, 8px);
+  @apply rounded-lg;
   background: color-mix(in srgb, var(--ba-diagnostic-color) 8%, transparent);
 }
 .bielu-arazzo .ba-diagnostics-error,
@@ -16,55 +15,46 @@
   --ba-diagnostic-color: var(--scalar-color-orange, #f76b15);
 }
 .bielu-arazzo .ba-diagnostics > summary {
-  cursor: pointer;
+  @apply cursor-pointer;
   font-size: var(--scalar-small, 13px);
-  font-weight: var(--scalar-semibold, 600);
+  @apply font-medium;
 }
 .bielu-arazzo .ba-diagnostic-icon {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  margin-right: 4px;
+  @apply inline-block w-4 h-4 mr-1 text-center;
   border-radius: 50%;
   background: var(--ba-diagnostic-color);
   color: var(--scalar-background-1);
   font-size: 11px;
   line-height: 16px;
-  text-align: center;
 }
 .bielu-arazzo .ba-diagnostic-list,
 .bielu-arazzo .ba-step-diagnostics {
+  @apply p-0;
   margin: 8px 0 0;
-  padding: 0;
   list-style: none;
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-diagnostic-list li,
 .bielu-arazzo .ba-step-diagnostics li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 8px;
+  @apply flex flex-wrap gap-y-0.5 gap-x-2 mb-1;
   padding: 3px 0 3px 8px;
   border-left: 3px solid var(--ba-diagnostic-color);
-  margin-bottom: 4px;
 }
 .bielu-arazzo .ba-diagnostic-severity {
   color: var(--ba-diagnostic-color);
-  font-weight: var(--scalar-semibold, 600);
-  text-transform: uppercase;
+  @apply font-medium uppercase;
   font-size: var(--scalar-mini, 12px);
 }
 .bielu-arazzo .ba-diagnostic-where {
-  font-family: var(--scalar-font-code);
+  @apply font-code;
 }
 .bielu-arazzo .ba-step-problems {
-  margin-left: 6px;
-  padding: 0 6px;
+  @apply ml-1.5 py-0 px-1.5;
   border-radius: 9px;
   background: var(--ba-diagnostic-color);
   color: var(--scalar-background-1);
   font-size: var(--scalar-mini, 12px);
-  font-weight: var(--scalar-semibold, 600);
+  @apply font-medium;
   vertical-align: middle;
 }
 .bielu-arazzo .ba-diagram-problem circle {
@@ -73,8 +63,7 @@
   stroke-width: 1.5;
 }
 .bielu-arazzo .ba-diagram-problem text {
-  fill: var(--scalar-background-1);
-  font-family: var(--scalar-font);
+  @apply fill-b-1 font-sans;
   font-size: 10px;
   font-weight: 700;
 }

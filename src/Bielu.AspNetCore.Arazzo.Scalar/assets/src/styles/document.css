@@ -1,11 +1,10 @@
 /* The root element, the document header, workflows and the step list. */
 .bielu-arazzo {
-  display: block;
+  @apply block;
   max-width: 1360px;
   margin: 0 auto;
   padding: 48px 60px 96px;
-  color: var(--scalar-color-1);
-  font-family: var(--scalar-font);
+  @apply text-c-1 font-sans;
   font-size: var(--scalar-paragraph, 16px);
   line-height: 1.5;
   /* The workflow layout switches to two columns on the element's own width, not the viewport's. */
@@ -18,106 +17,90 @@
 }
 .bielu-arazzo code,
 .bielu-arazzo pre {
-  font-family: var(--scalar-font-code);
+  @apply font-code;
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo a {
-  color: var(--scalar-color-accent);
-  word-break: break-all;
+  @apply text-c-accent break-all;
 }
 .bielu-arazzo .ba-kicker {
   font-size: var(--scalar-mini, 12px);
-  font-weight: var(--scalar-semibold, 600);
-  color: var(--scalar-color-2);
+  @apply font-medium text-c-2;
   letter-spacing: normal;
 }
 .bielu-arazzo .ba-title {
   margin: 4px 0 8px;
   font-size: var(--scalar-heading-1, 32px);
-  font-weight: var(--scalar-bold, 700);
+  @apply font-bold;
 }
 .bielu-arazzo .ba-summary {
+  @apply text-c-2;
   margin: 0 0 8px;
-  color: var(--scalar-color-2);
 }
 .bielu-arazzo .ba-muted {
-  color: var(--scalar-color-3);
+  @apply text-c-3;
   font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-markdown {
-  color: var(--scalar-color-2);
+  @apply text-c-2;
 }
 .bielu-arazzo .ba-markdown :first-child {
-  margin-top: 0;
+  @apply mt-0;
 }
 .bielu-arazzo .ba-markdown :last-child {
-  margin-bottom: 0;
+  @apply mb-0;
 }
 .bielu-arazzo .ba-workflow {
-  margin-top: 48px;
-  padding-top: 32px;
-  border-top: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  @apply mt-12 pt-8 border-t border-t-border;
   scroll-margin-top: var(--refs-viewport-offset, 0px);
 }
 .bielu-arazzo .ba-workflow-title {
   margin: 4px 0 8px;
   font-size: var(--scalar-heading-2, 24px);
-  font-weight: var(--scalar-bold, 700);
+  @apply font-bold;
 }
 .bielu-arazzo .ba-steps {
+  @apply p-0;
   list-style: none;
   margin: 24px 0 0;
-  padding: 0;
 }
 .bielu-arazzo .ba-steps > li {
-  position: relative;
-  padding-left: 40px;
+  @apply relative pl-10;
 }
 /* The number comes from the step's position, not a CSS counter, so a filter that hides steps does not renumber the rest. */
 .bielu-arazzo .ba-steps > li::before {
   content: attr(data-step-number);
-  position: absolute;
+  @apply absolute;
   left: 0;
   top: 18px;
-  width: 24px;
-  height: 24px;
+  @apply w-6 h-6;
   border-radius: 50%;
-  background: var(--scalar-background-2);
-  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
-  color: var(--scalar-color-2);
+  @apply bg-b-2 border border-border text-c-2;
   font-size: var(--scalar-mini, 12px);
   line-height: 22px;
-  text-align: center;
+  @apply text-center;
 }
 .bielu-arazzo .ba-steps > li:not(:last-child)::after {
+  @apply absolute border-l border-l-border;
   content: '';
-  position: absolute;
   left: 12px;
   top: 46px;
   bottom: -16px;
-  border-left: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
 }
 .bielu-arazzo .ba-step {
-  padding: 16px 0;
+  @apply py-4 px-0;
   scroll-margin-top: var(--refs-viewport-offset, 0px);
 }
 .bielu-arazzo .ba-step-title {
   margin: 2px 0 8px;
   font-size: var(--scalar-heading-4, 18px);
-  font-weight: var(--scalar-semibold, 600);
+  @apply font-medium;
 }
 .bielu-arazzo .ba-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0;
+  @apply flex flex-wrap gap-1.5 my-2 mx-0;
 }
 .bielu-arazzo .ba-badge {
-  display: inline-block;
+  @apply inline-block rounded bg-b-2 border border-border text-c-2;
   padding: 1px 8px;
-  border-radius: var(--scalar-radius, 4px);
-  background: var(--scalar-background-2);
-  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
-  color: var(--scalar-color-2);
   font-size: var(--scalar-mini, 12px);
 }
