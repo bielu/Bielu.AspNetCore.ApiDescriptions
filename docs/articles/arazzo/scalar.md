@@ -182,6 +182,9 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
   step, output, workflow, component or source description the document doesn't declare is underlined
   in red, with the reason in its tooltip. Each output lists the steps that read it ("Used by
   requestPayment, workflow outputs"), and a workflow output lists the steps of other workflows that do.
+
+  ![The createOrder step: its replacements link to the workflow inputs they read, and each output lists the steps that read it](../../images/arazzo/scalar-expression-links.jpg)
+
 - Each step target is labeled with its spec: `OpenAPI`, `AsyncAPI` or `Workflow`, with the version in its tooltip and the Sources table. Channel
   steps also say whether they send or receive. See [Which spec a step targets](#which-spec-a-step-targets).
 - The reusable `components` (input schemas, parameters, success and failure actions) in a section

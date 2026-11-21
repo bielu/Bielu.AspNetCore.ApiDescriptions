@@ -718,7 +718,7 @@ onBeforeUnmount(() => {
   transition: background-color 0.4s;
 }
 .bielu-arazzo .ba-flash {
-  background: color-mix(in srgb, var(--scalar-color-accent) 14%, transparent);
+  background: color-mix(in srgb, var(--scalar-color-accent) 22%, transparent);
 }
 .bielu-arazzo .ba-selector {
   display: inline-flex;

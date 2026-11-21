@@ -258,6 +258,8 @@ describe('the rendered document', () => {
 
     // Assert
     expect(view.find('[id="doc/workflow/adopt/step/getPet"]').classes()).not.toContain('ba-step-closed')
-    expect(view.find('[id="doc/workflow/adopt/step/getPet/outputs/name"]').classes()).toContain('ba-flash')
+    const row = view.find('[id="doc/workflow/adopt/step/getPet/outputs/name"]')
+    expect(row.classes()).toContain('ba-flash')
+    expect((row.element.nextElementSibling as HTMLElement).classList).toContain('ba-flash')
   })
 })

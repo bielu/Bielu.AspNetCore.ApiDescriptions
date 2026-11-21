@@ -143,6 +143,8 @@ export const goToAnchor = async (
     return
   }
   element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  element.classList.add('ba-flash')
-  setTimeout(() => element.classList.remove('ba-flash'), FLASH_MS)
+  // An outputs row is a <dt> and its <dd>: the value is part of what the link meant.
+  const flashed = element.tagName === 'DT' && element.nextElementSibling?.tagName === 'DD' ? [element, element.nextElementSibling] : [element]
+  flashed.forEach((target) => target.classList.add('ba-flash'))
+  setTimeout(() => flashed.forEach((target) => target.classList.remove('ba-flash')), FLASH_MS)
 }
