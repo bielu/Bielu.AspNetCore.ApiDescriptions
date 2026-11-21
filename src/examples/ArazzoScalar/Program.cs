@@ -222,10 +222,16 @@ app.MapScalarApiReference(options => options
 
 app.MapPost("/orders", (OrderRequest request) =>
         Results.Created($"/orders/{Guid.NewGuid()}", new Order(Guid.NewGuid(), request.Sku, request.Quantity, request.Quantity * 9.99m)))
-    .WithName("createOrder");
+    .WithName("createOrder")
+    // The responses the workflows check for, so the Arazzo view can show them next to each step.
+    .Produces<Order>(StatusCodes.Status201Created)
+    .ProducesProblem(StatusCodes.Status400BadRequest);
 
 app.MapGet("/orders/{id:guid}", (Guid id) => Results.Ok(new Order(id, "SKU-1", 1, 9.99m)))
-    .WithName("getOrder");
+    .WithName("getOrder")
+    .Produces<Order>()
+    .Produces(StatusCodes.Status404NotFound)
+    .Produces(StatusCodes.Status410Gone);
 
 app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 

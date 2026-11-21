@@ -48,8 +48,9 @@ Technical | Pages views) and troubleshooting.
   under each output.
 - Which spec each step targets (`OpenAPI 3.1.1`, `AsyncAPI 3.0.0` or `Workflow`, plus send/receive),
   on the step, on the overview flowchart, and per source description.
-- Links from each step to the operation or channel it calls in its own document, and for AsyncAPI
-  steps the message payload they send or receive.
+- Links from each step to the operation or channel it calls in its own document. For AsyncAPI
+  steps, the message payload they send or receive; for OpenAPI steps, the operation's request body
+  and responses, with the responses the step's criteria and actions check for marked.
 - Workflows a step or a `goto`/`retry` action invokes as nodes of their own in the flowchart, with an
   arrow back for a `retry`. A `+` on a workflow node shows its steps inside the flowchart
   (recursively, never re-expanding a workflow already on the path), and a step that invokes one can

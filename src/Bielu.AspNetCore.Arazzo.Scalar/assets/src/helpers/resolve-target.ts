@@ -81,7 +81,7 @@ const walk = (root: AnyRecord, segments: string[], depth = 0): unknown =>
  * Follows a `$ref`. Scalar's workspace store exposes the resolved target as `$ref-value`; a plain
  * local `#/…` reference is followed against the document itself as a fallback.
  */
-const deref = (root: AnyRecord, node: unknown, depth = 0): unknown => {
+export const deref = (root: AnyRecord, node: unknown, depth = 0): unknown => {
   if (!isRecord(node) || typeof node.$ref !== 'string' || depth > 16) {
     return node
   }
