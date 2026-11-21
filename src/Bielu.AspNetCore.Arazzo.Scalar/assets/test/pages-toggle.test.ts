@@ -80,7 +80,7 @@ describe('the Technical | Pages toggle', () => {
     expect(technical).toBe('load')
     expect(toggle(wrapper, 'Pages')!.attributes('aria-pressed')).toBe('true')
     expect(wrapper.find('.ba-overview [data-node-id="load"] text').text()).toBe('Load the order list')
-    expect(wrapper.find('.ba-overview .ba-diagram-band text').text()).toBe('Order list · /orders')
+    expect(wrapper.find('.ba-overview .ba-diagram-band-title text').text()).toBe('Order list · /orders')
   })
 
   it('keeps the zoom when switching views', async () => {
