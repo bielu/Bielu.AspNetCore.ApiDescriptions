@@ -19,55 +19,48 @@
   /* A modal dialog is fixed with inset 0, so an auto height would stretch it to the window. */
   height: fit-content;
   max-height: 85vh;
-  overflow: auto;
+  @apply overflow-auto;
 }
 .bielu-arazzo .ba-flow-route {
-  margin: 4px 0 12px;
+  @apply mt-1 mx-0 mb-3;
 }
 .bielu-arazzo .ba-flow-link {
-  color: var(--scalar-color-accent);
+  @apply text-c-accent;
 }
 .bielu-arazzo .ba-flow-value + .ba-flow-value {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  @apply mt-4 pt-3 border-t border-t-border;
 }
 .bielu-arazzo .ba-flow-facts {
-  display: grid;
+  @apply grid;
   grid-template-columns: max-content 1fr;
-  gap: 4px 12px;
-  margin: 8px 0;
+  @apply gap-y-1 gap-x-3 mx-0 my-2;
 }
 .bielu-arazzo .ba-flow-facts dt {
-  color: var(--scalar-color-3);
+  @apply text-c-3;
 }
 .bielu-arazzo .ba-flow-facts dd {
-  margin: 0;
-  overflow-wrap: anywhere;
+  @apply m-0 wrap-anywhere;
 }
 /* The info icon on a Data flow arrow's label, which opens what flows along it. */
 .bielu-arazzo .ba-diagram-flow-icon circle {
-  fill: none;
-  stroke: var(--scalar-color-accent);
-  stroke-width: 1;
+  @apply fill-none stroke-c-accent stroke-1;
 }
 .bielu-arazzo .ba-diagram-edge-label .ba-diagram-flow-icon text {
-  fill: var(--scalar-color-accent);
-  font-family: var(--scalar-font);
+  @apply fill-c-accent font-sans;
   font-size: 8px;
-  font-weight: var(--scalar-bold, 700);
+  @apply font-bold;
 }
 .bielu-arazzo .ba-diagram-edge-label.ba-diagram-link:hover .ba-diagram-flow-icon circle,
 .bielu-arazzo .ba-diagram-edge-label:focus-visible .ba-diagram-flow-icon circle {
-  fill: var(--scalar-color-accent);
+  @apply fill-c-accent;
 }
 .bielu-arazzo .ba-diagram-edge-label.ba-diagram-link:hover .ba-diagram-flow-icon text,
 .bielu-arazzo .ba-diagram-edge-label:focus-visible .ba-diagram-flow-icon text {
-  fill: var(--scalar-background-1);
+  @apply fill-b-1;
 }
 .bielu-arazzo .ba-diagram-edge-label.ba-diagram-link:hover text,
 .bielu-arazzo .ba-diagram-edge-label:focus-visible text {
-  fill: var(--scalar-color-accent);
+  @apply fill-c-accent;
 }
 .bielu-arazzo .ba-dialog::backdrop {
   background: rgb(0 0 0 / 0.45);
