@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@bielu/scalar-core": "file:../../Bielu.AspNetCore.AsyncApi.Scalar/assets",
-    "@scalar/api-reference": "1.76.0",
+    "@scalar/api-reference": "1.80.0",
     "@tailwindcss/vite": "^4.3.5",
     "@vitejs/plugin-vue": "^5.2.1",
     "tailwindcss": "^4.3.5",
