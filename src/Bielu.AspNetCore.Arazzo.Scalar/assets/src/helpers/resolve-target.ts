@@ -502,8 +502,11 @@ export type TargetMessage = {
   summary: string
   description: string
   contentType: string | undefined
-  /** The payload schema, unwrapped from a Multi Format Schema Object when it is one. */
-  payload: AnyRecord | undefined
+  /**
+   * The payload schema, unwrapped from a Multi Format Schema Object when it is one. A schema in a non-JSON
+   * format may be text, such as the `.proto` source of a Protobuf payload, and is kept as that string.
+   */
+  payload: AnyRecord | string | undefined
   /** `schemaFormat` of a payload that is not plain JSON Schema (Avro, Protobuf, …); its schema is shown as written. */
   schemaFormat: string | undefined
   /** The first example payload, when the message declares one. */
@@ -522,7 +525,7 @@ const lastSegment = (ref: unknown): string | undefined =>
  * The messages of a resolved AsyncAPI target: those the AsyncAPI 3 operation lists when the step
  * targets an operation, else every message of the channel. References are followed within the
  * target's document, and a payload given as a Multi Format Schema Object (`{ schemaFormat, schema }`)
- * is unwrapped. Empty for an OpenAPI, workflow or unresolved target.
+ * is unwrapped; its schema is kept as text when the format writes it so (Protobuf). Empty for an OpenAPI, workflow or unresolved target.
  */
 export const targetMessages = (target: StepTarget | undefined, documents: Record<string, unknown>): TargetMessage[] => {
   if (target?.kind !== 'channel' || !target.documentName) {
@@ -560,7 +563,7 @@ export const targetMessages = (target: StepTarget | undefined, documents: Record
         summary: text(message.summary),
         description: text(message.description),
         contentType: typeof message.contentType === 'string' ? message.contentType : defaultContentType,
-        payload: isRecord(payload) ? payload : undefined,
+        payload: isRecord(payload) || (schemaFormat && typeof payload === 'string' && payload.trim()) ? payload : undefined,
         schemaFormat,
         example: isRecord(example) ? example.payload : undefined,
         root,

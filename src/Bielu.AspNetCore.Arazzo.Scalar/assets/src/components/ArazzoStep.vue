@@ -124,7 +124,8 @@ const targetParameterRows = computed(() => targetParameters(target.value, props.
 
 /**
  * The messages an AsyncAPI target sends or receives, each with its payload as a property list
- * (references followed in the AsyncAPI document), or as written when it is not an object schema.
+ * (references followed in the AsyncAPI document), or as written, with its format, when it is in another
+ * schema format: an Avro schema as JSON, a Protobuf one as its `.proto` source.
  */
 const messages = computed(() =>
   targetMessages(target.value, props.documents).map((message) => ({
