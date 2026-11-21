@@ -123,7 +123,7 @@ public class ScalarArazzoAspireContainerTests(ITestOutputHelper output)
 
         // ... and the module read them back: the Pages view shows the configured page and label.
         var overview = page.Locator(".bielu-arazzo .ba-overview").First;
-        (await overview.Locator(".ba-diagram-band text").AllTextContentsAsync()).ShouldContain("Checkout page · /checkout");
+        (await overview.Locator(".ba-diagram-band-title text").AllTextContentsAsync()).ShouldContain("Checkout page · /checkout");
         (await overview.Locator("[data-node-id='create'] > text").First.TextContentAsync()).ShouldBe("Place the order");
         (await overview.Locator(".ba-diagram-node-failure > text").First.TextContentAsync()).ShouldBe("Declined page");
     }
