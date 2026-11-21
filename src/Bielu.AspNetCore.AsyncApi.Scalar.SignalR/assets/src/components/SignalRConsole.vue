@@ -87,6 +87,13 @@ const selectedMethodId = computed<string | null>({
 })
 const selectedMethod = computed(() => clientToServer.value.find((op) => op.id === selectedMethodId.value) ?? null)
 const isConnected = computed(() => state.value === HubConnectionState.Connected)
+// Full class names, so Tailwind finds them when it scans this file for the utilities to generate.
+const logBadge: Record<LogEntry['dir'], string> = {
+  in: 'bg-blue/20',
+  out: 'bg-orange/20',
+  sys: 'bg-b-2',
+}
+
 const stateLabel = computed(() => HubConnectionState[state.value] ?? 'Disconnected')
 
 const hubUrl = computed(() => {
@@ -372,42 +379,48 @@ onBeforeUnmount(() => void disconnect())
 </script>
 
 <template>
-  <section ref="rootEl" class="bsr">
-    <header class="bsr__head">
-      <h2 class="bsr__title">SignalR</h2>
-      <span class="bsr__pill" :data-state="stateLabel.toLowerCase()">{{ stateLabel }}</span>
+  <section
+    ref="rootEl"
+    class="bsr mt-8 max-w-(--bsr-content-max-width,none) border-t border-border px-(--bsr-content-padding,var(--scalar-content-padding,24px)) pt-10 pb-12 font-sans text-base text-c-1"
+  >
+    <header class="mb-5 flex items-center gap-3">
+      <h2 class="m-0 text-xl">SignalR</h2>
+      <span
+        class="bielu-pill bg-b-2 text-c-2 data-[state=connected]:bg-green/18 data-[state=connected]:text-green"
+        :data-state="stateLabel.toLowerCase()"
+      >{{ stateLabel }}</span>
     </header>
 
-    <p v-if="loading" class="bsr__muted">Loading SignalR hubs…</p>
-    <p v-else-if="filteredHubs.length === 0" class="bsr__muted">
+    <p v-if="loading" class="text-c-3">Loading SignalR hubs…</p>
+    <p v-else-if="filteredHubs.length === 0" class="text-c-3">
       No SignalR hubs found in {{ activeDocumentSlug ? 'this document' : 'the AsyncAPI document(s)' }}.
     </p>
 
     <template v-else>
       <!-- Connection bar -->
-      <div class="bsr__card bsr__conn">
-        <div class="bsr__conn-row">
-          <label v-if="showDocumentPicker" class="bsr__field">
-            <span>Document</span>
-            <select v-model="selectedDocumentName">
+      <div class="bielu-card mb-3.5">
+        <div class="flex flex-wrap items-end gap-3">
+          <label v-if="showDocumentPicker" class="flex flex-col gap-1">
+            <span class="bielu-caption">Document</span>
+            <select class="bielu-input" v-model="selectedDocumentName">
               <option v-for="doc in uniqueDocuments" :key="doc" :value="doc">{{ doc }}</option>
             </select>
           </label>
-          <label class="bsr__field">
-            <span>Hub</span>
-            <select v-model="selectedKey">
+          <label class="flex flex-col gap-1">
+            <span class="bielu-caption">Hub</span>
+            <select class="bielu-input" v-model="selectedKey">
               <option v-for="hub in filteredHubs" :key="hubKey(hub)" :value="hubKey(hub)">
                 {{ hub.channelName }} ({{ hub.hubPath }})
               </option>
             </select>
           </label>
-          <label class="bsr__field bsr__field--grow">
-            <span>Base URL</span>
-            <input v-model="baseUrlOverride" type="text" spellcheck="false" />
+          <label class="flex min-w-48 flex-1 flex-col gap-1">
+            <span class="bielu-caption">Base URL</span>
+            <input v-model="baseUrlOverride" class="bielu-input" type="text" spellcheck="false" />
           </label>
-          <label class="bsr__field">
-            <span>Transport</span>
-            <select v-model="transport">
+          <label class="flex flex-col gap-1">
+            <span class="bielu-caption">Transport</span>
+            <select class="bielu-input" v-model="transport">
               <option value="auto">Auto</option>
               <option value="webSockets">WebSockets</option>
               <option value="serverSentEvents">Server-Sent Events</option>
@@ -415,32 +428,33 @@ onBeforeUnmount(() => void disconnect())
             </select>
           </label>
         </div>
-        <div class="bsr__conn-row bsr__conn-row--foot">
-          <code class="bsr__url">{{ hubUrl }}</code>
-          <button v-if="!isConnected" type="button" class="bsr__btn bsr__btn--primary" @click="connect">Connect</button>
-          <button v-else type="button" class="bsr__btn" @click="disconnect">Disconnect</button>
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+          <code class="min-w-40 flex-1 font-code text-sm wrap-anywhere text-c-2">{{ hubUrl }}</code>
+          <button v-if="!isConnected" type="button" class="bielu-btn bielu-btn-primary" @click="connect">Connect</button>
+          <button v-else type="button" class="bielu-btn" @click="disconnect">Disconnect</button>
         </div>
       </div>
 
       <!-- Two columns on wide screens (interactive methods | events + log); stacked on narrow. -->
-      <div class="bsr__grid">
+      <div class="grid grid-cols-1 items-start gap-x-8 min-[60rem]:grid-cols-2">
       <!-- Left column: client -> server methods. Pick one, edit the prefilled example, send. -->
-      <div class="bsr__col">
-      <h3 class="bsr__section">Methods</h3>
-      <p v-if="clientToServer.length === 0" class="bsr__muted">No invocable hub methods.</p>
-      <article v-else class="bsr__card bsr__op">
-        <div class="bsr__conn-row">
-          <label class="bsr__field bsr__field--grow">
-            <span>Method</span>
-            <select v-model="selectedMethodId">
+      <div class="min-w-0">
+      <h3 class="mt-5 mb-2 text-base font-medium">Methods</h3>
+      <p v-if="clientToServer.length === 0" class="text-c-3">No invocable hub methods.</p>
+      <article v-else class="bielu-card mb-3.5">
+        <div class="flex flex-wrap items-end gap-3">
+          <label class="flex min-w-48 flex-1 flex-col gap-1">
+            <span class="bielu-caption">Method</span>
+            <select class="bielu-input" v-model="selectedMethodId">
               <option v-for="op in clientToServer" :key="op.id" :value="op.id">
                 {{ op.target }} · {{ methodLabel(op) }}
               </option>
             </select>
           </label>
-          <label v-if="selectedMethod && selectedMethod.messages.length > 1" class="bsr__field bsr__field--grow">
-            <span>Message</span>
+          <label v-if="selectedMethod && selectedMethod.messages.length > 1" class="flex min-w-48 flex-1 flex-col gap-1">
+            <span class="bielu-caption">Message</span>
             <select
+              class="bielu-input"
               :value="selectedMessageIndex[opKey(selectedMethod)] ?? 0"
               @change="applyExample(selectedMethod, Number(($event.target as HTMLSelectElement).value))"
             >
@@ -452,18 +466,21 @@ onBeforeUnmount(() => void disconnect())
         </div>
 
         <template v-if="selectedMethod">
-          <div class="bsr__op-head bsr__op-head--spaced">
-            <span class="bsr__method" :data-kind="selectedMethod.callType ?? 'invoke'">{{ methodLabel(selectedMethod) }}</span>
-            <span class="bsr__op-target">{{ selectedMethod.target }}</span>
-            <span class="bsr__hint">client → server</span>
+          <div class="mt-3.5 flex items-center gap-2.5">
+            <span
+              class="bielu-tag bg-blue/16 text-blue data-[kind=send]:bg-orange/16 data-[kind=send]:text-orange"
+              :data-kind="selectedMethod.callType ?? 'invoke'"
+            >{{ methodLabel(selectedMethod) }}</span>
+            <span class="font-code font-medium">{{ selectedMethod.target }}</span>
+            <span class="text-xxs text-c-3">client → server</span>
           </div>
-          <p v-if="selectedMethod.summary" class="bsr__muted bsr__op-summary">{{ selectedMethod.summary }}</p>
+          <p v-if="selectedMethod.summary" class="mt-1.5 mb-0 text-c-3">{{ selectedMethod.summary }}</p>
 
-          <div class="bsr__code-head">
-            <span class="bsr__hint">Arguments (JSON array)</span>
+          <div class="mt-2.5 flex items-center justify-between">
+            <span class="text-xxs text-c-3">Arguments (JSON array)</span>
             <button
               type="button"
-              class="bsr__link"
+              class="cursor-pointer border-0 bg-transparent p-0 text-xxs text-blue disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="selectedMethod.messages.length === 0"
               @click="applyExample(selectedMethod, selectedMessageIndex[opKey(selectedMethod)] ?? 0)"
             >
@@ -472,46 +489,46 @@ onBeforeUnmount(() => void disconnect())
           </div>
           <textarea
             v-model="invokeArgs[opKey(selectedMethod)]"
-            class="bsr__code"
+            class="bielu-code-editor mt-2.5"
             rows="6"
             spellcheck="false"
             placeholder='Arguments as a JSON array, e.g. ["alice", "hello"]'
           />
-          <div class="bsr__op-foot">
-            <span class="bsr__hint">{{ hubUrl }}</span>
-            <button type="button" class="bsr__btn bsr__btn--primary" :disabled="!isConnected" @click="testRequest(selectedMethod)">
+          <div class="mt-2.5 flex items-center justify-between">
+            <span class="text-xxs text-c-3">{{ hubUrl }}</span>
+            <button type="button" class="bielu-btn bielu-btn-primary" :disabled="!isConnected" @click="testRequest(selectedMethod)">
               ▶ Test Request
             </button>
           </div>
-          <pre v-if="results[opKey(selectedMethod)]" class="bsr__result" :data-ok="results[opKey(selectedMethod)].ok">{{ results[opKey(selectedMethod)].text }}</pre>
+          <pre v-if="results[opKey(selectedMethod)]" class="bielu-result mt-2.5 border-l-green data-[ok=false]:border-l-red" :data-ok="results[opKey(selectedMethod)].ok">{{ results[opKey(selectedMethod)].text }}</pre>
         </template>
       </article>
       </div>
 
       <!-- Right column: the live message log (the useful part) above the events reference. -->
-      <div class="bsr__col">
+      <div class="min-w-0">
       <!-- Live message log -->
-      <h3 class="bsr__section">Messages</h3>
-      <ul class="bsr__log">
-        <li v-for="(entry, index) in log" :key="index" :class="`bsr__log-${entry.dir}`">
-          <span class="bsr__time">{{ entry.time }}</span>
-          <span class="bsr__badge">{{ entry.dir }}</span>
+      <h3 class="mt-5 mb-2 text-base font-medium">Messages</h3>
+      <ul class="bielu-log">
+        <li v-for="(entry, index) in log" :key="index" class="flex gap-2 py-0.5">
+          <span class="opacity-55">{{ entry.time }}</span>
+          <span class="self-center rounded px-1 text-3xs uppercase" :class="logBadge[entry.dir]">{{ entry.dir }}</span>
           <span>{{ entry.text }}</span>
         </li>
-        <li v-if="log.length === 0" class="bsr__muted">No messages yet.</li>
+        <li v-if="log.length === 0" class="text-c-3">No messages yet.</li>
       </ul>
 
       <!-- Server -> client events reference -->
-      <h3 class="bsr__section">Events</h3>
-      <p v-if="serverToClient.length === 0" class="bsr__muted">No server-to-client events.</p>
-      <article v-for="op in serverToClient" :key="op.id" class="bsr__card bsr__op">
-        <div class="bsr__op-head">
-          <span class="bsr__method" data-kind="event">EVENT</span>
-          <span class="bsr__op-target">{{ op.target }}</span>
-          <span class="bsr__hint">server → client</span>
+      <h3 class="mt-5 mb-2 text-base font-medium">Events</h3>
+      <p v-if="serverToClient.length === 0" class="text-c-3">No server-to-client events.</p>
+      <article v-for="op in serverToClient" :key="op.id" class="bielu-card mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bielu-tag bg-green/16 text-green">EVENT</span>
+          <span class="font-code font-medium">{{ op.target }}</span>
+          <span class="text-xxs text-c-3">server → client</span>
         </div>
-        <p v-if="op.summary" class="bsr__muted bsr__op-summary">{{ op.summary }}</p>
-        <pre v-if="op.messages.length > 0" class="bsr__result bsr__result--sample">{{ op.messages[0].example }}</pre>
+        <p v-if="op.summary" class="mt-1.5 mb-0 text-c-3">{{ op.summary }}</p>
+        <pre v-if="op.messages.length > 0" class="bielu-result mt-2.5 border-l-c-3">{{ op.messages[0].example }}</pre>
       </article>
       </div>
       </div>
@@ -519,300 +536,5 @@ onBeforeUnmount(() => void disconnect())
   </section>
 </template>
 
-<style scoped>
-.bsr {
-  font-family: var(--scalar-font, system-ui, sans-serif);
-  color: var(--scalar-color-1, inherit);
-  font-size: var(--scalar-font-size-3, 0.9rem);
-  /* Render as its own Scalar-style section: a clear top divider, generous breathing room above,
-     and horizontal insets so it lines up with the operations/models instead of sitting flush
-     against the viewport edge. `--bsr-content-padding` lets hosts fine-tune the inset. */
-  padding: 2.5rem var(--bsr-content-padding, var(--scalar-content-padding, 24px)) 3rem;
-  margin-top: 2rem;
-  border-top: 1px solid var(--scalar-border-color, #e3e3e3);
-  max-width: var(--bsr-content-max-width, none);
-}
-
-.bsr__head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-
-/* Two-column layout on wide screens (methods | events + log); single column when narrow.
-   The connection bar stays full width above this grid. */
-.bsr__grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0 2rem;
-  align-items: start;
-}
-
-.bsr__col {
-  min-width: 0;
-}
-
-@media (min-width: 60rem) {
-  .bsr__grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
-
-.bsr__title {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.bsr__pill {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  background: var(--scalar-background-2, #eee);
-  color: var(--scalar-color-2, #555);
-}
-
-.bsr__pill[data-state='connected'] {
-  background: color-mix(in srgb, var(--scalar-color-green) 18%, transparent);
-  color: var(--scalar-color-green);
-}
-
-.bsr__card {
-  border: 1px solid var(--scalar-border-color, #e3e3e3);
-  border-radius: var(--scalar-radius, 8px);
-  background: var(--scalar-background-1, transparent);
-  padding: 0.85rem;
-  margin-bottom: 0.85rem;
-}
-
-.bsr__conn-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-}
-
-.bsr__conn-row--foot {
-  margin-top: 0.75rem;
-  align-items: center;
-}
-
-.bsr__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.bsr__field > span {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--scalar-color-3, #777);
-}
-
-.bsr__field--grow {
-  flex: 1;
-  min-width: 12rem;
-}
-
-.bsr__field input,
-.bsr__field select {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--scalar-border-color, #ddd);
-  border-radius: var(--scalar-radius, 6px);
-  background: var(--scalar-background-2, #fff);
-  color: inherit;
-  font: inherit;
-}
-
-.bsr__section {
-  margin: 1.25rem 0 0.5rem;
-  font-size: 0.95rem;
-}
-
-.bsr__op-head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.bsr__op-head--spaced {
-  margin-top: 0.85rem;
-}
-
-.bsr__code-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.6rem;
-}
-
-.bsr__link {
-  font: inherit;
-  font-size: 0.72rem;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  color: var(--scalar-color-blue, #2563eb);
-}
-
-.bsr__link:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.bsr__result--sample {
-  border-left-color: var(--scalar-color-3, #888);
-  margin-top: 0.6rem;
-}
-
-.bsr__method {
-  font-family: var(--scalar-font-code, monospace);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--scalar-radius, 5px);
-  background: color-mix(in srgb, var(--scalar-color-blue, #2563eb) 16%, transparent);
-  color: var(--scalar-color-blue, #2563eb);
-}
-
-.bsr__method[data-kind='send'] {
-  background: color-mix(in srgb, var(--scalar-color-orange, #d97706) 16%, transparent);
-  color: var(--scalar-color-orange, #d97706);
-}
-
-.bsr__method[data-kind='event'] {
-  background: color-mix(in srgb, var(--scalar-color-green, #16a34a) 16%, transparent);
-  color: var(--scalar-color-green, #16a34a);
-}
-
-.bsr__op-target {
-  font-family: var(--scalar-font-code, monospace);
-  font-weight: 600;
-}
-
-.bsr__op-summary {
-  margin: 0.4rem 0 0;
-}
-
-.bsr__code {
-  width: 100%;
-  margin-top: 0.6rem;
-  padding: 0.6rem;
-  border: 1px solid var(--scalar-border-color, #ddd);
-  border-radius: var(--scalar-radius, 6px);
-  background: var(--scalar-background-2, #1e1e1e);
-  color: inherit;
-  font-family: var(--scalar-font-code, monospace);
-  font-size: 0.82rem;
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.bsr__op-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.6rem;
-}
-
-.bsr__hint {
-  font-size: 0.72rem;
-  color: var(--scalar-color-3, #888);
-}
-
-.bsr__url {
-  flex: 1;
-  min-width: 10rem;
-  font-family: var(--scalar-font-code, monospace);
-  font-size: 0.8rem;
-  color: var(--scalar-color-2, #555);
-  overflow-wrap: anywhere;
-}
-
-.bsr__btn {
-  font: inherit;
-  font-weight: 600;
-  padding: 0.4rem 0.8rem;
-  border-radius: var(--scalar-radius, 6px);
-  border: 1px solid var(--scalar-border-color, #ccc);
-  background: var(--scalar-background-2, #f4f4f4);
-  color: inherit;
-  cursor: pointer;
-}
-
-.bsr__btn--primary {
-  background: var(--scalar-button-1, #111);
-  color: var(--scalar-button-1-color, #fff);
-  border-color: transparent;
-}
-
-.bsr__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.bsr__result {
-  margin: 0.6rem 0 0;
-  padding: 0.6rem;
-  border-radius: var(--scalar-radius, 6px);
-  background: var(--scalar-background-2, #f6f6f6);
-  border-left: 3px solid var(--scalar-color-green, #16a34a);
-  font-family: var(--scalar-font-code, monospace);
-  font-size: 0.8rem;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.bsr__result[data-ok='false'] {
-  border-left-color: var(--scalar-color-red, #dc2626);
-}
-
-.bsr__log {
-  list-style: none;
-  margin: 0;
-  padding: 0.5rem;
-  max-height: 16rem;
-  overflow: auto;
-  border: 1px solid var(--scalar-border-color, #e3e3e3);
-  border-radius: var(--scalar-radius, 8px);
-  background: var(--scalar-background-1, transparent);
-  font-family: var(--scalar-font-code, monospace);
-  font-size: 0.78rem;
-}
-
-.bsr__log li {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.12rem 0;
-}
-
-.bsr__time {
-  opacity: 0.55;
-}
-
-.bsr__badge {
-  text-transform: uppercase;
-  font-size: 0.62rem;
-  align-self: center;
-  border-radius: 3px;
-  padding: 0 0.25rem;
-  background: var(--scalar-background-2, #eee);
-}
-
-.bsr__log-in .bsr__badge {
-  background: color-mix(in srgb, var(--scalar-color-blue, #2563eb) 20%, transparent);
-}
-
-.bsr__log-out .bsr__badge {
-  background: color-mix(in srgb, var(--scalar-color-orange, #d97706) 20%, transparent);
-}
-
-.bsr__muted {
-  color: var(--scalar-color-3, #888);
-}
-</style>
+<!-- Not scoped: the utilities are scoped to the console element instead (see ../style.css). -->
+<style src="../style.css"></style>

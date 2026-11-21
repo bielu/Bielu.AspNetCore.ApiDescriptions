@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
@@ -12,7 +13,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   // `customElement: true` compiles the SFC as a Web Component: its styles are collected into the
   // element's shadow DOM instead of being injected globally, so nothing leaks into Scalar's page.
-  plugins: [vue({ customElement: true })],
+  // `tailwindcss()` compiles src/style.css (Tailwind on Scalar's theme, see @bielu/scalar-core's
+  // tailwind.css) into the component's styles.
+  plugins: [vue({ customElement: true }), tailwindcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

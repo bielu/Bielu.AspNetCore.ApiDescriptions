@@ -23,3 +23,63 @@
  * token names match the Scalar the plugins target.
  */
 @import "@scalar/themes/tailwind.css";
+
+/*
+ * Recipes shared by the consoles. Each one is only emitted into a bundle whose markup uses it, and,
+ * like every utility, only inside that plugin's scoped block.
+ */
+
+/* A bordered panel, like Scalar's operation cards. */
+@utility bielu-card {
+  @apply rounded border border-border bg-b-1 p-3.5;
+}
+
+/* The small uppercase caption above a form field. */
+@utility bielu-caption {
+  @apply text-xxs tracking-wide text-c-3 uppercase;
+}
+
+/* Text inputs, selects and textareas. */
+@utility bielu-input {
+  @apply rounded border border-border bg-b-2 px-2 py-1.5;
+  color: inherit;
+  font: inherit;
+}
+
+/* A secondary button; add bielu-btn-primary for the main action. */
+@utility bielu-btn {
+  @apply cursor-pointer rounded border border-border bg-b-2 px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:opacity-50;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+@utility bielu-btn-primary {
+  @apply border-transparent bg-b-btn text-c-btn hover:bg-h-btn;
+}
+
+/* The coloured method/kind tag (INVOKE, SEND, EVENT, UNARY…); colour it with text-* and bg-*. */
+@utility bielu-tag {
+  @apply rounded px-2 py-0.5 font-code text-3xs font-bold tracking-wide whitespace-nowrap;
+}
+
+/* A small rounded status label; colour it with text-* and bg-*. */
+@utility bielu-pill {
+  @apply rounded-full px-2 py-0.5 text-3xs tracking-wide whitespace-nowrap uppercase;
+}
+
+/* A JSON editor (request body, arguments, metadata). */
+@utility bielu-code-editor {
+  @apply box-border w-full resize-y rounded border border-border bg-b-2 p-2.5 font-code text-sm;
+  color: inherit;
+}
+
+/* A call result or sample payload; give it a border-l-* colour (green ok, red failed, c-3 sample). */
+@utility bielu-result {
+  @apply m-0 rounded border-l-3 bg-b-2 p-2.5 font-code text-xs wrap-anywhere whitespace-pre-wrap;
+}
+
+/* The live message log. */
+@utility bielu-log {
+  @apply m-0 max-h-64 list-none overflow-auto rounded border border-border bg-b-1 p-2 font-code text-xs;
+}
