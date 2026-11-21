@@ -319,6 +319,7 @@ onBeforeUnmount(() => {
       v-show="!filter || filter.workflows.has(view.id)"
       :key="view.id"
       :stepSectionIds="stepSectionIds"
+      :componentsId="componentsId"
       :documentName="documentName"
       :visibleSteps="filter?.steps"
       :document="arazzo!"
@@ -333,7 +334,8 @@ onBeforeUnmount(() => {
       :id="componentsId"
       :components="arazzo.components"
       :document="arazzo"
-      :eventBus="eventBus" />
+      :eventBus="eventBus"
+      :workflowNavIds="workflowNavIds" />
 
     <p
       v-if="!workflows.length"
@@ -683,6 +685,40 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-replacements td:nth-child(2) {
   width: 1.5em;
   text-align: center;
+}
+/* Runtime Expressions: a link to what they read, or marked when they read something the document does not declare. */
+.bielu-arazzo .ba-expression {
+  color: var(--scalar-color-1);
+}
+.bielu-arazzo a.ba-expression-link {
+  color: var(--scalar-color-accent);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  word-break: inherit;
+}
+.bielu-arazzo a.ba-expression-link:hover {
+  text-decoration-style: solid;
+}
+.bielu-arazzo .ba-expression-broken {
+  color: var(--scalar-color-red, #e5484d);
+  text-decoration: underline wavy;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+.bielu-arazzo .ba-used-by {
+  display: block;
+  color: var(--scalar-color-3);
+  font-size: var(--scalar-mini, 12px);
+  white-space: normal;
+}
+.bielu-arazzo .ba-anchor-target {
+  scroll-margin-top: var(--refs-viewport-offset, 0px);
+  border-radius: var(--scalar-radius, 4px);
+  transition: background-color 0.4s;
+}
+.bielu-arazzo .ba-flash {
+  background: color-mix(in srgb, var(--scalar-color-accent) 14%, transparent);
 }
 .bielu-arazzo .ba-selector {
   display: inline-flex;

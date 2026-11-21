@@ -114,3 +114,35 @@ export const toWorkflowViews = (document: ArazzoDocument, navigation: PluginNavi
     ]
   })
 }
+
+/** How long a section a link landed on stays highlighted, in milliseconds. */
+const FLASH_MS = 1600
+
+/**
+ * Goes to an element of the document from a link inside it: shows the step it is in even while the
+ * filter hides it (`STEP_REVEAL_EVENT`), unfolds that step (and, in the classic layout, its workflow),
+ * scrolls the element into view and highlights it briefly, so a reader sees which row a link meant.
+ */
+export const goToAnchor = async (
+  from: Element,
+  target: { anchor?: string; stepSection?: string },
+  nextTick: () => Promise<void>,
+): Promise<void> => {
+  if (!target.anchor) {
+    return
+  }
+  if (target.stepSection) {
+    from.dispatchEvent(new CustomEvent(STEP_REVEAL_EVENT, { bubbles: true, detail: { sectionId: target.stepSection } }))
+  }
+  await nextTick()
+  const owner = target.stepSection ? document.getElementById(target.stepSection) : document.getElementById(target.anchor)
+  owner?.dispatchEvent(expandStepEvent())
+  await nextTick()
+  const element = document.getElementById(target.anchor) ?? owner
+  if (!element) {
+    return
+  }
+  element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  element.classList.add('ba-flash')
+  setTimeout(() => element.classList.remove('ba-flash'), FLASH_MS)
+}

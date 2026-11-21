@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { criterionTypeLabel, formatDuration, formatValue, schemaPropertyRows } from '../helpers/format'
+import { useExpressionScope } from '../helpers/expression-scope'
+import { outputsAnchor, stepOutputConsumers } from '../helpers/expressions'
 import { renderMarkdown } from '../helpers/markdown'
-import { resolveReusables } from '../helpers/reusable'
+import { resolveReusables, resolveReusablesWithReference } from '../helpers/reusable'
 import { resolveStepTarget, targetDescription, targetMessages, targetParameters } from '../helpers/resolve-target'
 import { stepHeading } from '../helpers/heading'
 import { STEP_EXPAND_EVENT } from '../helpers/navigation'
@@ -13,6 +15,7 @@ import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep, 
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoCriteria from './ArazzoCriteria.vue'
+import ArazzoExpressionText from './ArazzoExpressionText.vue'
 import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
@@ -203,14 +206,22 @@ const targetDocumentTitle = computed(() => {
 })
 
 const parameters = computed(() =>
-  resolveReusables<ArazzoParameter>(props.document, props.step.parameters).map((parameter) => ({
-    name: parameter.name,
-    value: parameter.value,
-    location: parameter.in,
+  resolveReusablesWithReference<ArazzoParameter>(props.document, props.step.parameters).map(({ entry, reference }) => ({
+    name: entry.name,
+    value: entry.value,
+    location: entry.in,
+    reference,
   })),
 )
 
-const outputs = computed(() => Object.entries(props.step.outputs ?? {}).map(([name, value]) => ({ name, value })))
+const expressionScope = useExpressionScope()
+
+/** Each output with the steps (or workflow outputs) of the workflow that read it. */
+const outputs = computed(() => {
+  const scope = expressionScope.value
+  const consumers = scope?.workflow ? stepOutputConsumers({ ...scope, workflow: scope.workflow }, props.step.stepId) : {}
+  return Object.entries(props.step.outputs ?? {}).map(([name, value]) => ({ name, value, usedBy: consumers[name] }))
+})
 
 const onSuccess = computed(() => resolveReusables<ArazzoSuccessAction>(props.document, props.step.onSuccess))
 
@@ -300,7 +311,7 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
         v-if="step.correlationId"
         class="ba-badge"
         title="Links the received message to the request it answers">
-        Correlation ID: <code>{{ step.correlationId }}</code>
+        Correlation ID: <code><ArazzoExpressionText :text="step.correlationId" /></code>
       </span>
     </div>
 
@@ -457,7 +468,7 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
       </div>
       <pre
         v-if="step.requestBody.payload !== undefined"
-        class="ba-code"><code>{{ formatValue(step.requestBody.payload) }}</code></pre>
+        class="ba-code"><code><ArazzoExpressionText :text="formatValue(step.requestBody.payload)" /></code></pre>
       <template v-if="step.requestBody.replacements?.length">
         <div class="ba-subtitle">Replacements</div>
         <table class="ba-table ba-replacements">
@@ -506,6 +517,7 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
 
     <ArazzoKeyValues
       v-if="outputs.length"
+      :anchor="outputsAnchor(id)"
       :rows="outputs"
       title="Outputs" />
 
