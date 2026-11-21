@@ -2,6 +2,7 @@ import type { ArazzoDocument, ArazzoParameter, ArazzoStep, ArazzoWorkflow } from
 import { effectiveSuccessActions, isUnconditional, reachableActions, effectiveFailureActions } from './actions'
 import { parseExpression, resolveExpression, stepExpressions, workflowExpressions, type ExpressionScope } from './expressions'
 import { operationResponses, statusCodesIn } from './openapi-exchange'
+import { normalizeArazzoDocument } from './normalize'
 import { findDocumentByUrl, QUALIFIED_WORKFLOW, resolveStepTarget, sourceNameOf, targetParameters, type StepTarget } from './resolve-target'
 import { resolveReusables } from './reusable'
 
@@ -45,11 +46,76 @@ const apiSourcesLoaded = (document: ArazzoDocument, documents: Record<string, un
   return sources.length > 0 && sources.every((source) => !!findDocumentByUrl(document, documents, source))
 }
 
+/**
+ * The workflows of the Arazzo document a source description names: `undefined` while it is not loaded
+ * (nothing can be said yet), `null` when the document has no such source description.
+ */
+const sourceWorkflows = (document: ArazzoDocument, name: string, documents: Record<string, unknown>): ArazzoWorkflow[] | null | undefined => {
+  const source = document.sourceDescriptions?.find((candidate) => candidate.name === name)
+  if (!source) {
+    return null
+  }
+  const loaded = findDocumentByUrl(document, documents, source)
+  return loaded ? (normalizeArazzoDocument(loaded.document)?.workflows ?? []) : undefined
+}
+
+/** What is wrong with a `$sourceDescriptions.<name>.<workflowId>` reference, when its source says so; `what` begins the message. */
+const checkQualifiedWorkflow = (document: ArazzoDocument, what: string, reference: string, documents: Record<string, unknown>): string | undefined => {
+  const [, name, workflowId] = QUALIFIED_WORKFLOW.exec(reference)!
+  const workflows = sourceWorkflows(document, name!, documents)
+  if (workflows === null) {
+    return `${what} ${reference}, but there is no source description “${name}”`
+  }
+  return workflows && !workflows.some((workflow) => workflow.workflowId === workflowId)
+    ? `${what} ${reference}, which the loaded source “${name}” doesn't declare`
+    : undefined
+}
+
+/** `$workflows.<workflowId>.steps.<stepId>`: a step of another workflow of this document. */
+const WORKFLOW_STEP = /^\$workflows\.([^.]+)\.steps\.(.+)$/
+
+/** `$sourceDescriptions.<name>.<workflowId>.steps.<stepId>`: a step of a workflow in another Arazzo document. */
+const SOURCE_STEP = /^\$sourceDescriptions\.([^.]+)\.([^.]+)\.steps\.(.+)$/
+
+/**
+ * What is wrong with a step dependency (Arazzo 1.1 §5.8.5.1): a `stepId` of the current workflow, a
+ * `$workflows.<workflowId>.steps.<stepId>` of this document, or a `$sourceDescriptions.<name>.<workflowId>.steps.<stepId>`
+ * of another Arazzo document, checked only once that document is loaded.
+ */
+const checkDependency = (document: ArazzoDocument, steps: ArazzoStep[], dependency: string, documents: Record<string, unknown>): string | undefined => {
+  const local = WORKFLOW_STEP.exec(dependency)
+  const remote = SOURCE_STEP.exec(dependency)
+  if (!local && !remote) {
+    return steps.some((candidate) => candidate.stepId === dependency) ? undefined : `Depends on step “${dependency}”, which this workflow doesn't have`
+  }
+  if (local) {
+    const [, workflowId, stepId] = local
+    const workflow = document.workflows?.find((candidate) => candidate.workflowId === workflowId)
+    if (!workflow) {
+      return `Depends on ${dependency}, but this document doesn't declare workflow “${workflowId}”`
+    }
+    return workflow.steps?.some((candidate) => candidate.stepId === stepId) ? undefined : `Depends on ${dependency}, but workflow ${workflowId} has no step “${stepId}”`
+  }
+  const [, name, workflowId, stepId] = remote!
+  const workflows = sourceWorkflows(document, name!, documents)
+  if (workflows === null) {
+    return `Depends on ${dependency}, but there is no source description “${name}”`
+  }
+  if (!workflows) {
+    return undefined
+  }
+  const workflow = workflows.find((candidate) => candidate.workflowId === workflowId)
+  if (!workflow) {
+    return `Depends on ${dependency}, but the loaded source “${name}” doesn't declare workflow “${workflowId}”`
+  }
+  return workflow.steps?.some((candidate) => candidate.stepId === stepId) ? undefined : `Depends on ${dependency}, but workflow ${workflowId} of source “${name}” has no step “${stepId}”`
+}
+
 const checkTarget = (document: ArazzoDocument, step: ArazzoStep, target: StepTarget | undefined, documents: Record<string, unknown>): string[] => {
   if (step.workflowId) {
     if (QUALIFIED_WORKFLOW.test(step.workflowId)) {
-      const name = QUALIFIED_WORKFLOW.exec(step.workflowId)![1]!
-      return document.sourceDescriptions?.some((source) => source.name === name) ? [] : [`Invokes workflow ${step.workflowId}, but there is no source description “${name}”`]
+      const problem = checkQualifiedWorkflow(document, 'Invokes workflow', step.workflowId, documents)
+      return problem ? [problem] : []
     }
     return document.workflows?.some((workflow) => workflow.workflowId === step.workflowId) ? [] : [`Invokes workflow “${step.workflowId}”, which this document doesn't declare`]
   }
@@ -180,15 +246,25 @@ export const diagnose = (document: ArazzoDocument, context: DiagnosticContext): 
         if (action.stepId && !stepIds.includes(action.stepId)) {
           add('error', `Action ${action.name} goes to step “${action.stepId}”, which this workflow doesn't have`, step.stepId)
         }
-        if (action.workflowId && !QUALIFIED_WORKFLOW.test(action.workflowId) && !document.workflows?.some((candidate) => candidate.workflowId === action.workflowId)) {
+        if (action.workflowId && QUALIFIED_WORKFLOW.test(action.workflowId)) {
+          const problem = checkQualifiedWorkflow(document, `Action ${action.name} goes to workflow`, action.workflowId, context.documents)
+          if (problem) {
+            add('error', problem, step.stepId)
+          }
+        } else if (action.workflowId && !document.workflows?.some((candidate) => candidate.workflowId === action.workflowId)) {
           add('error', `Action ${action.name} goes to workflow “${action.workflowId}”, which this document doesn't declare`, step.stepId)
         }
       }
 
       for (const dependency of step.dependsOn ?? []) {
+        const problem = checkDependency(document, steps, dependency, context.documents)
+        if (problem) {
+          add('error', problem, step.stepId)
+          continue
+        }
+        // Only a step of this workflow can end it before this step runs.
         const prerequisite = steps.find((candidate) => candidate.stepId === dependency)
         if (!prerequisite) {
-          add('error', `Depends on step “${dependency}”, which this workflow doesn't have`, step.stepId)
           continue
         }
         const ending = reachableActions(effectiveSuccessActions(document, workflow, prerequisite)).find(
