@@ -176,6 +176,92 @@ describe('stepExpressions', () => {
     // Act / Assert
     expect(stepExpressions(document, { stepId: 'x', successCriteria: [{ condition: 'true', description: '$inputs.a' } as never] })).toEqual([])
   })
+
+  it('reads fields named like prose inside payloads, parameter values and outputs', () => {
+    // Arrange
+    const step = {
+      stepId: 'x',
+      parameters: [{ name: 'filter', in: 'query' as const, value: { summary: '$inputs.summary' } }],
+      requestBody: { payload: { title: '{$steps.create.outputs.itemName}', nested: { description: '$inputs.text' } } },
+      outputs: { title: '$response.body#/title' },
+    }
+
+    // Act
+    const expressions = stepExpressions(document, step as never)
+
+    // Assert
+    expect(expressions).toEqual(['$inputs.summary', '$steps.create.outputs.itemName', '$inputs.text', '$response.body#/title'])
+  })
+
+  it('lists a step whose payload reads an output in a `title` field as its consumer', () => {
+    // Arrange
+    const workflow = {
+      workflowId: 'w',
+      steps: [
+        { stepId: 'create', operationId: 'create', outputs: { itemName: '$response.body#/name' } },
+        { stepId: 'rename', operationId: 'rename', requestBody: { payload: { title: '{$steps.create.outputs.itemName}' } } },
+      ],
+    }
+
+    // Act
+    const consumers = stepOutputConsumers({ document: { ...document, workflows: [workflow] }, workflow }, 'create')
+
+    // Assert
+    expect(consumers.itemName?.map((consumer) => consumer.label)).toEqual(['rename'])
+  })
+})
+
+describe('dotted names', () => {
+  const dotted: Document = {
+    arazzo: '1.1.0',
+    sourceDescriptions: [],
+    components: { parameters: { 'tenant.header': { name: 'X-Tenant', in: 'header', value: 'a' }, tenant: { name: 'T', in: 'header', value: 'b' } } },
+    workflows: [
+      {
+        workflowId: 'w',
+        inputs: { type: 'object', properties: { 'order.id': { type: 'string' }, order: { type: 'object' } } },
+        steps: [
+          { stepId: 'create', operationId: 'create', outputs: { 'order.id': '$response.body#/id', order: '$response.body' } },
+          { stepId: 'use', operationId: 'use', parameters: [{ name: 'id', in: 'path', value: '$steps.create.outputs.order.id' }] },
+        ],
+        outputs: { 'order.id': '$steps.create.outputs.order.id' },
+      },
+    ],
+  }
+  const dottedScope: ExpressionScope & { workflow: NonNullable<Document['workflows']>[number] } = {
+    document: dotted,
+    workflow: dotted.workflows![0]!,
+    workflowNavIds: { w: 'doc/workflow/w' },
+    stepSectionIds: { w: { create: 'doc/workflow/w/step/create', use: 'doc/workflow/w/step/use' } },
+    componentsId: 'doc/components',
+  }
+
+  it('keeps the whole name after the fixed prefix, up to a JSON Pointer', () => {
+    // Act / Assert
+    expect(parseExpression('$inputs.order.id')).toEqual({ source: 'inputs', name: 'order.id' })
+    expect(parseExpression('$outputs.order.id#/0')).toEqual({ source: 'outputs', name: 'order.id' })
+    expect(parseExpression('$steps.create.outputs.order.id')).toEqual({ source: 'steps', stepId: 'create', field: 'outputs', name: 'order.id' })
+    expect(parseExpression('$workflows.w.outputs.order.id#/x.y')).toEqual({ source: 'workflows', workflowId: 'w', field: 'outputs', name: 'order.id' })
+    expect(parseExpression('$components.parameters.tenant.header')).toEqual({ source: 'components', kind: 'parameters', name: 'tenant.header' })
+  })
+
+  it('links dotted inputs, step outputs, workflow outputs and component keys to their own rows', () => {
+    // Act / Assert
+    expect(resolveExpression('$inputs.order.id', dottedScope)).toMatchObject({ anchor: 'doc/workflow/w/inputs/order.id' })
+    expect(resolveExpression('$steps.create.outputs.order.id', dottedScope)).toMatchObject({ anchor: 'doc/workflow/w/step/create/outputs/order.id' })
+    expect(resolveExpression('$workflows.w.outputs.order.id', dottedScope)).toMatchObject({ anchor: 'doc/workflow/w/outputs/order.id' })
+    expect(resolveExpression('$components.parameters.tenant.header', dottedScope)).toMatchObject({ anchor: 'doc/components/parameters/tenant.header' })
+    expect(resolveExpression('$steps.create.outputs.order.id', dottedScope).broken).toBeUndefined()
+  })
+
+  it('counts a dotted output as read under its full name', () => {
+    // Act
+    const consumers = stepOutputConsumers(dottedScope, 'create')
+
+    // Assert
+    expect(consumers['order.id']?.map((consumer) => consumer.label)).toEqual(['use', 'workflow outputs'])
+    expect(consumers.order).toBeUndefined()
+  })
 })
 
 describe('output consumers', () => {
@@ -199,6 +285,35 @@ describe('output consumers', () => {
     expect(consumers.adoptionId).toEqual([
       { label: 'notify / send', anchor: 'doc/workflow/notify/step/send', stepSection: 'doc/workflow/notify/step/send' },
     ])
+  })
+
+  it('handles outputs named like Object.prototype members in both scopes', () => {
+    // Arrange
+    const named: Document = {
+      arazzo: '1.1.0',
+      sourceDescriptions: [],
+      workflows: [
+        {
+          workflowId: 'make',
+          steps: [
+            { stepId: 'create', operationId: 'create', outputs: { constructor: '$response.body#/id' } },
+            { stepId: 'read', operationId: 'read', parameters: [{ name: 'id', in: 'path', value: '$steps.create.outputs.constructor' }] },
+          ],
+          outputs: { toString: '$steps.create.outputs.constructor' },
+        },
+        { workflowId: 'other', steps: [{ stepId: 'call', workflowId: 'make', parameters: [{ name: 'v', value: '$workflows.make.outputs.toString' }] }] },
+      ],
+    }
+    const namedScope = { document: named, workflow: named.workflows![0]! }
+
+    // Act
+    const stepConsumers = stepOutputConsumers(namedScope, 'create')
+    const workflowConsumers = workflowOutputConsumers(namedScope)
+
+    // Assert
+    expect(stepConsumers.constructor?.map((consumer) => consumer.label)).toEqual(['read', 'workflow outputs'])
+    expect(workflowConsumers.toString?.map((consumer) => consumer.label)).toEqual(['other / call'])
+    expect(workflowConsumers.constructor).toBeUndefined()
   })
 })
 

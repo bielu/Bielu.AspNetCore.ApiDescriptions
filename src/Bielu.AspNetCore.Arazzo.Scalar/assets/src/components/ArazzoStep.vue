@@ -219,8 +219,8 @@ const expressionScope = useExpressionScope()
 /** Each output with the steps (or workflow outputs) of the workflow that read it. */
 const outputs = computed(() => {
   const scope = expressionScope.value
-  const consumers = scope?.workflow ? stepOutputConsumers({ ...scope, workflow: scope.workflow }, props.step.stepId) : {}
-  return Object.entries(props.step.outputs ?? {}).map(([name, value]) => ({ name, value, usedBy: consumers[name] }))
+  const consumers = scope?.workflow ? stepOutputConsumers({ ...scope, workflow: scope.workflow }, props.step.stepId) : undefined
+  return Object.entries(props.step.outputs ?? {}).map(([name, value]) => ({ name, value, usedBy: consumers?.[name] }))
 })
 
 const onSuccess = computed(() => resolveReusables<ArazzoSuccessAction>(props.document, props.step.onSuccess))
