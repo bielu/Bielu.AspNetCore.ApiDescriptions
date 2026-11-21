@@ -264,6 +264,89 @@ describe('diagnose', () => {
   })
 })
 
+describe('diagnose across workflows and documents', () => {
+  const partner = {
+    arazzo: '1.1.0',
+    'x-scalar-original-source-url': '/partner.arazzo.json',
+    info: { title: 'Partner', version: '1' },
+    sourceDescriptions: [],
+    workflows: [{ workflowId: 'onboard', steps: [{ stepId: 'seed' }] }],
+  }
+  const crossDocument = (steps: ArazzoWorkflow['steps']): Document => ({
+    arazzo: '1.1.0',
+    sourceDescriptions: [{ name: 'partner', url: '/partner.arazzo.json', type: 'arazzo' }],
+    workflows: [
+      { workflowId: 'bootstrap', steps: [{ stepId: 'seed' }] },
+      { workflowId: 'main', dependsOn: ['bootstrap'], steps },
+    ],
+  })
+
+  it('accepts step dependencies on steps of other workflows that exist', () => {
+    // Arrange
+    const document = crossDocument([
+      { stepId: 'a', dependsOn: ['$workflows.bootstrap.steps.seed', '$sourceDescriptions.partner.onboard.steps.seed'] },
+    ])
+
+    // Act / Assert
+    expect(diagnose(document, { documents: { partner } })).toEqual([])
+  })
+
+  it('reports step dependencies on workflows or steps that do not exist', () => {
+    // Arrange
+    const document = crossDocument([
+      {
+        stepId: 'a',
+        dependsOn: [
+          '$workflows.bootstrap.steps.ghost',
+          '$workflows.nope.steps.seed',
+          '$sourceDescriptions.partner.onboard.steps.ghost',
+          '$sourceDescriptions.partner.nope.steps.seed',
+          '$sourceDescriptions.other.onboard.steps.seed',
+        ],
+      },
+    ])
+
+    // Act
+    const diagnostics = diagnose(document, { documents: { partner } })
+
+    // Assert
+    expect(messages(diagnostics, 'a')).toEqual([
+      'error: Depends on $workflows.bootstrap.steps.ghost, but workflow bootstrap has no step “ghost”',
+      'error: Depends on $workflows.nope.steps.seed, but this document doesn\'t declare workflow “nope”',
+      'error: Depends on $sourceDescriptions.partner.onboard.steps.ghost, but workflow onboard of source “partner” has no step “ghost”',
+      'error: Depends on $sourceDescriptions.partner.nope.steps.seed, but the loaded source “partner” doesn\'t declare workflow “nope”',
+      'error: Depends on $sourceDescriptions.other.onboard.steps.seed, but there is no source description “other”',
+    ])
+  })
+
+  it('does not check dependencies on another document until it is loaded', () => {
+    // Arrange
+    const document = crossDocument([{ stepId: 'a', dependsOn: ['$sourceDescriptions.partner.nope.steps.seed'] }])
+
+    // Act / Assert
+    expect(diagnose(document, { documents: {} })).toEqual([])
+  })
+
+  it('reports a workflow a loaded Arazzo source does not declare, and nothing while it is loading', () => {
+    // Arrange
+    const document = crossDocument([
+      { stepId: 'call', workflowId: '$sourceDescriptions.partner.missing' },
+      { stepId: 'ok', workflowId: '$sourceDescriptions.partner.onboard' },
+      { stepId: 'then', workflowId: 'bootstrap', onSuccess: [{ name: 'jump', type: 'goto', workflowId: '$sourceDescriptions.partner.gone' }] },
+    ])
+
+    // Act
+    const loaded = diagnose(document, { documents: { partner } })
+    const loading = diagnose(document, { documents: {} })
+
+    // Assert
+    expect(messages(loaded, 'call')).toEqual(['error: Invokes workflow $sourceDescriptions.partner.missing, which the loaded source “partner” doesn\'t declare'])
+    expect(messages(loaded, 'ok')).toEqual([])
+    expect(messages(loaded, 'then')).toEqual(['error: Action jump goes to workflow $sourceDescriptions.partner.gone, which the loaded source “partner” doesn\'t declare'])
+    expect(loading).toEqual([])
+  })
+})
+
 describe('diagnosticSummary', () => {
   it('counts errors and warnings', () => {
     // Arrange

@@ -147,7 +147,8 @@ const mermaidEdge = (from: string, to: string, edge: LaidOutEdge): string => {
 
 /**
  * The overview as a Mermaid flowchart, top-down: the same boxes, labels and arrows (one end node per step, as
- * drawn), an expanded workflow as a subgraph, and classes that colour success and failure ends.
+ * drawn), an expanded workflow or a Pages view page band as a subgraph, and classes that colour success and
+ * failure ends.
  */
 export const toMermaid = (layout: WorkflowLayout): string => {
   const ids = new Map<string, string>()
@@ -168,9 +169,22 @@ export const toMermaid = (layout: WorkflowLayout): string => {
   }
   const lines = ['flowchart TD']
   const groups = layout.groups ?? []
+  // Pages view: each page band becomes a subgraph of its steps, titled with the page and its route in full.
+  const bandOf = new Map((layout.bands ?? []).flatMap((band) => band.nodes.map((node) => [node, band] as const)))
   const write = (group: string | undefined, indent: string) => {
+    const written = new Set<string>()
     for (const node of layout.nodes.filter((candidate) => candidate.group === group)) {
-      lines.push(`${indent}${mermaidNode(idOf(node.id), node)}`)
+      const band = bandOf.get(node.id)
+      if (!band) {
+        lines.push(`${indent}${mermaidNode(idOf(node.id), node)}`)
+      } else if (!written.has(band.id)) {
+        written.add(band.id)
+        lines.push(`${indent}subgraph ${idOf(band.id)}["${mermaidText([band.title, band.route].filter(Boolean).join(' · '))}"]`)
+        for (const member of layout.nodes.filter((candidate) => band.nodes.includes(candidate.id))) {
+          lines.push(`${indent}  ${mermaidNode(idOf(member.id), member)}`)
+        }
+        lines.push(`${indent}end`)
+      }
     }
     for (const child of groups.filter((candidate) => (candidate.parent ?? undefined) === group)) {
       lines.push(`${indent}subgraph ${idOf(child.id)}["${mermaidText(child.label)}"]`)
