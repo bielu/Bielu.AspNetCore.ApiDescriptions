@@ -19,6 +19,14 @@ This project is a fork/evolution of [Saunter](https://github.com/asyncapi/saunte
 
 _Nothing yet._
 
+## [3.2.0] - 2026-11-21
+
+### Minor Changes
+
+- [#294](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/294) [`1c916ed`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/1c916ed99c0f220a7d3e2997c077a303e82c2b58) Thanks [@bielu](https://github.com/bielu)! - Bielu.AspNetCore.Arazzo: add `IArazzoSourceDocumentProvider`, the seam that supplies the document behind a self-wired source, and `ArazzoOptions.AddSelfWiredSource(...)` to self-wire a source against any provider's document. The `openapi` and `asyncapi` lookups behind `AddOpenApiSource`/`AddAsyncApiSource` are now the two built-in providers; providers for one type are asked newest first, so an app can validate steps against, for example, a partner's OpenAPI description shipped with it. A self-wired source whose type has no provider is now a startup validation error instead of an `InvalidOperationException`.
+
+- [#295](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/295) [`a16a216`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/a16a216ae4d87aedf691381c7d41ec14508d00b8) Thanks [@bielu](https://github.com/bielu)! - Add `Bielu.AspNetCore.AsyncApi.OpenApiSchema`, a new package that describes message payloads as OpenAPI 3.0 Schema Objects. `AsyncApiOptions.AddOpenApiSchemaPayloads()` replaces the JSON Schema payload of every message with `schemaFormat: application/vnd.oai.openapi;version=3.0.0`, converted from the generated JSON Schema: a type that includes `null` becomes `nullable: true`, several types become an `anyOf` (with an `enum: [null]` branch when one is `null`), numeric `exclusiveMinimum`/`exclusiveMaximum` become a bound with a boolean flag, `const` becomes a one-value `enum` (intersected with any `enum`), `examples` becomes `example`, and the `discriminator` property name becomes a Discriminator Object. Keywords OpenAPI 3.0 lacks are dropped. Referenced component schemas are written inline, and a recursive reference points at an OpenAPI copy of the component, `components/schemas/<name>.openapi`, declared with the OpenAPI `schemaFormat`. Extensions on the payload wrapper are kept. Headers and payloads already in another schema format are left alone. `ForMessages` limits which messages are converted.
+
 ## [3.1.1] - 2026-11-18
 
 ### Patch Changes
