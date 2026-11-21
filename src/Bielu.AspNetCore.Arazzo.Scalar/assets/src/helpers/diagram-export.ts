@@ -125,9 +125,9 @@ export const safeName = (value: string): string => value.replace(/[^A-Za-z0-9_-]
 const mermaidText = (text: string): string =>
   text.replace(/"/g, '#quot;').replace(/</g, '#lt;').replace(/>/g, '#gt;').replace(/\|/g, '#124;').replace(/\n/g, ' ')
 
-/** A node's Mermaid shape: steps are boxes, workflows subroutines, ends stadiums. */
+/** A node's Mermaid shape: steps are boxes, workflows subroutines, ends stadiums; a second line (what a step does, a Pages view end's action) is kept. */
 const mermaidNode = (id: string, node: LaidOutNode): string => {
-  const label = mermaidText(node.subtitle && node.kind === 'step' ? `${node.label}<br/>${node.subtitle}` : node.label).replace(/#lt;br\/#gt;/g, '<br/>')
+  const label = mermaidText(node.subtitle ? `${node.label}<br/>${node.subtitle}` : node.label).replace(/#lt;br\/#gt;/g, '<br/>')
   switch (node.kind) {
     case 'workflow':
       return `${id}[["${label}"]]`

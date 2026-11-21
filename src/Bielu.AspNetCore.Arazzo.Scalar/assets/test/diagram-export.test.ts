@@ -96,6 +96,18 @@ describe('toMermaid', () => {
     expect(mermaid).toMatch(/ {2}subgraph n_band_1\["No page"\]\n {4}n_audit\["audit"\]\n {2}end/)
   })
 
+  it('keeps the second line of an end node, as the Pages view draws it', () => {
+    // Arrange
+    const drawn = layoutWorkflowGraph(buildWorkflowGraph(document, placeOrder))
+    const layout = { ...drawn, nodes: drawn.nodes.map((node) => (node.kind === 'failure' ? { ...node, label: 'Payment', subtitle: 'Card declined' } : node)) }
+
+    // Act
+    const mermaid = toMermaid(layout)
+
+    // Assert
+    expect(mermaid).toContain('(["Payment<br/>Card declined"])')
+  })
+
   it('keeps ids unique when two keys sanitise alike', () => {
     // Arrange
     const layout = layoutWorkflowGraph(
@@ -125,6 +137,9 @@ describe('safeName', () => {
 describe('standaloneSvg', () => {
   it('copies the rendered overview at its natural size, with its styles written onto it and its classes dropped', () => {
     // Arrange
+    const sheet = globalThis.document.createElement('style')
+    sheet.textContent = '.ba-diagram-node rect { fill: rgb(1, 2, 3); stroke: rgb(4, 5, 6); stroke-dasharray: 4 2 } .ba-diagram-node text { font-size: 13px }'
+    globalThis.document.head.appendChild(sheet)
     const layout = layoutWorkflowGraph(buildWorkflowGraph(document, placeOrder))
     const view = mount(ArazzoWorkflowDiagram, { attachTo: globalThis.document.body, props: { layout, stepSectionIds: {}, workflowId: 'placeOrder' } })
     const svg = view.find('svg').element as SVGSVGElement
@@ -141,7 +156,13 @@ describe('standaloneSvg', () => {
     expect(parsed.querySelector('[tabindex]')).toBeNull()
     expect(exported).toContain('>create<')
     expect(svg.querySelector('[class]')).not.toBeNull()
+    // The page's CSS is written onto each element, since the file has none.
+    const box = parsed.querySelector('rect[style*="fill:rgb(1, 2, 3)"]')
+    expect(box?.getAttribute('style')).toContain('stroke:rgb(4, 5, 6)')
+    expect(box?.getAttribute('style')).toMatch(/stroke-dasharray:4(px)?,? 2/)
+    expect(parsed.querySelector('text[style*="font-size:13px"]')).not.toBeNull()
     view.unmount()
+    sheet.remove()
   })
 })
 
