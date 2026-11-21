@@ -167,6 +167,11 @@ describe('stepExpressions', () => {
     ])
   })
 
+  it('reads the value a received message is matched on', () => {
+    // Act / Assert
+    expect(stepExpressions(document, { stepId: 'wait', correlationId: '$steps.getPet.outputs.name' })).toEqual(['$steps.getPet.outputs.name'])
+  })
+
   it('skips prose fields', () => {
     // Act / Assert
     expect(stepExpressions(document, { stepId: 'x', successCriteria: [{ condition: 'true', description: '$inputs.a' } as never] })).toEqual([])
