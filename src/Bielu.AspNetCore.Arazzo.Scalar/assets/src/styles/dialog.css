@@ -16,9 +16,16 @@
 /* What a Data flow arrow carries: a panel the size of its content, not the whole window. */
 .bielu-arazzo .ba-dialog.ba-flow-dialog {
   width: min(640px, 96vw);
-  height: auto;
+  /* A modal dialog is fixed with inset 0, so an auto height would stretch it to the window. */
+  height: fit-content;
   max-height: 85vh;
   overflow: auto;
+}
+.bielu-arazzo .ba-flow-route {
+  margin: 4px 0 12px;
+}
+.bielu-arazzo .ba-flow-link {
+  color: var(--scalar-color-accent);
 }
 .bielu-arazzo .ba-flow-value + .ba-flow-value {
   margin-top: 16px;

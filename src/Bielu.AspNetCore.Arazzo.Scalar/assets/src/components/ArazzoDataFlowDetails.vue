@@ -1,22 +1,44 @@
 <script setup lang="ts">
-import type { FlowValue } from '../helpers/data-flow-values'
+import { nextTick } from 'vue'
+import type { FlowLink, FlowValue } from '../helpers/data-flow-values'
+import { goToAnchor } from '../helpers/navigation'
+import { navigationHref, openInOtherDocument } from '../helpers/target-link'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
 
 /**
  * What one Data flow arrow carries: for each value, where it is made (the expression and the response,
- * message or inputs it reads), its schema as the loaded documents describe it, and where the receiving
- * side uses it.
+ * message or inputs it reads), its schema as the loaded documents describe it, a link to where that schema
+ * is defined, and where the receiving side uses it.
  */
 defineProps<{
   from: string
   to: string
   values: FlowValue[]
 }>()
+
+const emit = defineEmits<{
+  /** A link was followed; the dialogs over the page should close. */
+  navigate: []
+}>()
+
+const hrefOf = (link: FlowLink): string =>
+  link.navId ? navigationHref(link.navId, window.location) : `${window.location.pathname}${window.location.search}#${link.anchor ?? ''}`
+
+/** A schema in another document opens its page in Scalar; an input of this workflow scrolls to its row. */
+const follow = (event: MouseEvent, link: FlowLink) => {
+  emit('navigate')
+  if (link.navId) {
+    openInOtherDocument(event, hrefOf(link))
+  } else if (link.anchor) {
+    event.preventDefault()
+    void goToAnchor(event.currentTarget as Element, { anchor: link.anchor }, nextTick)
+  }
+}
 </script>
 
 <template>
   <div class="ba-flow-details">
-    <p class="ba-muted">
+    <p class="ba-muted ba-flow-route">
       From <strong>{{ from }}</strong> to <strong>{{ to }}</strong>
     </p>
     <section
@@ -38,6 +60,15 @@ defineProps<{
         <template v-if="value.uses.length">
           <dt>Used as</dt>
           <dd>{{ value.uses.join(', ') }}</dd>
+        </template>
+        <template v-if="value.link">
+          <dt>Defined in</dt>
+          <dd>
+            <a
+              class="ba-flow-link"
+              :href="hrefOf(value.link)"
+              @click="follow($event, value.link)">{{ value.link.label }} ↗</a>
+          </dd>
         </template>
       </dl>
       <ArazzoSchemaProperties

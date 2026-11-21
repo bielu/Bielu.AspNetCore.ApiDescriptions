@@ -11,6 +11,8 @@ const text = (value: unknown): string => (typeof value === 'string' ? value : ''
 export type ExchangeContent = {
   contentType: string
   schema: AnyRecord | undefined
+  /** The `$ref` the schema was given by (`#/components/schemas/Order`), before it was followed. */
+  schemaRef?: string
   example: unknown
 }
 
@@ -56,7 +58,13 @@ const contentsOf = (root: AnyRecord, content: unknown): ExchangeContent[] =>
     ? Object.entries(content).map(([contentType, entry]) => {
         const media = isRecord(entry) ? entry : {}
         const schema = deref(root, media.schema)
-        return { contentType, schema: isRecord(schema) ? schema : undefined, example: exampleOf(root, media, isRecord(schema) ? schema : undefined) }
+        const schemaRef = isRecord(media.schema) && typeof media.schema.$ref === 'string' ? media.schema.$ref : undefined
+        return {
+          contentType,
+          schema: isRecord(schema) ? schema : undefined,
+          ...(schemaRef ? { schemaRef } : {}),
+          example: exampleOf(root, media, isRecord(schema) ? schema : undefined),
+        }
       })
     : []
 

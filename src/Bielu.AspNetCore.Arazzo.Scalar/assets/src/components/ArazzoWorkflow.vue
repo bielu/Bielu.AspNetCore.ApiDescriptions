@@ -292,7 +292,7 @@ const flowDetails = computed(() => {
   return {
     from: label(edge.from),
     to: label(edge.to),
-    values: describeFlow(props.document, workflow.value, edge.from, edge.to, edge.values, props.documents),
+    values: describeFlow(props.document, workflow.value, edge.from, edge.to, edge.values, props.documents, props.view.id),
   }
 })
 
@@ -300,6 +300,12 @@ const openFlow = async (edge: LaidOutEdge) => {
   flowEdge.value = edge
   await nextTick()
   flowDialog.value?.showModal()
+}
+
+/** Following a link from the flow dialog closes it, and the full-window overview under it. */
+const closeFlow = () => {
+  flowDialog.value?.close()
+  dialog.value?.close()
 }
 
 const closeFlowOnBackdrop = (event: MouseEvent) => {
@@ -612,7 +618,8 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       </div>
       <ArazzoDataFlowDetails
         v-if="flowDetails"
-        v-bind="flowDetails" />
+        v-bind="flowDetails"
+        @navigate="closeFlow" />
     </dialog>
   </section>
 </template>

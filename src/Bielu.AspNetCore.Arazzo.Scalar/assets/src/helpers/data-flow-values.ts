@@ -1,9 +1,10 @@
 import type { ArazzoDocument, ArazzoParameter, ArazzoStep, ArazzoWorkflow } from '../types'
 import { INPUTS_NODE_ID, OUTPUTS_NODE_ID } from './data-flow'
-import { expressionsIn, parseExpression } from './expressions'
-import { schemaPropertyRows, type SchemaPropertyRow } from './format'
+import { expressionsIn, inputsAnchor, parseExpression } from './expressions'
+import { asSelector, schemaPropertyRows, type SchemaPropertyRow } from './format'
 import { operationResponses, statusCodesIn } from './openapi-exchange'
-import { deref, parseJsonPointer, resolveStepTarget, targetMessages } from './resolve-target'
+import { deref, parseJsonPointer, resolveStepTarget, targetMessages, type StepTarget } from './resolve-target'
+import { schemaNavigationId, targetNavigationId } from './target-link'
 import { resolveReusables } from './reusable'
 
 type AnyRecord = Record<string, any>
@@ -21,15 +22,32 @@ export type FlowValue = {
   schema?: SchemaPropertyRow
   /** Where the consumer uses it: "path parameter orderId", "request body", "output total". */
   uses: string[]
+  /** Where to read the value's definition: its schema's page in Scalar, else the operation or channel, or the workflow's inputs. */
+  link?: FlowLink
 }
+
+/** A link from a value to where it is defined: a Scalar sidebar entry of another document, or an anchor on this page. */
+export type FlowLink = { label: string; navId?: string; anchor?: string }
+
+/** A named schema of a document (`#/components/schemas/Order`), which Scalar lists as a model. */
+const NAMED_SCHEMA = /^#\/components\/schemas\/[^/]+$/
+
+/** The `$ref` of a schema node, when it is one to a named schema. */
+const namedRef = (node: unknown): string | undefined =>
+  isRecord(node) && typeof node.$ref === 'string' && NAMED_SCHEMA.test(node.$ref) ? node.$ref : undefined
 
 /**
  * The schema at a JSON Pointer into the value a schema describes: `/lines/0/sku` walks properties and items.
- * The schema found is returned as written, so a `$ref` keeps the name it is shown by (`money`).
+ * The schema found is returned as written, so a `$ref` keeps the name it is shown by (`money`). The named
+ * schemas passed through on the way, outermost first, are added to `refs`.
  */
-const schemaAt = (root: AnyRecord, schema: unknown, segments: string[]): unknown => {
+const schemaAt = (root: AnyRecord, schema: unknown, segments: string[], refs: string[] = []): unknown => {
   let current = schema
   for (const segment of segments) {
+    const passed = namedRef(current)
+    if (passed) {
+      refs.push(passed)
+    }
     const node = deref(root, current)
     if (!isRecord(node)) {
       return undefined
@@ -46,6 +64,10 @@ const schemaAt = (root: AnyRecord, schema: unknown, segments: string[]): unknown
       return undefined
     }
   }
+  const last = namedRef(current)
+  if (last) {
+    refs.push(last)
+  }
   return current
 }
 
@@ -55,8 +77,55 @@ const splitPointer = (expression: string): { base: string; segments: string[] } 
   return hash < 0 ? { base: expression, segments: [] } : { base: expression.slice(0, hash), segments: parseJsonPointer(expression.slice(hash + 1)) }
 }
 
-/** A schema found for a value, with the document its `$ref`s resolve against. */
-type Found = { schema?: unknown; root?: unknown; origin?: string }
+/** `$.lines[0].sku` or `$['lines'][0]` → `['lines', '0', 'sku']`; `undefined` for a JSONPath with filters, wildcards or recursion. */
+const jsonPathSegments = (path: string): string[] | undefined => {
+  const match = /^\$((?:\.[A-Za-z_$][\w$-]*|\[\d+\]|\['[^']*'\]|\["[^"]*"\])*)$/.exec(path.trim())
+  return match ? [...match[1]!.matchAll(/\.([A-Za-z_$][\w$-]*)|\[(\d+)\]|\['([^']*)'\]|\["([^"]*)"\]/g)].map((part) => part[1] ?? part[2] ?? part[3] ?? part[4]!) : undefined
+}
+
+/**
+ * A step output as where it reads from and the path into that: a Runtime Expression (`$response.body#/id`), or
+ * (Arazzo 1.1) a Selector Object, `{ context: '$response.body', selector: '$.total', type: 'jsonpath' }`. A
+ * selector this cannot follow (an XPath, a JSONPath with filters) still names its context.
+ */
+const outputOf = (step: ArazzoStep, name: string): { text: string; base: string; segments?: string[] } | undefined => {
+  const value = step.outputs?.[name]
+  if (typeof value === 'string') {
+    return { text: value, ...splitPointer(value.trim()) }
+  }
+  const selector = asSelector(value)
+  if (!selector) {
+    return undefined
+  }
+  const type = typeof selector.type === 'string' ? selector.type : selector.type.type
+  const segments = type === 'jsonpath' ? jsonPathSegments(selector.selector) : type === 'jsonpointer' ? parseJsonPointer(selector.selector) : undefined
+  return { text: `${selector.context} · ${selector.selector}`, base: selector.context.trim(), ...(segments ? { segments } : {}) }
+}
+
+/** A schema found for a value, with the document its `$ref`s resolve against and where it is defined. */
+type Found = { schema?: unknown; root?: unknown; origin?: string; link?: FlowLink }
+
+/** The page of the innermost named schema the value is in, else the operation or channel the step calls. */
+const targetLink = (target: StepTarget | undefined, refs: string[], documents: Record<string, unknown>): FlowLink | undefined => {
+  const name = target?.documentName
+  for (const ref of [...refs].reverse()) {
+    const navId = name ? schemaNavigationId(name, ref, documents) : undefined
+    if (navId) {
+      return { label: `Schema ${ref.split('/').pop()}`, navId }
+    }
+  }
+  const navId = targetNavigationId(target, documents)
+  if (!navId || !target) {
+    return undefined
+  }
+  const label =
+    target.kind === 'operation' && target.method && target.path
+      ? `${target.method.toUpperCase()} ${target.path}`
+      : target.kind === 'channel'
+        ? `Channel ${target.channelName ?? ''}`.trim()
+        : 'Its definition'
+  return { label, navId }
+}
 
 /** The response a step's outputs are read from: the status its success criteria check for, else the first 2XX. */
 const successResponse = (step: ArazzoStep, responses: ReturnType<typeof operationResponses>) => {
@@ -69,53 +138,83 @@ const successResponse = (step: ArazzoStep, responses: ReturnType<typeof operatio
 }
 
 /** What a step output's expression reads from the step's target: a response body or header, or a message payload. */
-const stepOutputSchema = (document: ArazzoDocument, workflow: ArazzoWorkflow, step: ArazzoStep, name: string, documents: Record<string, unknown>, depth: number): Found => {
-  const expression = typeof step.outputs?.[name] === 'string' ? step.outputs[name] : undefined
-  if (!expression) {
+const stepOutputSchema = (
+  document: ArazzoDocument,
+  workflow: ArazzoWorkflow,
+  step: ArazzoStep,
+  name: string,
+  documents: Record<string, unknown>,
+  depth: number,
+  workflowNavId?: string,
+): Found => {
+  const output = outputOf(step, name)
+  if (!output) {
     return {}
   }
-  const { base, segments } = splitPointer(expression.trim())
+  const { base, segments } = output
   const target = resolveStepTarget(document, step, documents)
   if (base === '$response.body') {
     const response = successResponse(step, operationResponses(target, documents))
     const content = response?.contents.find((candidate) => /json/i.test(candidate.contentType)) ?? response?.contents[0]
     const operation = target?.kind === 'operation' && target.method && target.path ? ` of ${target.method.toUpperCase()} ${target.path}` : ''
+    // Walked from the `$ref` the response gives, so the named schema the value is in (`Order`) can be linked.
+    const refs: string[] = []
+    const schema = content && segments ? schemaAt(response.root, content.schemaRef ? { $ref: content.schemaRef } : content.schema, segments, refs) : undefined
+    const link = targetLink(target, refs, documents)
     return response
-      ? { schema: content && schemaAt(response.root, content.schema, segments), root: response.root, origin: `${response.status} response body${operation}` }
+      ? { schema, root: response.root, origin: `${response.status} response body${operation}`, ...(link ? { link } : {}) }
       : { origin: 'the response body' }
   }
   if (base.startsWith('$response.header.')) {
-    return { origin: `response header ${base.slice('$response.header.'.length)}` }
+    const link = targetLink(target, [], documents)
+    return { origin: `response header ${base.slice('$response.header.'.length)}`, ...(link ? { link } : {}) }
   }
   if (base === '$message.payload') {
     const message = targetMessages(target, documents)[0]
+    const refs: string[] = []
+    const schema = message && isRecord(message.payload) && segments ? schemaAt(message.root, message.payload, segments, refs) : undefined
+    const link = targetLink(target, refs, documents)
     return message && isRecord(message.payload)
-      ? { schema: schemaAt(message.root, message.payload, segments), root: message.root, origin: `payload of message ${message.title || message.name}` }
+      ? { schema, root: message.root, origin: `payload of message ${message.title || message.name}`, ...(link ? { link } : {}) }
       : { origin: 'the message payload' }
   }
   if (base.startsWith('$message.header.')) {
-    return { origin: `message header ${base.slice('$message.header.'.length)}` }
+    const link = targetLink(target, [], documents)
+    return { origin: `message header ${base.slice('$message.header.'.length)}`, ...(link ? { link } : {}) }
   }
   // An output passed on from an input or another step's output: describe it where it came from.
-  return depth < 4 ? sourceSchema(document, workflow, expression, documents, depth + 1) : {}
+  return depth < 4 ? sourceSchema(document, workflow, output.text, documents, depth + 1, workflowNavId) : {}
 }
 
-/** The schema of an input of the workflow, with the Arazzo document (`#/components/inputs/…`) and the schema (`#/$defs/…`) as root. */
-const inputSchema = (document: ArazzoDocument, workflow: ArazzoWorkflow, segments: string[]): Found => {
+/**
+ * The schema of an input of the workflow, with the Arazzo document (`#/components/inputs/…`) and the schema
+ * (`#/$defs/…`) as root, linked to the input's row on this page when the workflow's section id is known.
+ */
+const inputSchema = (document: ArazzoDocument, workflow: ArazzoWorkflow, segments: string[], workflowNavId: string | undefined): Found => {
   const root = document as unknown as AnyRecord
   const inputs = deref(root, workflow.inputs)
-  return isRecord(inputs) ? { schema: schemaAt(root, inputs, segments), root: { ...root, ...inputs }, origin: "the workflow's inputs" } : { origin: "the workflow's inputs" }
+  const link = workflowNavId ? { link: { label: "The workflow's inputs", anchor: inputsAnchor(workflowNavId, segments[0]) } } : {}
+  return isRecord(inputs)
+    ? { schema: schemaAt(root, inputs, segments), root: { ...root, ...inputs }, origin: "the workflow's inputs", ...link }
+    : { origin: "the workflow's inputs", ...link }
 }
 
 /** Where an expression's value is made, followed back to a schema when it can be. */
-const sourceSchema = (document: ArazzoDocument, workflow: ArazzoWorkflow, expression: string, documents: Record<string, unknown>, depth: number): Found => {
+const sourceSchema = (
+  document: ArazzoDocument,
+  workflow: ArazzoWorkflow,
+  expression: string,
+  documents: Record<string, unknown>,
+  depth: number,
+  workflowNavId?: string,
+): Found => {
   const parsed = parseExpression(expression)
   if (parsed.source === 'inputs') {
-    return inputSchema(document, workflow, [parsed.name, ...splitPointer(expression).segments])
+    return inputSchema(document, workflow, [parsed.name, ...splitPointer(expression).segments], workflowNavId)
   }
   if (parsed.source === 'steps' && parsed.field === 'outputs' && parsed.name) {
     const step = workflow.steps?.find((candidate) => candidate.stepId === parsed.stepId)
-    const found = step ? stepOutputSchema(document, workflow, step, parsed.name, documents, depth) : {}
+    const found = step ? stepOutputSchema(document, workflow, step, parsed.name, documents, depth, workflowNavId) : {}
     const { segments } = splitPointer(expression)
     return segments.length && isRecord(found.root) ? { ...found, schema: schemaAt(found.root, found.schema, segments) } : found
   }
@@ -176,6 +275,8 @@ const placesIn = (
  * producer's output expression and the response or message it reads, or the workflow's inputs), its schema
  * as far as the loaded documents describe it, and where the consumer uses it. A value whose schema cannot be
  * found (its document isn't loaded, a header, another workflow's output) still says where it comes from.
+ * Each value links to where it is defined: its named schema's page in Scalar, else the operation or channel
+ * that makes it, or (with `workflowNavId`, the workflow's section id) its row in the workflow's inputs.
  */
 export const describeFlow = (
   document: ArazzoDocument,
@@ -184,6 +285,7 @@ export const describeFlow = (
   consumer: string,
   names: string[],
   documents: Record<string, unknown>,
+  workflowNavId?: string,
 ): FlowValue[] =>
   names.map((name) => {
     const places = placesIn(document, workflow, consumer).flatMap(({ place, value }) => {
@@ -191,7 +293,7 @@ export const describeFlow = (
       return reading ? [{ place, reading }] : []
     })
     const step = workflow.steps?.find((candidate) => candidate.stepId === producer)
-    const produced = step && typeof step.outputs?.[name] === 'string' ? step.outputs[name] : undefined
+    const produced = step ? outputOf(step, name)?.text : undefined
     const reading = places[0]?.reading
     // Described where it is made; a reading with a pointer into it (`$steps.a.outputs.order#/id`) narrows it.
     const own = producer === INPUTS_NODE_ID
@@ -199,7 +301,7 @@ export const describeFlow = (
       : producer.startsWith('::workflow:')
         ? `$workflows.${producer.slice('::workflow:'.length)}.outputs.${name}`
         : `$steps.${producer}.outputs.${name}`
-    const found = sourceSchema(document, workflow, reading?.includes('#') ? reading : own, documents, 0)
+    const found = sourceSchema(document, workflow, reading?.includes('#') ? reading : own, documents, 0, workflowNavId)
     const rows = found.schema !== undefined ? schemaPropertyRows({ type: 'object', properties: { [name]: found.schema } }, found.root) : undefined
     return {
       name,
@@ -207,5 +309,6 @@ export const describeFlow = (
       ...(found.origin ? { origin: found.origin } : {}),
       ...(rows?.[0] ? { schema: rows[0] } : {}),
       uses: [...new Set(places.map(({ place }) => place))],
+      ...(found.link ? { link: found.link } : {}),
     }
   })

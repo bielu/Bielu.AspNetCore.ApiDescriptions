@@ -12,6 +12,13 @@ import type { ArazzoDocument, ArazzoWorkflow as Workflow } from '../src/types'
 const ordersApi = {
   openapi: '3.1.0',
   'x-scalar-original-source-url': '/openapi.json',
+  // Scalar's sidebar tree: the operation, and the named schemas under Models.
+  'x-scalar-navigation': {
+    children: [
+      { type: 'operation', id: 'orders/tag/orders/POST/orders', method: 'post', path: '/orders' },
+      { type: 'models', id: 'orders/models', children: [{ type: 'model', id: 'orders/model/money', ref: '#/components/schemas/money', name: 'money' }] },
+    ],
+  },
   paths: {
     '/orders': {
       post: {
@@ -141,6 +148,58 @@ describe('describeFlow', () => {
     expect(location!.schema).toBeUndefined()
   })
 
+  it('links a value to its named schema in Scalar, else to the operation that makes it, or to the input row', () => {
+    // Act
+    const [orderId, total] = describeFlow(document, placeOrder, 'create', OUTPUTS_NODE_ID, ['orderId', 'total'], documents)
+    const [sku] = describeFlow(document, placeOrder, INPUTS_NODE_ID, 'create', ['sku'], documents, 'doc/workflow/placeOrder')
+    const [unlinked] = describeFlow(document, placeOrder, INPUTS_NODE_ID, 'create', ['sku'], documents)
+
+    // Assert
+    expect(total!.link).toEqual({ label: 'Schema money', navId: 'orders/model/money' })
+    // `order` has no model entry in this sidebar, so the id links to the operation instead.
+    expect(orderId!.link).toEqual({ label: 'POST /orders', navId: 'orders/tag/orders/POST/orders' })
+    expect(sku!.link).toEqual({ label: "The workflow's inputs", anchor: 'doc/workflow/placeOrder/inputs/sku' })
+    expect(unlinked!.link).toBeUndefined()
+  })
+
+  it('links a property to the named response schema it is in, when Scalar lists that schema', () => {
+    // Arrange
+    const navigation = ordersApi['x-scalar-navigation']
+    const withOrder = {
+      ...documents,
+      orders: { ...ordersApi, 'x-scalar-navigation': { children: [...navigation.children, { type: 'model', id: 'orders/model/order', ref: '#/components/schemas/order' }] } },
+    }
+
+    // Act
+    const [orderId] = describeFlow(document, placeOrder, 'create', OUTPUTS_NODE_ID, ['orderId'], withOrder)
+
+    // Assert
+    expect(orderId!.link).toEqual({ label: 'Schema order', navId: 'orders/model/order' })
+    expect(orderId!.schema).toMatchObject({ type: 'string', details: ['uuid'] })
+  })
+
+  it('reads a Selector Object output by its context and JSONPath', () => {
+    // Arrange
+    const create = { ...placeOrder.steps![0]!, outputs: { amount: { context: '$response.body', selector: "$.total['amount']", type: 'jsonpath' } } }
+    const filtered = { ...create, outputs: { amount: { context: '$response.body', selector: '$.lines[?(@.sku)]', type: 'jsonpath' } } }
+    const withSelector = (step: typeof create): Workflow => ({ ...placeOrder, steps: [step as never], outputs: { amount: '$steps.create.outputs.amount' } })
+
+    // Act
+    const [amount] = describeFlow(document, withSelector(create), 'create', OUTPUTS_NODE_ID, ['amount'], documents)
+    const [unknown] = describeFlow(document, withSelector(filtered), 'create', OUTPUTS_NODE_ID, ['amount'], documents)
+
+    // Assert
+    expect(amount).toMatchObject({
+      source: "$response.body · $.total['amount']",
+      origin: '201 response body of POST /orders',
+      schema: { type: 'number' },
+      link: { label: 'Schema money', navId: 'orders/model/money' },
+    })
+    // A JSONPath with a filter can't be followed into the schema: it still says where it reads from.
+    expect(unknown).toMatchObject({ source: '$response.body · $.lines[?(@.sku)]', origin: '201 response body of POST /orders' })
+    expect(unknown!.schema).toBeUndefined()
+  })
+
   it('still says where a value comes from when its document is not loaded', () => {
     // Act
     const [orderId] = describeFlow(document, placeOrder, 'create', 'paid', ['orderId'], {})
@@ -174,6 +233,27 @@ describe('the Data flow details', () => {
     expect(wrapper.find('.ba-flow-facts').text()).toContain('query parameter order, correlation')
     expect(wrapper.find('.ba-schema-name').text()).toBe('orderId')
     expect(wrapper.find('.ba-flow-no-schema').exists()).toBe(false)
+  })
+
+  it('links each schema to where it is defined, and asks the dialogs to close when a link is followed', async () => {
+    // Arrange
+    const onNavigate = vi.fn()
+    const values = [
+      ...describeFlow(document, placeOrder, 'create', OUTPUTS_NODE_ID, ['total'], documents),
+      ...describeFlow(document, placeOrder, INPUTS_NODE_ID, 'create', ['sku'], documents, 'doc/workflow/placeOrder'),
+    ]
+    wrapper = mount(ArazzoDataFlowDetails, { attachTo: globalThis.document.body, props: { from: 'create', to: 'Workflow outputs', values, onNavigate } })
+    const [schema, input] = wrapper.findAll('a.ba-flow-link')
+
+    // Act
+    await input!.trigger('click')
+
+    // Assert
+    expect(schema!.text()).toBe('Schema money ↗')
+    expect(schema!.attributes('href')).toMatch(/#orders\/model\/money$/)
+    expect(input!.text()).toBe("The workflow's inputs ↗")
+    expect(input!.attributes('href')).toMatch(/#doc\/workflow\/placeOrder\/inputs\/sku$/)
+    expect(onNavigate).toHaveBeenCalledOnce()
   })
 
   it.each(['click', 'Enter'])('opens from an arrow label of the Data flow view (%s)', async (how) => {
