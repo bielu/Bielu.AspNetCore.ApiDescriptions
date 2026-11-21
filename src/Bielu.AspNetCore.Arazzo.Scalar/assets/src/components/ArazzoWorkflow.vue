@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
 import { provideExpressionScope } from '../helpers/expression-scope'
 import { inputsAnchor, outputsAnchor, workflowOutputConsumers } from '../helpers/expressions'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
@@ -165,6 +166,18 @@ const expressionScope = computed(() => ({
   componentsId: props.componentsId,
 }))
 provideExpressionScope(() => expressionScope.value)
+
+/** stepId → the worst problem in that step, marked on its box in the overview. */
+const allDiagnostics = useDiagnostics()
+const stepProblems = computed(() =>
+  Object.fromEntries(
+    props.view.steps.flatMap(({ step }) => {
+      const problems = allDiagnostics.value.get(diagnosticKey(workflow.value.workflowId, step.stepId))
+      const severity = worstSeverity(problems)
+      return severity ? [[step.stepId, { severity, count: problems!.length, messages: problems!.map((problem) => problem.message) }]] : []
+    }),
+  ),
+)
 
 const classic = computed(() => props.layout === 'classic')
 
@@ -362,6 +375,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
           </div>
           <ArazzoWorkflowDiagram
             :layout="diagram"
+            :problems="stepProblems"
             :stepSectionIds="stepSectionIds"
             :workflowId="workflow.workflowId"
             @toggleWorkflow="toggleWorkflow" />
@@ -429,6 +443,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
         class="ba-diagram-large"
         fit
         :layout="diagram"
+        :problems="stepProblems"
         :stepSectionIds="stepSectionIds"
         :workflowId="workflow.workflowId"
         @openStep="dialog?.close()"

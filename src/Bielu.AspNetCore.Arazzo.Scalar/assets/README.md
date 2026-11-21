@@ -46,6 +46,9 @@ Technical | Pages views) and troubleshooting.
 - Runtime Expressions as links to the input, step output, workflow output or component they read,
   with the ones that point at something the document doesn't declare marked, and a "Used by" list
   under each output.
+- Problems found against the loaded OpenAPI and AsyncAPI documents (missing targets, parameters
+  and statuses, broken references, steps that never run), listed under the header, on each step and
+  on its box in the overview.
 - Which spec each step targets (`OpenAPI 3.1.1`, `AsyncAPI 3.0.0` or `Workflow`, plus send/receive),
   on the step, on the overview flowchart, and per source description.
 - Links from each step to the operation or channel it calls in its own document. For AsyncAPI
