@@ -35,9 +35,17 @@ export type WorkflowGraphNode = {
   technical?: string
   /** Pages view: the page a step is on, or an end node shows. */
   page?: string
-  /** Pages view: a second line under the label (an end node's action label). */
+  /**
+   * A second line under the label: an end node's action label (Pages view), or what a step does on its target
+   * (`POST /orders`, `← receives orderPlaced · 15 s`).
+   */
   subtitle?: string
+  /** For a step: when and why it runs, in words, for its tooltip ("Waits for an orderPlaced message …"). */
+  explanation?: string
 }
+
+/** What a step box says about its target: a second line, and a sentence for its tooltip. */
+export type StepDescription = { detail?: string; explanation?: string }
 
 /** A `retry` of the step itself, drawn as a badge on the step's box rather than as an arrow. */
 export type WorkflowGraphRetry = {
@@ -133,7 +141,18 @@ export type WorkflowGraphOptions = {
    * recognised as already on the expansion path.
    */
   documentName?: string
+  /**
+   * What a step does on its target, drawn under its label: the HTTP method and path, or whether it sends or
+   * waits for a message, on which channel. `undefined` leaves the box with its label only.
+   */
+  describeStep?: (step: ArazzoStep, document: ArazzoDocument) => StepDescription | undefined
 }
+
+/** The fields a {@link StepDescription} sets on a step's node, leaving out the empty ones. */
+const stepDescription = (description: StepDescription | undefined): Pick<WorkflowGraphNode, 'subtitle' | 'explanation'> => ({
+  ...(description?.detail ? { subtitle: description.detail } : {}),
+  ...(description?.explanation ? { explanation: description.explanation } : {}),
+})
 
 /** How a workflow id reads on a box: `identity.signIn` for `$sourceDescriptions.identity.signIn`, else as written. */
 export const workflowLabel = (workflowId: string): string => {
@@ -405,6 +424,7 @@ const addScope = (
           stepId: step.stepId,
           ...(spec ? { spec } : {}),
           ...pages,
+          ...stepDescription(options.describeStep?.(step, document)),
         })
     stepNodes.set(step.stepId, node)
     graph.nodes.push(node)
@@ -731,7 +751,9 @@ export const retryBadgeWidth = (node: WorkflowGraphNode): number => {
 
 const nodeWidth = (node: WorkflowGraphNode): number =>
   node.kind === 'step'
-    ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) + (node.spec ? SPEC_MARKER_WIDTH : 0) + retryBadgeWidth(node)
+    ? Math.max(96, Math.max(node.label.length, (node.subtitle?.length ?? 0) * 0.9) * NODE_CHAR_WIDTH + 28) +
+      (node.spec ? SPEC_MARKER_WIDTH : 0) +
+      retryBadgeWidth(node)
     : node.kind === 'workflow'
       ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) +
         (node.spec ? SPEC_MARKER_WIDTH : 0) +

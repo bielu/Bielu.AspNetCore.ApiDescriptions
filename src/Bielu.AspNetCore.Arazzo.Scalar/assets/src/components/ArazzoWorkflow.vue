@@ -8,6 +8,7 @@ import { resolveReusables } from '../helpers/reusable'
 import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
 import type { ArazzoPluginOptions } from '../helpers/plugin-options'
 import { resolveStepTarget } from '../helpers/resolve-target'
+import { describeStep } from '../helpers/step-description'
 import { targetSpec } from '../helpers/target-spec'
 import { setWorkflowView, workflowView } from '../helpers/view-mode'
 import { buildWorkflowGraph, layoutWorkflowGraph, type WorkflowView as OverviewView } from '../helpers/workflow-graph'
@@ -138,6 +139,8 @@ const diagram = computed(() =>
         pages: pagesConfig.value,
         documents: props.documents,
         documentName: props.documentName,
+        // Each box says what its step does (`POST /orders`, `← receives orderPlaced`), in its own document.
+        describeStep: (step, owner) => describeStep(step, owner, props.documents),
       },
     ),
   ),

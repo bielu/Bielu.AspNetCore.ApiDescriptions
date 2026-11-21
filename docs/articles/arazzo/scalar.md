@@ -149,6 +149,10 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     node, which stays where it was under the pointer; the zoom is kept (the overview is scaled to fit only
     when it is shown, reset or resized), and the full-window view stays open. While a workflow is expanded,
     the overview beside the steps may grow to the height of the window, and pans beyond that.
+  - **What each step does.** A step's box has a second line: `POST /orders` for an OpenAPI step, and for an
+    AsyncAPI step whether it publishes or waits for a message, on which channel, and for how long
+    (`→ sends orderPlaced`, `← receives paymentCompleted · 1 min`). Its tooltip says it in a sentence,
+    with the correlation a receiving step waits for ("the one matching orderId from create").
   - **Full window.** The expand button opens the overview over almost the whole window. A graph that fits
     at a readable size is scaled to fit; a taller one (a workflow with another expanded inside it) is drawn
     a little larger than its natural size from the top, and the reader pans down, rather than shrinking it

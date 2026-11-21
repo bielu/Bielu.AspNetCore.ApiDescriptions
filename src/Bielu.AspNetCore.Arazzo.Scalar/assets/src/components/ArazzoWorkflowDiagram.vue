@@ -282,7 +282,8 @@ const technicalTitle = (node: LaidOutNode): string | undefined => {
     return `Ends the workflow: ${node.actions.join(', ')}`
   }
   if (node.kind === 'step') {
-    return `Go to step ${node.label}${node.spec ? ` (${specName(node.spec)})` : ''}`
+    const go = `Go to step ${node.label}${node.spec ? ` (${specName(node.spec)})` : ''}`
+    return node.explanation ? `${node.explanation}\n${go}` : go
   }
   return undefined
 }

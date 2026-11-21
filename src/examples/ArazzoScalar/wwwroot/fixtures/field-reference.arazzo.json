@@ -44,7 +44,6 @@
             { "condition": "$statusCode == 201" },
             { "context": "$response.header.Location", "condition": "^/orders/[0-9a-f-]+$", "type": "regex" }
           ],
-          "onSuccess": [{ "reference": "$components.successActions.done" }],
           "onFailure": [
             { "name": "throttled", "type": "retry", "retryAfter": 1.5, "retryLimit": 5, "criteria": [{ "condition": "$statusCode == 429" }] },
             { "reference": "$components.failureActions.giveUp" }
@@ -76,7 +75,10 @@
           "dependsOn": ["confirmed"],
           "parameters": [{ "name": "id", "in": "path", "value": "$steps.create.outputs.orderId" }],
           "successCriteria": [{ "condition": "$statusCode == 200", "type": "simple" }],
-          "onSuccess": [{ "name": "finished", "type": "end" }],
+          "onSuccess": [
+            { "name": "finished", "type": "end", "criteria": [{ "condition": "$response.body#/status == 'shipped'" }] },
+            { "reference": "$components.successActions.done" }
+          ],
           "onFailure": [
             {
               "name": "reorder",
@@ -91,7 +93,9 @@
           ]
         }
       ],
-      "successActions": [{ "name": "notify", "type": "end", "x-channel": "email" }],
+      "successActions": [
+        { "name": "notify", "type": "end", "criteria": [{ "condition": "$response.body#/status == 'delivered'" }], "x-channel": "email" }
+      ],
       "failureActions": [{ "reference": "$components.failureActions.giveUp" }],
       "outputs": {
         "orderId": "$steps.create.outputs.orderId",
