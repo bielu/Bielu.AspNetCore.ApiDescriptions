@@ -77,6 +77,36 @@ describe('runOrder', () => {
     // Act / Assert
     expect(runOrder([{ stepId: 'a', dependsOn: ['b'] }, { stepId: 'b', dependsOn: ['a'] }]).map((step) => step.stepId)).toEqual(['a', 'b'])
   })
+
+  it('runs a step after the step whose output it reads, as an implicit dependency', () => {
+    // Arrange
+    const steps: ArazzoStep[] = [
+      { stepId: 'start' },
+      { stepId: 'use', dependsOn: ['start'], parameters: [{ name: 'id', in: 'path', value: '$steps.produce.outputs.id' }] },
+      { stepId: 'produce', dependsOn: ['start'], outputs: { id: '$response.body#/id' } },
+    ]
+
+    // Act / Assert
+    expect(runOrder(steps).map((step) => step.stepId)).toEqual(['start', 'produce', 'use'])
+  })
+
+  it('draws the sequence in that order', () => {
+    // Arrange
+    const workflow: Workflow = {
+      workflowId: 'w',
+      steps: [
+        { stepId: 'start', operationId: 'a' },
+        { stepId: 'use', operationId: 'b', dependsOn: ['start'], requestBody: { payload: { id: '$steps.produce.outputs.id' } } },
+        { stepId: 'produce', operationId: 'c', dependsOn: ['start'] },
+      ],
+    }
+
+    // Act
+    const sequence = buildSequence({ arazzo: '1.1.0', workflows: [workflow] }, workflow, {})
+
+    // Assert
+    expect([...new Set(sequence.messages.map((message) => message.stepId))]).toEqual(['start', 'produce', 'use'])
+  })
 })
 
 describe('buildSequence', () => {
