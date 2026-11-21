@@ -56,8 +56,8 @@ describe('the Technical | Pages toggle', () => {
     // Act
     const wrapper = mountWorkflow()
 
-    // Assert: Technical and Data flow only.
-    expect(wrapper.findAll('.ba-overview .ba-view-toggle button').map((button) => button.text())).toEqual(['Technical', 'Data flow'])
+    // Assert: Technical, Data flow and Sequence only.
+    expect(wrapper.findAll('.ba-overview .ba-view-toggle button').map((button) => button.text())).toEqual(['Technical', 'Data flow', 'Sequence'])
   })
 
   it('offers no Pages view when the document does not use the pages extensions', () => {

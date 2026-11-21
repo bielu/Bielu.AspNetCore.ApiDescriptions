@@ -796,6 +796,83 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-export-status:empty {
   display: none;
 }
+/* Sequence view: lanes with lifelines, and the steps' messages between them, top to bottom. */
+.bielu-arazzo .ba-sequence {
+  overflow-x: auto;
+}
+.bielu-arazzo .ba-sequence-fit {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 16px;
+}
+.bielu-arazzo .ba-sequence svg {
+  display: block;
+  margin: 0 auto;
+}
+.bielu-arazzo .ba-sequence-participant rect {
+  fill: var(--scalar-background-2);
+  stroke: var(--scalar-border-color);
+}
+.bielu-arazzo .ba-sequence-client rect {
+  fill: color-mix(in srgb, var(--scalar-color-accent) 10%, var(--scalar-background-1));
+  stroke: var(--scalar-color-accent);
+}
+.bielu-arazzo .ba-sequence-participant text {
+  fill: var(--scalar-color-1);
+  font-family: var(--scalar-font);
+  font-size: 12px;
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-sequence-participant rect.ba-diagram-spec {
+  fill: var(--ba-spec-color);
+  stroke: none;
+}
+.bielu-arazzo .ba-sequence-participant text.ba-sequence-detail {
+  fill: var(--scalar-color-3);
+  font-size: 10px;
+  font-weight: normal;
+}
+.bielu-arazzo .ba-sequence-lifeline {
+  stroke: var(--scalar-border-color);
+  stroke-dasharray: 4 4;
+}
+.bielu-arazzo .ba-sequence-line {
+  stroke: var(--scalar-color-2);
+  stroke-width: 1.4;
+}
+.bielu-arazzo .ba-sequence-dashed {
+  stroke-dasharray: 5 3;
+}
+.bielu-arazzo .ba-sequence-send .ba-sequence-line,
+.bielu-arazzo .ba-sequence-receive .ba-sequence-line {
+  stroke: var(--scalar-color-purple, #8e4ec6);
+}
+.bielu-arazzo .ba-sequence-arrow {
+  fill: var(--scalar-color-2);
+}
+.bielu-arazzo .ba-sequence-label {
+  fill: var(--scalar-color-1);
+  font-family: var(--scalar-font-code);
+  font-size: 11px;
+}
+.bielu-arazzo .ba-sequence-note {
+  fill: var(--scalar-color-3);
+  font-family: var(--scalar-font);
+  font-size: 10px;
+}
+.bielu-arazzo .ba-sequence-step text {
+  fill: var(--scalar-color-2);
+  font-family: var(--scalar-font-code);
+  font-size: 11px;
+}
+.bielu-arazzo .ba-sequence-step.ba-diagram-link:hover text,
+.bielu-arazzo .ba-sequence-step:focus-visible text {
+  fill: var(--scalar-color-accent);
+  text-decoration: underline;
+}
 /* A workflow's example input: a copy button over the JSON. */
 .bielu-arazzo .ba-example-actions {
   display: flex;

@@ -161,6 +161,17 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
 
     ![The placeOrder workflow in the Data flow view: inputs to create, create's orderId and total to the steps that read them and to the workflow's outputs](../../images/arazzo/scalar-data-flow.jpg)
 
+  - **Sequence.** The **Sequence** view draws who the workflow talks to, in the order its steps run (by
+    `dependsOn` when the workflow uses it): a lane for the client running it, one per source description it
+    talks to (named after the source, with its spec and document title), and one per workflow it invokes. An
+    OpenAPI step is a request (`POST /orders`) and the response its success criteria expect (`201`, dashed);
+    an AsyncAPI step publishes to, or is delivered from, its source's lane, noting how long it waits and what
+    it's matched on; a step that invokes a workflow is a call into that workflow's lane. Failure paths are
+    noted under the step's arrows ("on 400: rejected (end)") rather than drawn, so the main path reads straight
+    down. Each step's name on the left opens the step.
+
+    ![The placeOrder workflow in the Sequence view: Client, orders and events lanes, the POST /orders request and its 201, the messages sent and received with their timeouts and correlation](../../images/arazzo/scalar-sequence.jpg)
+
   - **Export.** The download button beside the overview's expand button (inline and full window) saves the
     overview as it is shown, with its expanded workflows and in the current light or dark theme, as an SVG
     (styles written onto each element, so it looks the same outside Scalar) or a PNG at twice its size. **Copy
