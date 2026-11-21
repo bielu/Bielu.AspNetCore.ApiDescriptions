@@ -31,7 +31,12 @@ const props = defineProps<{
   workflowId: string
   /** Grow the diagram to fill its box (up to twice its natural size), as the expanded view does. */
   fit?: boolean
+  /** stepId → what looks wrong in that step of this workflow, marked on its box. */
+  problems?: Record<string, { severity: 'error' | 'warning'; count: number; messages: string[] }>
 }>()
+
+/** The problems of a top-level step box; a step of an expanded workflow is checked in that workflow's own section. */
+const problemsOf = (node: LaidOutNode) => (!node.group && node.stepId ? props.problems?.[node.stepId] : undefined)
 
 const emit = defineEmits<{
   /** A workflow node's +/− was used: show or hide the steps of the workflow it invokes. */
@@ -239,7 +244,10 @@ const onNodeClick = (node: LaidOutNode) => (opensByToggling(node) ? toggleWorkfl
 
 /** A box's title (with the technical id behind a Pages label), then the retries of the step itself, one per line. */
 const nodeTitle = (node: LaidOutNode): string | undefined => {
-  const base = technicalTitle(node)
+  const problems = problemsOf(node)
+  const base = [technicalTitle(node), ...(problems?.messages.map((message) => `${problems.severity === 'error' ? '✕' : '!'} ${message}`) ?? [])]
+    .filter(Boolean)
+    .join('\n')
   const title = node.technical && node.technical !== node.label ? [base, `(${node.technical})`].filter(Boolean).join(' ') : base
   const retries = (node.retries ?? []).map((retry) => `Retries itself: ${retry.label}${retry.action ? ` (${retry.action})` : ''}`)
   return retries.length ? [title, ...retries].filter(Boolean).join('\n') : title
@@ -488,6 +496,20 @@ const label = computed(() =>
             text-anchor="middle"
             :x="labelX(node)"
             :y="node.y + 9">{{ node.subtitle }}</text>
+          <g
+            v-if="problemsOf(node)"
+            class="ba-diagram-problem"
+            :class="`ba-diagnostic-${problemsOf(node)!.severity}`">
+            <circle
+              :cx="node.x + node.width / 2 - 2"
+              :cy="node.y - node.height / 2 + 2"
+              r="8" />
+            <text
+              dominant-baseline="central"
+              text-anchor="middle"
+              :x="node.x + node.width / 2 - 2"
+              :y="node.y - node.height / 2 + 2.5">{{ problemsOf(node)!.severity === 'error' ? '✕' : '!' }}</text>
+          </g>
           <g
             v-if="retryBadge(node)"
             class="ba-diagram-retry">
