@@ -58,7 +58,7 @@ const name = (family: SpecFamily): string => (family === 'arazzo' ? 'Workflow' :
       <span
         class="ba-diagram-legend-line"
         style="--ba-line-color: var(--scalar-color-3); border-top-style: solid" />
-      Values passed (named on the arrow)
+      Values passed (named on the arrow; ⓘ shows what flows)
     </li>
     <li v-if="pageBands">
       <span class="ba-diagram-legend-band" />

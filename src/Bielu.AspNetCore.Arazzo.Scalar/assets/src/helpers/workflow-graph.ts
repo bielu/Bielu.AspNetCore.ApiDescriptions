@@ -695,6 +695,9 @@ export type WorkflowLayout = {
 /** Matches the diagram's font sizes in `ArazzoWorkflowDiagram.vue`; estimated so layout needs no DOM. */
 const NODE_CHAR_WIDTH = 7.4
 const LABEL_CHAR_WIDTH = 6.2
+
+/** Data flow view: room at the right end of an arrow's label for the icon saying it opens what flows. */
+export const FLOW_ICON_ROOM = 14
 const NODE_HEIGHT = 36
 /** The colored strip on the left of a step box that says which spec it targets. */
 export const SPEC_MARKER_WIDTH = 6
@@ -968,7 +971,8 @@ export const layoutWorkflowGraph = (logical: WorkflowGraph): WorkflowLayout => {
     for (const { index, from, to } of edgesByScope.get(scope) ?? []) {
       const edge = graph.edges[index]!
       const label = edge.label ? truncateLabel(edge.label) : ''
-      const options: Record<string, unknown> = label ? { width: label.length * LABEL_CHAR_WIDTH + 12, height: LABEL_HEIGHT, labelpos: 'c' } : {}
+      const icon = edge.values?.length ? FLOW_ICON_ROOM : 0
+      const options: Record<string, unknown> = label ? { width: label.length * LABEL_CHAR_WIDTH + 12 + icon, height: LABEL_HEIGHT, labelpos: 'c' } : {}
       // Leave room under the workflow's node for the group's label.
       if (owner && from === owner && edge.kind === 'expand') {
         options.minlen = 2

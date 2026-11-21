@@ -8,6 +8,7 @@ import {
   type LaidOutNode,
   BAND_CHAR_WIDTH,
   BAND_LABEL_HEIGHT,
+  FLOW_ICON_ROOM,
   GROUP_LABEL_HEIGHT,
   GROUP_LABEL_INSET,
   retryBadge,
@@ -499,10 +500,25 @@ const label = computed(() =>
             <text
               dominant-baseline="central"
               text-anchor="middle"
-              :x="edge.labelPosition.x"
+              :x="edge.labelPosition.x - (edge.values?.length ? FLOW_ICON_ROOM / 2 : 0)"
               :y="edge.labelPosition.y">
               {{ edge.label }}
             </text>
+            <!-- An info icon at the label's right end: the label opens what flows along the arrow. -->
+            <g
+              v-if="edge.values?.length"
+              aria-hidden="true"
+              class="ba-diagram-flow-icon">
+              <circle
+                :cx="edge.labelPosition.x + edge.labelWidth / 2 - FLOW_ICON_ROOM / 2 - 2"
+                :cy="edge.labelPosition.y"
+                r="5" />
+              <text
+                dominant-baseline="central"
+                text-anchor="middle"
+                :x="edge.labelPosition.x + edge.labelWidth / 2 - FLOW_ICON_ROOM / 2 - 2"
+                :y="edge.labelPosition.y + 0.5">i</text>
+            </g>
           </g>
         </g>
 

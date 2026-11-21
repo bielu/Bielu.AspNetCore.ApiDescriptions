@@ -256,6 +256,32 @@ describe('the Data flow details', () => {
     expect(onNavigate).toHaveBeenCalledOnce()
   })
 
+  it('marks each Data flow arrow label with an info icon, with room for it, and no other view', async () => {
+    // Arrange
+    const [view] = toWorkflowViews(document, traverseArazzoDocument({ documentId: 'doc', document: document as unknown as Record<string, unknown> }))
+    const mountIn = async (overview: 'data' | 'technical') => {
+      setWorkflowView(overview)
+      const mounted = mount(ArazzoWorkflow, { props: { view: view!, document, documents } })
+      await flushPromises()
+      return mounted
+    }
+
+    // Act
+    wrapper = await mountIn('data')
+    const labels = wrapper.findAll('.ba-overview .ba-diagram-edge-label')
+    const sku = labels.find((label) => label.find('text').text() === 'sku')!
+    const technical = await mountIn('technical')
+
+    // Assert
+    expect(labels.length).toBeGreaterThan(0)
+    expect(labels.every((label) => label.find('.ba-diagram-flow-icon').exists())).toBe(true)
+    expect(sku.find('.ba-diagram-flow-icon').attributes('aria-hidden')).toBe('true')
+    // "sku": three characters at 6.2px, 12px of padding and 14px for the icon.
+    expect(Number(sku.find('rect').attributes('width'))).toBeCloseTo(3 * 6.2 + 12 + 14, 1)
+    expect(technical.find('.ba-overview .ba-diagram-flow-icon').exists()).toBe(false)
+    technical.unmount()
+  })
+
   it.each(['click', 'Enter'])('opens from an arrow label of the Data flow view (%s)', async (how) => {
     // Arrange
     setWorkflowView('data')

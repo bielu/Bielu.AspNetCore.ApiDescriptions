@@ -45,6 +45,26 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+/* The info icon on a Data flow arrow's label, which opens what flows along it. */
+.bielu-arazzo .ba-diagram-flow-icon circle {
+  fill: none;
+  stroke: var(--scalar-color-accent);
+  stroke-width: 1;
+}
+.bielu-arazzo .ba-diagram-edge-label .ba-diagram-flow-icon text {
+  fill: var(--scalar-color-accent);
+  font-family: var(--scalar-font);
+  font-size: 8px;
+  font-weight: var(--scalar-bold, 700);
+}
+.bielu-arazzo .ba-diagram-edge-label.ba-diagram-link:hover .ba-diagram-flow-icon circle,
+.bielu-arazzo .ba-diagram-edge-label:focus-visible .ba-diagram-flow-icon circle {
+  fill: var(--scalar-color-accent);
+}
+.bielu-arazzo .ba-diagram-edge-label.ba-diagram-link:hover .ba-diagram-flow-icon text,
+.bielu-arazzo .ba-diagram-edge-label:focus-visible .ba-diagram-flow-icon text {
+  fill: var(--scalar-background-1);
+}
 .bielu-arazzo .ba-diagram-edge-label.ba-diagram-link:hover text,
 .bielu-arazzo .ba-diagram-edge-label:focus-visible text {
   fill: var(--scalar-color-accent);
