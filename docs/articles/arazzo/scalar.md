@@ -157,6 +157,12 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     at a readable size is scaled to fit; a taller one (a workflow with another expanded inside it) is drawn
     a little larger than its natural size from the top, and the reader pans down, rather than shrinking it
     until its text can't be read.
+  - **Export.** The download button beside the overview's expand button (inline and full window) saves the
+    overview as it is shown, with its expanded workflows and in the current light or dark theme, as an SVG
+    (styles written onto each element, so it looks the same outside Scalar) or a PNG at twice its size. **Copy
+    as Mermaid** copies a Mermaid `flowchart TD` with the same boxes, labelled arrows (failure paths dashed)
+    and an expanded workflow as a `subgraph`, for Markdown that renders Mermaid (GitHub, GitLab, many
+    wikis); without clipboard access it downloads a `.mmd` file instead.
   - **Workflows of other documents.** A call such as `$sourceDescriptions.identity.signIn` expands too when
     the Arazzo document that source names is loaded on the same Scalar page, for example a second Arazzo
     source published by the service that owns the workflow. A qualified call always goes to that document,
