@@ -128,7 +128,9 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     successfully after its last step; that arrow is labeled with the step's success criteria when they
     are short. `end` failure actions lead to one Failed node while they can't be told apart; when they
     have different names, each gets its own end node named after the action, or after the value of the
-    extension set with [`EndLabelExtension`](#options).
+    extension set with [`EndLabelExtension`](#options). An end node is drawn once per step that leads to it,
+    right under that step, so steps side by side that share Success and Failed don't cross each other's
+    arrows.
   - **Retries.** A `retry` through another step gets an arrow to that step and one back, since the
     retrying step runs again afterwards. A `retry` of the step itself (no `stepId` or `workflowId`) is a
     `↻` badge on the step's box with its limit and delay (`↻ ≤ 3× 2s`); hovering the box lists its
@@ -147,6 +149,10 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     node, which stays where it was under the pointer; the zoom is kept (the overview is scaled to fit only
     when it is shown, reset or resized), and the full-window view stays open. While a workflow is expanded,
     the overview beside the steps may grow to the height of the window, and pans beyond that.
+  - **Full window.** The expand button opens the overview over almost the whole window. A graph that fits
+    at a readable size is scaled to fit; a taller one (a workflow with another expanded inside it) is drawn
+    a little larger than its natural size from the top, and the reader pans down, rather than shrinking it
+    until its text can't be read.
   - **Workflows of other documents.** A call such as `$sourceDescriptions.identity.signIn` expands too when
     the Arazzo document that source names is loaded on the same Scalar page, for example a second Arazzo
     source published by the service that owns the workflow. A qualified call always goes to that document,
@@ -278,14 +284,18 @@ In the Pages view:
   than 64 characters are cut with "…"; the band's tooltip has them in full.
 - Boxes show the step's label, or its `stepId` when it has none; the `stepId` is in the tooltip. A workflow
   node shows the label (or the summary) of the workflow it calls.
-- Arrows show the action's label, or its criteria (or "otherwise") when it has none. The arrow to Success
-  after the last step reads "done".
+- Arrows show the action's label, or its criteria (or "otherwise") when it has none. The arrow on to the
+  next step after a step succeeds has no label (the Technical view shows its success criteria there), and
+  the arrow to Success after the last step reads "done".
+- A page's title is drawn over the arrows that cross it, so an arrow into a page's first step passes behind
+  the title rather than through its text.
 - An end node is named after the page its actions land on (from `PageExtension`, or `EndLabelExtension`),
   with their label under it, when every arrow into it lands on that page; Success then shows that page
   with a ✓. When the arrows into one end node land on different pages (paid orders on Confirmation,
   pending ones on Review, or two steps' `rejected` actions on pages of their own), or one of them has no
   page (the "done" arrow after the last step), the end node keeps its generic name and each arrow ends with
-  its own page ("→ Confirmation").
+  its own page ("→ Confirmation"). Since an end node is drawn once per step, a copy reached by a single
+  arrow is named after that arrow's page instead.
 - Everything else is as in the Technical view: the same order, colors and arrows, and expanding and
   collapsing keeps the zoom and the node under the pointer. Switching views keeps the zoom too. The legend
   explains the bands and end pages.
