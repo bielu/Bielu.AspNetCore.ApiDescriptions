@@ -307,7 +307,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
 
         // Act
         await workflow.Locator(".ba-overview").GetByRole(AriaRole.Button, new() { Name = "Pages" }).ClickAsync();
-        var bands = (await diagram.Locator(".ba-diagram-band text").AllTextContentsAsync()).Select(Normalize).ToList();
+        var bands = (await diagram.Locator(".ba-diagram-band-title text").AllTextContentsAsync()).Select(Normalize).ToList();
         var labels = (await diagram.Locator(".ba-diagram-node text").AllTextContentsAsync()).Select(Normalize).ToList();
         var stepPage = Normalize(await workflow.Locator(".ba-step .ba-step-page").Last.InnerTextAsync());
 
