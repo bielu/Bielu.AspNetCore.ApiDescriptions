@@ -328,9 +328,16 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
     {
         // Arrange / Act
         var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.GeneratedDocumentSlug);
+        var toggles = page.Locator(".bielu-arazzo .ba-view-toggle");
 
-        // Assert
-        (await page.Locator(".bielu-arazzo .ba-view-toggle").CountAsync()).ShouldBe(0);
+        // Assert: every workflow still offers its other views, just not Pages.
+        (await toggles.CountAsync()).ShouldBeGreaterThan(0);
+        for (var index = 0; index < await toggles.CountAsync(); index++)
+        {
+            var options = (await toggles.Nth(index).Locator("button").AllInnerTextsAsync()).Select(Normalize).ToList();
+            options.ShouldContain("Data flow");
+            options.ShouldNotContain("Pages");
+        }
     }
 
     [BrowserFact]
