@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
 import { provideExpressionScope } from '../helpers/expression-scope'
 import { inputsAnchor, outputsAnchor, workflowOutputConsumers } from '../helpers/expressions'
-import { exampleFromSchema } from '../helpers/example-input'
+import { exampleWithCheck } from '../helpers/example-input'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
 import { resolveLocalRef } from '../helpers/extensions'
 import { renderMarkdown } from '../helpers/markdown'
@@ -60,10 +60,9 @@ const inputs = computed(() => resolveLocalRef(props.document, workflow.value.inp
 const inputRows = computed(() => schemaPropertyRows(inputs.value))
 
 /** A sample of what to pass the workflow, made from its inputs schema, to copy and edit. */
-const exampleInput = computed(() => {
-  const example = exampleFromSchema(inputs.value, props.document)
-  return example === undefined ? undefined : JSON.stringify(example, null, 2)
-})
+const example = computed(() => exampleWithCheck(inputs.value, props.document))
+
+const exampleInput = computed(() => (example.value === undefined ? undefined : JSON.stringify(example.value.value, null, 2)))
 
 /** "Copied" for a moment after the copy button, read out to screen readers. */
 const copyStatus = ref('')
@@ -336,6 +335,11 @@ const closeOnBackdrop = (event: MouseEvent) => {
                 aria-live="polite"
                 class="ba-muted">{{ copyStatus }}</span>
             </div>
+            <p
+              v-if="example?.needsEdits"
+              class="ba-muted ba-example-warning">
+              Some values don't satisfy the inputs schema (a pattern or length it can't meet): edit them before use.
+            </p>
             <pre class="ba-code"><code>{{ exampleInput }}</code></pre>
           </details>
         </div>

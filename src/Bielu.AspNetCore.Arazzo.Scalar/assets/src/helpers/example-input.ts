@@ -68,7 +68,7 @@ const typeOf = (schema: Schema): string | undefined => {
   return undefined
 }
 
-const generate = (input: Schema, roots: unknown[], depth: number, seen: ReadonlySet<string>): unknown => {
+const generate = (input: Schema, roots: unknown[], depth: number, seen: ReadonlySet<string>, state: GenerationState): unknown => {
   const { schema, ref } = follow(input, roots)
   if (ref && seen.has(ref)) {
     // A recursive schema: stop rather than nest forever.
@@ -93,11 +93,11 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
   }
   const alternatives = [schema.oneOf, schema.anyOf].find((list): list is unknown[] => Array.isArray(list) && list.length > 0)
   if (alternatives && isSchema(alternatives[0])) {
-    return generate(alternatives[0], roots, depth, nested)
+    return generate(alternatives[0], roots, depth, nested, state)
   }
   if (Array.isArray(schema.allOf) && schema.allOf.every(isSchema)) {
-    const own = isSchema(schema.properties) ? [generate({ ...schema, allOf: undefined }, roots, depth, nested)] : []
-    const parts = [...schema.allOf.map((part) => generate(part as Schema, roots, depth, nested)), ...own]
+    const own = isSchema(schema.properties) ? [generate({ ...schema, allOf: undefined }, roots, depth, nested, state)] : []
+    const parts = [...schema.allOf.map((part) => generate(part as Schema, roots, depth, nested, state)), ...own]
     if (parts.every(isSchema)) {
       return Object.assign({}, ...parts)
     }
@@ -109,44 +109,94 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
     case 'object': {
       const properties = isSchema(schema.properties) ? schema.properties : {}
       return Object.fromEntries(
-        Object.entries(properties).map(([name, property]) => [name, isSchema(property) ? generate(property, roots, depth + 1, nested) : null]),
+        Object.entries(properties).map(([name, property]) => [name, isSchema(property) ? generate(property, roots, depth + 1, nested, state) : null]),
       )
     }
     case 'array': {
       const count = typeof schema.minItems === 'number' && schema.minItems > 1 ? Math.min(schema.minItems, 3) : 1
-      return isSchema(schema.items) ? Array.from({ length: count }, () => generate(schema.items as Schema, roots, depth + 1, nested)) : []
+      return isSchema(schema.items) ? Array.from({ length: count }, () => generate(schema.items as Schema, roots, depth + 1, nested, state)) : []
     }
     case 'integer':
     case 'number': {
       const minimum =
         typeof schema.minimum === 'number' ? schema.minimum : typeof schema.exclusiveMinimum === 'number' ? schema.exclusiveMinimum + 1 : undefined
-      return minimum ?? (typeof schema.maximum === 'number' && schema.maximum < 1 ? schema.maximum : 1)
+      const value = minimum ?? (typeof schema.maximum === 'number' && schema.maximum < 1 ? schema.maximum : 1)
+      if (
+        (typeof schema.maximum === 'number' && value > schema.maximum) ||
+        (typeof schema.exclusiveMaximum === 'number' && value >= schema.exclusiveMaximum)
+      ) {
+        state.needsEdits = true
+      }
+      return value
     }
     case 'boolean':
       return true
     case 'null':
       return null
-    case 'string': {
-      const format = typeof schema.format === 'string' ? FORMAT_EXAMPLES[schema.format] : undefined
-      if (format) {
-        return format
-      }
-      const min = typeof schema.minLength === 'number' ? schema.minLength : 0
-      return 'string'.padEnd(min, 'x')
-    }
+    case 'string':
+      return generateString(schema, state)
     default:
       return null
   }
 }
 
+/** Whether `value` matches a schema `pattern`; a pattern this engine cannot read is not held against it. */
+const matchesPattern = (value: string, pattern: unknown): boolean => {
+  if (typeof pattern !== 'string') {
+    return true
+  }
+  try {
+    return new RegExp(pattern, 'u').test(value)
+  } catch {
+    return true
+  }
+}
+
+/**
+ * A string within `minLength` and `maxLength`: the sample for its `format`, else `string` padded or cut to fit.
+ * A format sample that does not fit, or a value that misses the `pattern`, marks the example as needing edits.
+ */
+const generateString = (schema: Schema, state: GenerationState): string => {
+  const min = typeof schema.minLength === 'number' ? schema.minLength : 0
+  const max = typeof schema.maxLength === 'number' ? schema.maxLength : Number.POSITIVE_INFINITY
+  const sample = typeof schema.format === 'string' ? FORMAT_EXAMPLES[schema.format] : undefined
+  const value = sample ?? 'string'.padEnd(min, 'x').slice(0, max)
+  if (value.length < min || value.length > max || !matchesPattern(value, schema.pattern)) {
+    state.needsEdits = true
+  }
+  return value
+}
+
+/** What generating one example found out on the way. */
+type GenerationState = {
+  /** Set when a value could not be made to satisfy its schema (a `pattern`, bounds a sample cannot meet). */
+  needsEdits: boolean
+}
+
+/** An example made from a schema, and whether some of its values do not satisfy the schema yet. */
+export type SchemaExample = { value: unknown; needsEdits: boolean }
+
+/**
+ * {@link exampleFromSchema}, also saying whether the example needs edits before use: `needsEdits` when a
+ * value could not be made to satisfy its schema, such as a string `pattern` or a `format` whose sample is
+ * longer than `maxLength`. `undefined` when there is no schema.
+ */
+export const exampleWithCheck = (schema: unknown, document?: unknown): SchemaExample | undefined => {
+  if (!isSchema(schema)) {
+    return undefined
+  }
+  const state: GenerationState = { needsEdits: false }
+  const value = generate(schema, [schema, document], 0, new Set(), state)
+  return { value, needsEdits: state.needsEdits }
+}
+
 /**
  * An example value for a JSON Schema, such as a workflow's `inputs`: what the schema says when it has an
  * `example`, `examples`, `const`, `default` or `enum`, else a value of its type (a sample for a known string
- * `format`, the minimum for a number). Objects list every property, arrays hold one item (or `minItems`, up to
- * three). `$ref`s are followed in the schema itself and then in `document` (the Arazzo document, for
- * `#/components/inputs/…`); a recursive reference ends in an empty object.
+ * `format`, the minimum for a number, a string within its length bounds). Objects list every property, arrays
+ * hold one item (or `minItems`, up to three). `$ref`s are followed in the schema itself and then in `document`
+ * (the Arazzo document, for `#/components/inputs/…`); a recursive reference ends in an empty object.
  *
  * `undefined` when there is no schema.
  */
-export const exampleFromSchema = (schema: unknown, document?: unknown): unknown =>
-  isSchema(schema) ? generate(schema, [schema, document], 0, new Set()) : undefined
+export const exampleFromSchema = (schema: unknown, document?: unknown): unknown => exampleWithCheck(schema, document)?.value
