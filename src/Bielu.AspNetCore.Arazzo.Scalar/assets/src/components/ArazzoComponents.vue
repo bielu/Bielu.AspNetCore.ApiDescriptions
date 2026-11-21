@@ -111,12 +111,14 @@ const reference = (kind: string, name: string): string => `$components.${kind}.$
       v-if="successActions.length"
       :actions="successActions.map(([, action]) => action)"
       :anchorPrefix="`${id}/successActions`"
+      :keys="successActions.map(([key]) => key)"
       :document="document"
       title="Success actions" />
     <ArazzoActions
       v-if="failureActions.length"
       :actions="failureActions.map(([, action]) => action)"
       :anchorPrefix="`${id}/failureActions`"
+      :keys="failureActions.map(([key]) => key)"
       :document="document"
       title="Failure actions" />
 

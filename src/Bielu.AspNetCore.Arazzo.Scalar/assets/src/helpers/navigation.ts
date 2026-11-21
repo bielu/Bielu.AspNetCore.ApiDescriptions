@@ -21,7 +21,8 @@ export const expandStepEvent = (): CustomEvent => new CustomEvent(STEP_EXPAND_EV
 
 /**
  * Bubbles up from the overview diagram before it opens a step (`detail.sectionId`), so the document shows that
- * step's section, and its workflow's, even while the filter hides them.
+ * step's section, and its workflow's, even while the filter hides them. A link to a row of a workflow outside its
+ * steps (another workflow's output) sends `detail.workflowId`, the workflow's section, instead.
  */
 export const STEP_REVEAL_EVENT = 'bielu-arazzo:reveal-step'
 
@@ -125,14 +126,15 @@ const FLASH_MS = 1600
  */
 export const goToAnchor = async (
   from: Element,
-  target: { anchor?: string; stepSection?: string },
+  target: { anchor?: string; stepSection?: string; workflowSection?: string },
   nextTick: () => Promise<void>,
 ): Promise<void> => {
   if (!target.anchor) {
     return
   }
-  if (target.stepSection) {
-    from.dispatchEvent(new CustomEvent(STEP_REVEAL_EVENT, { bubbles: true, detail: { sectionId: target.stepSection } }))
+  if (target.stepSection || target.workflowSection) {
+    const detail = target.stepSection ? { sectionId: target.stepSection } : { workflowId: target.workflowSection }
+    from.dispatchEvent(new CustomEvent(STEP_REVEAL_EVENT, { bubbles: true, detail }))
   }
   await nextTick()
   const owner = target.stepSection ? document.getElementById(target.stepSection) : document.getElementById(target.anchor)

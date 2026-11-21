@@ -10,8 +10,10 @@ const props = defineProps<{
   actions: (ArazzoSuccessAction | ArazzoFailureAction)[]
   /** The Arazzo document, so an action's Reusable Object parameters resolve against its components. */
   document?: ArazzoDocument
-  /** Gives each action the id `<anchorPrefix>/<name>`, so a `$components` expression can link to it. */
+  /** Gives each action the id `<anchorPrefix>/<key>`, so a `$components` expression can link to it. */
   anchorPrefix?: string
+  /** For component actions: each action's key in the components map, which the anchor uses; else its `name`. */
+  keys?: string[]
 }>()
 
 /** "goto step x", "retry (≤ 3×, after 2s)", "end" — the part of an action a reader scans for. */
@@ -37,9 +39,9 @@ const parametersOf = (action: ArazzoSuccessAction | ArazzoFailureAction): Arazzo
     <div class="ba-block-title">{{ title }}</div>
     <ul class="ba-actions">
       <li
-        v-for="action in actions"
-        :id="anchorPrefix ? `${anchorPrefix}/${action.name}` : undefined"
-        :key="action.name"
+        v-for="(action, index) in actions"
+        :id="anchorPrefix ? `${anchorPrefix}/${keys?.[index] ?? action.name}` : undefined"
+        :key="keys?.[index] ?? action.name"
         class="ba-anchor-target">
         <span class="ba-action-name">{{ action.name }}</span>
         <span class="ba-badge">{{ describe(action) }}</span>

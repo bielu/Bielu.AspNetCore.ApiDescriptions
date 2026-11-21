@@ -72,22 +72,28 @@ const matches = computed(() =>
  * leaves, until the query changes. Otherwise a box would open a section nobody can see.
  */
 const revealed = ref<ReadonlySet<string>>(new Set())
+/** Workflows a link landed in outside their steps (another workflow's output) while the filter hid them. */
+const revealedWorkflows = ref<ReadonlySet<string>>(new Set())
 watch(query, () => {
   revealed.value = new Set()
+  revealedWorkflows.value = new Set()
 })
 const filter = computed(() => {
   const current = matches.value
-  if (!current || revealed.value.size === 0) {
+  if (!current || (revealed.value.size === 0 && revealedWorkflows.value.size === 0)) {
     return current
   }
   const steps = new Set([...current.steps, ...revealed.value])
   const owners = workflows.value.filter((view) => view.steps.some((entry) => revealed.value.has(entry.id))).map((view) => view.id)
-  return { ...current, steps, workflows: new Set([...current.workflows, ...owners]) }
+  return { ...current, steps, workflows: new Set([...current.workflows, ...owners, ...revealedWorkflows.value]) }
 })
 const onRevealStep = (event: Event) => {
-  const sectionId = (event as CustomEvent<{ sectionId?: string }>).detail?.sectionId
+  const { sectionId, workflowId } = (event as CustomEvent<{ sectionId?: string; workflowId?: string }>).detail ?? {}
   if (sectionId && matches.value && !matches.value.steps.has(sectionId)) {
     revealed.value = new Set([...revealed.value, sectionId])
+  }
+  if (workflowId && matches.value && !matches.value.workflows.has(workflowId)) {
+    revealedWorkflows.value = new Set([...revealedWorkflows.value, workflowId])
   }
 }
 onMounted(() => root.value?.addEventListener(STEP_REVEAL_EVENT, onRevealStep))

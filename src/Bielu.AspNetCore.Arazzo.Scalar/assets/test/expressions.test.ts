@@ -86,6 +86,13 @@ describe('splitExpressions', () => {
     // Act / Assert
     expect(expressionsIn('Reads $steps.a.outputs.b.')).toEqual(['$steps.a.outputs.b'])
   })
+
+  it('keeps a trailing period that is part of the name, in a whole value or in braces', () => {
+    // Act / Assert
+    expect(expressionsIn('$steps.create.outputs.order.id.')).toEqual(['$steps.create.outputs.order.id.'])
+    expect(expressionsIn(' $steps.create.outputs.order.id. ')).toEqual(['$steps.create.outputs.order.id.'])
+    expect(expressionsIn('Order {$steps.create.outputs.order.id.} placed.')).toEqual(['$steps.create.outputs.order.id.'])
+  })
 })
 
 describe('parseExpression', () => {
@@ -110,7 +117,10 @@ describe('resolveExpression', () => {
       stepSection: 'doc/workflow/adopt/step/getPet',
     })
     expect(resolveExpression('$steps.getPet', scope)).toMatchObject({ anchor: 'doc/workflow/adopt/step/getPet' })
-    expect(resolveExpression('$workflows.adopt.outputs.adoptionId', scope)).toMatchObject({ anchor: 'doc/workflow/adopt/outputs/adoptionId' })
+    expect(resolveExpression('$workflows.adopt.outputs.adoptionId', scope)).toMatchObject({
+      anchor: 'doc/workflow/adopt/outputs/adoptionId',
+      workflowSection: 'doc/workflow/adopt',
+    })
     expect(resolveExpression('$components.parameters.tenant', scope)).toMatchObject({ anchor: 'doc/components/parameters/tenant' })
   })
 
@@ -209,6 +219,34 @@ describe('stepExpressions', () => {
     // Assert
     expect(consumers.itemName?.map((consumer) => consumer.label)).toEqual(['rename'])
   })
+
+  it('follows the parameter components an action passes, inline or reusable, keeping their references', () => {
+    // Arrange
+    const withActions: Document = {
+      ...document,
+      components: {
+        parameters: { orderId: { name: 'id', value: '$steps.create.outputs.id' } },
+        failureActions: { retryOrder: { name: 'retryOrder', type: 'goto', workflowId: 'retry', parameters: [{ reference: '$components.parameters.orderId' }] } },
+      },
+    }
+    const step = {
+      stepId: 'x',
+      onSuccess: [{ name: 'next', type: 'goto' as const, workflowId: 'next', parameters: [{ reference: '$components.parameters.orderId' }] }],
+      onFailure: [{ reference: '$components.failureActions.retryOrder' }],
+    }
+
+    // Act
+    const expressions = stepExpressions(withActions, step as never)
+
+    // Assert
+    expect(expressions).toEqual([
+      '$components.parameters.orderId',
+      '$steps.create.outputs.id',
+      '$components.failureActions.retryOrder',
+      '$components.parameters.orderId',
+      '$steps.create.outputs.id',
+    ])
+  })
 })
 
 describe('dotted names', () => {
@@ -272,9 +310,42 @@ describe('output consumers', () => {
     // Assert
     expect(consumers.name).toEqual([
       { label: 'adoptPet', anchor: 'doc/workflow/adopt/step/adoptPet', stepSection: 'doc/workflow/adopt/step/adoptPet' },
-      { label: 'workflow outputs', anchor: 'doc/workflow/adopt/outputs' },
+      { label: 'workflow outputs', anchor: 'doc/workflow/adopt/outputs', workflowSection: 'doc/workflow/adopt' },
     ])
     expect(consumers.status).toBeUndefined()
+  })
+
+  it('links workflow parameters and actions that read a step output to the workflow, not to an outputs block', () => {
+    // Arrange
+    const workflow = {
+      workflowId: 'w',
+      steps: [{ stepId: 'create', operationId: 'create', outputs: { id: '$response.body#/id' } }],
+      parameters: [{ name: 'id', value: '$steps.create.outputs.id' }],
+      successActions: [{ name: 'done', type: 'end' as const, criteria: [{ condition: '$steps.create.outputs.id != null' }] }],
+    }
+    const actionScope = { document: { ...document, workflows: [workflow] }, workflow, workflowNavIds: { w: 'doc/workflow/w' } }
+
+    // Act
+    const consumers = stepOutputConsumers(actionScope, 'create')
+
+    // Assert
+    expect(consumers.id).toEqual([
+      { label: 'workflow parameters', anchor: 'doc/workflow/w', workflowSection: 'doc/workflow/w' },
+      { label: 'workflow actions', anchor: 'doc/workflow/w', workflowSection: 'doc/workflow/w' },
+    ])
+  })
+
+  it('lists the outputs of other workflows that read a workflow output', () => {
+    // Arrange
+    const reader = { workflowId: 'report', steps: [{ stepId: 'noop' }], outputs: { adoption: '$workflows.adopt.outputs.adoptionId' } }
+    const readerScope = { ...scope, document: { ...document, workflows: [...document.workflows!, reader] }, workflowNavIds: { ...scope.workflowNavIds, report: 'doc/workflow/report' } }
+
+    // Act
+    const consumers = workflowOutputConsumers(readerScope)
+
+    // Assert
+    expect(consumers.adoptionId?.map((consumer) => consumer.label)).toEqual(['notify / send', 'report / outputs'])
+    expect(consumers.adoptionId?.[1]).toEqual({ label: 'report / outputs', anchor: 'doc/workflow/report/outputs', workflowSection: 'doc/workflow/report' })
   })
 
   it('lists the steps of other workflows that read a workflow output', () => {
@@ -325,14 +396,14 @@ describe('the rendered document', () => {
     wrapper = undefined
   })
 
-  const render = async () => {
+  const render = async (rendered: Document = document) => {
     wrapper = mount(ArazzoDocument, {
       attachTo: globalThis.document.body,
       props: {
-        document,
+        document: rendered,
         documentName: 'doc',
         documents: {},
-        navigation: traverseArazzoDocument({ documentId: 'doc', document: document as unknown as Record<string, unknown> }),
+        navigation: traverseArazzoDocument({ documentId: 'doc', document: rendered as unknown as Record<string, unknown> }),
       },
     })
     await flushPromises()
@@ -381,5 +452,39 @@ describe('the rendered document', () => {
     const row = view.find('[id="doc/workflow/adopt/step/getPet/outputs/name"]')
     expect(row.classes()).toContain('ba-flash')
     expect((row.element.nextElementSibling as HTMLElement).classList).toContain('ba-flash')
+  })
+
+  it('shows the workflow a link to its output lands in while the filter hides it', async () => {
+    // Arrange
+    const view = await render()
+    await view.find('.ba-filter-input').setValue('notify')
+    await flushPromises()
+    const workflow = view.find('[id="doc/workflow/adopt"]').element as HTMLElement
+    expect(workflow.style.display).toBe('none')
+    const link = view.findAll('a.ba-expression-link').find((element) => element.attributes('href') === '#doc/workflow/adopt/outputs/adoptionId')!
+
+    // Act
+    await link.trigger('click', { button: 0 })
+    await flushPromises()
+
+    // Assert
+    expect(workflow.style.display).toBe('')
+    expect(view.find('[id="doc/workflow/adopt/outputs/adoptionId"]').classes()).toContain('ba-flash')
+  })
+
+  it('anchors a component action by its key in the components map, not by its name', async () => {
+    // Arrange
+    const keyed: Document = {
+      ...document,
+      components: { ...document.components, failureActions: { refreshToken: { name: 'refreshExpiredToken', type: 'retry' } } },
+    }
+
+    // Act
+    const view = await render(keyed)
+
+    // Assert
+    const action = view.find('[id="doc/components/failureActions/refreshToken"]')
+    expect(action.exists()).toBe(true)
+    expect(action.find('.ba-action-name').text()).toBe('refreshExpiredToken')
   })
 })

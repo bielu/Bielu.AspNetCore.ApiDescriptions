@@ -18,14 +18,17 @@ export type ExpressionSegment = { text: string; expression?: true }
 
 /**
  * Splits a text into plain text and the Runtime Expressions in it, in order. Joining the segments'
- * `text` gives the text back. A trailing `.` or `#` ends a sentence, not the expression.
+ * `text` gives the text back. In prose a trailing `.` or `#` ends a sentence, not the expression; an
+ * expression that is the whole value, or closes a `{…}`, keeps it, since a name may end in `.`.
  */
 export const splitExpressions = (text: string): ExpressionSegment[] => {
   const segments: ExpressionSegment[] = []
   let last = 0
   for (const match of text.matchAll(EXPRESSION)) {
-    const expression = match[0].replace(/[.#]+$/, '')
     const start = match.index
+    const end = start + match[0].length
+    const whole = !text.slice(0, start).trim() && !text.slice(end).trim()
+    const expression = whole || text[end] === '}' ? match[0] : match[0].replace(/[.#]+$/, '')
     if (start > last) {
       segments.push({ text: text.slice(last, start) })
     }
@@ -115,6 +118,8 @@ export type ExpressionTarget = {
   anchor?: string
   /** The section of the step that element is in, which has to be opened first. */
   stepSection?: string
+  /** The section of the workflow that element is in, outside any step: shown even while the filter hides it. */
+  workflowSection?: string
   /** What the expression reads, in words, for its tooltip. */
   title: string
   /** Set when the expression points at something the document does not declare: why. */
@@ -174,16 +179,19 @@ const resolveWorkflowField = (scope: ExpressionScope, workflowId: string, field?
   if (!workflow) {
     return { title: `Workflow ${workflowId}`, broken: `This document has no workflow “${workflowId}”` }
   }
+  // Another workflow's rows sit outside its steps: the filter may hide that whole workflow.
+  const section = navId ? { workflowSection: navId } : {}
   if (field === 'outputs' && name) {
     const title = `Output ${name} of workflow ${workflowId}`
     return has(workflow.outputs, name)
-      ? { title, anchor: navId ? outputsAnchor(navId, name) : undefined }
+      ? { title, anchor: navId ? outputsAnchor(navId, name) : undefined, ...section }
       : { title, broken: `Workflow ${workflowId} has no output “${name}”` }
   }
   if (field === 'inputs' && name) {
-    return resolveInput(scope, workflow, name)
+    const input = resolveInput(scope, workflow, name)
+    return input.broken ? input : { ...input, ...section }
   }
-  return { title: `Workflow ${workflowId}`, anchor: navId }
+  return { title: `Workflow ${workflowId}`, anchor: navId, ...section }
 }
 
 /**
@@ -261,6 +269,15 @@ const withReusables = (document: ArazzoDocument, entries: unknown[] | undefined)
     return resolved && resolved !== entry ? [entry, resolved] : [entry]
   })
 
+/** A list of actions that may hold Reusable Objects, followed, with the parameter components each action passes followed too. */
+const withActions = (document: ArazzoDocument, entries: unknown[] | undefined): unknown[] =>
+  withReusables(document, entries).flatMap((action) => {
+    const parameters = (action as { parameters?: unknown }).parameters
+    // The action itself still holds each parameter's reference; add only the components they resolve to.
+    const resolved = Array.isArray(parameters) ? withReusables(document, parameters).filter((parameter) => !parameters.includes(parameter)) : []
+    return [action, ...resolved]
+  })
+
 /**
  * The Runtime Expressions a step reads: in its parameters (components followed), request body,
  * success criteria, actions, outputs and `correlationId` (the value a received message is matched on).
@@ -272,8 +289,8 @@ export const stepExpressions = (document: ArazzoDocument, step: ArazzoStep): str
       withReusables(document, step.parameters),
       step.requestBody,
       step.successCriteria,
-      withReusables(document, step.onSuccess),
-      withReusables(document, step.onFailure),
+      withActions(document, step.onSuccess),
+      withActions(document, step.onFailure),
     ],
     [],
   )
@@ -281,23 +298,29 @@ export const stepExpressions = (document: ArazzoDocument, step: ArazzoStep): str
   return strings.flatMap(expressionsIn)
 }
 
+/** A part of a workflow, outside its steps, that reads Runtime Expressions. */
+type WorkflowBlock = 'parameters' | 'actions' | 'outputs'
+
+/** The Runtime Expressions a workflow reads outside its steps, by the block that reads them. */
+const workflowReads = (document: ArazzoDocument, workflow: ArazzoWorkflow): [WorkflowBlock, string[]][] => [
+  ['parameters', stringsIn(withReusables(document, workflow.parameters), []).flatMap(expressionsIn)],
+  ['actions', stringsIn([withActions(document, workflow.successActions), withActions(document, workflow.failureActions)], []).flatMap(expressionsIn)],
+  ['outputs', stringsIn(workflow.outputs, [], false).flatMap(expressionsIn)],
+]
+
 /** The Runtime Expressions a workflow reads outside its steps: its parameters, actions and outputs. */
 export const workflowExpressions = (document: ArazzoDocument, workflow: ArazzoWorkflow): string[] =>
-  stringsIn(
-    workflow.outputs,
-    stringsIn(
-      [
-        withReusables(document, workflow.parameters),
-        withReusables(document, workflow.successActions),
-        withReusables(document, workflow.failureActions),
-      ],
-      [],
-    ),
-    false,
-  ).flatMap(expressionsIn)
+  workflowReads(document, workflow).flatMap(([, expressions]) => expressions)
 
-/** Something that reads an output: a step (with its section) or the workflow's own outputs. */
-export type OutputConsumer = { label: string; anchor?: string; stepSection?: string }
+/**
+ * Where a link to a workflow block lands: the outputs block has an anchor of its own; parameters and
+ * actions land on the workflow's section.
+ */
+const blockConsumer = (label: string, block: WorkflowBlock, navId: string | undefined): OutputConsumer =>
+  navId ? { label, anchor: block === 'outputs' ? outputsAnchor(navId) : navId, workflowSection: navId } : { label }
+
+/** Something that reads an output: a step (with its section), or a workflow's parameters, actions or outputs. */
+export type OutputConsumer = { label: string; anchor?: string; stepSection?: string; workflowSection?: string }
 
 /**
  * For each output of a step: the steps of its workflow that read it (`$steps.<id>.outputs.<name>`)
@@ -331,33 +354,45 @@ export const stepOutputConsumers = (
     }
   }
   const navId = scope.workflowNavIds?.[scope.workflow.workflowId]
-  for (const name of readsOf(workflowExpressions(scope.document, scope.workflow))) {
-    add(name, { label: 'workflow outputs', anchor: navId ? outputsAnchor(navId) : undefined })
+  for (const [block, expressions] of workflowReads(scope.document, scope.workflow)) {
+    for (const name of readsOf(expressions)) {
+      add(name, blockConsumer(`workflow ${block}`, block, navId))
+    }
   }
   return consumers
 }
 
 /**
- * For each output of a workflow: the steps of the document's other workflows that read it
- * (`$workflows.<id>.outputs.<name>`), labelled `workflow / step`.
+ * For each output of a workflow: what in the document's other workflows reads it
+ * (`$workflows.<id>.outputs.<name>`): a step, labelled `workflow / step`, or a workflow's own
+ * parameters, actions or outputs, labelled `workflow / outputs`.
  */
 export const workflowOutputConsumers = (scope: ExpressionScope & { workflow: ArazzoWorkflow }): Record<string, OutputConsumer[]> => {
   const consumers: Record<string, OutputConsumer[]> = Object.create(null)
   const workflowId = scope.workflow.workflowId
-  for (const other of scope.document.workflows ?? []) {
-    for (const step of other.steps ?? []) {
-      for (const expression of stepExpressions(scope.document, step)) {
-        const parsed = parseExpression(expression)
-        if (parsed.source !== 'workflows' || parsed.workflowId !== workflowId || parsed.field !== 'outputs' || !parsed.name) {
-          continue
-        }
-        const label = `${other.workflowId} / ${step.stepId}`
-        const list = (consumers[parsed.name] ??= [])
-        if (!list.some((entry) => entry.label === label)) {
-          const section = scope.stepSectionIds?.[other.workflowId]?.[step.stepId]
-          list.push({ label, anchor: section, stepSection: section })
-        }
+  const add = (expressions: string[], consumer: () => OutputConsumer) => {
+    for (const expression of expressions) {
+      const parsed = parseExpression(expression)
+      if (parsed.source !== 'workflows' || parsed.workflowId !== workflowId || parsed.field !== 'outputs' || !parsed.name) {
+        continue
       }
+      const entry = consumer()
+      const list = (consumers[parsed.name] ??= [])
+      if (!list.some((existing) => existing.label === entry.label)) {
+        list.push(entry)
+      }
+    }
+  }
+  for (const other of scope.document.workflows ?? []) {
+    const navId = scope.workflowNavIds?.[other.workflowId]
+    for (const step of other.steps ?? []) {
+      add(stepExpressions(scope.document, step), () => {
+        const section = scope.stepSectionIds?.[other.workflowId]?.[step.stepId]
+        return { label: `${other.workflowId} / ${step.stepId}`, anchor: section, stepSection: section }
+      })
+    }
+    for (const [block, expressions] of workflowReads(scope.document, other)) {
+      add(expressions, () => blockConsumer(`${other.workflowId} / ${block}`, block, navId))
     }
   }
   return consumers
