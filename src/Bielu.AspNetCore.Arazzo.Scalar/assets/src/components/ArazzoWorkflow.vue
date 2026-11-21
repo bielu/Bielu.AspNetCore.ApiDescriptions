@@ -18,6 +18,7 @@ import { buildWorkflowGraph, layoutWorkflowGraph, type WorkflowView as OverviewV
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
+import ArazzoDiagramExport from './ArazzoDiagramExport.vue'
 import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
@@ -214,6 +215,7 @@ const toggleSteps = () => {
 /** The expanded overview, in a native `<dialog>`: it brings the backdrop, Escape to close, and focus handling. */
 const dialog = ref<HTMLDialogElement>()
 const expanded = ref<InstanceType<typeof ArazzoWorkflowDiagram>>()
+const inline = ref<InstanceType<typeof ArazzoWorkflowDiagram>>()
 
 const expand = async () => {
   dialog.value?.showModal()
@@ -357,6 +359,10 @@ const closeOnBackdrop = (event: MouseEvent) => {
                 type="button"
                 @click="setWorkflowView(option.value)">{{ option.label }}</button>
             </div>
+            <ArazzoDiagramExport
+              :layout="diagram"
+              :name="workflow.workflowId"
+              :svg="() => inline?.svg()" />
             <button
               aria-label="Expand workflow diagram"
               class="ba-icon-button"
@@ -377,6 +383,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
             </button>
           </div>
           <ArazzoWorkflowDiagram
+            ref="inline"
             :layout="diagram"
             :problems="stepProblems"
             :stepSectionIds="stepSectionIds"
@@ -415,6 +422,10 @@ const closeOnBackdrop = (event: MouseEvent) => {
           <ArazzoSpecLegend
             :layout="diagram"
             :view="overviewView" />
+          <ArazzoDiagramExport
+            :layout="diagram"
+            :name="workflow.workflowId"
+            :svg="() => expanded?.svg()" />
           <button
             class="ba-toggle"
             type="button"
