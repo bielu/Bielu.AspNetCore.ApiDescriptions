@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { criterionTypeLabel } from '../helpers/format'
 import type { ArazzoCriterion } from '../types'
+import ArazzoExpressionText from './ArazzoExpressionText.vue'
 
 /**
  * A list of criteria, all of which must hold: each condition, the language it is written in when it
@@ -25,11 +26,11 @@ defineProps<{
         class="ba-badge ba-criterion-type">
         {{ criterionTypeLabel(criterion.type) }}
       </span>
-      <code class="ba-condition">{{ criterion.condition }}</code>
+      <code class="ba-condition"><ArazzoExpressionText :text="criterion.condition" /></code>
       <span
         v-if="criterion.context"
         class="ba-muted">
-        on <code>{{ criterion.context }}</code>
+        on <code><ArazzoExpressionText :text="criterion.context" /></code>
       </span>
     </li>
   </ul>

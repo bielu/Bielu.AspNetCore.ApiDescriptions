@@ -21,7 +21,8 @@ export const expandStepEvent = (): CustomEvent => new CustomEvent(STEP_EXPAND_EV
 
 /**
  * Bubbles up from the overview diagram before it opens a step (`detail.sectionId`), so the document shows that
- * step's section, and its workflow's, even while the filter hides them.
+ * step's section, and its workflow's, even while the filter hides them. A link to a row of a workflow outside its
+ * steps (another workflow's output) sends `detail.workflowId`, the workflow's section, instead.
  */
 export const STEP_REVEAL_EVENT = 'bielu-arazzo:reveal-step'
 
@@ -113,4 +114,39 @@ export const toWorkflowViews = (document: ArazzoDocument, navigation: PluginNavi
       },
     ]
   })
+}
+
+/** How long a section a link landed on stays highlighted, in milliseconds. */
+const FLASH_MS = 1600
+
+/**
+ * Goes to an element of the document from a link inside it: shows the step it is in even while the
+ * filter hides it (`STEP_REVEAL_EVENT`), unfolds that step (and, in the classic layout, its workflow),
+ * scrolls the element into view and highlights it briefly, so a reader sees which row a link meant.
+ */
+export const goToAnchor = async (
+  from: Element,
+  target: { anchor?: string; stepSection?: string; workflowSection?: string },
+  nextTick: () => Promise<void>,
+): Promise<void> => {
+  if (!target.anchor) {
+    return
+  }
+  if (target.stepSection || target.workflowSection) {
+    const detail = target.stepSection ? { sectionId: target.stepSection } : { workflowId: target.workflowSection }
+    from.dispatchEvent(new CustomEvent(STEP_REVEAL_EVENT, { bubbles: true, detail }))
+  }
+  await nextTick()
+  const owner = target.stepSection ? document.getElementById(target.stepSection) : document.getElementById(target.anchor)
+  owner?.dispatchEvent(expandStepEvent())
+  await nextTick()
+  const element = document.getElementById(target.anchor) ?? owner
+  if (!element) {
+    return
+  }
+  element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  // An outputs row is a <dt> and its <dd>: the value is part of what the link meant.
+  const flashed = element.tagName === 'DT' && element.nextElementSibling?.tagName === 'DD' ? [element, element.nextElementSibling] : [element]
+  flashed.forEach((target) => target.classList.add('ba-flash'))
+  setTimeout(() => flashed.forEach((target) => target.classList.remove('ba-flash')), FLASH_MS)
 }

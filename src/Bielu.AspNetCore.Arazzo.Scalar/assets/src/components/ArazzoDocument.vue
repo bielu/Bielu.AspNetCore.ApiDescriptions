@@ -72,22 +72,28 @@ const matches = computed(() =>
  * leaves, until the query changes. Otherwise a box would open a section nobody can see.
  */
 const revealed = ref<ReadonlySet<string>>(new Set())
+/** Workflows a link landed in outside their steps (another workflow's output) while the filter hid them. */
+const revealedWorkflows = ref<ReadonlySet<string>>(new Set())
 watch(query, () => {
   revealed.value = new Set()
+  revealedWorkflows.value = new Set()
 })
 const filter = computed(() => {
   const current = matches.value
-  if (!current || revealed.value.size === 0) {
+  if (!current || (revealed.value.size === 0 && revealedWorkflows.value.size === 0)) {
     return current
   }
   const steps = new Set([...current.steps, ...revealed.value])
   const owners = workflows.value.filter((view) => view.steps.some((entry) => revealed.value.has(entry.id))).map((view) => view.id)
-  return { ...current, steps, workflows: new Set([...current.workflows, ...owners]) }
+  return { ...current, steps, workflows: new Set([...current.workflows, ...owners, ...revealedWorkflows.value]) }
 })
 const onRevealStep = (event: Event) => {
-  const sectionId = (event as CustomEvent<{ sectionId?: string }>).detail?.sectionId
+  const { sectionId, workflowId } = (event as CustomEvent<{ sectionId?: string; workflowId?: string }>).detail ?? {}
   if (sectionId && matches.value && !matches.value.steps.has(sectionId)) {
     revealed.value = new Set([...revealed.value, sectionId])
+  }
+  if (workflowId && matches.value && !matches.value.workflows.has(workflowId)) {
+    revealedWorkflows.value = new Set([...revealedWorkflows.value, workflowId])
   }
 }
 onMounted(() => root.value?.addEventListener(STEP_REVEAL_EVENT, onRevealStep))
@@ -319,6 +325,7 @@ onBeforeUnmount(() => {
       v-show="!filter || filter.workflows.has(view.id)"
       :key="view.id"
       :stepSectionIds="stepSectionIds"
+      :componentsId="componentsId"
       :documentName="documentName"
       :visibleSteps="filter?.steps"
       :document="arazzo!"
@@ -333,7 +340,8 @@ onBeforeUnmount(() => {
       :id="componentsId"
       :components="arazzo.components"
       :document="arazzo"
-      :eventBus="eventBus" />
+      :eventBus="eventBus"
+      :workflowNavIds="workflowNavIds" />
 
     <p
       v-if="!workflows.length"
@@ -683,6 +691,40 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-replacements td:nth-child(2) {
   width: 1.5em;
   text-align: center;
+}
+/* Runtime Expressions: a link to what they read, or marked when they read something the document does not declare. */
+.bielu-arazzo .ba-expression {
+  color: var(--scalar-color-1);
+}
+.bielu-arazzo a.ba-expression-link {
+  color: var(--scalar-color-accent);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  word-break: inherit;
+}
+.bielu-arazzo a.ba-expression-link:hover {
+  text-decoration-style: solid;
+}
+.bielu-arazzo .ba-expression-broken {
+  color: var(--scalar-color-red, #e5484d);
+  text-decoration: underline wavy;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+.bielu-arazzo .ba-used-by {
+  display: block;
+  color: var(--scalar-color-3);
+  font-size: var(--scalar-mini, 12px);
+  white-space: normal;
+}
+.bielu-arazzo .ba-anchor-target {
+  scroll-margin-top: var(--refs-viewport-offset, 0px);
+  border-radius: var(--scalar-radius, 4px);
+  transition: background-color 0.4s;
+}
+.bielu-arazzo .ba-flash {
+  background: color-mix(in srgb, var(--scalar-color-accent) 22%, transparent);
 }
 .bielu-arazzo .ba-selector {
   display: inline-flex;

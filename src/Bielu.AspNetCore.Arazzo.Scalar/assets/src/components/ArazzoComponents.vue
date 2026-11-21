@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { provideExpressionScope } from '../helpers/expression-scope'
+import { componentAnchor } from '../helpers/expressions'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
 import type { ArazzoComponents, ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
@@ -17,7 +19,12 @@ const props = defineProps<{
   document: ArazzoDocument
   components: ArazzoComponents
   eventBus?: PluginEventBus
+  /** workflowId → the sidebar id of that workflow's section, for `$workflows` expressions in components. */
+  workflowNavIds?: Record<string, string>
 }>()
+
+// Components belong to no workflow: their `$components` and `$workflows` expressions link, `$steps` ones cannot.
+provideExpressionScope(() => ({ document: props.document, componentsId: props.id, workflowNavIds: props.workflowNavIds }))
 
 const entries = <T,>(record: Record<string, T> | undefined): [string, T][] => Object.entries(record ?? {})
 
@@ -57,8 +64,9 @@ const reference = (kind: string, name: string): string => `$components.${kind}.$
       <div class="ba-block-title">Inputs</div>
       <div
         v-for="input in inputs"
+        :id="componentAnchor(id, 'inputs', input.name)"
         :key="input.name"
-        class="ba-component">
+        class="ba-component ba-anchor-target">
         <code
           class="ba-component-name"
           :title="`Referenced as { &quot;$ref&quot;: &quot;#/components/inputs/${input.name}&quot; }`">
@@ -81,7 +89,9 @@ const reference = (kind: string, name: string): string => `$components.${kind}.$
         <tbody>
           <tr
             v-for="[name, parameter] in parameters"
-            :key="name">
+            :id="componentAnchor(id, 'parameters', name)"
+            :key="name"
+            class="ba-anchor-target">
             <td><code :title="reference('parameters', name)">{{ name }}</code></td>
             <td>
               {{ parameter.name }}
@@ -100,11 +110,15 @@ const reference = (kind: string, name: string): string => `$components.${kind}.$
     <ArazzoActions
       v-if="successActions.length"
       :actions="successActions.map(([, action]) => action)"
+      :anchorPrefix="`${id}/successActions`"
+      :keys="successActions.map(([key]) => key)"
       :document="document"
       title="Success actions" />
     <ArazzoActions
       v-if="failureActions.length"
       :actions="failureActions.map(([, action]) => action)"
+      :anchorPrefix="`${id}/failureActions`"
+      :keys="failureActions.map(([key]) => key)"
       :document="document"
       title="Failure actions" />
 

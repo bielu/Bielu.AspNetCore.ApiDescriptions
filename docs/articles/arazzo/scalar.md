@@ -173,7 +173,18 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
   `replacements` (target, its selector type, and the value written there). Wherever a value can be
   an Arazzo 1.1 Selector Object (outputs, parameters, replacements), it reads as
   "`$.lines[0]` on `$response.body`" with its language as a badge, rather than as raw JSON. Reusable objects (`$components.parameters.*` and the
-  like) are resolved.
+  like) are resolved, and a parameter that came from one says which (`from $components.parameters.tenant`).
+- Runtime Expressions link to what they read, wherever they appear: in parameters, request bodies,
+  replacements, criteria, actions, outputs and `correlationId`. `$inputs.<name>` goes to the workflow's
+  input, `$steps.<id>.outputs.<name>` to that step's output (opening the step first),
+  `$workflows.<id>.outputs.<name>` to that workflow's output, and `$components.<kind>.<name>` to the
+  component. The row it lands on is highlighted for a moment. An expression that names an input,
+  step, output, workflow, component or source description the document doesn't declare is underlined
+  in red, with the reason in its tooltip. Each output lists the steps that read it ("Used by
+  requestPayment, workflow outputs"), and a workflow output lists the steps of other workflows that do.
+
+  ![The createOrder step: its replacements link to the workflow inputs they read, and each output lists the steps that read it](../../images/arazzo/scalar-expression-links.jpg)
+
 - Each step target is labeled with its spec: `OpenAPI`, `AsyncAPI` or `Workflow`, with the version in its tooltip and the Sources table. Channel
   steps also say whether they send or receive. See [Which spec a step targets](#which-spec-a-step-targets).
 - The reusable `components` (input schemas, parameters, success and failure actions) in a section

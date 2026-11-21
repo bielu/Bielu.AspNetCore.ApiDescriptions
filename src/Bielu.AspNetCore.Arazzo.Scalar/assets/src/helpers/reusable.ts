@@ -27,6 +27,19 @@ export const resolveReusable = <T extends object>(
   return (entry.value === undefined ? component : { ...component, value: entry.value }) as T
 }
 
+/**
+ * Resolves every entry of a list that may contain Reusable Objects, dropping the dangling ones, and
+ * keeps the `$components…` reference each resolved one came from, so it can be shown.
+ */
+export const resolveReusablesWithReference = <T extends object>(
+  document: ArazzoDocument,
+  entries: (T | ArazzoReusableObject)[] | undefined,
+): { entry: T; reference?: string }[] =>
+  (entries ?? []).flatMap((entry) => {
+    const resolved = resolveReusable<T>(document, entry)
+    return resolved ? [{ entry: resolved, reference: isReusable(entry) ? entry.reference : undefined }] : []
+  })
+
 /** Resolves every entry of a list that may contain Reusable Objects, dropping the dangling ones. */
 export const resolveReusables = <T extends object>(
   document: ArazzoDocument,
