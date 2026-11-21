@@ -752,6 +752,50 @@ onBeforeUnmount(() => {
   width: 1.5em;
   text-align: center;
 }
+/* The overview's export menu: a small dropdown under its button. */
+.bielu-arazzo .ba-export {
+  position: relative;
+  display: inline-block;
+}
+.bielu-arazzo .ba-export > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.bielu-arazzo .ba-export > summary::-webkit-details-marker {
+  display: none;
+}
+.bielu-arazzo .ba-export-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 4px;
+  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+  border-radius: var(--scalar-radius, 4px);
+  background: var(--scalar-background-1);
+  box-shadow: var(--scalar-shadow-1, 0 4px 12px rgb(0 0 0 / 0.2));
+}
+.bielu-arazzo .ba-export-menu button {
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--scalar-radius, 4px);
+  background: none;
+  color: var(--scalar-color-1);
+  font: inherit;
+  font-size: var(--scalar-small, 13px);
+  text-align: left;
+  cursor: pointer;
+}
+.bielu-arazzo .ba-export-menu button:hover,
+.bielu-arazzo .ba-export-menu button:focus-visible {
+  background: var(--scalar-background-2);
+}
+.bielu-arazzo .ba-export-status:empty {
+  display: none;
+}
 /* Diagnostics: the header's folding list, and each step's own problems. */
 .bielu-arazzo .ba-diagnostics {
   margin: 16px 0;
