@@ -89,11 +89,8 @@
 }
 /* A workflow's example input: a copy button over the JSON. */
 .bielu-arazzo .ba-example-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 6px 0;
+  @apply flex items-center gap-2 mx-0 my-1.5;
 }
 .bielu-arazzo .ba-example-warning {
-  margin: 6px 0;
+  @apply mx-0 my-1.5;
 }
