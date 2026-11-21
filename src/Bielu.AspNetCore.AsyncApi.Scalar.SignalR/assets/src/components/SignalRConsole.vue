@@ -7,6 +7,10 @@ import {
   HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr'
+import { ScalarButton } from '@scalar/components/button'
+import { ScalarTextArea } from '@scalar/components/text-area'
+import { ScalarTextInput } from '@scalar/components/text-input'
+import { cva } from '@scalar/use-hooks/useBindCx'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { getAuthState, resolveSignalRAuth } from '../auth'
 import { resolveDocuments } from '../discovery'
@@ -87,12 +91,26 @@ const selectedMethodId = computed<string | null>({
 })
 const selectedMethod = computed(() => clientToServer.value.find((op) => op.id === selectedMethodId.value) ?? null)
 const isConnected = computed(() => state.value === HubConnectionState.Connected)
-// Full class names, so Tailwind finds them when it scans this file for the utilities to generate.
-const logBadge: Record<LogEntry['dir'], string> = {
-  in: 'bg-blue/20',
-  out: 'bg-orange/20',
-  sys: 'bg-b-2',
-}
+// Variants as cva recipes, like Scalar's components. Class names are written out in full, so Tailwind
+// finds them when it scans this file for the utilities to generate.
+const statePill = cva({
+  base: 'bielu-pill',
+  variants: { connected: { true: 'bg-green/18 text-green', false: 'bg-b-2 text-c-2' } },
+})
+const methodTag = cva({
+  base: 'bielu-tag',
+  variants: {
+    kind: { invoke: 'bg-blue/16 text-blue', send: 'bg-orange/16 text-orange', event: 'bg-green/16 text-green' },
+  },
+})
+const logBadge = cva({
+  base: 'self-center rounded px-1 text-3xs uppercase',
+  variants: { dir: { in: 'bg-blue/20', out: 'bg-orange/20', sys: 'bg-b-2' } },
+})
+const resultBlock = cva({
+  base: 'bielu-result mt-2.5',
+  variants: { ok: { true: 'border-l-green', false: 'border-l-red' } },
+})
 
 const stateLabel = computed(() => HubConnectionState[state.value] ?? 'Disconnected')
 
@@ -287,6 +305,11 @@ function methodLabel(op: SignalROperationModel): string {
   return (op.callType ?? 'invoke').toUpperCase()
 }
 
+/** The method tag's colour: `send` is fire-and-forget, anything else is an invocation. */
+function methodKind(op: SignalROperationModel): 'invoke' | 'send' {
+  return op.callType === 'send' ? 'send' : 'invoke'
+}
+
 /** The example string for a given message of an operation (falls back to an empty array). */
 function exampleFor(op: SignalROperationModel | null, index: number): string {
   return op?.messages?.[index]?.example ?? '[]'
@@ -385,10 +408,7 @@ onBeforeUnmount(() => void disconnect())
   >
     <header class="mb-5 flex items-center gap-3">
       <h2 class="m-0 text-xl">SignalR</h2>
-      <span
-        class="bielu-pill bg-b-2 text-c-2 data-[state=connected]:bg-green/18 data-[state=connected]:text-green"
-        :data-state="stateLabel.toLowerCase()"
-      >{{ stateLabel }}</span>
+      <span :class="statePill({ connected: isConnected })">{{ stateLabel }}</span>
     </header>
 
     <p v-if="loading" class="text-c-3">Loading SignalR hubs…</p>
@@ -402,13 +422,13 @@ onBeforeUnmount(() => void disconnect())
         <div class="flex flex-wrap items-end gap-3">
           <label v-if="showDocumentPicker" class="flex flex-col gap-1">
             <span class="bielu-caption">Document</span>
-            <select class="bielu-input" v-model="selectedDocumentName">
+            <select class="bielu-select" v-model="selectedDocumentName">
               <option v-for="doc in uniqueDocuments" :key="doc" :value="doc">{{ doc }}</option>
             </select>
           </label>
           <label class="flex flex-col gap-1">
             <span class="bielu-caption">Hub</span>
-            <select class="bielu-input" v-model="selectedKey">
+            <select class="bielu-select" v-model="selectedKey">
               <option v-for="hub in filteredHubs" :key="hubKey(hub)" :value="hubKey(hub)">
                 {{ hub.channelName }} ({{ hub.hubPath }})
               </option>
@@ -416,11 +436,11 @@ onBeforeUnmount(() => void disconnect())
           </label>
           <label class="flex min-w-48 flex-1 flex-col gap-1">
             <span class="bielu-caption">Base URL</span>
-            <input v-model="baseUrlOverride" class="bielu-input" type="text" spellcheck="false" />
+            <ScalarTextInput v-model="baseUrlOverride" class="px-2 py-1.5" spellcheck="false" />
           </label>
           <label class="flex flex-col gap-1">
             <span class="bielu-caption">Transport</span>
-            <select class="bielu-input" v-model="transport">
+            <select class="bielu-select" v-model="transport">
               <option value="auto">Auto</option>
               <option value="webSockets">WebSockets</option>
               <option value="serverSentEvents">Server-Sent Events</option>
@@ -430,8 +450,8 @@ onBeforeUnmount(() => void disconnect())
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-3">
           <code class="min-w-40 flex-1 font-code text-sm wrap-anywhere text-c-2">{{ hubUrl }}</code>
-          <button v-if="!isConnected" type="button" class="bielu-btn bielu-btn-primary" @click="connect">Connect</button>
-          <button v-else type="button" class="bielu-btn" @click="disconnect">Disconnect</button>
+          <ScalarButton v-if="!isConnected" size="sm" @click="connect">Connect</ScalarButton>
+          <ScalarButton v-else size="sm" variant="outlined" @click="disconnect">Disconnect</ScalarButton>
         </div>
       </div>
 
@@ -445,7 +465,7 @@ onBeforeUnmount(() => void disconnect())
         <div class="flex flex-wrap items-end gap-3">
           <label class="flex min-w-48 flex-1 flex-col gap-1">
             <span class="bielu-caption">Method</span>
-            <select class="bielu-input" v-model="selectedMethodId">
+            <select class="bielu-select" v-model="selectedMethodId">
               <option v-for="op in clientToServer" :key="op.id" :value="op.id">
                 {{ op.target }} · {{ methodLabel(op) }}
               </option>
@@ -454,7 +474,7 @@ onBeforeUnmount(() => void disconnect())
           <label v-if="selectedMethod && selectedMethod.messages.length > 1" class="flex min-w-48 flex-1 flex-col gap-1">
             <span class="bielu-caption">Message</span>
             <select
-              class="bielu-input"
+              class="bielu-select"
               :value="selectedMessageIndex[opKey(selectedMethod)] ?? 0"
               @change="applyExample(selectedMethod, Number(($event.target as HTMLSelectElement).value))"
             >
@@ -467,10 +487,7 @@ onBeforeUnmount(() => void disconnect())
 
         <template v-if="selectedMethod">
           <div class="mt-3.5 flex items-center gap-2.5">
-            <span
-              class="bielu-tag bg-blue/16 text-blue data-[kind=send]:bg-orange/16 data-[kind=send]:text-orange"
-              :data-kind="selectedMethod.callType ?? 'invoke'"
-            >{{ methodLabel(selectedMethod) }}</span>
+            <span :class="methodTag({ kind: methodKind(selectedMethod) })">{{ methodLabel(selectedMethod) }}</span>
             <span class="font-code font-medium">{{ selectedMethod.target }}</span>
             <span class="text-xxs text-c-3">client → server</span>
           </div>
@@ -487,20 +504,21 @@ onBeforeUnmount(() => void disconnect())
               ↺ Reset to example
             </button>
           </div>
-          <textarea
+          <ScalarTextArea
             v-model="invokeArgs[opKey(selectedMethod)]"
-            class="bielu-code-editor mt-2.5"
+            class="mt-2.5 p-2.5 font-code text-sm"
             rows="6"
             spellcheck="false"
             placeholder='Arguments as a JSON array, e.g. ["alice", "hello"]'
           />
           <div class="mt-2.5 flex items-center justify-between">
             <span class="text-xxs text-c-3">{{ hubUrl }}</span>
-            <button type="button" class="bielu-btn bielu-btn-primary" :disabled="!isConnected" @click="testRequest(selectedMethod)">
+            <!-- ScalarButton marks itself aria-disabled but still clicks; testRequest reports "not connected". -->
+            <ScalarButton size="sm" :disabled="!isConnected" @click="testRequest(selectedMethod)">
               ▶ Test Request
-            </button>
+            </ScalarButton>
           </div>
-          <pre v-if="results[opKey(selectedMethod)]" class="bielu-result mt-2.5 border-l-green data-[ok=false]:border-l-red" :data-ok="results[opKey(selectedMethod)].ok">{{ results[opKey(selectedMethod)].text }}</pre>
+          <pre v-if="results[opKey(selectedMethod)]" :class="resultBlock({ ok: results[opKey(selectedMethod)].ok })">{{ results[opKey(selectedMethod)].text }}</pre>
         </template>
       </article>
       </div>
@@ -512,7 +530,7 @@ onBeforeUnmount(() => void disconnect())
       <ul class="bielu-log">
         <li v-for="(entry, index) in log" :key="index" class="flex gap-2 py-0.5">
           <span class="opacity-55">{{ entry.time }}</span>
-          <span class="self-center rounded px-1 text-3xs uppercase" :class="logBadge[entry.dir]">{{ entry.dir }}</span>
+          <span :class="logBadge({ dir: entry.dir })">{{ entry.dir }}</span>
           <span>{{ entry.text }}</span>
         </li>
         <li v-if="log.length === 0" class="text-c-3">No messages yet.</li>
@@ -523,7 +541,7 @@ onBeforeUnmount(() => void disconnect())
       <p v-if="serverToClient.length === 0" class="text-c-3">No server-to-client events.</p>
       <article v-for="op in serverToClient" :key="op.id" class="bielu-card mb-3.5">
         <div class="flex items-center gap-2.5">
-          <span class="bielu-tag bg-green/16 text-green">EVENT</span>
+          <span :class="methodTag({ kind: 'event' })">EVENT</span>
           <span class="font-code font-medium">{{ op.target }}</span>
           <span class="text-xxs text-c-3">server → client</span>
         </div>

@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import type { JsonValue } from '@bufbuild/protobuf'
+import { ScalarButton } from '@scalar/components/button'
+import { ScalarTextArea } from '@scalar/components/text-area'
+import { ScalarTextInput } from '@scalar/components/text-input'
+import { cva } from '@scalar/use-hooks/useBindCx'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { getAuthState, resolveGrpcAuth } from '../auth'
 import { resolveDocuments } from '../discovery'
@@ -106,12 +110,27 @@ function addLog(dir: LogEntry['dir'], text: string) {
   }
 }
 
-// Full class names, so Tailwind finds them when it scans this file for the utilities to generate.
-const logBadge: Record<LogEntry['dir'], string> = {
-  in: 'bg-blue/20',
-  out: 'bg-orange/20',
-  sys: 'bg-b-2',
-}
+// Variants as cva recipes, like Scalar's components. Class names are written out in full, so Tailwind
+// finds them when it scans this file for the utilities to generate.
+const methodTag = cva({
+  base: 'bielu-tag',
+  variants: {
+    kind: {
+      unary: 'bg-blue/16 text-blue',
+      serverStreaming: 'bg-green/16 text-green',
+      clientStreaming: 'bg-orange/16 text-orange',
+      bidirectionalStreaming: 'bg-orange/16 text-orange',
+    },
+  },
+})
+const logBadge = cva({
+  base: 'self-center rounded px-1 text-3xs uppercase',
+  variants: { dir: { in: 'bg-blue/20', out: 'bg-orange/20', sys: 'bg-b-2' } },
+})
+const resultBlock = cva({
+  base: 'bielu-result mt-2.5',
+  variants: { ok: { true: 'border-l-green', false: 'border-l-red' } },
+})
 
 function methodTypeLabel(method: GrpcMethodModel): string {
   switch (method.methodType) {
@@ -340,13 +359,13 @@ onMounted(() => {
         <div class="flex flex-wrap items-end gap-3">
           <label v-if="showDocumentPicker" class="flex flex-col gap-1">
             <span class="bielu-caption">Document</span>
-            <select class="bielu-input" v-model="selectedDocumentName">
+            <select class="bielu-select" v-model="selectedDocumentName">
               <option v-for="doc in uniqueDocuments" :key="doc" :value="doc">{{ doc }}</option>
             </select>
           </label>
           <label class="flex flex-col gap-1">
             <span class="bielu-caption">Service</span>
-            <select class="bielu-input" v-model="selectedKey">
+            <select class="bielu-select" v-model="selectedKey">
               <option v-for="service in filteredServices" :key="serviceKey(service)" :value="serviceKey(service)">
                 {{ service.service }}
               </option>
@@ -354,7 +373,7 @@ onMounted(() => {
           </label>
           <label class="flex min-w-48 flex-1 flex-col gap-1">
             <span class="bielu-caption">Base URL</span>
-            <input v-model="baseUrlOverride" class="bielu-input" type="text" spellcheck="false" />
+            <ScalarTextInput v-model="baseUrlOverride" class="px-2 py-1.5" spellcheck="false" />
           </label>
         </div>
         <div v-if="selectedService?.protoFile" class="mt-3 flex flex-wrap items-center gap-3">
@@ -374,7 +393,7 @@ onMounted(() => {
         <div class="flex flex-wrap items-end gap-3">
           <label class="flex min-w-48 flex-1 flex-col gap-1">
             <span class="bielu-caption">Method</span>
-            <select class="bielu-input" v-model="selectedMethodId">
+            <select class="bielu-select" v-model="selectedMethodId">
               <option v-for="method in selectedService.methods" :key="method.id" :value="method.id">
                 {{ method.method }} · {{ methodTypeLabel(method) }}
               </option>
@@ -383,7 +402,7 @@ onMounted(() => {
           <label v-if="selectedMethod && selectedMethod.messages.length > 1" class="flex min-w-48 flex-1 flex-col gap-1">
             <span class="bielu-caption">Message</span>
             <select
-              class="bielu-input"
+              class="bielu-select"
               :value="selectedMessageIndex[methodKey(selectedMethod)] ?? 0"
               @change="applyExample(selectedMethod, Number(($event.target as HTMLSelectElement).value))"
             >
@@ -396,10 +415,7 @@ onMounted(() => {
 
         <template v-if="selectedMethod">
           <div class="mt-3.5 flex items-center gap-2.5">
-            <span
-              class="bielu-tag bg-blue/16 text-blue data-[kind=bidirectionalStreaming]:bg-orange/16 data-[kind=bidirectionalStreaming]:text-orange data-[kind=clientStreaming]:bg-orange/16 data-[kind=clientStreaming]:text-orange data-[kind=serverStreaming]:bg-green/16 data-[kind=serverStreaming]:text-green"
-              :data-kind="selectedMethod.methodType ?? 'unary'"
-            >
+            <span :class="methodTag({ kind: selectedMethod.methodType ?? 'unary' })">
               {{ methodTypeLabel(selectedMethod) }}
             </span>
             <span class="font-code font-medium">{{ selectedMethod.method }}</span>
@@ -424,9 +440,9 @@ onMounted(() => {
                 ↺ Reset to example
               </button>
             </div>
-            <textarea
+            <ScalarTextArea
               v-model="requestJson[methodKey(selectedMethod)]"
-              class="bielu-code-editor mt-2.5"
+              class="mt-2.5 p-2.5 font-code text-sm"
               rows="6"
               spellcheck="false"
               placeholder='Request message as JSON, e.g. { "name": "world" }'
@@ -434,28 +450,23 @@ onMounted(() => {
             <div class="mt-2.5 flex items-center justify-between">
               <span class="text-xxs text-c-3">Metadata (JSON object of headers, optional)</span>
             </div>
-            <textarea
+            <ScalarTextArea
               v-model="metadataJson[methodKey(selectedMethod)]"
-              class="bielu-code-editor mt-2.5"
+              class="mt-2.5 p-2.5 font-code text-sm"
               rows="2"
               spellcheck="false"
               placeholder='{ "x-correlation-id": "1234" }'
             />
             <div class="mt-2.5 flex items-center justify-between">
               <span class="text-xxs text-c-3">{{ methodUrl }}</span>
-              <button
-                type="button"
-                class="bielu-btn bielu-btn-primary"
-                :disabled="invoking"
-                @click="testRequest(selectedMethod)"
-              >
+              <!-- ScalarButton marks itself aria-disabled but still clicks; testRequest returns while invoking. -->
+              <ScalarButton size="sm" :disabled="invoking" @click="testRequest(selectedMethod)">
                 ▶ Test Request
-              </button>
+              </ScalarButton>
             </div>
             <pre
               v-if="results[methodKey(selectedMethod)]"
-              class="bielu-result mt-2.5 border-l-green data-[ok=false]:border-l-red"
-              :data-ok="results[methodKey(selectedMethod)].ok"
+              :class="resultBlock({ ok: results[methodKey(selectedMethod)].ok })"
             >{{ results[methodKey(selectedMethod)].text }}</pre>
           </template>
           <p v-else class="mt-1.5 mb-0 text-c-3">
@@ -477,7 +488,7 @@ onMounted(() => {
       <ul class="bielu-log">
         <li v-for="(entry, index) in log" :key="index" class="flex gap-2 py-0.5">
           <span class="opacity-55">{{ entry.time }}</span>
-          <span class="self-center rounded px-1 text-3xs uppercase" :class="logBadge[entry.dir]">{{ entry.dir }}</span>
+          <span :class="logBadge({ dir: entry.dir })">{{ entry.dir }}</span>
           <span>{{ entry.text }}</span>
         </li>
         <li v-if="log.length === 0" class="text-c-3">No messages yet.</li>

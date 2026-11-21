@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { ScalarButton } from '@scalar/components/button'
+import { ScalarTextArea } from '@scalar/components/text-area'
+import { ScalarTextInput } from '@scalar/components/text-input'
+import { cva } from '@scalar/use-hooks/useBindCx'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { getAuthState, resolveBrokerAuth } from '../auth'
 import type { BrokerDocumentModel } from '../broker-bindings'
@@ -62,12 +66,12 @@ const usableConnections = computed(() => {
 
 const channelKey = (channel: BrokerChannelModel) => `${channel.documentName}:${channel.id}`
 
-// Full class names, so Tailwind finds them when it scans this file for the utilities to generate.
-const logBorder: Record<LogEntry['dir'], string> = {
-  in: 'border-l-green',
-  out: 'border-l-blue',
-  sys: 'border-l-red',
-}
+// A cva recipe, like Scalar's components. Class names are written out in full, so Tailwind finds them
+// when it scans this file for the utilities to generate.
+const logEntry = cva({
+  base: 'grid grid-cols-[6rem_1fr] gap-2 border-l-3 pl-2',
+  variants: { dir: { in: 'border-l-green', out: 'border-l-blue', sys: 'border-l-red' } },
+})
 
 function currentAuth() {
   return resolveBrokerAuth(activeModel.value?.name ?? '', activeModel.value?.securitySchemes, getAuthState())
@@ -82,6 +86,10 @@ function append(dir: LogEntry['dir'], text: string): void {
 }
 
 async function refreshConnections(): Promise<void> {
+  // ScalarButton's `disabled` only sets aria-disabled, so a click still lands here mid-refresh.
+  if (refreshingConnections.value) {
+    return
+  }
   refreshingConnections.value = true
   try {
     connections.value = await loadConnections(baseUrlOverride.value, currentAuth())
@@ -98,7 +106,7 @@ async function refreshConnections(): Promise<void> {
 async function onPublish(): Promise<void> {
   const channel = selectedChannel.value
   const connection = selectedConnection.value
-  if (!channel || !connection) {
+  if (!channel || !connection || publishing.value) {
     return
   }
   publishing.value = true
@@ -210,14 +218,14 @@ onBeforeUnmount(stopTail)
       <header class="flex flex-wrap items-end gap-3">
         <label v-if="documentNames.length > 1" class="flex flex-col gap-1">
           Document
-          <select v-model="selectedDocumentName">
+          <select class="bielu-select" v-model="selectedDocumentName">
             <option v-for="name in documentNames" :key="name" :value="name">{{ name }}</option>
           </select>
         </label>
 
         <label class="flex flex-col gap-1">
           Channel
-          <select v-model="selectedChannelId">
+          <select class="bielu-select" v-model="selectedChannelId">
             <option v-for="channel in channels" :key="channel.id" :value="channel.id">
               {{ channel.address }} ({{ channel.protocol }})
             </option>
@@ -226,14 +234,16 @@ onBeforeUnmount(stopTail)
 
         <label class="flex flex-col gap-1">
           Connection
-          <select v-model="selectedConnection">
+          <select class="bielu-select" v-model="selectedConnection">
             <option v-for="connection in usableConnections" :key="connection.name" :value="connection.name">
               {{ connection.name }} — {{ connection.endpoint }}
             </option>
           </select>
         </label>
 
-        <button type="button" :disabled="refreshingConnections" @click="refreshConnections">Refresh</button>
+        <ScalarButton size="sm" variant="outlined" :disabled="refreshingConnections" @click="refreshConnections">
+          Refresh
+        </ScalarButton>
       </header>
 
       <p v-if="connections.length === 0" class="text-red">
@@ -253,23 +263,26 @@ onBeforeUnmount(stopTail)
       <div v-if="selectedChannel" class="flex flex-col gap-2">
         <label class="flex flex-col gap-1">
           Key
-          <input v-model="keys[channelKey(selectedChannel)]" type="text" placeholder="(optional)" />
+          <ScalarTextInput v-model="keys[channelKey(selectedChannel)]" class="px-2 py-1.5 text-sm" placeholder="(optional)" />
         </label>
         <label class="flex flex-col gap-1">
           Payload
-          <textarea
+          <ScalarTextArea
             v-model="payloads[channelKey(selectedChannel)]"
             rows="8"
             spellcheck="false"
-            class="w-full font-code"
-          ></textarea>
+            class="p-2.5 font-code text-sm"
+          />
         </label>
         <div class="flex gap-2">
-          <button type="button" :disabled="publishing || !selectedConnection" @click="onPublish">
+          <!-- ScalarButton marks itself aria-disabled but still clicks; the handlers check the same state. -->
+          <ScalarButton size="sm" :disabled="publishing || !selectedConnection" @click="onPublish">
             {{ publishing ? 'Publishing…' : 'Publish' }}
-          </button>
-          <button v-if="!tailing" type="button" :disabled="!selectedConnection" @click="startTail">Tail</button>
-          <button v-else type="button" @click="stopTail">Stop tail</button>
+          </ScalarButton>
+          <ScalarButton v-if="!tailing" size="sm" variant="outlined" :disabled="!selectedConnection" @click="startTail">
+            Tail
+          </ScalarButton>
+          <ScalarButton v-else size="sm" variant="outlined" @click="stopTail">Stop tail</ScalarButton>
         </div>
       </div>
 
@@ -277,8 +290,7 @@ onBeforeUnmount(stopTail)
         <li
           v-for="(entry, index) in log"
           :key="index"
-          class="grid grid-cols-[6rem_1fr] gap-2 border-l-3 pl-2"
-          :class="logBorder[entry.dir]"
+          :class="logEntry({ dir: entry.dir })"
         >
           <span class="opacity-60 tabular-nums">{{ entry.time }}</span>
           <pre class="m-0 whitespace-pre-wrap wrap-break-word">{{ entry.text }}</pre>

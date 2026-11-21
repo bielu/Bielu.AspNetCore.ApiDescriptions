@@ -56,10 +56,17 @@ with `<style src="../style.css"></style>`. Vue then hands the compiled CSS to
 `registerConsoleElement`, which injects it once. Write class names in full rather than building
 them from pieces, or Tailwind will not find them.
 
-The patterns the consoles share are `bielu-*` utilities in `tailwind.css`: `bielu-card`,
-`bielu-caption`, `bielu-input`, `bielu-btn`, `bielu-btn-primary`, `bielu-tag`, `bielu-pill`,
-`bielu-code-editor`, `bielu-result` and `bielu-log`. They leave colour to the markup
-(`bielu-result border-l-green`), so a shared utility never competes with a colour utility.
+Buttons, text inputs and JSON editors are Scalar's own `ScalarButton`, `ScalarTextInput` and
+`ScalarTextArea` from `@scalar/components`, pinned to the version `@scalar/api-reference` ships.
+Their compiled templates carry Tailwind classes that Scalar's stylesheet does not all contain, so a
+console that uses them adds an `@source` for those component folders next to its scoped block (see
+the consoles' `style.css`). Selects stay native: `ScalarListbox` would add about 50 KB to a bundle.
+
+The other patterns the consoles share are `bielu-*` utilities in `tailwind.css`: `bielu-card`,
+`bielu-caption`, `bielu-select`, `bielu-tag`, `bielu-pill`, `bielu-result` and `bielu-log`. They
+leave colour to the markup, so a shared utility never competes with a colour utility. Colour
+variants (method tags, log badges, result borders) are `cva` recipes from
+`@scalar/use-hooks/useBindCx`, the way Scalar's components define theirs.
 
 ## Building
 
