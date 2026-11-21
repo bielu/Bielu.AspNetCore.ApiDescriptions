@@ -31,6 +31,7 @@ API catalog and [CloudEvents](https://cloudevents.io/) messages.
 | API Catalog (RFC 9727) | RFC 9727, as an RFC 9264 Linkset | `Bielu.AspNetCore.ApiCatalog` | not read |
 | CloudEvents | 1.0 (binary and structured mode) | `Bielu.AspNetCore.AsyncApi.CloudEvents`, as AsyncAPI message headers or payload | not read |
 | Apache Avro | 1.9.0 declared (`schemaFormat`), configurable | `Bielu.AspNetCore.AsyncApi.Avro`, as AsyncAPI message payloads | not read |
+| OpenAPI Schema Object | 3.0.0 (`schemaFormat`) | `Bielu.AspNetCore.AsyncApi.OpenApiSchema`, as AsyncAPI message payloads | not read |
 | Protocol Buffers | proto2, proto3 (`schemaFormat` version 2 or 3); editions files keep their JSON Schema | `Bielu.AspNetCore.AsyncApi.Protobuf`, as `.proto` payload sources | not read |
 | xRegistry | 1.0-rc4 (message and schema registries; read-only) | `Bielu.AspNetCore.XRegistry`, served from the AsyncAPI documents | not read |
 | Model Context Protocol | as negotiated by the `ModelContextProtocol` C# SDK 2.3 | `Bielu.AspNetCore.ApiDescriptions.Mcp` (experimental), as tools and resources over the served documents | not read |
@@ -114,6 +115,7 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 - ✅ **Wolverine** integration that documents channels and operations from Wolverine's message routing
 - ✅ **CloudEvents 1.0** messages: binary-mode headers per protocol binding, or the structured envelope
 - ✅ **Avro payloads** (`schemaFormat: application/vnd.apache.avro`) converted from the generated JSON Schemas
+- ✅ **OpenAPI payloads** (`schemaFormat: application/vnd.oai.openapi;version=3.0.0`) converted from the generated JSON Schemas
 - ✅ **Overlays** applied in the generation pipeline, so the served and build-time documents are already transformed
 - ✅ **API catalog** (RFC 9727) at `/.well-known/api-catalog`, listing every AsyncAPI, OpenAPI and Arazzo document the app serves
 - ✅ **CNCF xRegistry** (read-only message and schema registry) served from the app's AsyncAPI documents
@@ -138,6 +140,7 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 | [`Bielu.AspNetCore.AsyncApi.Wolverine`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Wolverine/) | Builds channels and operations from Wolverine's message routing |
 | [`Bielu.AspNetCore.AsyncApi.CloudEvents`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.CloudEvents/) | Describes messages as CloudEvents 1.0 events |
 | [`Bielu.AspNetCore.AsyncApi.Avro`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Avro/) | `AddAvroPayloads()`: describes message payloads as Apache Avro schemas |
+| [`Bielu.AspNetCore.AsyncApi.OpenApiSchema`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.OpenApiSchema/) | `AddOpenApiSchemaPayloads()`: describes message payloads as OpenAPI 3.0 Schema Objects |
 | [`Bielu.AspNetCore.AsyncApi.Protobuf`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Protobuf/) | `AddProtobufPayloads()`: describes Protocol Buffers payloads by their `.proto` source |
 | [`Bielu.AspNetCore.XRegistry`](https://www.nuget.org/packages/Bielu.AspNetCore.XRegistry/) | Serves the messages and payload schemas as a read-only CNCF xRegistry (`MapXRegistry`) |
 | [`Bielu.AspNetCore.AsyncApi.Overlay`](https://www.nuget.org/packages/Bielu.AspNetCore.AsyncApi.Overlay/) | `AddOverlay(...)` for AsyncAPI documents |
@@ -230,6 +233,7 @@ dotnet run
 - [Scalar consoles](https://apidescriptions.bielu.pl/articles/scalar-consoles.html)
 - [CloudEvents](https://apidescriptions.bielu.pl/articles/cloudevents.html)
 - [Avro payloads](https://apidescriptions.bielu.pl/articles/avro.html)
+- [OpenAPI schema payloads](https://apidescriptions.bielu.pl/articles/openapi-schema.html)
 - [Protobuf payloads](https://apidescriptions.bielu.pl/articles/protobuf.html)
 - [xRegistry](https://apidescriptions.bielu.pl/articles/xregistry.html)
 - [MCP server for API descriptions](https://apidescriptions.bielu.pl/articles/mcp.html) (experimental)

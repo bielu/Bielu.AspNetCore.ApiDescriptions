@@ -14,6 +14,7 @@ numbers below are the ones the code and the test suites actually cover.
 | [API Catalog (RFC 9727)](https://www.rfc-editor.org/rfc/rfc9727) | RFC 9727, as an RFC 9264 Linkset | `Bielu.AspNetCore.ApiCatalog` (see [API catalog](api-catalog/overview.md)) | not read |
 | [CloudEvents](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md) | 1.0 (binary and structured mode; HTTP, Kafka, AMQP, MQTT bindings) | `Bielu.AspNetCore.AsyncApi.CloudEvents`, as AsyncAPI message headers or payload | not read |
 | [Apache Avro](https://avro.apache.org/docs/1.11.1/specification/) | 1.9.0 declared (`schemaFormat`), configurable | `Bielu.AspNetCore.AsyncApi.Avro`, as AsyncAPI message payloads | not read |
+| [OpenAPI Schema Object](https://spec.openapis.org/oas/v3.0.3.html#schema-object) | 3.0.0 (`schemaFormat`) | `Bielu.AspNetCore.AsyncApi.OpenApiSchema`, as AsyncAPI message payloads | not read |
 
 ## AsyncAPI
 

@@ -21,6 +21,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.Analyzers` | Roslyn analyzers (`BASYNC*` rules). Not a package of its own: shipped inside `Bielu.AspNetCore.AsyncApi.Attributes`, whose analyzers reach apps through the core package. Rules are tracked in `AnalyzerReleases.*.md` |
 | `Bielu.Analyzers.Shared` | Helpers shared by the AsyncAPI and Arazzo analyzers, compiled into each as linked source rather than referenced (no project file) |
 | `Bielu.AspNetCore.AsyncApi.Avro` | Describes message payloads as Apache Avro schemas (`schemaFormat` `application/vnd.apache.avro`), converted from the generated JSON Schemas |
+| `Bielu.AspNetCore.AsyncApi.OpenApiSchema` | Describes message payloads as OpenAPI 3.0 Schema Objects (`schemaFormat` `application/vnd.oai.openapi;version=3.0.0`), converted from the generated JSON Schemas |
 | `Bielu.AspNetCore.AsyncApi.Protobuf` | Describes Protocol Buffers message payloads as `.proto` schemas (`schemaFormat` `application/vnd.google.protobuf`), rendered from the message descriptors |
 | `Bielu.AspNetCore.AsyncApi.CloudEvents` | Describes messages as CloudEvents 1.0: binary-mode `ce-*` headers per protocol binding, or the structured-mode `application/cloudevents+json` envelope |
 | `Bielu.AspNetCore.AsyncApi.Versioning` | API Versioning integration (`Asp.Versioning`) |
