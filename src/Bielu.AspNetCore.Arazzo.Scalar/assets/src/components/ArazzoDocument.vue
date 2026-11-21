@@ -1348,6 +1348,24 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-diagram-arrow.ba-diagram-failure {
   fill: var(--scalar-color-red, #d4413b);
 }
+/* Data-flow view: the workflow's inputs and outputs, where values enter and leave it. */
+.bielu-arazzo .ba-diagram-node-data rect {
+  fill: color-mix(in srgb, var(--scalar-color-accent) 8%, var(--scalar-background-1));
+  stroke: var(--scalar-color-accent);
+  stroke-dasharray: 4 3;
+}
+.bielu-arazzo .ba-diagram-node-data text {
+  font-family: var(--scalar-font);
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-diagram-legend-data {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border: 1.5px dashed var(--scalar-color-accent);
+  border-radius: 4px;
+  vertical-align: middle;
+}
 /* A workflow a step or an action invokes: a thick outline and italic name set it apart from a step that calls an API. */
 .bielu-arazzo .ba-diagram-node-workflow > rect:first-of-type {
   fill: var(--scalar-background-1);

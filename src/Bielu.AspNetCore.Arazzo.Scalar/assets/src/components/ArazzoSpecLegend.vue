@@ -20,6 +20,7 @@ const workflowNodes = computed(() => props.layout.nodes.some((node) => node.kind
 const expandable = computed(() => props.layout.nodes.some((node) => node.expandable))
 const returns = computed(() => props.layout.edges.some((edge) => edge.kind === 'return'))
 const pages = computed(() => props.view === 'pages')
+const dataFlow = computed(() => props.view === 'data')
 const pageBands = computed(() => pages.value && (props.layout.bands ?? []).some((band) => band.pageId))
 const noPageBands = computed(() => pages.value && (props.layout.bands ?? []).some((band) => !band.pageId))
 /** An end node names its page, or (when its arrows land on different pages) each arrow names its own. */
@@ -34,7 +35,7 @@ const name = (family: SpecFamily): string => (family === 'arazzo' ? 'Workflow' :
 
 <template>
   <ul
-    v-if="families.length || workflowNodes || pageBands || noPageBands"
+    v-if="families.length || workflowNodes || pageBands || noPageBands || dataFlow"
     aria-label="Specs the steps target"
     class="ba-diagram-legend">
     <li
@@ -48,6 +49,16 @@ const name = (family: SpecFamily): string => (family === 'arazzo' ? 'Workflow' :
     <li v-if="workflowNodes">
       <span class="ba-diagram-legend-workflow" />
       Workflow call<template v-if="expandable"> (+ shows its steps)</template>
+    </li>
+    <li v-if="dataFlow">
+      <span class="ba-diagram-legend-data" />
+      Workflow inputs / outputs
+    </li>
+    <li v-if="dataFlow">
+      <span
+        class="ba-diagram-legend-line"
+        style="--ba-line-color: var(--scalar-color-3); border-top-style: solid" />
+      Values passed (named on the arrow)
     </li>
     <li v-if="pageBands">
       <span class="ba-diagram-legend-band" />
