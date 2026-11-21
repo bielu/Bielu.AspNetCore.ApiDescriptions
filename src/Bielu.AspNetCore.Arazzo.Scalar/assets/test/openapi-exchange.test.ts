@@ -186,6 +186,72 @@ describe('response handling', () => {
     expect(handling['4XX']).toEqual({ success: false, actions: ['badRequest'] })
     expect(handling.default).toEqual({ success: false, actions: [] })
   })
+
+  it('gives a checked status with no exact or range response to `default`', () => {
+    // Arrange
+    const responses = [
+      { status: '201', description: '', contents: [], headers: [], root: {} },
+      { status: 'default', description: '', contents: [], headers: [], root: {} },
+    ]
+    const actions = [{ name: 'invalid', type: 'end' as const, criteria: [{ condition: '$statusCode == 422' }] }]
+
+    // Act
+    const handling = responseHandling(responses, [{ condition: '$statusCode == 201' }], actions)
+
+    // Assert
+    expect(handling['201']).toEqual({ success: true, actions: [] })
+    expect(handling.default).toEqual({ success: false, actions: ['invalid'] })
+  })
+
+  it('gives the same status to its range when one is declared, and to `default` when not', () => {
+    // Arrange
+    const response = (status: string) => ({ status, description: '', contents: [], headers: [], root: {} })
+    const actions = [{ name: 'invalid', type: 'end' as const, criteria: [{ condition: '$statusCode == 422' }] }]
+
+    // Act
+    const withRange = responseHandling([response('4XX'), response('default')], undefined, actions)
+    const withoutRange = responseHandling([response('5XX'), response('default')], undefined, actions)
+
+    // Assert
+    expect(withRange['4XX']!.actions).toEqual(['invalid'])
+    expect(withRange.default!.actions).toEqual([])
+    expect(withoutRange['5XX']!.actions).toEqual([])
+    expect(withoutRange.default!.actions).toEqual(['invalid'])
+  })
+})
+
+describe('Swagger 2.0 path item parameters', () => {
+  const swagger = (operationParameters?: unknown[]) => ({
+    swagger: '2.0',
+    'x-scalar-original-source-url': '/swagger.json',
+    paths: {
+      '/orders': {
+        parameters: [{ in: 'body', name: 'order', required: true, schema: { type: 'object', title: 'inherited' } }],
+        post: { operationId: 'createOrder', ...(operationParameters ? { parameters: operationParameters } : {}), responses: {} },
+      },
+    },
+  })
+  const bodyOf = (document: unknown) => {
+    const docs = { owners: document }
+    const target = resolveStepTarget(arazzo, { stepId: 's', operationId: '$sourceDescriptions.owners.createOrder' }, docs)
+    return operationRequestBody(target, docs)
+  }
+
+  it('reads a body parameter the operation inherits from its path item', () => {
+    // Act
+    const body = bodyOf(swagger())
+
+    // Assert
+    expect(body).toMatchObject({ required: true, contents: [{ contentType: 'application/json', schema: { title: 'inherited' } }] })
+  })
+
+  it('lets the operation override the inherited body parameter by name and location', () => {
+    // Act
+    const body = bodyOf(swagger([{ in: 'body', name: 'order', required: false, schema: { type: 'object', title: 'own' } }]))
+
+    // Assert
+    expect(body).toMatchObject({ required: false, contents: [{ schema: { title: 'own' } }] })
+  })
 })
 
 describe('the rendered step', () => {
