@@ -106,6 +106,13 @@ function addLog(dir: LogEntry['dir'], text: string) {
   }
 }
 
+// Full class names, so Tailwind finds them when it scans this file for the utilities to generate.
+const logBadge: Record<LogEntry['dir'], string> = {
+  in: 'bg-blue/20',
+  out: 'bg-orange/20',
+  sys: 'bg-b-2',
+}
+
 function methodTypeLabel(method: GrpcMethodModel): string {
   switch (method.methodType) {
     case 'serverStreaming':
@@ -309,70 +316,74 @@ onMounted(() => {
 </script>
 
 <template>
-  <section ref="rootEl" class="bgr">
-    <header class="bgr__head">
-      <h2 class="bgr__title">gRPC</h2>
-      <span class="bgr__pill">gRPC-Web</span>
+  <section
+    ref="rootEl"
+    class="bgr mt-8 max-w-(--bgr-content-max-width,none) border-t border-border px-(--bgr-content-padding,var(--scalar-content-padding,24px)) pt-10 pb-12 font-sans text-base text-c-1"
+  >
+    <header class="mb-5 flex items-center gap-3">
+      <h2 class="m-0 text-xl">gRPC</h2>
+      <span class="bielu-pill bg-b-2 text-c-2">gRPC-Web</span>
     </header>
 
-    <p v-if="loading" class="bgr__muted">Loading gRPC services…</p>
-    <div v-else-if="error" class="bgr__error">
+    <p v-if="loading" class="text-c-3">Loading gRPC services…</p>
+    <div v-else-if="error">
       <p>Failed to load gRPC services.</p>
-      <p class="bgr__muted">{{ error }}</p>
+      <p class="text-c-3">{{ error }}</p>
     </div>
-    <p v-else-if="filteredServices.length === 0" class="bgr__muted">
+    <p v-else-if="filteredServices.length === 0" class="text-c-3">
       No gRPC services found in {{ activeDocumentSlug ? 'this document' : 'the AsyncAPI document(s)' }}.
     </p>
 
     <template v-else>
       <!-- Target bar -->
-      <div class="bgr__card bgr__conn">
-        <div class="bgr__conn-row">
-          <label v-if="showDocumentPicker" class="bgr__field">
-            <span>Document</span>
-            <select v-model="selectedDocumentName">
+      <div class="bielu-card mb-3.5">
+        <div class="flex flex-wrap items-end gap-3">
+          <label v-if="showDocumentPicker" class="flex flex-col gap-1">
+            <span class="bielu-caption">Document</span>
+            <select class="bielu-input" v-model="selectedDocumentName">
               <option v-for="doc in uniqueDocuments" :key="doc" :value="doc">{{ doc }}</option>
             </select>
           </label>
-          <label class="bgr__field">
-            <span>Service</span>
-            <select v-model="selectedKey">
+          <label class="flex flex-col gap-1">
+            <span class="bielu-caption">Service</span>
+            <select class="bielu-input" v-model="selectedKey">
               <option v-for="service in filteredServices" :key="serviceKey(service)" :value="serviceKey(service)">
                 {{ service.service }}
               </option>
             </select>
           </label>
-          <label class="bgr__field bgr__field--grow">
-            <span>Base URL</span>
-            <input v-model="baseUrlOverride" type="text" spellcheck="false" />
+          <label class="flex min-w-48 flex-1 flex-col gap-1">
+            <span class="bielu-caption">Base URL</span>
+            <input v-model="baseUrlOverride" class="bielu-input" type="text" spellcheck="false" />
           </label>
         </div>
-        <div v-if="selectedService?.protoFile" class="bgr__conn-row bgr__conn-row--foot">
-          <span class="bgr__hint">{{ selectedService.protoFile }}</span>
+        <div v-if="selectedService?.protoFile" class="mt-3 flex flex-wrap items-center gap-3">
+          <span class="text-xxs text-c-3">{{ selectedService.protoFile }}</span>
         </div>
       </div>
 
       <!-- Two columns on wide screens (method invocation | message log); stacked on narrow. -->
-      <div class="bgr__grid">
+      <div class="grid grid-cols-1 items-start gap-x-8 min-[60rem]:grid-cols-2">
       <!-- Left column: pick a method, edit the prefilled request, invoke over gRPC-Web. -->
-      <div class="bgr__col">
-      <h3 class="bgr__section">Methods</h3>
-      <p v-if="!selectedService || selectedService.methods.length === 0" class="bgr__muted">
+      <div class="min-w-0">
+      <h3 class="mt-5 mb-2 text-base font-medium">Methods</h3>
+      <p v-if="!selectedService || selectedService.methods.length === 0" class="text-c-3">
         No RPC methods declared for this service.
       </p>
-      <article v-else class="bgr__card bgr__op">
-        <div class="bgr__conn-row">
-          <label class="bgr__field bgr__field--grow">
-            <span>Method</span>
-            <select v-model="selectedMethodId">
+      <article v-else class="bielu-card mb-3.5">
+        <div class="flex flex-wrap items-end gap-3">
+          <label class="flex min-w-48 flex-1 flex-col gap-1">
+            <span class="bielu-caption">Method</span>
+            <select class="bielu-input" v-model="selectedMethodId">
               <option v-for="method in selectedService.methods" :key="method.id" :value="method.id">
                 {{ method.method }} · {{ methodTypeLabel(method) }}
               </option>
             </select>
           </label>
-          <label v-if="selectedMethod && selectedMethod.messages.length > 1" class="bgr__field bgr__field--grow">
-            <span>Message</span>
+          <label v-if="selectedMethod && selectedMethod.messages.length > 1" class="flex min-w-48 flex-1 flex-col gap-1">
+            <span class="bielu-caption">Message</span>
             <select
+              class="bielu-input"
               :value="selectedMessageIndex[methodKey(selectedMethod)] ?? 0"
               @change="applyExample(selectedMethod, Number(($event.target as HTMLSelectElement).value))"
             >
@@ -384,26 +395,29 @@ onMounted(() => {
         </div>
 
         <template v-if="selectedMethod">
-          <div class="bgr__op-head bgr__op-head--spaced">
-            <span class="bgr__method" :data-kind="selectedMethod.methodType ?? 'unary'">
+          <div class="mt-3.5 flex items-center gap-2.5">
+            <span
+              class="bielu-tag bg-blue/16 text-blue data-[kind=bidirectionalStreaming]:bg-orange/16 data-[kind=bidirectionalStreaming]:text-orange data-[kind=clientStreaming]:bg-orange/16 data-[kind=clientStreaming]:text-orange data-[kind=serverStreaming]:bg-green/16 data-[kind=serverStreaming]:text-green"
+              :data-kind="selectedMethod.methodType ?? 'unary'"
+            >
               {{ methodTypeLabel(selectedMethod) }}
             </span>
-            <span class="bgr__op-target">{{ selectedMethod.method }}</span>
-            <span v-if="!isInvokable(selectedMethod)" class="bgr__badge-warn">not invokable from the browser</span>
+            <span class="font-code font-medium">{{ selectedMethod.method }}</span>
+            <span v-if="!isInvokable(selectedMethod)" class="bielu-pill bg-orange/16 text-orange">not invokable from the browser</span>
           </div>
-          <p v-if="selectedMethod.summary" class="bgr__muted bgr__op-summary">{{ selectedMethod.summary }}</p>
-          <p class="bgr__hint bgr__op-summary">
+          <p v-if="selectedMethod.summary" class="mt-1.5 mb-0 text-c-3">{{ selectedMethod.summary }}</p>
+          <p class="mt-1.5 mb-0 text-xxs text-c-3">
             {{ selectedMethod.requestType ?? '?' }} → {{ selectedMethod.responseType ?? '?'
             }}<template v-if="selectedMethod.deadlineSeconds"> · deadline {{ selectedMethod.deadlineSeconds }}s</template>
             <template v-if="selectedMethod.idempotencyLevel"> · {{ selectedMethod.idempotencyLevel }}</template>
           </p>
 
           <template v-if="isInvokable(selectedMethod)">
-            <div class="bgr__code-head">
-              <span class="bgr__hint">Request message (JSON)</span>
+            <div class="mt-2.5 flex items-center justify-between">
+              <span class="text-xxs text-c-3">Request message (JSON)</span>
               <button
                 type="button"
-                class="bgr__link"
+                class="cursor-pointer border-0 bg-transparent p-0 text-xxs text-blue disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="selectedMethod.messages.length === 0"
                 @click="applyExample(selectedMethod, selectedMessageIndex[methodKey(selectedMethod)] ?? 0)"
               >
@@ -412,26 +426,26 @@ onMounted(() => {
             </div>
             <textarea
               v-model="requestJson[methodKey(selectedMethod)]"
-              class="bgr__code"
+              class="bielu-code-editor mt-2.5"
               rows="6"
               spellcheck="false"
               placeholder='Request message as JSON, e.g. { "name": "world" }'
             />
-            <div class="bgr__code-head">
-              <span class="bgr__hint">Metadata (JSON object of headers, optional)</span>
+            <div class="mt-2.5 flex items-center justify-between">
+              <span class="text-xxs text-c-3">Metadata (JSON object of headers, optional)</span>
             </div>
             <textarea
               v-model="metadataJson[methodKey(selectedMethod)]"
-              class="bgr__code"
+              class="bielu-code-editor mt-2.5"
               rows="2"
               spellcheck="false"
               placeholder='{ "x-correlation-id": "1234" }'
             />
-            <div class="bgr__op-foot">
-              <span class="bgr__hint">{{ methodUrl }}</span>
+            <div class="mt-2.5 flex items-center justify-between">
+              <span class="text-xxs text-c-3">{{ methodUrl }}</span>
               <button
                 type="button"
-                class="bgr__btn bgr__btn--primary"
+                class="bielu-btn bielu-btn-primary"
                 :disabled="invoking"
                 @click="testRequest(selectedMethod)"
               >
@@ -440,33 +454,33 @@ onMounted(() => {
             </div>
             <pre
               v-if="results[methodKey(selectedMethod)]"
-              class="bgr__result"
+              class="bielu-result mt-2.5 border-l-green data-[ok=false]:border-l-red"
               :data-ok="results[methodKey(selectedMethod)].ok"
             >{{ results[methodKey(selectedMethod)].text }}</pre>
           </template>
-          <p v-else class="bgr__muted bgr__op-summary">
+          <p v-else class="mt-1.5 mb-0 text-c-3">
             gRPC-Web supports unary and server-streaming calls only; client- and bidirectional-streaming
             methods are shown for documentation. The example request below is generated from the AsyncAPI
             payload schema.
           </p>
           <pre
             v-if="!isInvokable(selectedMethod) && selectedMethod.messages.length > 0"
-            class="bgr__result bgr__result--sample"
+            class="bielu-result mt-2.5 border-l-c-3"
           >{{ selectedMethod.messages[0].example }}</pre>
         </template>
       </article>
       </div>
 
       <!-- Right column: the live message log. -->
-      <div class="bgr__col">
-      <h3 class="bgr__section">Messages</h3>
-      <ul class="bgr__log">
-        <li v-for="(entry, index) in log" :key="index" :class="`bgr__log-${entry.dir}`">
-          <span class="bgr__time">{{ entry.time }}</span>
-          <span class="bgr__badge">{{ entry.dir }}</span>
+      <div class="min-w-0">
+      <h3 class="mt-5 mb-2 text-base font-medium">Messages</h3>
+      <ul class="bielu-log">
+        <li v-for="(entry, index) in log" :key="index" class="flex gap-2 py-0.5">
+          <span class="opacity-55">{{ entry.time }}</span>
+          <span class="self-center rounded px-1 text-3xs uppercase" :class="logBadge[entry.dir]">{{ entry.dir }}</span>
           <span>{{ entry.text }}</span>
         </li>
-        <li v-if="log.length === 0" class="bgr__muted">No messages yet.</li>
+        <li v-if="log.length === 0" class="text-c-3">No messages yet.</li>
       </ul>
       </div>
       </div>
@@ -474,300 +488,5 @@ onMounted(() => {
   </section>
 </template>
 
-<style scoped>
-.bgr {
-  font-family: var(--scalar-font, system-ui, sans-serif);
-  color: var(--scalar-color-1, inherit);
-  font-size: var(--scalar-font-size-3, 0.9rem);
-  /* Render as its own Scalar-style section: a clear top divider, generous breathing room above,
-     and horizontal insets so it lines up with the operations/models instead of sitting flush
-     against the viewport edge. `--bgr-content-padding` lets hosts fine-tune the inset. */
-  padding: 2.5rem var(--bgr-content-padding, var(--scalar-content-padding, 24px)) 3rem;
-  margin-top: 2rem;
-  border-top: 1px solid var(--scalar-border-color, #e3e3e3);
-  max-width: var(--bgr-content-max-width, none);
-}
-
-.bgr__head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-
-/* Two-column layout on wide screens (method | log); single column when narrow.
-   The target bar stays full width above this grid. */
-.bgr__grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0 2rem;
-  align-items: start;
-}
-
-.bgr__col {
-  min-width: 0;
-}
-
-@media (min-width: 60rem) {
-  .bgr__grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
-
-.bgr__title {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.bgr__pill {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  background: var(--scalar-background-2, #eee);
-  color: var(--scalar-color-2, #555);
-}
-
-.bgr__card {
-  border: 1px solid var(--scalar-border-color, #e3e3e3);
-  border-radius: var(--scalar-radius, 8px);
-  background: var(--scalar-background-1, transparent);
-  padding: 0.85rem;
-  margin-bottom: 0.85rem;
-}
-
-.bgr__conn-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-}
-
-.bgr__conn-row--foot {
-  margin-top: 0.75rem;
-  align-items: center;
-}
-
-.bgr__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.bgr__field > span {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--scalar-color-3, #777);
-}
-
-.bgr__field--grow {
-  flex: 1;
-  min-width: 12rem;
-}
-
-.bgr__field input,
-.bgr__field select {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--scalar-border-color, #ddd);
-  border-radius: var(--scalar-radius, 6px);
-  background: var(--scalar-background-2, #fff);
-  color: inherit;
-  font: inherit;
-}
-
-.bgr__section {
-  margin: 1.25rem 0 0.5rem;
-  font-size: 0.95rem;
-}
-
-.bgr__op-head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.bgr__op-head--spaced {
-  margin-top: 0.85rem;
-}
-
-.bgr__code-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.6rem;
-}
-
-.bgr__link {
-  font: inherit;
-  font-size: 0.72rem;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  color: var(--scalar-color-blue, #2563eb);
-}
-
-.bgr__link:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.bgr__result--sample {
-  border-left-color: var(--scalar-color-3, #888);
-  margin-top: 0.6rem;
-}
-
-.bgr__method {
-  font-family: var(--scalar-font-code, monospace);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--scalar-radius, 5px);
-  background: color-mix(in srgb, var(--scalar-color-blue, #2563eb) 16%, transparent);
-  color: var(--scalar-color-blue, #2563eb);
-  white-space: nowrap;
-}
-
-.bgr__method[data-kind='serverStreaming'] {
-  background: color-mix(in srgb, var(--scalar-color-green, #16a34a) 16%, transparent);
-  color: var(--scalar-color-green, #16a34a);
-}
-
-.bgr__method[data-kind='clientStreaming'],
-.bgr__method[data-kind='bidirectionalStreaming'] {
-  background: color-mix(in srgb, var(--scalar-color-orange, #d97706) 16%, transparent);
-  color: var(--scalar-color-orange, #d97706);
-}
-
-.bgr__badge-warn {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.12rem 0.4rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--scalar-color-orange, #d97706) 16%, transparent);
-  color: var(--scalar-color-orange, #d97706);
-  white-space: nowrap;
-}
-
-.bgr__op-target {
-  font-family: var(--scalar-font-code, monospace);
-  font-weight: 600;
-}
-
-.bgr__op-summary {
-  margin: 0.4rem 0 0;
-}
-
-.bgr__code {
-  width: 100%;
-  margin-top: 0.6rem;
-  padding: 0.6rem;
-  border: 1px solid var(--scalar-border-color, #ddd);
-  border-radius: var(--scalar-radius, 6px);
-  background: var(--scalar-background-2, #1e1e1e);
-  color: inherit;
-  font-family: var(--scalar-font-code, monospace);
-  font-size: 0.82rem;
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.bgr__op-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.6rem;
-}
-
-.bgr__hint {
-  font-size: 0.72rem;
-  color: var(--scalar-color-3, #888);
-  overflow-wrap: anywhere;
-}
-
-.bgr__btn {
-  font: inherit;
-  font-weight: 600;
-  padding: 0.4rem 0.8rem;
-  border-radius: var(--scalar-radius, 6px);
-  border: 1px solid var(--scalar-border-color, #ccc);
-  background: var(--scalar-background-2, #f4f4f4);
-  color: inherit;
-  cursor: pointer;
-}
-
-.bgr__btn--primary {
-  background: var(--scalar-button-1, #111);
-  color: var(--scalar-button-1-color, #fff);
-  border-color: transparent;
-}
-
-.bgr__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.bgr__result {
-  margin: 0.6rem 0 0;
-  padding: 0.6rem;
-  border-radius: var(--scalar-radius, 6px);
-  background: var(--scalar-background-2, #f6f6f6);
-  border-left: 3px solid var(--scalar-color-green, #16a34a);
-  font-family: var(--scalar-font-code, monospace);
-  font-size: 0.8rem;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.bgr__result[data-ok='false'] {
-  border-left-color: var(--scalar-color-red, #dc2626);
-}
-
-.bgr__log {
-  list-style: none;
-  margin: 0;
-  padding: 0.5rem;
-  max-height: 16rem;
-  overflow: auto;
-  border: 1px solid var(--scalar-border-color, #e3e3e3);
-  border-radius: var(--scalar-radius, 8px);
-  background: var(--scalar-background-1, transparent);
-  font-family: var(--scalar-font-code, monospace);
-  font-size: 0.78rem;
-}
-
-.bgr__log li {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.12rem 0;
-}
-
-.bgr__time {
-  opacity: 0.55;
-}
-
-.bgr__badge {
-  text-transform: uppercase;
-  font-size: 0.62rem;
-  align-self: center;
-  border-radius: 3px;
-  padding: 0 0.25rem;
-  background: var(--scalar-background-2, #eee);
-}
-
-.bgr__log-in .bgr__badge {
-  background: color-mix(in srgb, var(--scalar-color-blue, #2563eb) 20%, transparent);
-}
-
-.bgr__log-out .bgr__badge {
-  background: color-mix(in srgb, var(--scalar-color-orange, #d97706) 20%, transparent);
-}
-
-.bgr__muted {
-  color: var(--scalar-color-3, #888);
-}
-</style>
+<!-- Not scoped: the utilities are scoped to the console element instead (see ../style.css). -->
+<style src="../style.css"></style>
