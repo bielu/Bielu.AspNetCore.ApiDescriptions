@@ -1,5 +1,5 @@
 import type { ArazzoCriterion, ArazzoFailureAction, ArazzoSuccessAction } from '../types'
-import { deref, type StepTarget } from './resolve-target'
+import { deref, operationParameters, type OperationTarget, type StepTarget } from './resolve-target'
 
 type AnyRecord = Record<string, any>
 
@@ -61,12 +61,15 @@ const contentsOf = (root: AnyRecord, content: unknown): ExchangeContent[] =>
     : []
 
 /** The OpenAPI document an operation target resolved into, when it is loaded. */
-const operationRoot = (target: StepTarget | undefined, documents: Record<string, unknown>): { root: AnyRecord; operation: AnyRecord } | undefined => {
+const operationRoot = (
+  target: StepTarget | undefined,
+  documents: Record<string, unknown>,
+): { root: AnyRecord; operation: AnyRecord; target: OperationTarget } | undefined => {
   if (target?.kind !== 'operation' || !target.documentName || !isRecord(target.operation)) {
     return undefined
   }
   const root = documents[target.documentName]
-  return isRecord(root) ? { root, operation: target.operation } : undefined
+  return isRecord(root) ? { root, operation: target.operation, target } : undefined
 }
 
 /** Swagger 2.0 media types: the operation's `consumes`/`produces`, else the document's, else JSON. */
@@ -90,9 +93,11 @@ export const operationRequestBody = (target: StepTarget | undefined, documents: 
   if (isRecord(body)) {
     return { required: body.required === true, description: text(body.description), contents: contentsOf(root, body.content), root }
   }
-  const parameters = Array.isArray(operation.parameters) ? operation.parameters.map((entry: unknown) => deref(root, entry)) : []
-  const bodyParameter = parameters.find((parameter: unknown) => isRecord(parameter) && parameter.in === 'body')
-  if (!isRecord(bodyParameter)) {
+  // Swagger 2.0 allows one body parameter, declared on the operation or inherited from its path item.
+  const bodyParameter = operationParameters(root, resolved.target)
+    .filter((parameter) => parameter.in === 'body')
+    .pop()
+  if (!bodyParameter) {
     return undefined
   }
   const schema = deref(root, bodyParameter.schema)
@@ -158,9 +163,14 @@ export const statusCodesIn = (criteria: ArazzoCriterion[] | undefined): string[]
     typeof criterion.condition === 'string' ? [...criterion.condition.matchAll(STATUS_CHECK)].map((match) => match[1] ?? match[2]!) : [],
   )
 
-/** Whether a declared response status (`201`, `2XX`, `default`) covers a status code. */
-const covers = (status: string, code: string): boolean =>
-  status === code || (/^\dXX$/i.test(status) && status[0] === code[0])
+/**
+ * The declared response a status code is answered with, as OpenAPI resolves it: the exact status
+ * (`422`), else its range (`4XX`), else `default`.
+ */
+const responseFor = (statuses: string[], code: string): string | undefined =>
+  statuses.find((status) => status === code) ??
+  statuses.find((status) => /^\dXX$/i.test(status) && status[0] === code[0]) ??
+  statuses.find((status) => status === 'default')
 
 /** What a step does with one response: whether its success criteria expect it, and the actions that handle it. */
 export type ResponseHandling = {
@@ -179,9 +189,10 @@ export const responseHandling = (
 ): Record<string, ResponseHandling> => {
   const successCodes = statusCodesIn(successCriteria)
   const actionCodes = actions.map((action) => ({ name: action.name, codes: statusCodesIn(action.criteria) }))
-  // A response the step reads explicitly wins over a range: `404` is handled by the 404 action, not a 4XX one.
-  const explicit = new Set(responses.map((response) => response.status))
-  const matches = (status: string, code: string) => covers(status, code) && (status === code || !explicit.has(code))
+  // Each checked code belongs to one response: `404` to a declared 404, not the 4XX range; `422` with
+  // neither declared to `default`.
+  const statuses = responses.map((response) => response.status)
+  const matches = (status: string, code: string) => responseFor(statuses, code) === status
   return Object.fromEntries(
     responses.map((response) => [
       response.status,
