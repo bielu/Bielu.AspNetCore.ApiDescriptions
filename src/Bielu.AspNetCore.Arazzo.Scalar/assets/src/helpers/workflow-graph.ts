@@ -35,9 +35,17 @@ export type WorkflowGraphNode = {
   technical?: string
   /** Pages view: the page a step is on, or an end node shows. */
   page?: string
-  /** Pages view: a second line under the label (an end node's action label). */
+  /**
+   * A second line under the label: an end node's action label (Pages view), or what a step does on its target
+   * (`POST /orders`, `← receives orderPlaced · 15 s`).
+   */
   subtitle?: string
+  /** For a step: when and why it runs, in words, for its tooltip ("Waits for an orderPlaced message …"). */
+  explanation?: string
 }
+
+/** What a step box says about its target: a second line, and a sentence for its tooltip. */
+export type StepDescription = { detail?: string; explanation?: string }
 
 /** A `retry` of the step itself, drawn as a badge on the step's box rather than as an arrow. */
 export type WorkflowGraphRetry = {
@@ -133,7 +141,18 @@ export type WorkflowGraphOptions = {
    * recognised as already on the expansion path.
    */
   documentName?: string
+  /**
+   * What a step does on its target, drawn under its label: the HTTP method and path, or whether it sends or
+   * waits for a message, on which channel. `undefined` leaves the box with its label only.
+   */
+  describeStep?: (step: ArazzoStep, document: ArazzoDocument) => StepDescription | undefined
 }
+
+/** The fields a {@link StepDescription} sets on a step's node, leaving out the empty ones. */
+const stepDescription = (description: StepDescription | undefined): Pick<WorkflowGraphNode, 'subtitle' | 'explanation'> => ({
+  ...(description?.detail ? { subtitle: description.detail } : {}),
+  ...(description?.explanation ? { explanation: description.explanation } : {}),
+})
 
 /** How a workflow id reads on a box: `identity.signIn` for `$sourceDescriptions.identity.signIn`, else as written. */
 export const workflowLabel = (workflowId: string): string => {
@@ -277,6 +296,62 @@ export const buildWorkflowGraph = (
   return graph
 }
 
+/** The id of the copy of an end node drawn for one more step that leads to it: `<id>~<n>`. */
+export const endCopyId = (id: string, copy: number): string => `${id}~${copy}`
+
+/**
+ * Gives every step that leads to an end node (Success, Failed, or a named end) a copy of its own, right under it.
+ * Several steps in a row sharing one Success and one Failed cross each other's arrows however the row is
+ * ordered; with one end node per step, the arrows fan out without crossing, as a named end already does. An end
+ * node something leads on from (the Success an arrow returns to a retrying step from) is kept whole.
+ *
+ * In the Pages view a copy reached by one arrow that names the page it lands on takes that page as its title, as
+ * an end node every arrow lands on the same page does.
+ *
+ * A drawing concern: the graph keeps one node per outcome; the layout draws it once per step. Works on copies, so
+ * the graph it is given is left as it was.
+ */
+export const splitSharedEnds = (source: WorkflowGraph): WorkflowGraph => {
+  const graph: WorkflowGraph = {
+    ...source,
+    nodes: source.nodes.map((node) => ({ ...node })),
+    edges: source.edges.map((edge) => ({ ...edge })),
+  }
+  const hasOutgoing = new Set(graph.edges.map((edge) => edge.from))
+  const ends = graph.nodes.filter((node) => (node.kind === 'success' || node.kind === 'failure') && !hasOutgoing.has(node.id))
+  for (const end of ends) {
+    const incoming = graph.edges.filter((edge) => edge.to === end.id)
+    const sources = [...new Set(incoming.map((edge) => edge.from))]
+    if (sources.length < 2) {
+      continue
+    }
+    const index = graph.nodes.indexOf(end)
+    const copies = sources.map((source, copy): WorkflowGraphNode => {
+      const edges = incoming.filter((edge) => edge.from === source)
+      const node: WorkflowGraphNode = { ...end, id: copy ? endCopyId(end.id, copy) : end.id }
+      const actions = edges.flatMap((edge) => (edge.action ? [edge.action] : []))
+      if (end.actions) {
+        node.actions = actions.length ? actions : [...end.actions]
+      }
+      for (const edge of edges) {
+        edge.to = node.id
+      }
+      const [only] = edges
+      if (edges.length === 1 && only?.page && only.label?.includes('→ ')) {
+        const arrow = only.label.lastIndexOf('→ ')
+        const title = only.label.slice(arrow + 2)
+        node.label = node.kind === 'success' ? `${title} ✓` : title
+        node.page = only.page
+        only.label = only.label.slice(0, arrow).trim() || undefined
+        delete only.page
+      }
+      return node
+    })
+    graph.nodes.splice(index, 1, ...copies)
+  }
+  return graph
+}
+
 /** Adds one workflow's steps, arrows and end nodes to the graph, then the scopes of its expanded workflow nodes. */
 const addScope = (
   graph: WorkflowGraph,
@@ -349,6 +424,7 @@ const addScope = (
           stepId: step.stepId,
           ...(spec ? { spec } : {}),
           ...pages,
+          ...stepDescription(options.describeStep?.(step, document)),
         })
     stepNodes.set(step.stepId, node)
     graph.nodes.push(node)
@@ -454,7 +530,8 @@ const addScope = (
         if (!source || explicit.has(`${dependency}->${step.stepId}`) || decidesOnSuccess(source)) {
           continue
         }
-        const label = hasActions(source) ? describeCriteria(source.successCriteria) : undefined
+        // The Pages view reads in plain language: the way on after a step succeeds needs no condition on it.
+        const label = hasActions(source) && !inPages ? describeCriteria(source.successCriteria) : undefined
         nextEdges.push({ from: at(dependency), to: at(step.stepId), label, kind: 'next' })
       }
     }
@@ -625,7 +702,7 @@ const GROUP_LABEL_CHAR_WIDTH = 6.7
 /** Room above a band's steps for its page title. */
 export const BAND_LABEL_HEIGHT = 18
 /** Matches a band title's font size in `ArazzoDocument.vue`. */
-const BAND_CHAR_WIDTH = 6
+export const BAND_CHAR_WIDTH = 6
 /** Room around a band's steps, and on either side of its title. */
 const BAND_PADDING = 8
 /** A band's title and route are cut past this, so one long route cannot push the diagram far sideways. */
@@ -674,7 +751,9 @@ export const retryBadgeWidth = (node: WorkflowGraphNode): number => {
 
 const nodeWidth = (node: WorkflowGraphNode): number =>
   node.kind === 'step'
-    ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) + (node.spec ? SPEC_MARKER_WIDTH : 0) + retryBadgeWidth(node)
+    ? Math.max(96, Math.max(node.label.length, (node.subtitle?.length ?? 0) * 0.9) * NODE_CHAR_WIDTH + 28) +
+      (node.spec ? SPEC_MARKER_WIDTH : 0) +
+      retryBadgeWidth(node)
     : node.kind === 'workflow'
       ? Math.max(96, node.label.length * NODE_CHAR_WIDTH + 28) +
         (node.spec ? SPEC_MARKER_WIDTH : 0) +
@@ -784,7 +863,8 @@ const onBoxes = (points: Point[], from: Box | undefined, to: Box | undefined): P
  * the workflow is expanded or not, and since dagre orders a row by its arrows alone (not by the sizes of the
  * boxes), expanding or collapsing a workflow never moves the boxes beside it to the other side.
  */
-export const layoutWorkflowGraph = (graph: WorkflowGraph): WorkflowLayout => {
+export const layoutWorkflowGraph = (logical: WorkflowGraph): WorkflowLayout => {
+  const graph = splitSharedEnds(logical)
   const groups = graph.groups ?? []
   const nodesById = new Map(graph.nodes.map((node) => [node.id, node]))
   /** Group id → the expanded workflow node it belongs to. */

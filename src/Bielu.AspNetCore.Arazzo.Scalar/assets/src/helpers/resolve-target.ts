@@ -81,7 +81,7 @@ const walk = (root: AnyRecord, segments: string[], depth = 0): unknown =>
  * Follows a `$ref`. Scalar's workspace store exposes the resolved target as `$ref-value`; a plain
  * local `#/…` reference is followed against the document itself as a fallback.
  */
-const deref = (root: AnyRecord, node: unknown, depth = 0): unknown => {
+export const deref = (root: AnyRecord, node: unknown, depth = 0): unknown => {
   if (!isRecord(node) || typeof node.$ref !== 'string' || depth > 16) {
     return node
   }
@@ -424,6 +424,27 @@ const parameterType = (schema: unknown): string => {
 }
 
 /**
+ * The Parameter Objects an OpenAPI operation target accepts, references followed in `root`: the path
+ * item's, overridden by the operation's own (matched on name and location, as OpenAPI and Swagger 2.0
+ * specify), in declaration order.
+ */
+export const operationParameters = (root: AnyRecord, target: OperationTarget): AnyRecord[] => {
+  const pathItem = target.path ? walk(root, ['paths', target.path]) : undefined
+  const declared = [
+    ...(isRecord(pathItem) && Array.isArray(pathItem.parameters) ? pathItem.parameters : []),
+    ...(Array.isArray(target.operation?.parameters) ? target.operation.parameters : []),
+  ]
+  const byKey = new Map<string, AnyRecord>()
+  for (const entry of declared) {
+    const parameter = deref(root, entry)
+    if (isRecord(parameter) && typeof parameter.name === 'string') {
+      byKey.set(`${typeof parameter.in === 'string' ? parameter.in : 'query'}:${parameter.name}`, parameter)
+    }
+  }
+  return [...byKey.values()]
+}
+
+/**
  * The parameters of a resolved target, so a step shows what the operation or channel it calls
  * accepts. OpenAPI: the path item's parameters, overridden by the operation's own (matched on name
  * and location, as OpenAPI specifies). AsyncAPI: the channel's address parameters, always required.
@@ -439,27 +460,16 @@ export const targetParameters = (target: StepTarget | undefined, documents: Reco
   }
 
   if (target.kind === 'operation') {
-    const pathItem = target.path ? walk(root, ['paths', target.path]) : undefined
-    const declared = [
-      ...(isRecord(pathItem) && Array.isArray(pathItem.parameters) ? pathItem.parameters : []),
-      ...(Array.isArray(target.operation?.parameters) ? target.operation.parameters : []),
-    ]
-    const byKey = new Map<string, TargetParameter>()
-    for (const entry of declared) {
-      const parameter = deref(root, entry)
-      if (!isRecord(parameter) || typeof parameter.name !== 'string') {
-        continue
-      }
+    return operationParameters(root, target).map((parameter) => {
       const location = typeof parameter.in === 'string' ? parameter.in : 'query'
-      byKey.set(`${location}:${parameter.name}`, {
+      return {
         name: parameter.name,
         location,
         required: parameter.required === true || location === 'path',
         type: parameterType(deref(root, parameter.schema)),
         description: typeof parameter.description === 'string' ? parameter.description : '',
-      })
-    }
-    return [...byKey.values()]
+      }
+    })
   }
 
   const parameters = isRecord(target.channel?.parameters) ? target.channel.parameters : {}
@@ -492,8 +502,11 @@ export type TargetMessage = {
   summary: string
   description: string
   contentType: string | undefined
-  /** The payload schema, unwrapped from a Multi Format Schema Object when it is one. */
-  payload: AnyRecord | undefined
+  /**
+   * The payload schema, unwrapped from a Multi Format Schema Object when it is one. A schema in a non-JSON
+   * format may be text, such as the `.proto` source of a Protobuf payload, and is kept as that string.
+   */
+  payload: AnyRecord | string | undefined
   /** `schemaFormat` of a payload that is not plain JSON Schema (Avro, Protobuf, …); its schema is shown as written. */
   schemaFormat: string | undefined
   /** The first example payload, when the message declares one. */
@@ -512,7 +525,7 @@ const lastSegment = (ref: unknown): string | undefined =>
  * The messages of a resolved AsyncAPI target: those the AsyncAPI 3 operation lists when the step
  * targets an operation, else every message of the channel. References are followed within the
  * target's document, and a payload given as a Multi Format Schema Object (`{ schemaFormat, schema }`)
- * is unwrapped. Empty for an OpenAPI, workflow or unresolved target.
+ * is unwrapped; its schema is kept as text when the format writes it so (Protobuf). Empty for an OpenAPI, workflow or unresolved target.
  */
 export const targetMessages = (target: StepTarget | undefined, documents: Record<string, unknown>): TargetMessage[] => {
   if (target?.kind !== 'channel' || !target.documentName) {
@@ -550,7 +563,7 @@ export const targetMessages = (target: StepTarget | undefined, documents: Record
         summary: text(message.summary),
         description: text(message.description),
         contentType: typeof message.contentType === 'string' ? message.contentType : defaultContentType,
-        payload: isRecord(payload) ? payload : undefined,
+        payload: isRecord(payload) || (schemaFormat && typeof payload === 'string' && payload.trim()) ? payload : undefined,
         schemaFormat,
         example: isRecord(example) ? example.payload : undefined,
         root,

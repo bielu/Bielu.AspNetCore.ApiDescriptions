@@ -6,6 +6,7 @@ import { specLabel } from '../helpers/target-spec'
 import {
   type LaidOutEdge,
   type LaidOutNode,
+  BAND_CHAR_WIDTH,
   BAND_LABEL_HEIGHT,
   GROUP_LABEL_HEIGHT,
   GROUP_LABEL_INSET,
@@ -31,7 +32,12 @@ const props = defineProps<{
   workflowId: string
   /** Grow the diagram to fill its box (up to twice its natural size), as the expanded view does. */
   fit?: boolean
+  /** stepId → what looks wrong in that step of this workflow, marked on its box. */
+  problems?: Record<string, { severity: 'error' | 'warning'; count: number; messages: string[] }>
 }>()
+
+/** The problems of a top-level step box; a step of an expanded workflow is checked in that workflow's own section. */
+const problemsOf = (node: LaidOutNode) => (!node.group && node.stepId ? props.problems?.[node.stepId] : undefined)
 
 const emit = defineEmits<{
   /** A workflow node's +/− was used: show or hide the steps of the workflow it invokes. */
@@ -47,6 +53,18 @@ const emit = defineEmits<{
  * zooms the view the reader has set.
  */
 const baseScale = ref(1)
+
+/** Below this, a graph shrunk to fit the full-window view has text too small to read. */
+const READABLE_SCALE = 0.9
+
+/** How large a graph too tall for the full-window view is drawn, when the window is wide enough. */
+const OVERFLOW_SCALE = 1.25
+
+/**
+ * `fit` mode only: the graph is taller than the window at a readable size, so it is drawn at that size from the
+ * top, to be panned, rather than shrunk until its text cannot be read.
+ */
+const overflowing = ref(false)
 const svgStyle = computed(() => ({
   width: `${props.layout.width * baseScale.value}px`,
   height: `${props.layout.height * baseScale.value}px`,
@@ -63,11 +81,23 @@ const measureScale = () => {
   if (width <= 0) {
     return
   }
-  baseScale.value = props.fit
-    ? height > 0
-      ? Math.min(width / props.layout.width, height / props.layout.height, 2)
-      : baseScale.value
-    : Math.min(width / props.layout.width, 1)
+  if (!props.fit) {
+    baseScale.value = Math.min(width / props.layout.width, 1)
+    return
+  }
+  if (height <= 0) {
+    return
+  }
+  const whole = Math.min(width / props.layout.width, height / props.layout.height, 2)
+  if (whole >= READABLE_SCALE) {
+    baseScale.value = whole
+    overflowing.value = false
+    return
+  }
+  // Shrinking the whole graph into the window would make it unreadable: since the reader pans down anyway, draw
+  // it a little larger than its natural size where the window is wide enough (narrower only when it is not).
+  baseScale.value = Math.min(width / props.layout.width, OVERFLOW_SCALE)
+  overflowing.value = props.layout.height * baseScale.value > height
 }
 
 let observer: ResizeObserver | undefined
@@ -239,7 +269,10 @@ const onNodeClick = (node: LaidOutNode) => (opensByToggling(node) ? toggleWorkfl
 
 /** A box's title (with the technical id behind a Pages label), then the retries of the step itself, one per line. */
 const nodeTitle = (node: LaidOutNode): string | undefined => {
-  const base = technicalTitle(node)
+  const problems = problemsOf(node)
+  const base = [technicalTitle(node), ...(problems?.messages.map((message) => `${problems.severity === 'error' ? '✕' : '!'} ${message}`) ?? [])]
+    .filter(Boolean)
+    .join('\n')
   const title = node.technical && node.technical !== node.label ? [base, `(${node.technical})`].filter(Boolean).join(' ') : base
   const retries = (node.retries ?? []).map((retry) => `Retries itself: ${retry.label}${retry.action ? ` (${retry.action})` : ''}`)
   return retries.length ? [title, ...retries].filter(Boolean).join('\n') : title
@@ -257,7 +290,8 @@ const technicalTitle = (node: LaidOutNode): string | undefined => {
     return `Ends the workflow: ${node.actions.join(', ')}`
   }
   if (node.kind === 'step') {
-    return `Go to step ${node.label}${node.spec ? ` (${specName(node.spec)})` : ''}`
+    const go = `Go to step ${node.label}${node.spec ? ` (${specName(node.spec)})` : ''}`
+    return node.explanation ? `${node.explanation}\n${go}` : go
   }
   return undefined
 }
@@ -345,7 +379,7 @@ const label = computed(() =>
     @wheel="onWheel">
     <div
       class="ba-diagram-canvas"
-      :class="{ 'ba-diagram-canvas-fit': fit }"
+      :class="{ 'ba-diagram-canvas-fit': fit, 'ba-diagram-canvas-top': fit && overflowing }"
       :style="{ transform: `translate(${panZoom.x}px, ${panZoom.y}px) scale(${panZoom.scale})` }">
       <svg
         :aria-label="label"
@@ -403,10 +437,6 @@ const label = computed(() =>
             :width="band.width"
             :x="band.x - band.width / 2"
             :y="band.y - band.height / 2" />
-          <text
-            dominant-baseline="central"
-            :x="band.x - band.width / 2 + 8"
-            :y="band.y - band.height / 2 + BAND_LABEL_HEIGHT / 2 + 2">{{ band.label }}</text>
         </g>
 
         <g
@@ -434,6 +464,27 @@ const label = computed(() =>
               {{ edge.label }}
             </text>
           </g>
+        </g>
+
+        <!--
+          Page titles go over the arrows, on a background of their own: an arrow into a band's first step crosses
+          the title's line, and would otherwise run through the text.
+        -->
+        <g
+          v-for="band in layout.bands ?? []"
+          :key="`title-${band.id}`"
+          class="ba-diagram-band-title"
+          :class="{ 'ba-diagram-band-none': !band.pageId }">
+          <rect
+            :height="BAND_LABEL_HEIGHT - 2"
+            rx="3"
+            :width="band.label.length * BAND_CHAR_WIDTH + 8"
+            :x="band.x - band.width / 2 + 4"
+            :y="band.y - band.height / 2 + 2" />
+          <text
+            dominant-baseline="central"
+            :x="band.x - band.width / 2 + 8"
+            :y="band.y - band.height / 2 + BAND_LABEL_HEIGHT / 2 + 1">{{ band.label }}</text>
         </g>
 
         <g
@@ -488,6 +539,20 @@ const label = computed(() =>
             text-anchor="middle"
             :x="labelX(node)"
             :y="node.y + 9">{{ node.subtitle }}</text>
+          <g
+            v-if="problemsOf(node)"
+            class="ba-diagram-problem"
+            :class="`ba-diagnostic-${problemsOf(node)!.severity}`">
+            <circle
+              :cx="node.x + node.width / 2 - 2"
+              :cy="node.y - node.height / 2 + 2"
+              r="8" />
+            <text
+              dominant-baseline="central"
+              text-anchor="middle"
+              :x="node.x + node.width / 2 - 2"
+              :y="node.y - node.height / 2 + 2.5">{{ problemsOf(node)!.severity === 'error' ? '✕' : '!' }}</text>
+          </g>
           <g
             v-if="retryBadge(node)"
             class="ba-diagram-retry">

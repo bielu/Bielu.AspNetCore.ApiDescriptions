@@ -9,7 +9,10 @@ import type { ArazzoPluginOptions } from '../helpers/plugin-options'
 import { filterWorkflows } from '../helpers/search'
 import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
 import type { ArazzoDocument, PluginEventBus, PluginNavigationEntry } from '../types'
+import { diagnose } from '../helpers/diagnostics'
+import { provideDiagnostics } from '../helpers/diagnostics-scope'
 import ArazzoComponents from './ArazzoComponents.vue'
+import ArazzoDiagnostics from './ArazzoDiagnostics.vue'
 import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoWorkflow from './ArazzoWorkflow.vue'
 
@@ -109,6 +112,22 @@ const workflowNavIds = computed(() => Object.fromEntries(workflows.value.map((vi
 
 /** The components section's sidebar id; `undefined` when the document declares no components. */
 const componentsId = computed(() => componentsEntryId(props.navigation ?? []))
+
+/**
+ * What looks wrong in the document: references to things it doesn't declare, parameters and statuses its
+ * targets don't take or return, steps that can never run. Re-checked as sibling documents load.
+ */
+const diagnostics = computed(() =>
+  arazzo.value
+    ? diagnose(arazzo.value, {
+        documents: loadedDocuments.value,
+        workflowNavIds: workflowNavIds.value,
+        stepSectionIds: stepSectionIds.value,
+        componentsId: componentsId.value,
+      })
+    : [],
+)
+provideDiagnostics(() => diagnostics.value)
 
 /** Each source description with its spec, whether it is loaded, and how many steps use it. */
 const sources = computed(() => (arazzo.value ? summarizeSources(arazzo.value, loadedDocuments.value) : []))
@@ -295,6 +314,7 @@ onBeforeUnmount(() => {
           </tbody>
         </table>
       </div>
+      <ArazzoDiagnostics :diagnostics="diagnostics" />
       <div
         v-if="workflows.length"
         class="ba-filter"
@@ -676,8 +696,54 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-criteria-inline .ba-condition {
   color: var(--scalar-color-2);
 }
-.bielu-arazzo .ba-target-message {
+.bielu-arazzo .ba-target-message,
+.bielu-arazzo .ba-target-body,
+.bielu-arazzo .ba-target-responses {
   margin-top: 24px;
+}
+/* An OpenAPI target's responses: one line per status, its schema folding out beneath. */
+.bielu-arazzo .ba-responses {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bielu-arazzo .ba-responses > li {
+  padding: 6px 0;
+  border-bottom: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-response > summary,
+.bielu-arazzo .ba-response-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+.bielu-arazzo .ba-response > summary {
+  cursor: pointer;
+}
+.bielu-arazzo .ba-response[open] > summary {
+  margin-bottom: 6px;
+}
+.bielu-arazzo .ba-response-description {
+  color: var(--scalar-color-2);
+}
+.bielu-arazzo .ba-status {
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-status-2 {
+  color: var(--scalar-color-green, #30a46c);
+}
+.bielu-arazzo .ba-status-3 {
+  color: var(--scalar-color-blue, #0081f1);
+}
+.bielu-arazzo .ba-status-4 {
+  color: var(--scalar-color-orange, #f76b15);
+}
+.bielu-arazzo .ba-status-5 {
+  color: var(--scalar-color-red, #e5484d);
+}
+.bielu-arazzo .ba-response-handled {
+  border-color: var(--scalar-color-green, #30a46c);
 }
 .bielu-arazzo .ba-target-message .ba-block-title code {
   margin: 0 4px;
@@ -691,6 +757,85 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-replacements td:nth-child(2) {
   width: 1.5em;
   text-align: center;
+}
+/* Diagnostics: the header's folding list, and each step's own problems. */
+.bielu-arazzo .ba-diagnostics {
+  margin: 16px 0;
+  padding: 8px 12px;
+  border: var(--scalar-border-width, 1px) solid var(--ba-diagnostic-color);
+  border-radius: var(--scalar-radius-lg, 8px);
+  background: color-mix(in srgb, var(--ba-diagnostic-color) 8%, transparent);
+}
+.bielu-arazzo .ba-diagnostics-error,
+.bielu-arazzo .ba-diagnostic-error {
+  --ba-diagnostic-color: var(--scalar-color-red, #e5484d);
+}
+.bielu-arazzo .ba-diagnostics-warning,
+.bielu-arazzo .ba-diagnostic-warning {
+  --ba-diagnostic-color: var(--scalar-color-orange, #f76b15);
+}
+.bielu-arazzo .ba-diagnostics > summary {
+  cursor: pointer;
+  font-size: var(--scalar-small, 13px);
+  font-weight: var(--scalar-semibold, 600);
+}
+.bielu-arazzo .ba-diagnostic-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--ba-diagnostic-color);
+  color: var(--scalar-background-1);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+.bielu-arazzo .ba-diagnostic-list,
+.bielu-arazzo .ba-step-diagnostics {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-diagnostic-list li,
+.bielu-arazzo .ba-step-diagnostics li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  padding: 3px 0 3px 8px;
+  border-left: 3px solid var(--ba-diagnostic-color);
+  margin-bottom: 4px;
+}
+.bielu-arazzo .ba-diagnostic-severity {
+  color: var(--ba-diagnostic-color);
+  font-weight: var(--scalar-semibold, 600);
+  text-transform: uppercase;
+  font-size: var(--scalar-mini, 12px);
+}
+.bielu-arazzo .ba-diagnostic-where {
+  font-family: var(--scalar-font-code);
+}
+.bielu-arazzo .ba-step-problems {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--ba-diagnostic-color);
+  color: var(--scalar-background-1);
+  font-size: var(--scalar-mini, 12px);
+  font-weight: var(--scalar-semibold, 600);
+  vertical-align: middle;
+}
+.bielu-arazzo .ba-diagram-problem circle {
+  fill: var(--ba-diagnostic-color);
+  stroke: var(--scalar-background-1);
+  stroke-width: 1.5;
+}
+.bielu-arazzo .ba-diagram-problem text {
+  fill: var(--scalar-background-1);
+  font-family: var(--scalar-font);
+  font-size: 10px;
+  font-weight: 700;
 }
 /* Runtime Expressions: a link to what they read, or marked when they read something the document does not declare. */
 .bielu-arazzo .ba-expression {
@@ -1252,6 +1397,15 @@ onBeforeUnmount(() => {
   stroke: color-mix(in srgb, var(--scalar-color-accent) 35%, transparent);
   stroke-width: 1;
 }
+/* A page title's background: the page under it, so the arrows it sits on pass behind it. */
+.bielu-arazzo .ba-diagram-band-title rect {
+  fill: color-mix(in srgb, var(--scalar-color-accent) 7%, var(--scalar-background-1));
+}
+.bielu-arazzo .ba-diagram-band-title.ba-diagram-band-none rect {
+  fill: var(--scalar-background-1);
+  stroke: none;
+}
+.bielu-arazzo .ba-diagram-band-title text,
 .bielu-arazzo .ba-diagram-band text {
   fill: var(--scalar-color-2);
   font-family: var(--scalar-font);
@@ -1355,8 +1509,9 @@ onBeforeUnmount(() => {
 .bielu-arazzo .ba-dialog {
   /* Scalar's CSS reset zeroes the margin a dialog centers itself with. */
   margin: auto;
-  width: min(1440px, 94vw);
-  height: min(900px, 88vh);
+  /* The whole window: a workflow with an expanded one inside it needs the room. */
+  width: 96vw;
+  height: 92vh;
   max-width: none;
   max-height: none;
   padding: 16px;
@@ -1393,6 +1548,10 @@ onBeforeUnmount(() => {
   justify-content: center;
   width: 100%;
   height: 100%;
+}
+/* Taller than the window at a readable size: start from the top, the reader pans down. */
+.bielu-arazzo .ba-diagram-canvas-fit.ba-diagram-canvas-top {
+  align-items: flex-start;
 }
 .bielu-arazzo .ba-target-parameters {
   margin-top: 12px;

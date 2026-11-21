@@ -128,7 +128,9 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     successfully after its last step; that arrow is labeled with the step's success criteria when they
     are short. `end` failure actions lead to one Failed node while they can't be told apart; when they
     have different names, each gets its own end node named after the action, or after the value of the
-    extension set with [`EndLabelExtension`](#options).
+    extension set with [`EndLabelExtension`](#options). An end node is drawn once per step that leads to it,
+    right under that step, so steps side by side that share Success and Failed don't cross each other's
+    arrows.
   - **Retries.** A `retry` through another step gets an arrow to that step and one back, since the
     retrying step runs again afterwards. A `retry` of the step itself (no `stepId` or `workflowId`) is a
     `↻` badge on the step's box with its limit and delay (`↻ ≤ 3× 2s`); hovering the box lists its
@@ -147,6 +149,14 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     node, which stays where it was under the pointer; the zoom is kept (the overview is scaled to fit only
     when it is shown, reset or resized), and the full-window view stays open. While a workflow is expanded,
     the overview beside the steps may grow to the height of the window, and pans beyond that.
+  - **What each step does.** A step's box has a second line: `POST /orders` for an OpenAPI step, and for an
+    AsyncAPI step whether it publishes or waits for a message, on which channel, and for how long
+    (`→ sends orderPlaced`, `← receives paymentCompleted · 1 min`). Its tooltip says it in a sentence,
+    with the correlation a receiving step waits for ("the one matching orderId from create").
+  - **Full window.** The expand button opens the overview over almost the whole window. A graph that fits
+    at a readable size is scaled to fit; a taller one (a workflow with another expanded inside it) is drawn
+    a little larger than its natural size from the top, and the reader pans down, rather than shrinking it
+    until its text can't be read.
   - **Workflows of other documents.** A call such as `$sourceDescriptions.identity.signIn` expands too when
     the Arazzo document that source names is loaded on the same Scalar page, for example a second Arazzo
     source published by the service that owns the workflow. A qualified call always goes to that document,
@@ -164,7 +174,12 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
   workflow of another loaded Arazzo document. The target link goes to the workflow itself, in its own
   document when it is another one. An AsyncAPI step also shows the message it sends or receives: its payload as
   a property list (references followed into the AsyncAPI document), its content type, and its first
-  example payload; a payload in another schema format, such as Avro, is shown as written. Then come
+  example payload; a payload in another schema format, such as Avro, is shown as written. An OpenAPI step
+  shows what its operation accepts and returns: the request body schema (in the media type the step sends,
+  with the others named), and each response by status, its schema, example and headers folding out. A
+  response the step's success criteria check for (`$statusCode == 201`) is marked "Success criteria", and
+  one an action's criteria check is marked with the action's name; a `4XX` range counts only for codes the
+  operation doesn't declare on their own. Swagger 2.0 body parameters and response schemas are read too. Then come
   the step's parameters, request body, success criteria,
   `onSuccess`/`onFailure` actions and outputs. Arazzo 1.1 steps also show their `timeout` and
   `correlationId`. A criterion that isn't a simple condition is labeled with its language
@@ -185,6 +200,8 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
 
   ![The createOrder step: its replacements link to the workflow inputs they read, and each output lists the steps that read it](../../images/arazzo/scalar-expression-links.jpg)
 
+  ![The createOrder step: the operation's request body schema, its 201 response marked as the success criteria with its schema, and its 400 response marked with the rejected action](../../images/arazzo/scalar-operation-exchange.jpg)
+
 - Each step target is labeled with its spec: `OpenAPI`, `AsyncAPI` or `Workflow`, with the version in its tooltip and the Sources table. Channel
   steps also say whether they send or receive. See [Which spec a step targets](#which-spec-a-step-targets).
 - The reusable `components` (input schemas, parameters, success and failure actions) in a section
@@ -195,6 +212,20 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
 - Each step can be collapsed with the chevron beside its heading, and a workflow's "Collapse steps"
   button folds all of its steps at once. A collapsed step still shows a one-line summary of what it
   targets (spec, action and target), and clicking a step in the overview opens it.
+- Problems the view can find on its own are listed under the header ("1 error · 3 warnings found in this
+  document"), each linking to its step; listed again at the top of the step, counted beside its heading, and
+  marked on its box in the overview. Errors are certainly wrong: a target the loaded sources don't declare, a
+  source description, workflow or step that doesn't exist (in a target, `goto`, `dependsOn` or Runtime
+  Expression), a required path parameter that isn't passed, or a duplicate `stepId`. Warnings are likely
+  mistakes: a parameter the operation doesn't declare (headers aren't checked), a required query parameter
+  that isn't passed, a status the criteria check that the operation doesn't return, a step that depends on
+  one whose success always ends the workflow (so it never runs), and an expression that reads a step that
+  doesn't run first, or a step that sends its own output. A target is only checked once the documents it
+  could be in are loaded. The `ArazzoValidator` in .NET and the `BARAZZO` analyzers check the document
+  itself; these checks add what only the loaded OpenAPI and AsyncAPI documents can tell.
+
+  ![The field reference with three warnings in the header, one listed at the top of the create step, and markers on the step boxes in the overview](../../images/arazzo/scalar-diagnostics.jpg)
+
 - Each workflow and step heading has a copy-link button. With Scalar's `classic` layout, each
   workflow can be collapsed.
 
@@ -278,14 +309,18 @@ In the Pages view:
   than 64 characters are cut with "…"; the band's tooltip has them in full.
 - Boxes show the step's label, or its `stepId` when it has none; the `stepId` is in the tooltip. A workflow
   node shows the label (or the summary) of the workflow it calls.
-- Arrows show the action's label, or its criteria (or "otherwise") when it has none. The arrow to Success
-  after the last step reads "done".
+- Arrows show the action's label, or its criteria (or "otherwise") when it has none. The arrow on to the
+  next step after a step succeeds has no label (the Technical view shows its success criteria there), and
+  the arrow to Success after the last step reads "done".
+- A page's title is drawn over the arrows that cross it, so an arrow into a page's first step passes behind
+  the title rather than through its text.
 - An end node is named after the page its actions land on (from `PageExtension`, or `EndLabelExtension`),
   with their label under it, when every arrow into it lands on that page; Success then shows that page
   with a ✓. When the arrows into one end node land on different pages (paid orders on Confirmation,
   pending ones on Review, or two steps' `rejected` actions on pages of their own), or one of them has no
   page (the "done" arrow after the last step), the end node keeps its generic name and each arrow ends with
-  its own page ("→ Confirmation").
+  its own page ("→ Confirmation"). Since an end node is drawn once per step, a copy reached by a single
+  arrow is named after that arrow's page instead.
 - Everything else is as in the Technical view: the same order, colors and arrows, and expanding and
   collapsing keeps the zoom and the node under the pointer. Switching views keeps the zoom too. The legend
   explains the bands and end pages.

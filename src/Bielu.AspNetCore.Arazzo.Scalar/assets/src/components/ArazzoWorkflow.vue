@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
 import { provideExpressionScope } from '../helpers/expression-scope'
 import { inputsAnchor, outputsAnchor, workflowOutputConsumers } from '../helpers/expressions'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
@@ -10,6 +11,7 @@ import { resolveReusables, resolveReusablesWithReference } from '../helpers/reus
 import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
 import type { ArazzoPluginOptions } from '../helpers/plugin-options'
 import { resolveStepTarget } from '../helpers/resolve-target'
+import { describeStep } from '../helpers/step-description'
 import { targetSpec } from '../helpers/target-spec'
 import { setWorkflowView, workflowView } from '../helpers/view-mode'
 import { buildWorkflowGraph, layoutWorkflowGraph, type WorkflowView as OverviewView } from '../helpers/workflow-graph'
@@ -147,6 +149,8 @@ const diagram = computed(() =>
         pages: pagesConfig.value,
         documents: props.documents,
         documentName: props.documentName,
+        // Each box says what its step does (`POST /orders`, `← receives orderPlaced`), in its own document.
+        describeStep: (step, owner) => describeStep(step, owner, props.documents),
       },
     ),
   ),
@@ -165,6 +169,18 @@ const expressionScope = computed(() => ({
   componentsId: props.componentsId,
 }))
 provideExpressionScope(() => expressionScope.value)
+
+/** stepId → the worst problem in that step, marked on its box in the overview. */
+const allDiagnostics = useDiagnostics()
+const stepProblems = computed(() =>
+  Object.fromEntries(
+    props.view.steps.flatMap(({ step }) => {
+      const problems = allDiagnostics.value.get(diagnosticKey(workflow.value.workflowId, step.stepId))
+      const severity = worstSeverity(problems)
+      return severity ? [[step.stepId, { severity, count: problems!.length, messages: problems!.map((problem) => problem.message) }]] : []
+    }),
+  ),
+)
 
 const classic = computed(() => props.layout === 'classic')
 
@@ -362,6 +378,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
           </div>
           <ArazzoWorkflowDiagram
             :layout="diagram"
+            :problems="stepProblems"
             :stepSectionIds="stepSectionIds"
             :workflowId="workflow.workflowId"
             @toggleWorkflow="toggleWorkflow" />
@@ -429,6 +446,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
         class="ba-diagram-large"
         fit
         :layout="diagram"
+        :problems="stepProblems"
         :stepSectionIds="stepSectionIds"
         :workflowId="workflow.workflowId"
         @openStep="dialog?.close()"

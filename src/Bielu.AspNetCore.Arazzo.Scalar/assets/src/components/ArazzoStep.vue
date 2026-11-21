@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { criterionTypeLabel, formatDuration, formatValue, schemaPropertyRows } from '../helpers/format'
+import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
 import { useExpressionScope } from '../helpers/expression-scope'
 import { outputsAnchor, stepOutputConsumers } from '../helpers/expressions'
 import { renderMarkdown } from '../helpers/markdown'
@@ -18,6 +19,7 @@ import ArazzoCriteria from './ArazzoCriteria.vue'
 import ArazzoExpressionText from './ArazzoExpressionText.vue'
 import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
+import ArazzoOperationExchange from './ArazzoOperationExchange.vue'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
 import ArazzoValue from './ArazzoValue.vue'
 
@@ -122,7 +124,8 @@ const targetParameterRows = computed(() => targetParameters(target.value, props.
 
 /**
  * The messages an AsyncAPI target sends or receives, each with its payload as a property list
- * (references followed in the AsyncAPI document), or as written when it is not an object schema.
+ * (references followed in the AsyncAPI document), or as written, with its format, when it is in another
+ * schema format: an Avro schema as JSON, a Protobuf one as its `.proto` source.
  */
 const messages = computed(() =>
   targetMessages(target.value, props.documents).map((message) => ({
@@ -216,6 +219,14 @@ const parameters = computed(() =>
 
 const expressionScope = useExpressionScope()
 
+/** What looks wrong in this step, listed at the top of its body and counted beside its heading. */
+const allDiagnostics = useDiagnostics()
+const problems = computed(() => {
+  const workflowId = expressionScope.value?.workflow?.workflowId
+  return workflowId ? (allDiagnostics.value.get(diagnosticKey(workflowId, props.step.stepId)) ?? []) : []
+})
+const severity = computed(() => worstSeverity(problems.value))
+
 /** Each output with the steps (or workflow outputs) of the workflow that read it. */
 const outputs = computed(() => {
   const scope = expressionScope.value
@@ -272,6 +283,13 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
             class="ba-step-title"
             :class="{ 'ba-step-title-id': heading.title === step.stepId }">
             {{ heading.title }}
+            <span
+              v-if="severity"
+              class="ba-step-problems"
+              :class="`ba-diagnostic-${severity}`"
+              :title="problems.map((problem) => problem.message).join('\n')">
+              {{ severity === 'error' ? '✕' : '!' }} {{ problems.length }}
+            </span>
           </h3>
         </ArazzoAnchor>
         <div
@@ -292,6 +310,18 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
       v-show="open"
       :id="bodyId"
       class="ba-step-body">
+    <ul
+      v-if="problems.length"
+      aria-label="Problems in this step"
+      class="ba-step-diagnostics">
+      <li
+        v-for="(problem, index) in problems"
+        :key="index"
+        :class="`ba-diagnostic-${problem.severity}`">
+        <span class="ba-diagnostic-severity">{{ problem.severity }}</span>
+        <span>{{ problem.message }}</span>
+      </li>
+    </ul>
     <div
       v-if="step.dependsOn?.length || typeof step.timeout === 'number' || step.correlationId"
       class="ba-badges">
@@ -412,6 +442,13 @@ const nestedVerb = (kind: string): string => (kind === 'workflow' ? 'invokes wor
         </table>
       </div>
 
+      <ArazzoOperationExchange
+        v-if="target.kind === 'operation'"
+        :actions="[...onSuccess, ...onFailure]"
+        :contentType="step.requestBody?.contentType"
+        :documents="documents"
+        :successCriteria="step.successCriteria"
+        :target="target" />
       <div
         v-for="message in messages"
         :key="message.name"
