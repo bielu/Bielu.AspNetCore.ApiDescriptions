@@ -72,6 +72,30 @@ describe('toMermaid', () => {
     expect(mermaid).toContain('  n_place -.- n_place_create')
   })
 
+  it('groups the Pages view steps of each page band in a subgraph titled with the page and route', () => {
+    // Arrange
+    const orders = {
+      workflowId: 'orders',
+      steps: [
+        { stepId: 'listOrders', 'x-page': 'orderList', 'x-label': 'Load the orders' },
+        { stepId: 'listFilters', 'x-page': 'orderList' },
+        { stepId: 'audit' },
+      ],
+    } as unknown as ArazzoWorkflow
+    const pagesDocument = { arazzo: '1.1.0', 'x-pages': { orderList: { title: 'Order list', route: '/orders' } }, workflows: [orders] } as ArazzoDocument
+    const graph = buildWorkflowGraph(pagesDocument, orders, undefined, {
+      view: 'pages',
+      pages: { pagesExtension: 'x-pages', pageExtension: 'x-page', labelExtension: 'x-label' },
+    })
+
+    // Act
+    const mermaid = toMermaid(layoutWorkflowGraph(graph))
+
+    // Assert
+    expect(mermaid).toMatch(/ {2}subgraph n_band_0\["Order list · \/orders"\]\n {4}n_listOrders\["Load the orders"\]\n {4}n_listFilters\["listFilters"\]\n {2}end/)
+    expect(mermaid).toMatch(/ {2}subgraph n_band_1\["No page"\]\n {4}n_audit\["audit"\]\n {2}end/)
+  })
+
   it('keeps ids unique when two keys sanitise alike', () => {
     // Arrange
     const layout = layoutWorkflowGraph(
