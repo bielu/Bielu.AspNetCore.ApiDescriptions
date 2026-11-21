@@ -138,6 +138,20 @@
 .bielu-arazzo .ba-diagram-arrow.ba-diagram-failure {
   @apply fill-red;
 }
+/* Data-flow view: the workflow's inputs and outputs, where values enter and leave it. */
+.bielu-arazzo .ba-diagram-node-data rect {
+  fill: color-mix(in srgb, var(--scalar-color-accent) 8%, var(--scalar-background-1));
+  @apply stroke-c-accent;
+  stroke-dasharray: 4 3;
+}
+.bielu-arazzo .ba-diagram-node-data text {
+  @apply font-sans font-medium;
+}
+.bielu-arazzo .ba-diagram-legend-data {
+  @apply inline-block w-3.5 h-2.5 align-middle;
+  border: 1.5px dashed var(--scalar-color-accent);
+  border-radius: 4px;
+}
 /* A workflow a step or an action invokes: a thick outline and italic name set it apart from a step that calls an API. */
 .bielu-arazzo .ba-diagram-node-workflow > rect:first-of-type {
   @apply fill-b-1 stroke-border;

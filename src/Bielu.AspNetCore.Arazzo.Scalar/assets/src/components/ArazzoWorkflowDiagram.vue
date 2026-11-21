@@ -161,7 +161,13 @@ watch(
 /** The rendered `<svg>`, for export. */
 const svgElement = ref<SVGSVGElement>()
 
-defineExpose({ resetView, svg: () => svgElement.value })
+/**
+ * Measures the scale again, keeping the reader's pan and zoom: for when another graph is drawn in its place (a
+ * change of view), which the scale measured for the last one may not fit.
+ */
+const remeasure = () => measureScale()
+
+defineExpose({ resetView, remeasure, svg: () => svgElement.value })
 
 const onWheel = (event: WheelEvent) => {
   event.preventDefault()
@@ -270,6 +276,10 @@ const opensByToggling = (node: LaidOutNode): boolean => node.kind === 'workflow'
 
 const onNodeClick = (node: LaidOutNode) => (opensByToggling(node) ? toggleWorkflow(node) : openStep(node))
 
+/** An arrow label's tooltip: the action it stands for, the page it lands on, and the whole label when it is shortened. */
+const edgeTitle = (edge: LaidOutEdge): string | undefined =>
+  [edge.action, (edge.page || edge.fullLabel) && (edge.fullLabel ?? edge.label)].filter(Boolean).join(': ') || undefined
+
 /** A box's title (with the technical id behind a Pages label), then the retries of the step itself, one per line. */
 const nodeTitle = (node: LaidOutNode): string | undefined => {
   const problems = problemsOf(node)
@@ -288,6 +298,9 @@ const technicalTitle = (node: LaidOutNode): string | undefined => {
       return `${what} (already expanded above: not expanded again)`
     }
     return node.expandable ? `${what}. ${node.expanded ? 'Hide' : 'Show'} its steps with the button.` : what
+  }
+  if (node.kind === 'data') {
+    return node.id === '::inputs' ? "The workflow's inputs" : "The workflow's outputs"
   }
   if (node.kind === 'failure' && node.actions?.length) {
     return `Ends the workflow: ${node.actions.join(', ')}`
@@ -453,7 +466,7 @@ const label = computed(() =>
           <g
             v-if="edge.label && edge.labelPosition"
             class="ba-diagram-edge-label">
-            <title v-if="edge.action || edge.page">{{ [edge.action, edge.page && edge.label].filter(Boolean).join(': ') }}</title>
+            <title v-if="edgeTitle(edge)">{{ edgeTitle(edge) }}</title>
             <rect
               :height="18"
               rx="3"
@@ -524,6 +537,13 @@ const label = computed(() =>
             :width="SPEC_MARKER_WIDTH"
             :x="node.x - node.width / 2 + 1"
             :y="node.y - node.height / 2 + 1" />
+          <rect
+            v-if="node.kind === 'data'"
+            :height="node.height"
+            rx="12"
+            :width="node.width"
+            :x="node.x - node.width / 2"
+            :y="node.y - node.height / 2" />
           <rect
             v-if="node.kind === 'success' || node.kind === 'failure'"
             :height="node.height"

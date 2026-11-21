@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
 import { provideExpressionScope } from '../helpers/expression-scope'
 import { inputsAnchor, outputsAnchor, workflowOutputConsumers } from '../helpers/expressions'
@@ -7,6 +7,7 @@ import { formatValue, schemaPropertyRows } from '../helpers/format'
 import { resolveLocalRef } from '../helpers/extensions'
 import { renderMarkdown } from '../helpers/markdown'
 import { STEP_EXPAND_EVENT, type WorkflowView } from '../helpers/navigation'
+import { buildDataFlowGraph } from '../helpers/data-flow'
 import { resolveReusables, resolveReusablesWithReference } from '../helpers/reusable'
 import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
 import type { ArazzoPluginOptions } from '../helpers/plugin-options'
@@ -15,7 +16,7 @@ import { describeStep } from '../helpers/step-description'
 import { targetSpec } from '../helpers/target-spec'
 import { setWorkflowView, workflowView } from '../helpers/view-mode'
 import { buildWorkflowGraph, layoutWorkflowGraph, type WorkflowView as OverviewView } from '../helpers/workflow-graph'
-import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction, PluginEventBus } from '../types'
+import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep as StepObject, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoDiagramExport from './ArazzoDiagramExport.vue'
@@ -113,12 +114,18 @@ const pagesConfig = computed((): PagesConfig => {
 /** The Technical | Pages toggle is offered only when the pages options are set and this document uses them. */
 const pagesAvailable = computed(() => pagesInUse(props.document, pagesConfig.value))
 
-const overviewView = computed((): OverviewView => (pagesAvailable.value ? workflowView() : 'technical'))
+/** The reader's view; Pages falls back to Technical where this document has no pages. */
+const overviewView = computed((): OverviewView => {
+  const chosen = workflowView()
+  return chosen === 'pages' && !pagesAvailable.value ? 'technical' : chosen
+})
 
-const views: { value: OverviewView; label: string }[] = [
+/** Technical and Data flow always; Pages when the document describes its pages. */
+const views = computed((): { value: OverviewView; label: string }[] => [
   { value: 'technical', label: 'Technical' },
-  { value: 'pages', label: 'Pages' },
-]
+  { value: 'data', label: 'Data flow' },
+  ...(pagesAvailable.value ? [{ value: 'pages' as const, label: 'Pages' }] : []),
+])
 
 /** Pages view: each step's page (title and route) and plain-language label, for the step list. */
 const stepPages = computed(() => {
@@ -135,26 +142,26 @@ const stepPages = computed(() => {
   )
 })
 
+/** The spec a step's target is described in, resolved in the document the step belongs to. */
+const specOf = (step: StepObject, owner: ArazzoDocument) => targetSpec(owner, step, resolveStepTarget(owner, step, props.documents), props.documents)?.family
+
 /** Each step box is marked with the spec its target is described in. */
 const diagram = computed(() =>
-  layoutWorkflowGraph(
-    buildWorkflowGraph(
-      props.document,
-      workflow.value,
-      // A step of an expanded workflow from another Arazzo document resolves its target in that document.
-      (step, owner) => targetSpec(owner, step, resolveStepTarget(owner, step, props.documents), props.documents)?.family,
-      {
-        expanded: expandedWorkflows.value,
-        endLabelExtension: props.arazzoOptions?.endLabelExtension,
-        view: overviewView.value,
-        pages: pagesConfig.value,
-        documents: props.documents,
-        documentName: props.documentName,
-        // Each box says what its step does (`POST /orders`, `← receives orderPlaced`), in its own document.
-        describeStep: (step, owner) => describeStep(step, owner, props.documents),
-      },
-    ),
-  ),
+  overviewView.value === 'data'
+    ? layoutWorkflowGraph(buildDataFlowGraph(props.document, workflow.value, specOf))
+    : layoutWorkflowGraph(
+        // A step of an expanded workflow from another Arazzo document resolves its target in that document.
+        buildWorkflowGraph(props.document, workflow.value, specOf, {
+          expanded: expandedWorkflows.value,
+          endLabelExtension: props.arazzoOptions?.endLabelExtension,
+          view: overviewView.value,
+          pages: pagesConfig.value,
+          documents: props.documents,
+          documentName: props.documentName,
+          // Each box says what its step does (`POST /orders`, `← receives orderPlaced`), in its own document.
+          describeStep: (step, owner) => describeStep(step, owner, props.documents),
+        }),
+      ),
 )
 
 const stepSectionIds = computed(
@@ -216,6 +223,17 @@ const toggleSteps = () => {
 const dialog = ref<HTMLDialogElement>()
 const expanded = ref<InstanceType<typeof ArazzoWorkflowDiagram>>()
 const inline = ref<InstanceType<typeof ArazzoWorkflowDiagram>>()
+
+// Another view draws another graph, which the scale measured for the last one may not fit: measure it again,
+// keeping the reader's zoom. Only when the view changes, not the layout, so expanding a workflow keeps its scale.
+watch(
+  overviewView,
+  () => {
+    inline.value?.remeasure()
+    expanded.value?.remeasure()
+  },
+  { flush: 'post' },
+)
 
 const expand = async () => {
   dialog.value?.showModal()
@@ -348,7 +366,6 @@ const closeOnBackdrop = (event: MouseEvent) => {
           <div class="ba-overview-header">
             <div class="ba-overview-title">Workflow overview</div>
             <div
-              v-if="pagesAvailable"
               aria-label="Overview view"
               class="ba-view-toggle"
               role="group">
@@ -408,7 +425,6 @@ const closeOnBackdrop = (event: MouseEvent) => {
         <div class="ba-overview-title">Workflow overview · {{ workflow.summary || workflow.workflowId }}</div>
         <div class="ba-dialog-actions">
           <div
-            v-if="pagesAvailable"
             aria-label="Overview view"
             class="ba-view-toggle"
             role="group">

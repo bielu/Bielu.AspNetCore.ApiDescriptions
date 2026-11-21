@@ -157,6 +157,17 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     at a readable size is scaled to fit; a taller one (a workflow with another expanded inside it) is drawn
     a little larger than its natural size from the top, and the reader pans down, rather than shrinking it
     until its text can't be read.
+  - **Data flow.** The overview's **Technical | Data flow** toggle (with **Pages** when the document describes
+    its pages) switches it from the order steps run in to the values passed between them: the workflow's
+    inputs, each step, other workflows whose outputs a step reads, and the workflow's outputs, with an arrow
+    from where each value comes from to everything that reads it, named on the arrow ("orderId, total"). It
+    is built from the Runtime Expressions the steps hold (`$inputs`, `$steps.<id>.outputs`,
+    `$workflows.<id>.outputs`, including a receiving step's `correlationId`). A step that passes nothing is
+    still drawn. Workflow-level parameters, which every step receives, are left out. The choice is
+    remembered in the browser, as the Pages view is.
+
+    ![The placeOrder workflow in the Data flow view: inputs to create, create's orderId and total to the steps that read them and to the workflow's outputs](../../images/arazzo/scalar-data-flow.jpg)
+
   - **Export.** The download button beside the overview's expand button (inline and full window) saves the
     overview as it is shown, with its expanded workflows and in the current light or dark theme, as an SVG
     (styles written onto each element, so it looks the same outside Scalar) or a PNG at twice its size. **Copy
