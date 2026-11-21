@@ -346,15 +346,17 @@ onBeforeUnmount(stopTail)
   word-break: break-word;
 }
 
-.bielu-broker__log-in {
+/* Qualified with the list class: a bare .bielu-broker__log-in loses to the transparent border
+   set by `.bielu-broker__log li` above, which left every marker invisible. */
+.bielu-broker__log .bielu-broker__log-in {
   border-left-color: var(--scalar-color-green);
 }
 
-.bielu-broker__log-out {
+.bielu-broker__log .bielu-broker__log-out {
   border-left-color: var(--scalar-color-blue);
 }
 
-.bielu-broker__log-sys {
+.bielu-broker__log .bielu-broker__log-sys {
   border-left-color: var(--scalar-color-red);
 }
 
