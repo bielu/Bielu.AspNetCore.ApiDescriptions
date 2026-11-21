@@ -250,7 +250,8 @@ const withReusables = (document: ArazzoDocument, entries: unknown[] | undefined)
 
 /**
  * The Runtime Expressions a step reads: in its parameters (components followed), request body,
- * success criteria, actions and outputs. Its `stepId`, target and prose fields are not read.
+ * success criteria, actions, outputs and `correlationId` (the value a received message is matched on).
+ * Its `stepId`, target and prose fields are not read.
  */
 export const stepExpressions = (document: ArazzoDocument, step: ArazzoStep): string[] => {
   const strings = stringsIn(
@@ -261,6 +262,7 @@ export const stepExpressions = (document: ArazzoDocument, step: ArazzoStep): str
       withReusables(document, step.onSuccess),
       withReusables(document, step.onFailure),
       step.outputs,
+      step.correlationId,
     ],
     [],
   )
