@@ -53,45 +53,37 @@
 }
 /* The overview's export menu: a small dropdown under its button. */
 .bielu-arazzo .ba-export {
-  position: relative;
-  display: inline-block;
+  @apply relative inline-block;
 }
 .bielu-arazzo .ba-export > summary {
+  @apply cursor-pointer;
   list-style: none;
-  cursor: pointer;
 }
 .bielu-arazzo .ba-export > summary::-webkit-details-marker {
-  display: none;
+  @apply hidden;
 }
 .bielu-arazzo .ba-export-menu {
-  position: absolute;
+  @apply absolute flex flex-col p-1 border border-border rounded bg-b-1;
   right: 0;
   top: calc(100% + 4px);
   z-index: 10;
-  display: flex;
-  flex-direction: column;
   min-width: 160px;
-  padding: 4px;
-  border: var(--scalar-border-width, 1px) solid var(--scalar-border-color);
-  border-radius: var(--scalar-radius, 4px);
-  background: var(--scalar-background-1);
   box-shadow: var(--scalar-shadow-1, 0 4px 12px rgb(0 0 0 / 0.2));
 }
 .bielu-arazzo .ba-export-menu button {
-  padding: 6px 8px;
+  @apply py-1.5 px-2;
   border: none;
-  border-radius: var(--scalar-radius, 4px);
+  @apply rounded;
   background: none;
-  color: var(--scalar-color-1);
+  @apply text-c-1;
   font: inherit;
   font-size: var(--scalar-small, 13px);
-  text-align: left;
-  cursor: pointer;
+  @apply text-left cursor-pointer;
 }
 .bielu-arazzo .ba-export-menu button:hover,
 .bielu-arazzo .ba-export-menu button:focus-visible {
-  background: var(--scalar-background-2);
+  @apply bg-b-2;
 }
 .bielu-arazzo .ba-export-status:empty {
-  display: none;
+  @apply hidden;
 }
