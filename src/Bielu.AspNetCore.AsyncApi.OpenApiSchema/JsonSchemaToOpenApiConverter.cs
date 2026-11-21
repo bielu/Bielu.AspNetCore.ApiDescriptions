@@ -279,8 +279,10 @@ internal sealed class JsonSchemaToOpenApiConverter(AsyncApiDocument document)
             values = enumValues.Select(value => value?.GetNode()).ToList();
         }
 
-        if (schema.Const?.GetNode() is { } constant)
+        if (schema.Const is { } constValue)
         {
+            // A const of null is still a const: only an absent one leaves the enum alone.
+            var constant = constValue.GetNode();
             values = values is null ? [constant] : values.Where(value => JsonNode.DeepEquals(value, constant)).ToList();
         }
         else if (values is null && schema.Type == SchemaType.Null)

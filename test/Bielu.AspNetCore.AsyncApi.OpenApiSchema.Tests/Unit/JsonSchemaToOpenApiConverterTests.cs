@@ -367,6 +367,62 @@ public class JsonSchemaToOpenApiConverterTests
     }
 
     [Fact]
+    public void Convert_NullConstInsideEnum_KeepsOnlyNull()
+    {
+        // Arrange
+        var schema = new AsyncApiJsonSchema
+        {
+            Enum = [new AsyncApiAny(1), new AsyncApiAny((JsonNode?)null)],
+            Const = new AsyncApiAny((JsonNode?)null),
+        };
+
+        // Act
+        var converted = Convert(schema);
+
+        // Assert
+        converted["enum"]!.AsArray().ShouldHaveSingleItem().ShouldBeNull();
+    }
+
+    [Fact]
+    public void Convert_NullConstOutsideEnum_AllowsNothing()
+    {
+        // Arrange
+        var schema = new AsyncApiJsonSchema
+        {
+            Enum = [new AsyncApiAny(1), new AsyncApiAny(2)],
+            Const = new AsyncApiAny((JsonNode?)null),
+        };
+
+        // Act
+        var converted = Convert(schema);
+
+        // Assert
+        converted.ContainsKey("enum").ShouldBeFalse();
+        converted["allOf"]!.AsArray().ShouldHaveSingleItem()!["not"]!.AsObject().Count.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Convert_NullConstWithoutEnum_AllowsOnlyNull()
+    {
+        // Act
+        var converted = Convert(new AsyncApiJsonSchema { Const = new AsyncApiAny((JsonNode?)null) });
+
+        // Assert
+        converted["enum"]!.AsArray().ShouldHaveSingleItem().ShouldBeNull();
+    }
+
+    [Fact]
+    public void Convert_NullConstWithATypeExcludingNull_AllowsNothing()
+    {
+        // Act
+        var converted = Convert(new AsyncApiJsonSchema { Type = SchemaType.String, Const = new AsyncApiAny((JsonNode?)null) });
+
+        // Assert
+        converted.ContainsKey("enum").ShouldBeFalse();
+        converted["allOf"]!.AsArray().ShouldHaveSingleItem()!["not"]!.AsObject().Count.ShouldBe(0);
+    }
+
+    [Fact]
     public void Convert_RecursiveReference_PointsAtAnOpenApiComponent()
     {
         // Arrange
