@@ -1,0 +1,25 @@
+/*
+ * Shared Tailwind entry for the console plugins.
+ *
+ * Scalar styles its own UI with Tailwind v4 on top of `@scalar/themes`: the theme maps Tailwind's
+ * scales onto Scalar's `--scalar-*` design tokens (`bg-b-1` is `--scalar-background-1`, `text-c-2`
+ * is `--scalar-color-2`, `text-sm` is `--scalar-font-size-4`, `rounded` is `--scalar-radius-md`),
+ * and replaces Tailwind's default palette, so a console written against it follows the active
+ * Scalar theme and dark mode like Scalar's own operations do.
+ *
+ * Scalar's stylesheet only contains the utilities Scalar's own markup uses, so a plugin cannot rely
+ * on it for classes of its own. Each plugin therefore generates its own utilities, scoped under its
+ * element tag the way Scalar scopes them under `.scalar-app`:
+ *
+ *   @import "@bielu/scalar-core/tailwind.css";
+ *   bielu-example-console {
+ *     @tailwind utilities source("./components");
+ *   }
+ *
+ * The utilities are emitted unlayered, so they win over Scalar's layered base styles inside the
+ * console. Tailwind's preflight is deliberately not imported: the page already loads Scalar's reset.
+ *
+ * `@scalar/themes` is pinned to the version `@scalar/api-reference` itself depends on, so the
+ * token names match the Scalar the plugins target.
+ */
+@import "@scalar/themes/tailwind.css";
