@@ -1,5 +1,6 @@
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoWorkflow } from '../types'
 import { effectiveFailureActions, reachableActions } from './actions'
+import { parseExpression, stepExpressions } from './expressions'
 import { formatDuration } from './format'
 import { statusCodesIn } from './openapi-exchange'
 import { findDocumentByUrl, resolveStepTarget, sourceNameOf } from './resolve-target'
@@ -35,16 +36,30 @@ export type Sequence = {
 /** The lane of the client running the workflow. */
 export const CLIENT_ID = '::client'
 
-/** The steps in the order they run: by `dependsOn` when the workflow uses it (stable otherwise), else document order. */
-export const runOrder = (steps: ArazzoStep[]): ArazzoStep[] => {
+/** The steps of the same workflow whose outputs a step reads (`$steps.<id>.outputs.…`): implicit dependencies. */
+const outputsRead = (document: ArazzoDocument, step: ArazzoStep): string[] =>
+  stepExpressions(document, step).flatMap((expression) => {
+    const parsed = parseExpression(expression)
+    return parsed.source === 'steps' && parsed.field === 'outputs' && parsed.stepId !== step.stepId ? [parsed.stepId] : []
+  })
+
+/**
+ * The steps in the order they run. Without `dependsOn` the workflow runs sequentially, in document order. With
+ * it, a step runs once its prerequisites have (stable otherwise): the steps it lists in `dependsOn` and, as
+ * Arazzo §5.8.5.2 requires tools to treat them, the steps whose outputs it reads.
+ */
+export const runOrder = (steps: ArazzoStep[], document: ArazzoDocument = { arazzo: '1.1.0' }): ArazzoStep[] => {
   if (!steps.some((step) => step.dependsOn?.length)) {
     return steps
   }
+  const prerequisites = new Map(steps.map((step) => [step, [...(step.dependsOn ?? []), ...outputsRead(document, step)]]))
   const placed = new Set<string>()
   const ordered: ArazzoStep[] = []
   const remaining = [...steps]
   while (remaining.length) {
-    const index = remaining.findIndex((step) => (step.dependsOn ?? []).every((dependency) => placed.has(dependency) || !steps.some((other) => other.stepId === dependency)))
+    const index = remaining.findIndex((step) =>
+      prerequisites.get(step)!.every((dependency) => placed.has(dependency) || !steps.some((other) => other.stepId === dependency)),
+    )
     // A cycle in dependsOn: take the next step in document order rather than stop.
     const [next] = remaining.splice(index < 0 ? 0 : index, 1)
     ordered.push(next!)
@@ -55,7 +70,7 @@ export const runOrder = (steps: ArazzoStep[]): ArazzoStep[] => {
 
 /** `$steps.create.outputs.orderId` reads as "orderId from create"; anything else as written. */
 const readable = (expression: string): string => {
-  const match = /^\$steps\.([^.]+)\.outputs\.([^.#]+)/.exec(expression)
+  const match = /^\$steps\.([^.]+)\.outputs\.([^#]+)/.exec(expression)
   return match ? `${match[2]} from ${match[1]}` : expression
 }
 
@@ -100,7 +115,7 @@ export const buildSequence = (document: ArazzoDocument, workflow: ArazzoWorkflow
     return id
   }
 
-  for (const step of runOrder(workflow.steps)) {
+  for (const step of runOrder(workflow.steps, document)) {
     const target = resolveStepTarget(document, step, documents)
     const spec = targetSpec(document, step, target, documents)
     const failures = failureNote(reachableActions(effectiveFailureActions(document, workflow, step)))
