@@ -62,6 +62,13 @@ const usableConnections = computed(() => {
 
 const channelKey = (channel: BrokerChannelModel) => `${channel.documentName}:${channel.id}`
 
+// Full class names, so Tailwind finds them when it scans this file for the utilities to generate.
+const logBorder: Record<LogEntry['dir'], string> = {
+  in: 'border-l-green',
+  out: 'border-l-blue',
+  sys: 'border-l-red',
+}
+
 function currentAuth() {
   return resolveBrokerAuth(activeModel.value?.name ?? '', activeModel.value?.securitySchemes, getAuthState())
 }
@@ -191,24 +198,24 @@ onBeforeUnmount(stopTail)
 </script>
 
 <template>
-  <section class="bielu-broker">
-    <p v-if="loading" class="bielu-broker__status">Loading broker channels…</p>
-    <p v-else-if="error" class="bielu-broker__status bielu-broker__status--error">{{ error }}</p>
-    <p v-else-if="channels.length === 0" class="bielu-broker__status">
+  <section class="bielu-broker flex flex-col gap-3 text-sm">
+    <p v-if="loading">Loading broker channels…</p>
+    <p v-else-if="error" class="text-red">{{ error }}</p>
+    <p v-else-if="channels.length === 0">
       No channels with <code>kafka</code>, <code>mqtt</code> or <code>amqp</code> bindings were found in the
       AsyncAPI document(s).
     </p>
 
     <template v-else>
-      <header class="bielu-broker__bar">
-        <label v-if="documentNames.length > 1">
+      <header class="flex flex-wrap items-end gap-3">
+        <label v-if="documentNames.length > 1" class="flex flex-col gap-1">
           Document
           <select v-model="selectedDocumentName">
             <option v-for="name in documentNames" :key="name" :value="name">{{ name }}</option>
           </select>
         </label>
 
-        <label>
+        <label class="flex flex-col gap-1">
           Channel
           <select v-model="selectedChannelId">
             <option v-for="channel in channels" :key="channel.id" :value="channel.id">
@@ -217,7 +224,7 @@ onBeforeUnmount(stopTail)
           </select>
         </label>
 
-        <label>
+        <label class="flex flex-col gap-1">
           Connection
           <select v-model="selectedConnection">
             <option v-for="connection in usableConnections" :key="connection.name" :value="connection.name">
@@ -229,33 +236,35 @@ onBeforeUnmount(stopTail)
         <button type="button" :disabled="refreshingConnections" @click="refreshConnections">Refresh</button>
       </header>
 
-      <p v-if="connections.length === 0" class="bielu-broker__status bielu-broker__status--error">
+      <p v-if="connections.length === 0" class="text-red">
         The server reported no broker connections. Register one with
         <code>AddScalarBrokerBridge(o =&gt; o.AddKafkaConnection(…))</code>.
       </p>
-      <p
-        v-else-if="selectedChannel && usableConnections.length === 0"
-        class="bielu-broker__status bielu-broker__status--error"
-      >
+      <p v-else-if="selectedChannel && usableConnections.length === 0" class="text-red">
         The server has no <code>{{ selectedChannel.protocol }}</code> connection for this channel. Only a
         Kafka driver ships today; an MQTT or AMQP channel needs a driver that implements
         <code>IBrokerBridge</code>.
       </p>
 
-      <p v-if="selectedChannel?.description" class="bielu-broker__description">
+      <p v-if="selectedChannel?.description" class="m-0 opacity-80">
         {{ selectedChannel.description }}
       </p>
 
-      <div v-if="selectedChannel" class="bielu-broker__publish">
-        <label>
+      <div v-if="selectedChannel" class="flex flex-col gap-2">
+        <label class="flex flex-col gap-1">
           Key
           <input v-model="keys[channelKey(selectedChannel)]" type="text" placeholder="(optional)" />
         </label>
-        <label>
+        <label class="flex flex-col gap-1">
           Payload
-          <textarea v-model="payloads[channelKey(selectedChannel)]" rows="8" spellcheck="false"></textarea>
+          <textarea
+            v-model="payloads[channelKey(selectedChannel)]"
+            rows="8"
+            spellcheck="false"
+            class="w-full font-code"
+          ></textarea>
         </label>
-        <div class="bielu-broker__actions">
+        <div class="flex gap-2">
           <button type="button" :disabled="publishing || !selectedConnection" @click="onPublish">
             {{ publishing ? 'Publishing…' : 'Publish' }}
           </button>
@@ -264,102 +273,20 @@ onBeforeUnmount(stopTail)
         </div>
       </div>
 
-      <ol class="bielu-broker__log">
-        <li v-for="(entry, index) in log" :key="index" :class="`bielu-broker__log-${entry.dir}`">
-          <span class="bielu-broker__time">{{ entry.time }}</span>
-          <pre>{{ entry.text }}</pre>
+      <ol class="m-0 flex max-h-80 list-none flex-col gap-1 overflow-y-auto p-0">
+        <li
+          v-for="(entry, index) in log"
+          :key="index"
+          class="grid grid-cols-[6rem_1fr] gap-2 border-l-3 pl-2"
+          :class="logBorder[entry.dir]"
+        >
+          <span class="opacity-60 tabular-nums">{{ entry.time }}</span>
+          <pre class="m-0 whitespace-pre-wrap wrap-break-word">{{ entry.text }}</pre>
         </li>
       </ol>
     </template>
   </section>
 </template>
 
-<style scoped>
-.bielu-broker {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  font-size: 0.875rem;
-}
-
-.bielu-broker__bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: end;
-}
-
-.bielu-broker__bar label,
-.bielu-broker__publish label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.bielu-broker__publish {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.bielu-broker__publish textarea {
-  font-family: monospace;
-  width: 100%;
-}
-
-.bielu-broker__actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.bielu-broker__status--error {
-  color: #b3261e;
-}
-
-.bielu-broker__description {
-  margin: 0;
-  opacity: 0.8;
-}
-
-.bielu-broker__log {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  max-height: 20rem;
-  overflow-y: auto;
-}
-
-.bielu-broker__log li {
-  display: grid;
-  grid-template-columns: 6rem 1fr;
-  gap: 0.5rem;
-  border-left: 3px solid transparent;
-  padding-left: 0.5rem;
-}
-
-.bielu-broker__log li pre {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.bielu-broker__log-in {
-  border-left-color: #2e7d32;
-}
-
-.bielu-broker__log-out {
-  border-left-color: #1565c0;
-}
-
-.bielu-broker__log-sys {
-  border-left-color: #b3261e;
-}
-
-.bielu-broker__time {
-  opacity: 0.6;
-  font-variant-numeric: tabular-nums;
-}
-</style>
+<!-- Not scoped: the utilities are scoped to the console element instead (see ../style.css). -->
+<style src="../style.css"></style>
