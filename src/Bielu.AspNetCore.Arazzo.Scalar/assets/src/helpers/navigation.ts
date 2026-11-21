@@ -122,12 +122,14 @@ const FLASH_MS = 1600
 /**
  * Goes to an element of the document from a link inside it: shows the step it is in even while the
  * filter hides it (`STEP_REVEAL_EVENT`), unfolds that step (and, in the classic layout, its workflow),
- * scrolls the element into view and highlights it briefly, so a reader sees which row a link meant.
+ * scrolls the element into view and highlights it briefly, so a reader sees which row a link meant. With
+ * `focus`, keyboard focus moves to it too.
  */
 export const goToAnchor = async (
   from: Element,
   target: { anchor?: string; stepSection?: string; workflowSection?: string },
   nextTick: () => Promise<void>,
+  options: { focus?: boolean } = {},
 ): Promise<void> => {
   if (!target.anchor) {
     return
@@ -145,6 +147,13 @@ export const goToAnchor = async (
     return
   }
   element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  if (options.focus) {
+    // Keyboard users land on what they opened, not back where they came from.
+    if (!element.hasAttribute('tabindex') && !(element as HTMLElement).matches('a[href], button, input, select, textarea, summary')) {
+      element.setAttribute('tabindex', '-1')
+    }
+    ;(element as HTMLElement).focus({ preventScroll: true })
+  }
   // An outputs row is a <dt> and its <dd>: the value is part of what the link meant.
   const flashed = element.tagName === 'DT' && element.nextElementSibling?.tagName === 'DD' ? [element, element.nextElementSibling] : [element]
   flashed.forEach((target) => target.classList.add('ba-flash'))

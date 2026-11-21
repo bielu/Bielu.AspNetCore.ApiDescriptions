@@ -94,13 +94,14 @@
 .bielu-arazzo .ba-sequence-fit {
   flex: 1;
   display: flex;
-  justify-content: center;
+  /* Centred by the SVG's auto margins, not justify-content, which would cut off the left of a wider diagram. */
   align-items: flex-start;
   overflow: auto;
   padding: 16px;
 }
 .bielu-arazzo .ba-sequence svg {
   display: block;
+  flex: none;
   margin: 0 auto;
 }
 .bielu-arazzo .ba-sequence-participant rect {

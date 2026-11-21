@@ -241,6 +241,43 @@ describe('the sequence diagram', () => {
     host.remove()
   })
 
+  it('keeps five lanes readable on a phone, scrolling sideways rather than shrinking the labels', () => {
+    // Arrange
+    const participants = [{ id: CLIENT_ID, label: 'Client' }, ...['a', 'b', 'c', 'd'].map((id) => ({ id, label: id }))]
+    const sequence = { participants, messages: [{ stepId: 's', from: CLIENT_ID, to: 'd', label: 'GET /x', kind: 'request' as const }] }
+
+    // Act
+    wrapper = mount(ArazzoSequenceDiagram, { props: { sequence, stepSectionIds: {} } })
+
+    // Assert
+    const svg = wrapper.find('svg').element as SVGSVGElement
+    const natural = Number(svg.getAttribute('viewBox')!.split(' ')[2])
+    // At 390px the column is far narrower than this: the 11px labels stay at 85% or more, and the container scrolls.
+    expect(Number.parseFloat(svg.style.minWidth) / natural).toBeGreaterThanOrEqual(0.85)
+    expect(natural).toBeGreaterThan(390)
+  })
+
+  it.each(['Enter', ' '])('opens a step from the full-window sequence with %j: closes the window and focuses the step', async (key) => {
+    // Arrange
+    const [view] = toWorkflowViews(document, traverseArazzoDocument({ documentId: 'doc', document: document as unknown as Record<string, unknown> }))
+    wrapper = mount(ArazzoWorkflow, { attachTo: globalThis.document.body, props: { view: view!, document, documents } })
+    await wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === 'Sequence')!.trigger('click')
+    await flushPromises()
+    const dialog = wrapper.find('dialog').element as HTMLDialogElement
+    const close = vi.spyOn(dialog, 'close')
+    const step = wrapper.findAll('dialog .ba-sequence-step')[0]!
+    const section = globalThis.document.getElementById(view!.steps[0]!.id)!
+    section.scrollIntoView = vi.fn()
+
+    // Act
+    await step.trigger('keydown', { key })
+    await flushPromises()
+
+    // Assert
+    expect(close).toHaveBeenCalled()
+    expect(globalThis.document.activeElement).toBe(section)
+  })
+
   it('replaces the overview when Sequence is chosen, without export or legend', async () => {
     // Arrange
     localStorage.clear()

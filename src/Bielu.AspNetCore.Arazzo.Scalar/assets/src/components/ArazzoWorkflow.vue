@@ -268,12 +268,8 @@ const expand = async () => {
   expanded.value?.resetView()
 }
 
-/** Opening a step from the full-window sequence closes the window, as a box in the full-window overview does. */
-const onSequenceClick = (event: MouseEvent) => {
-  if ((event.target as Element | null)?.closest('.ba-sequence-step')) {
-    dialog.value?.close()
-  }
-}
+/** Opening a step from the full-window sequence (pointer or keyboard) closes the window, as a box in the full-window overview does. */
+const onSequenceNavigate = () => dialog.value?.close()
 
 const closeOnBackdrop = (event: MouseEvent) => {
   if (event.target === dialog.value) {
@@ -539,7 +535,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
         fit
         :sequence="sequence"
         :stepSectionIds="ownStepSections"
-        @click="onSequenceClick" />
+        @navigate="onSequenceNavigate" />
       <ArazzoWorkflowDiagram
         v-else
         ref="expanded"

@@ -6,7 +6,9 @@ import { CLIENT_ID, type Sequence, type SequenceMessage } from '../helpers/seque
 /**
  * The workflow as a sequence diagram: a lane for the client and one per service or broker it talks to, and the
  * steps' requests, responses and messages top to bottom in the order they run. Each step's name on the left
- * opens the step.
+ * opens the step, by pointer, Enter or Space alike, and emits `navigate` first so a full-window view can close.
+ *
+ * The diagram shrinks to its column only down to a readable scale; with more lanes than fit, it scrolls sideways.
  */
 const props = defineProps<{
   sequence: Sequence
@@ -16,12 +18,19 @@ const props = defineProps<{
   fit?: boolean
 }>()
 
+const emit = defineEmits<{
+  /** A step's name was activated; the step is being opened. */
+  navigate: [stepId: string]
+}>()
+
 const GUTTER = 120
 const LANE = 210
 const HEADER = 44
 const ROW = 36
 const NOTE = 16
 const MAX_LABEL = 28
+/** The smallest the diagram is drawn at (11px labels at about 9px); narrower than that, it scrolls instead. */
+const MIN_SCALE = 0.85
 
 const markerId = `ba-seq-${useId()}`
 
@@ -52,7 +61,9 @@ const dashed = (message: SequenceMessage): boolean => message.kind === 'response
 const open = (event: Event, stepId: string) => {
   const section = props.stepSectionIds[stepId]
   if (section) {
-    void goToAnchor(event.currentTarget as Element, { anchor: section, stepSection: section }, nextTick)
+    const from = event.currentTarget as Element
+    emit('navigate', stepId)
+    void goToAnchor(from, { anchor: section, stepSection: section }, nextTick, { focus: true })
   }
 }
 
@@ -73,7 +84,7 @@ const isClient = (id: string) => id === CLIENT_ID
     <svg
       :aria-label="`Sequence of ${sequence.messages.length} messages between ${sequence.participants.map((participant) => participant.label).join(', ')}`"
       role="group"
-      :style="{ maxWidth: `${width * (fit ? 1.4 : 1)}px` }"
+      :style="{ minWidth: `${width * MIN_SCALE}px`, maxWidth: `${width * (fit ? 1.4 : 1)}px` }"
       :viewBox="`0 0 ${width} ${height}`"
       width="100%">
       <defs>
