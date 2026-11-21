@@ -202,6 +202,20 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
 - Each step can be collapsed with the chevron beside its heading, and a workflow's "Collapse steps"
   button folds all of its steps at once. A collapsed step still shows a one-line summary of what it
   targets (spec, action and target), and clicking a step in the overview opens it.
+- Problems the view can find on its own are listed under the header ("1 error · 3 warnings found in this
+  document"), each linking to its step; listed again at the top of the step, counted beside its heading, and
+  marked on its box in the overview. Errors are certainly wrong: a target the loaded sources don't declare, a
+  source description, workflow or step that doesn't exist (in a target, `goto`, `dependsOn` or Runtime
+  Expression), a required path parameter that isn't passed, or a duplicate `stepId`. Warnings are likely
+  mistakes: a parameter the operation doesn't declare (headers aren't checked), a required query parameter
+  that isn't passed, a status the criteria check that the operation doesn't return, a step that depends on
+  one whose success always ends the workflow (so it never runs), and an expression that reads a step that
+  doesn't run first, or a step that sends its own output. A target is only checked once the documents it
+  could be in are loaded. The `ArazzoValidator` in .NET and the `BARAZZO` analyzers check the document
+  itself; these checks add what only the loaded OpenAPI and AsyncAPI documents can tell.
+
+  ![The field reference with three warnings in the header, one listed at the top of the create step, and markers on the step boxes in the overview](../../images/arazzo/scalar-diagnostics.jpg)
+
 - Each workflow and step heading has a copy-link button. With Scalar's `classic` layout, each
   workflow can be collapsed.
 
