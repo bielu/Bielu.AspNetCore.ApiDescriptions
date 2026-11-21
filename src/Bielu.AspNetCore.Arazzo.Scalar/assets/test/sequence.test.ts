@@ -110,6 +110,41 @@ describe('runOrder', () => {
 })
 
 describe('buildSequence', () => {
+  it('stops at an unconditional end, and follows a goto', () => {
+    // Arrange
+    const workflow: Workflow = {
+      workflowId: 'w',
+      steps: [
+        { stepId: 'start', operationId: 'a', onSuccess: [{ name: 'done', type: 'end' }] },
+        { stepId: 'later', operationId: 'b' },
+      ],
+    }
+    const jumping: Workflow = {
+      workflowId: 'j',
+      steps: [
+        { stepId: 'start', operationId: 'a', onSuccess: [{ name: 'skip', type: 'goto', stepId: 'last' }] },
+        { stepId: 'skipped', operationId: 'b' },
+        { stepId: 'last', operationId: 'c' },
+      ],
+    }
+    const branching: Workflow = {
+      workflowId: 'b',
+      steps: [
+        { stepId: 'start', operationId: 'a', onSuccess: [{ name: 'early', type: 'end', criteria: [{ condition: '$statusCode == 204' }] }] },
+        { stepId: 'later', operationId: 'b' },
+      ],
+    }
+    const stepsOf = (candidate: Workflow) => [
+      ...new Set(buildSequence({ arazzo: '1.1.0', workflows: [candidate] }, candidate, {}).messages.map((message) => message.stepId)),
+    ]
+
+    // Act / Assert
+    expect(stepsOf(workflow)).toEqual(['start'])
+    expect(stepsOf(jumping)).toEqual(['start', 'last'])
+    // A conditional end may not apply: the run can carry on.
+    expect(stepsOf(branching)).toEqual(['start', 'later'])
+  })
+
   it('draws a lane per source, named after it, and the messages in run order', () => {
     // Act
     const sequence = buildSequence(document, placeOrder, documents)

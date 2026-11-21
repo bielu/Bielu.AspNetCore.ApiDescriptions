@@ -1,6 +1,6 @@
-import type { ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoWorkflow } from '../types'
+import type { ArazzoDocument, ArazzoFailureAction, ArazzoWorkflow } from '../types'
 import { effectiveFailureActions, reachableActions } from './actions'
-import { parseExpression, stepExpressions } from './expressions'
+import { successPath } from './execution-order'
 import { formatDuration } from './format'
 import { statusCodesIn } from './openapi-exchange'
 import { findDocumentByUrl, resolveStepTarget, sourceNameOf } from './resolve-target'
@@ -36,37 +36,7 @@ export type Sequence = {
 /** The lane of the client running the workflow. */
 export const CLIENT_ID = '::client'
 
-/** The steps of the same workflow whose outputs a step reads (`$steps.<id>.outputs.…`): implicit dependencies. */
-const outputsRead = (document: ArazzoDocument, step: ArazzoStep): string[] =>
-  stepExpressions(document, step).flatMap((expression) => {
-    const parsed = parseExpression(expression)
-    return parsed.source === 'steps' && parsed.field === 'outputs' && parsed.stepId !== step.stepId ? [parsed.stepId] : []
-  })
-
-/**
- * The steps in the order they run. Without `dependsOn` the workflow runs sequentially, in document order. With
- * it, a step runs once its prerequisites have (stable otherwise): the steps it lists in `dependsOn` and, as
- * Arazzo §5.8.5.2 requires tools to treat them, the steps whose outputs it reads.
- */
-export const runOrder = (steps: ArazzoStep[], document: ArazzoDocument = { arazzo: '1.1.0' }): ArazzoStep[] => {
-  if (!steps.some((step) => step.dependsOn?.length)) {
-    return steps
-  }
-  const prerequisites = new Map(steps.map((step) => [step, [...(step.dependsOn ?? []), ...outputsRead(document, step)]]))
-  const placed = new Set<string>()
-  const ordered: ArazzoStep[] = []
-  const remaining = [...steps]
-  while (remaining.length) {
-    const index = remaining.findIndex((step) =>
-      prerequisites.get(step)!.every((dependency) => placed.has(dependency) || !steps.some((other) => other.stepId === dependency)),
-    )
-    // A cycle in dependsOn: take the next step in document order rather than stop.
-    const [next] = remaining.splice(index < 0 ? 0 : index, 1)
-    ordered.push(next!)
-    placed.add(next!.stepId)
-  }
-  return ordered
-}
+export { runOrder } from './execution-order'
 
 /** `$steps.create.outputs.orderId` reads as "orderId from create"; anything else as written. */
 const readable = (expression: string): string => {
@@ -90,8 +60,9 @@ const failureNote = (actions: ArazzoFailureAction[]): string | undefined => {
  * workflow has a lane on the left, then each source description it talks to, in the order first used. An HTTP
  * step is a request to its service and the response its success criteria expect (`201`); an AsyncAPI step
  * publishes to, or is delivered from, its broker lane, with how long it waits and what it is matched on; a step
- * that invokes a workflow is a call into that workflow. Failure paths are noted under the step's arrows rather
- * than drawn, so the main path reads straight down.
+ * that invokes a workflow is a call into that workflow. Only the steps a successful run reaches are drawn, in the
+ * order they run (an unconditional `end` stops it, a `goto` jumps); failure paths are noted under the step's
+ * arrows rather than drawn, so the main path reads straight down.
  */
 export const buildSequence = (document: ArazzoDocument, workflow: ArazzoWorkflow | undefined, documents: Record<string, unknown>): Sequence => {
   const participants: SequenceParticipant[] = [{ id: CLIENT_ID, label: 'Client' }]
@@ -115,7 +86,7 @@ export const buildSequence = (document: ArazzoDocument, workflow: ArazzoWorkflow
     return id
   }
 
-  for (const step of runOrder(workflow.steps, document)) {
+  for (const step of successPath(document, workflow)) {
     const target = resolveStepTarget(document, step, documents)
     const spec = targetSpec(document, step, target, documents)
     const failures = failureNote(reachableActions(effectiveFailureActions(document, workflow, step)))

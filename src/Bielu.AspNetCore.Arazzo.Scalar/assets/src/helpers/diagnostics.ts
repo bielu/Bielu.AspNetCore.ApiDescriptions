@@ -1,5 +1,6 @@
 import type { ArazzoDocument, ArazzoParameter, ArazzoStep, ArazzoWorkflow } from '../types'
 import { effectiveSuccessActions, isUnconditional, reachableActions, effectiveFailureActions } from './actions'
+import { stepsBefore, usesDependsOn } from './execution-order'
 import { parseExpression, resolveExpression, stepExpressions, workflowExpressions, type ExpressionScope } from './expressions'
 import { operationResponses, statusCodesIn } from './openapi-exchange'
 import { normalizeArazzoDocument } from './normalize'
@@ -188,23 +189,6 @@ const checkStatuses = (step: ArazzoStep, target: StepTarget | undefined, documen
   })
 }
 
-/** The steps that certainly ran before `step`: earlier in document order, or (with `dependsOn`) its prerequisites, transitively. */
-const stepsBefore = (workflow: ArazzoWorkflow, step: ArazzoStep): Set<string> => {
-  const steps = workflow.steps ?? []
-  if (!steps.some((candidate) => candidate.dependsOn?.length)) {
-    return new Set(steps.slice(0, steps.indexOf(step)).map((candidate) => candidate.stepId))
-  }
-  const before = new Set<string>()
-  const queue = [...(step.dependsOn ?? [])]
-  for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
-    if (!before.has(next)) {
-      before.add(next)
-      queue.push(...(steps.find((candidate) => candidate.stepId === next)?.dependsOn ?? []))
-    }
-  }
-  return before
-}
-
 /**
  * Checks one Arazzo document. Each problem is reported once, against the step (or workflow) it is in, with the
  * anchor of that step's section so the list can link to it. Targets are only checked against documents that are
@@ -275,7 +259,11 @@ export const diagnose = (document: ArazzoDocument, context: DiagnosticContext): 
         }
       }
 
-      const before = stepsBefore(workflow, step)
+      const before = stepsBefore(document, workflow, step)
+      if (usesDependsOn(steps) && before.has(step.stepId)) {
+        add('warning', 'Waits on itself: its prerequisites (dependsOn and the step outputs it reads) depend on it in turn, so it never runs', step.stepId)
+        before.delete(step.stepId)
+      }
       // What the step sends is evaluated before it runs; its outputs, criteria and actions after, so only the
       // former cannot read the step's own outputs.
       const sent = new Set(stepExpressions(document, { stepId: step.stepId, parameters: step.parameters, requestBody: step.requestBody }))
