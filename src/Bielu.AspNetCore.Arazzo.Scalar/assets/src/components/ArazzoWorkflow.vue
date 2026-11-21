@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
 import { provideExpressionScope } from '../helpers/expression-scope'
 import { inputsAnchor, outputsAnchor, workflowOutputConsumers } from '../helpers/expressions'
+import { exampleFromSchema } from '../helpers/example-input'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
 import { resolveLocalRef } from '../helpers/extensions'
 import { renderMarkdown } from '../helpers/markdown'
@@ -57,6 +58,24 @@ const description = computed(() => renderMarkdown(workflow.value.description))
 const inputs = computed(() => resolveLocalRef(props.document, workflow.value.inputs))
 
 const inputRows = computed(() => schemaPropertyRows(inputs.value))
+
+/** A sample of what to pass the workflow, made from its inputs schema, to copy and edit. */
+const exampleInput = computed(() => {
+  const example = exampleFromSchema(inputs.value, props.document)
+  return example === undefined ? undefined : JSON.stringify(example, null, 2)
+})
+
+/** "Copied" for a moment after the copy button, read out to screen readers. */
+const copyStatus = ref('')
+const copyExample = async () => {
+  try {
+    await navigator.clipboard.writeText(exampleInput.value ?? '')
+    copyStatus.value = 'Copied'
+  } catch {
+    copyStatus.value = 'Select the text to copy it'
+  }
+  setTimeout(() => (copyStatus.value = ''), 2000)
+}
 
 const parameters = computed(() =>
   resolveReusablesWithReference<ArazzoParameter>(props.document, workflow.value.parameters).map(({ entry, reference }) => ({
@@ -302,6 +321,23 @@ const closeOnBackdrop = (event: MouseEvent) => {
           <pre
             v-else
             class="ba-code"><code>{{ formatValue(inputs) }}</code></pre>
+          <details
+            v-if="exampleInput"
+            class="ba-extensions ba-example-input">
+            <summary>Example input</summary>
+            <div class="ba-example-actions">
+              <button
+                class="ba-toggle"
+                type="button"
+                @click="copyExample">
+                Copy
+              </button>
+              <span
+                aria-live="polite"
+                class="ba-muted">{{ copyStatus }}</span>
+            </div>
+            <pre class="ba-code"><code>{{ exampleInput }}</code></pre>
+          </details>
         </div>
 
         <ArazzoKeyValues
