@@ -458,8 +458,8 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       'ba-workflow-closed': classic && !open,
     }"
     :data-nav-id="view.id">
-    <div class="ba-workflow-header">
-      <div class="ba-workflow-heading">
+    <div class="ba-workflow-header flex items-start justify-between gap-4">
+      <div class="ba-workflow-heading min-w-0">
         <div class="ba-kicker">Workflow · {{ workflow.workflowId }}</div>
         <ArazzoAnchor
           :eventBus="eventBus"
@@ -469,7 +469,7 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
           </h2>
         </ArazzoAnchor>
       </div>
-      <div class="ba-workflow-actions">
+      <div class="ba-workflow-actions flex flex-wrap justify-end gap-1.5">
         <button
           v-if="view.steps.length"
           class="ba-toggle"
@@ -505,9 +505,10 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       v-html="description" />
     <ArazzoExtensions :of="workflow" />
 
+    <!-- The steps, with the overview beside them once the view is 960px wide; it stays in sight while they scroll. -->
     <div
       v-show="!classic || open"
-      class="ba-workflow-content">
+      class="ba-workflow-content grid [grid-template-columns:minmax(0,1fr)] [align-items:start] gap-8 @min-[960px]/bielu-arazzo:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <div class="ba-workflow-main">
         <div
           v-if="workflow.inputs"
@@ -525,7 +526,7 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
             v-if="exampleInput"
             class="ba-extensions ba-example-input">
             <summary>Example input</summary>
-            <div class="ba-example-actions">
+            <div class="ba-example-actions mx-0 my-1.5 flex items-center gap-2">
               <button
                 class="ba-toggle"
                 type="button"
@@ -540,7 +541,7 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
             </div>
             <p
               v-if="example?.needsEdits"
-              class="ba-muted ba-example-warning">
+              class="ba-muted ba-example-warning mx-0 my-1.5">
               Some values don't satisfy the inputs schema (a pattern or length
               it can't meet): edit them before use.
             </p>
@@ -591,10 +592,16 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
 
       <aside
         v-if="diagram.nodes.length"
-        class="ba-workflow-aside">
-        <div class="ba-overview">
-          <div class="ba-overview-header">
-            <div class="ba-overview-title">Workflow overview</div>
+        class="ba-workflow-aside mt-4 min-w-0">
+        <div
+          class="ba-overview rounded-lg border border-border bg-b-1 p-3 @min-[960px]/bielu-arazzo:sticky @min-[960px]/bielu-arazzo:top-[calc(var(--refs-viewport-offset,0px)+24px)]">
+          <!-- The tabs have a row of their own: the header is the title, and the actions kept together on the right. -->
+          <div
+            class="ba-overview-header mb-2 flex items-center justify-between gap-2">
+            <div
+              class="ba-overview-title mr-auto text-(length:--scalar-mini) font-bold tracking-[normal] text-c-2">
+              Workflow overview
+            </div>
             <ArazzoDiagramExport
               v-if="overviewView !== 'sequence'"
               :layout="diagram"
@@ -620,7 +627,7 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
             </button>
           </div>
           <ArazzoViewSwitch
-            class="ba-overview-tabs"
+            class="ba-overview-tabs mb-2"
             fill
             :panelId="inlinePanelId"
             :view="overviewView"
@@ -644,12 +651,15 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
               @openFlow="openFlow"
               @toggleWorkflow="toggleWorkflow" />
           </div>
-          <div class="ba-overview-footer">
+          <!-- Under the diagram rather than over it, so it never hides a step box. -->
+          <div
+            class="ba-overview-footer mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <ArazzoSpecLegend
               v-if="overviewView !== 'sequence'"
               :layout="diagram"
               :view="overviewView" />
-            <span class="ba-muted ba-overview-hint"
+            <span
+              class="ba-muted ba-overview-hint mt-0 text-(length:--scalar-mini)"
               >Select a step to view details</span
             >
           </div>
@@ -657,7 +667,10 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       </aside>
     </div>
 
-    <!-- Portalled out of the view, so the content carries the view's root class for its styles. -->
+    <!--
+      Portalled out of the view, so the content carries the view's root class for its styles, and undoes the page
+      layout that class gives the view's root.
+    -->
     <ScalarModal
       :aria-label="`${workflow.summary || workflow.workflowId} overview`"
       bodyClass="ba-dialog-body"
@@ -667,12 +680,14 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       :state="modal">
       <div
         ref="modalContent"
-        class="bielu-arazzo ba-dialog">
-        <div class="ba-dialog-header">
-          <div class="ba-overview-title">
+        class="bielu-arazzo ba-dialog m-0 flex h-full max-w-none flex-col p-0">
+        <div
+          class="ba-dialog-header mb-2 flex items-center justify-between gap-2">
+          <div
+            class="ba-overview-title text-(length:--scalar-mini) font-bold tracking-[normal] text-c-2">
             Workflow overview · {{ workflow.summary || workflow.workflowId }}
           </div>
-          <div class="ba-dialog-actions">
+          <div class="ba-dialog-actions flex items-center gap-1.5">
             <ArazzoDiagramExport
               v-if="overviewView !== 'sequence'"
               :layout="diagram"
@@ -706,7 +721,8 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
           </div>
         </div>
         <!-- A tab bar under the title: the views on the left, what the diagram's marks mean on the right. -->
-        <div class="ba-dialog-tab-bar">
+        <div
+          class="ba-dialog-tab-bar mb-2 flex items-end justify-between gap-4 border-b border-b-border">
           <ArazzoViewSwitch
             :panelId="dialogPanelId"
             :view="overviewView"
@@ -717,10 +733,11 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
             :layout="diagram"
             :view="overviewView" />
         </div>
+        <!-- The rest of the window, for the diagram to fill. -->
         <div
           :id="dialogPanelId"
           :aria-labelledby="viewTabId(dialogPanelId, overviewView)"
-          class="ba-dialog-panel"
+          class="ba-dialog-panel flex min-h-0 flex-1 flex-col"
           role="tabpanel">
           <ArazzoSequenceDiagram
             v-if="overviewView === 'sequence'"
@@ -731,7 +748,7 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
           <ArazzoWorkflowDiagram
             v-else
             ref="expanded"
-            class="ba-diagram-large"
+            class="ba-diagram-large max-h-none min-h-0 flex-1 items-center p-6"
             fit
             :layout="diagram"
             :problems="stepProblems"
@@ -744,7 +761,11 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       </div>
     </ScalarModal>
 
-    <!-- Escape closes this dialog only: kept from the window, where ScalarModal would close too. -->
+    <!--
+      Escape closes this dialog only: kept from the window, where ScalarModal would close too. It is sized to what
+      flows: m-auto centers it again after Scalar's reset, and a modal dialog is fixed with inset 0, so h-fit keeps
+      it from stretching to the window.
+    -->
     <Teleport
       :disabled="!modalContent"
       :to="modalContent">
@@ -755,14 +776,16 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
             ? `What flows from ${flowDetails.from} to ${flowDetails.to}`
             : 'What flows'
         "
-        class="ba-dialog ba-flow-dialog"
+        class="ba-dialog ba-flow-dialog m-auto h-fit max-h-[85vh] w-[min(640px,96vw)] max-w-none overflow-auto rounded-lg border border-border bg-b-1 p-4 text-c-1 [box-shadow:var(--scalar-shadow-2,0_10px_30px_rgb(0_0_0/0.25))] backdrop:bg-[rgb(0_0_0/0.45)] open:flex open:flex-col"
         @click="closeFlowOnBackdrop"
         @keydown.esc.stop>
-        <div class="ba-dialog-header">
-          <div class="ba-overview-title">
+        <div
+          class="ba-dialog-header mb-2 flex items-center justify-between gap-2">
+          <div
+            class="ba-overview-title text-(length:--scalar-mini) font-bold tracking-[normal] text-c-2">
             What flows · {{ flowEdge?.label }}
           </div>
-          <div class="ba-dialog-actions">
+          <div class="ba-dialog-actions flex items-center gap-1.5">
             <button
               aria-label="Close"
               class="ba-icon-button"

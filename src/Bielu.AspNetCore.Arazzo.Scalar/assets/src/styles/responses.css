@@ -116,10 +116,3 @@
 .bielu-arazzo .ba-sequence-step:focus-visible text {
   @apply fill-c-accent underline;
 }
-/* A workflow's example input: a copy button over the JSON. */
-.bielu-arazzo .ba-example-actions {
-  @apply flex items-center gap-2 mx-0 my-1.5;
-}
-.bielu-arazzo .ba-example-warning {
-  @apply mx-0 my-1.5;
-}

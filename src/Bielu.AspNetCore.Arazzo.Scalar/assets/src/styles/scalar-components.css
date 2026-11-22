@@ -17,6 +17,7 @@
 @source "../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating,ScalarModal}/*.js";
 @source "../../../../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating,ScalarModal}/*.js";
 @source "../components/ArazzoStep.vue";
+@source "../components/ArazzoWorkflow.vue";
 
 .bielu-arazzo,
 .bielu-arazzo-modal {

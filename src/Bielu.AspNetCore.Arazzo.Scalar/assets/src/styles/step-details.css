@@ -124,15 +124,6 @@
 .bielu-arazzo .ba-anchor-button:hover {
   @apply text-c-accent;
 }
-.bielu-arazzo .ba-workflow-header {
-  @apply flex items-start justify-between gap-4;
-}
-.bielu-arazzo .ba-workflow-heading {
-  @apply min-w-0;
-}
-.bielu-arazzo .ba-workflow-actions {
-  @apply flex flex-wrap gap-1.5 justify-end;
-}
 .bielu-arazzo .ba-step-toggle {
   @apply shrink-0 w-6 h-6 mt-0.5 p-1;
   border: none;
