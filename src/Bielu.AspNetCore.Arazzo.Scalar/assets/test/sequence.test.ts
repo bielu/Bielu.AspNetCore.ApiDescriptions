@@ -3,6 +3,7 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ArazzoSequenceDiagram from '../src/components/ArazzoSequenceDiagram.vue'
 import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
+import { successPath } from '../src/helpers/execution-order'
 import { toWorkflowViews, traverseArazzoDocument } from '../src/helpers/navigation'
 import { buildSequence, CLIENT_ID, runOrder } from '../src/helpers/sequence'
 import { resetWorkflowView } from '../src/helpers/view-mode'
@@ -143,6 +144,53 @@ describe('buildSequence', () => {
     expect(stepsOf(jumping)).toEqual(['start', 'last'])
     // A conditional end may not apply: the run can carry on.
     expect(stepsOf(branching)).toEqual(['start', 'later'])
+  })
+
+  it('draws the steps in the order the run reaches them, not the order the document lists them', () => {
+    // Arrange: a jumps forward to c, which jumps back to b, which ends.
+    const workflow: Workflow = {
+      workflowId: 'w',
+      steps: [
+        { stepId: 'a', operationId: 'a', onSuccess: [{ name: 'toC', type: 'goto', stepId: 'c' }] },
+        { stepId: 'b', operationId: 'b', onSuccess: [{ name: 'done', type: 'end' }] },
+        { stepId: 'c', operationId: 'c', onSuccess: [{ name: 'toB', type: 'goto', stepId: 'b' }] },
+      ],
+    }
+    const owner: ArazzoDocument = { arazzo: '1.1.0', workflows: [workflow] }
+
+    // Act
+    const order = buildSequence(owner, workflow, {}).messages.map((message) => message.stepId)
+
+    // Assert: each step is drawn whole (its request and response) before the next.
+    expect([...new Set(order)]).toEqual(['a', 'c', 'b'])
+    expect(order.indexOf('c')).toBeLessThan(order.indexOf('b'))
+    expect(successPath(owner, workflow).map((step) => step.stepId)).toEqual(['a', 'c', 'b'])
+  })
+
+  it('follows the run that carries on first, then each conditional goto, placing a shared step where the run reaches it first', () => {
+    // Arrange: `start` may jump to `shared` or `side`; carrying on, it reaches `middle` and then `shared` too.
+    const workflow: Workflow = {
+      workflowId: 'w',
+      steps: [
+        {
+          stepId: 'start',
+          operationId: 'a',
+          onSuccess: [
+            { name: 'skip', type: 'goto', stepId: 'shared', criteria: [{ condition: '$statusCode == 202' }] },
+            { name: 'aside', type: 'goto', stepId: 'side', criteria: [{ condition: '$statusCode == 203' }] },
+          ],
+        },
+        { stepId: 'middle', operationId: 'b' },
+        { stepId: 'shared', operationId: 'c', onSuccess: [{ name: 'done', type: 'end' }] },
+        { stepId: 'side', operationId: 'd' },
+      ],
+    }
+
+    // Act
+    const order = successPath({ arazzo: '1.1.0', workflows: [workflow] }, workflow).map((step) => step.stepId)
+
+    // Assert
+    expect(order).toEqual(['start', 'middle', 'shared', 'side'])
   })
 
   it('draws a lane per source, named after it, and the messages in run order', () => {

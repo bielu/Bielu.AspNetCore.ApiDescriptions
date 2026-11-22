@@ -68,31 +68,38 @@ export const runOrder = (steps: ArazzoStep[], document: ArazzoDocument = { arazz
 }
 
 /**
- * The steps a successful run can reach, in run order. After a step, the first success action whose criteria hold
- * runs: an `end` (or a `goto` to another workflow) leaves this workflow, a `goto` to a step jumps there, and with
- * no action that always applies the run may also carry on to the next step. A step only reached through a
- * failure action is left out.
+ * The steps a successful run can reach, in the order the run reaches them. After a step, the first success action
+ * whose criteria hold runs: an `end` (or a `goto` to another workflow) leaves this workflow, a `goto` to a step
+ * jumps there, and with no action that always applies the run may also carry on to the next step. A step only
+ * reached through a failure action is left out.
+ *
+ * Where a step can go more than one way, the order follows the run in which no conditional action applies (its
+ * unconditional action, else the next step) to its end first, then each conditional `goto` in the order the step
+ * lists them, each followed the same way. A step reached on more than one path is placed where it is first reached,
+ * so a step both a conditional `goto` and the run carrying on lead to sits where the run carrying on reaches it.
  */
 export const successPath = (document: ArazzoDocument, workflow: ArazzoWorkflow): ArazzoStep[] => {
   const ordered = runOrder(workflow.steps ?? [], document)
-  const reached = new Set<ArazzoStep>()
-  const queue = ordered.slice(0, 1)
-  for (let step = queue.shift(); step !== undefined; step = queue.shift()) {
-    if (reached.has(step)) {
+  const stepOf = (action: { type: string; stepId?: string }) =>
+    action.type === 'goto' && action.stepId ? ordered.find((candidate) => candidate.stepId === action.stepId) : undefined
+  const reached: ArazzoStep[] = []
+  const seen = new Set<ArazzoStep>()
+  // Depth first: what is pushed last is followed first.
+  const stack = ordered.slice(0, 1)
+  for (let step = stack.pop(); step !== undefined; step = stack.pop()) {
+    if (seen.has(step)) {
       continue
     }
-    reached.add(step)
+    seen.add(step)
+    reached.push(step)
     const actions = reachableActions(effectiveSuccessActions(document, workflow, step))
-    for (const action of actions) {
-      const target = action.type === 'goto' && action.stepId ? ordered.find((candidate) => candidate.stepId === action.stepId) : undefined
-      if (target) {
-        queue.push(target)
-      }
-    }
-    const next = ordered[ordered.indexOf(step) + 1]
-    if (next && !actions.some(isUnconditional)) {
-      queue.push(next)
+    const always = actions.find(isUnconditional)
+    const branches = actions.filter((action) => action !== always).flatMap((action) => stepOf(action) ?? [])
+    const carriesOn = always ? stepOf(always) : ordered[ordered.indexOf(step) + 1]
+    stack.push(...branches.reverse())
+    if (carriesOn) {
+      stack.push(carriesOn)
     }
   }
-  return ordered.filter((step) => reached.has(step))
+  return reached
 }
