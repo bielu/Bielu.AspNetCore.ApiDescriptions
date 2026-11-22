@@ -1,39 +1,4 @@
 /* The workflow overview diagram: layout, nodes, edges, bands, legend and the pages view. */
-/* Steps on the left and the overview beside them once there is room for both, as in the POC. */
-.bielu-arazzo .ba-workflow-content {
-  @apply grid gap-8;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-}
-@container bielu-arazzo (min-width: 960px) {
-  .bielu-arazzo .ba-workflow-content {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  }
-  .bielu-arazzo .ba-overview {
-    @apply sticky;
-    top: calc(var(--refs-viewport-offset, 0px) + 24px);
-  }
-}
-.bielu-arazzo .ba-workflow-aside {
-  @apply min-w-0 mt-4;
-}
-.bielu-arazzo .ba-overview {
-  @apply p-3 border border-border rounded-lg bg-b-1;
-}
-.bielu-arazzo .ba-overview-header,
-.bielu-arazzo .ba-dialog-header {
-  @apply flex items-center justify-between gap-2 mb-2;
-}
-.bielu-arazzo .ba-overview-title {
-  font-size: var(--scalar-mini, 12px);
-  @apply font-bold;
-  letter-spacing: normal;
-  @apply text-c-2;
-}
-.bielu-arazzo .ba-overview-hint {
-  @apply mt-1.5;
-  font-size: var(--scalar-mini, 12px);
-}
 .bielu-arazzo .ba-diagram {
   @apply flex justify-center overflow-hidden;
   max-height: min(560px, calc(var(--refs-viewport-height, 100vh) - 140px));
@@ -52,13 +17,6 @@
 .bielu-arazzo .ba-diagram-node rect.ba-diagram-spec {
   @apply stroke-none;
   fill: var(--ba-spec-color);
-}
-/* Under the diagram rather than over it, so it never hides a step box. */
-.bielu-arazzo .ba-overview-footer {
-  @apply flex flex-wrap items-baseline justify-between gap-y-1 gap-x-3 mt-1.5;
-}
-.bielu-arazzo .ba-overview-footer .ba-overview-hint {
-  @apply mt-0;
 }
 .bielu-arazzo .ba-diagram-legend {
   @apply flex flex-wrap gap-y-1 gap-x-3 m-0 p-0 text-c-2;
@@ -217,17 +175,6 @@
   @apply stroke-c-3;
   stroke-dasharray: 1 3;
 }
-.bielu-arazzo .ba-nested {
-  @apply mt-2;
-}
-.bielu-arazzo .ba-nested-steps {
-  @apply pl-5;
-  margin: 8px 0 0;
-  font-size: var(--scalar-small, 13px);
-}
-.bielu-arazzo .ba-nested-steps li {
-  @apply py-0.5 px-0;
-}
 /* Pages view: a band per page, behind the steps the user takes on it. */
 .bielu-arazzo .ba-diagram-band rect {
   fill: color-mix(in srgb, var(--scalar-color-accent) 7%, transparent);
@@ -299,18 +246,6 @@
 .bielu-arazzo .ba-view-tabs-fill button {
   flex: 1 1 0;
 }
-.bielu-arazzo .ba-overview-tabs {
-  @apply mb-2;
-}
-/* With the tabs on their own row, the header is the title and the actions: keep the actions together on the right. */
-.bielu-arazzo .ba-overview-header .ba-overview-title {
-  margin-right: auto;
-}
-/* The expanded overview: the tabs on the left of a full-width bar, the legend on its right, one line under both. */
-.bielu-arazzo .ba-dialog-tab-bar {
-  @apply flex items-end justify-between gap-4 mb-2;
-  border-bottom: 1px solid var(--scalar-border-color);
-}
 .bielu-arazzo .ba-dialog-tab-bar .ba-view-tabs {
   border-bottom: 0;
 }
@@ -320,10 +255,6 @@
 }
 .bielu-arazzo .ba-dialog-tab-bar .ba-diagram-legend {
   @apply pb-1.5;
-}
-.bielu-arazzo .ba-step-page {
-  @apply flex flex-wrap items-center gap-1.5 mb-0.5 text-c-2;
-  font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-diagram-legend-band {
   @apply w-3.5 h-2.5;

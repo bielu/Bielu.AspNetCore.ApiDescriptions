@@ -108,9 +108,6 @@
 .bielu-arazzo .ba-code {
   @apply m-0 py-2.5 px-3 overflow-auto rounded bg-b-2;
 }
-.bielu-arazzo .ba-step-title-id {
-  @apply font-code;
-}
 .bielu-arazzo .ba-anchor {
   @apply flex items-center gap-1.5;
 }
@@ -127,21 +124,6 @@
 .bielu-arazzo .ba-anchor-button:hover {
   @apply text-c-accent;
 }
-.bielu-arazzo .ba-workflow-header {
-  @apply flex items-start justify-between gap-4;
-}
-.bielu-arazzo .ba-workflow-heading {
-  @apply min-w-0;
-}
-.bielu-arazzo .ba-workflow-actions {
-  @apply flex flex-wrap gap-1.5 justify-end;
-}
-.bielu-arazzo .ba-step-header {
-  @apply flex items-start gap-1.5;
-}
-.bielu-arazzo .ba-step-heading {
-  @apply min-w-0 flex-1;
-}
 .bielu-arazzo .ba-step-toggle {
   @apply shrink-0 w-6 h-6 mt-0.5 p-1;
   border: none;
@@ -156,26 +138,6 @@
 .bielu-arazzo .ba-step-toggle:focus-visible {
   @apply outline-2 outline-c-accent;
   outline-offset: 1px;
-}
-.bielu-arazzo .ba-chevron {
-  @apply block w-4 h-4 fill-none stroke-current;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transform: rotate(90deg);
-  transition: transform 0.15s ease;
-}
-.bielu-arazzo .ba-step-closed .ba-chevron {
-  transform: none;
-}
-.bielu-arazzo .ba-step-collapsed-summary {
-  @apply mt-1 text-c-2 wrap-anywhere;
-  font-size: var(--scalar-small, 13px);
-}
-@media (prefers-reduced-motion: reduce) {
-  .bielu-arazzo .ba-chevron {
-    transition: none;
-  }
 }
 .bielu-arazzo .ba-toggle {
   @apply shrink-0 py-1 px-2.5 border border-border rounded bg-b-1 text-c-2 cursor-pointer;

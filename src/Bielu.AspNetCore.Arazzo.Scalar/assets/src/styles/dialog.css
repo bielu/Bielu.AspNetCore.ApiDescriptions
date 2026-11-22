@@ -1,26 +1,4 @@
-/* The dialog an expanded workflow opens in. */
-.bielu-arazzo .ba-dialog {
-  /* Scalar's CSS reset zeroes the margin a dialog centers itself with. */
-  @apply p-4 border border-border rounded-lg bg-b-1 text-c-1;
-  margin: auto;
-  /* The whole window: a workflow with an expanded one inside it needs the room. */
-  width: 96vw;
-  height: 92vh;
-  max-width: none;
-  max-height: none;
-  box-shadow: var(--scalar-shadow-2, 0 10px 30px rgb(0 0 0 / 0.25));
-}
-.bielu-arazzo .ba-dialog[open] {
-  @apply flex flex-col;
-}
-/* What a Data flow arrow carries: a panel the size of its content, not the whole window. */
-.bielu-arazzo .ba-dialog.ba-flow-dialog {
-  width: min(640px, 96vw);
-  /* A modal dialog is fixed with inset 0, so an auto height would stretch it to the window. */
-  height: fit-content;
-  max-height: 85vh;
-  @apply overflow-auto;
-}
+/* What the Data flow dialog shows, the info icon on the arrows that open it, and the expanded overview's diagram. */
 .bielu-arazzo .ba-flow-route {
   @apply mt-1 mx-0 mb-3;
 }
@@ -61,25 +39,6 @@
 .bielu-arazzo .ba-diagram-edge-label.ba-diagram-link:hover text,
 .bielu-arazzo .ba-diagram-edge-label:focus-visible text {
   @apply fill-c-accent;
-}
-.bielu-arazzo .ba-dialog::backdrop {
-  background: rgb(0 0 0 / 0.45);
-}
-/* The panel the expanded overview's view tabs control: the rest of the dialog, for the diagram to fill. */
-.bielu-arazzo .ba-dialog-panel {
-  @apply flex flex-1 flex-col;
-  min-height: 0;
-}
-.bielu-arazzo .ba-dialog-actions {
-  @apply flex items-center gap-1.5;
-}
-.bielu-arazzo .ba-diagram.ba-diagram-large {
-  @apply flex-1 items-center;
-  max-height: none;
-  min-height: 0;
-}
-.bielu-arazzo .ba-diagram-large {
-  @apply p-6;
 }
 .bielu-arazzo .ba-diagram-canvas-fit {
   @apply flex items-center justify-center w-full;

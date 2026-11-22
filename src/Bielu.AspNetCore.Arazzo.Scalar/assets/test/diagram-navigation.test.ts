@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import ArazzoDocument from '../src/components/ArazzoDocument.vue'
 import { traverseArazzoDocument } from '../src/helpers/navigation'
@@ -43,6 +43,18 @@ const press = async (view: VueWrapper, selector: string, key = 'Enter') => {
   await flushPromises()
 }
 
+/** Opens a workflow's full-window overview; ScalarModal renders it in a portal at the end of <body>. */
+const expand = async (view: VueWrapper, workflowSelector = '') => {
+  await view.find(`${workflowSelector} button[aria-label="Expand workflow diagram"]`.trim()).trigger('click')
+  await flushPromises()
+}
+
+/** Presses a key on an element of the open full-window overview. */
+const pressInDialog = async (selector: string, key = 'Enter') => {
+  await new DOMWrapper(globalThis.document.querySelector(`[role="dialog"] ${selector}`)).trigger('keydown', { key })
+  await flushPromises()
+}
+
 describe('opening steps from the overview', () => {
   it('opens a step inside an expanded workflow in that workflow\'s section, not in another with the same step id', async () => {
     // Arrange
@@ -63,10 +75,11 @@ describe('opening steps from the overview', () => {
     // Arrange
     const view = mountDocument()
     await flushPromises()
-    await press(view, 'dialog [data-node-id="place"] .ba-diagram-toggle')
+    await expand(view)
+    await pressInDialog('[data-node-id="place"] .ba-diagram-toggle')
 
     // Act
-    await press(view, 'dialog [data-node-id="place/pay"]')
+    await pressInDialog('[data-node-id="place/pay"]')
 
     // Assert
     const focused = globalThis.document.activeElement as HTMLElement
@@ -134,10 +147,11 @@ describe('opening a step of a closed workflow in the classic layout', () => {
     // Arrange
     const view = await mountClassic()
     expect(checkoutBody(view).style.display).toBe('none')
-    await press(view, '[id="d/workflow/orders"] dialog [data-node-id="place"] .ba-diagram-toggle')
+    await expand(view, '[id="d/workflow/orders"]')
+    await pressInDialog('[data-node-id="place"] .ba-diagram-toggle')
 
     // Act
-    await press(view, '[id="d/workflow/orders"] dialog [data-node-id="place/pay"]')
+    await pressInDialog('[data-node-id="place/pay"]')
 
     // Assert
     expect(checkoutBody(view).style.display).not.toBe('none')

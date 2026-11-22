@@ -1,7 +1,4 @@
 /* Schema property tables and their folding nested properties. */
-.bielu-arazzo .ba-target-parameters {
-  @apply mt-3;
-}
 .bielu-arazzo .ba-schema {
   @apply m-0 p-0;
   list-style: none;
@@ -47,9 +44,6 @@
 .bielu-arazzo .ba-schema-children > .ba-schema {
   @apply ml-1.5 pl-3 border-l border-l-border;
 }
-.bielu-arazzo .ba-step-id {
-  @apply font-code text-c-3;
-}
 .bielu-arazzo .ba-extensions > summary {
   @apply flex items-center gap-2 py-1 px-1.5 rounded;
   list-style: none;
@@ -80,15 +74,4 @@
 .bielu-arazzo .ba-toggle,
 .bielu-arazzo .ba-icon-button {
   min-height: 28px;
-}
-.bielu-arazzo .ba-target-header .ba-spec {
-  order: 2;
-  margin-left: auto;
-  @apply mr-0;
-  background: none;
-  @apply text-c-3;
-}
-.bielu-arazzo .ba-target-link,
-.bielu-arazzo .ba-target-signature {
-  @apply min-w-0 wrap-anywhere;
 }

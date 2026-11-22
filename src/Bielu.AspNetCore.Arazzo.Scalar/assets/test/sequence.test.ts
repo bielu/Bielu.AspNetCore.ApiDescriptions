@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ArazzoSequenceDiagram from '../src/components/ArazzoSequenceDiagram.vue'
 import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
@@ -310,10 +310,10 @@ describe('the sequence diagram', () => {
     const [view] = toWorkflowViews(document, traverseArazzoDocument({ documentId: 'doc', document: document as unknown as Record<string, unknown> }))
     wrapper = mount(ArazzoWorkflow, { attachTo: globalThis.document.body, props: { view: view!, document, documents } })
     await wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === 'Sequence')!.trigger('click')
+    await wrapper.find('button[aria-label="Expand workflow diagram"]').trigger('click')
     await flushPromises()
-    const dialog = wrapper.find('dialog').element as HTMLDialogElement
-    const close = vi.spyOn(dialog, 'close')
-    const step = wrapper.findAll('dialog .ba-sequence-step')[0]!
+    // ScalarModal renders the full window in a portal at the end of <body>, only while it is open.
+    const step = new DOMWrapper(globalThis.document.querySelector('[role="dialog"] .ba-sequence-step')!)
     const section = globalThis.document.getElementById(view!.steps[0]!.id)!
     section.scrollIntoView = vi.fn()
 
@@ -322,7 +322,7 @@ describe('the sequence diagram', () => {
     await flushPromises()
 
     // Assert
-    expect(close).toHaveBeenCalled()
+    expect(globalThis.document.querySelector('[role="dialog"]')).toBeNull()
     expect(globalThis.document.activeElement).toBe(section)
   })
 

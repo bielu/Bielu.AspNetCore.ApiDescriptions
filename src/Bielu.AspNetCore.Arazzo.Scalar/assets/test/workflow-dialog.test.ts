@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
 import type { ArazzoDocument, ArazzoWorkflow as Workflow } from '../src/types'
@@ -34,50 +34,62 @@ afterEach(() => {
   wrapper = undefined
 })
 
-const dialogOf = (workflow: VueWrapper) => workflow.find('dialog').element as HTMLDialogElement
+/** Whether the full-screen overview is open: ScalarModal renders its dialog, in a portal at the end of <body>, only then. */
+const dialogOpen = () => globalThis.document.querySelector('[role="dialog"]') !== null
+
+/** Finds an element in the inline overview, or in the full-screen one, which lives outside the workflow's element. */
+const find = (workflow: VueWrapper, inDialog: boolean, selector: string) =>
+  inDialog
+    ? new DOMWrapper(globalThis.document.querySelector(`[role="dialog"] ${selector}`))
+    : workflow.find(`.ba-overview ${selector}`)
+
+const expand = async (workflow: VueWrapper) => {
+  await workflow.find('button[aria-label="Expand workflow diagram"]').trigger('click')
+  await flushPromises()
+}
 
 /** The `+`/`−` button of the `place` node, in the inline diagram or the full-screen one. */
-const placeToggle = (workflow: VueWrapper, inDialog: boolean) =>
-  workflow.find(`${inDialog ? 'dialog' : '.ba-overview'} [data-node-id="place"] .ba-diagram-toggle`)
+const placeToggle = (workflow: VueWrapper, inDialog: boolean) => find(workflow, inDialog, '[data-node-id="place"] .ba-diagram-toggle')
 
 const transformOf = (workflow: VueWrapper, inDialog: boolean) =>
-  (workflow.find(`${inDialog ? 'dialog' : '.ba-overview'} .ba-diagram-canvas`).element as HTMLElement).style.transform
+  (find(workflow, inDialog, '.ba-diagram-canvas').element as HTMLElement).style.transform
 
 const zoomIn = async (workflow: VueWrapper, inDialog: boolean) =>
-  workflow.find(`${inDialog ? 'dialog' : '.ba-overview'} .ba-diagram`).trigger('wheel', { deltaY: -100, clientX: 10, clientY: 10 })
+  find(workflow, inDialog, '.ba-diagram').trigger('wheel', { deltaY: -100, clientX: 10, clientY: 10 })
 
 describe('the full-screen workflow overview', () => {
   it('stays open, zoomed, when a workflow node is expanded and collapsed again', async () => {
     // Arrange
     const workflow = mountWorkflow()
-    await workflow.find('button[aria-label="Expand workflow diagram"]').trigger('click')
-    expect(dialogOf(workflow).open).toBe(true)
+    await expand(workflow)
+    expect(dialogOpen()).toBe(true)
     await zoomIn(workflow, true)
     const zoomed = transformOf(workflow, true)
 
     // Act
     await placeToggle(workflow, true).trigger('click')
-    const afterExpand = { open: dialogOf(workflow).open, groups: workflow.findAll('dialog .ba-diagram-group').length }
+    const afterExpand = { open: dialogOpen(), groups: globalThis.document.querySelectorAll('[role="dialog"] .ba-diagram-group').length }
     await placeToggle(workflow, true).trigger('click')
 
     // Assert
     expect(zoomed).toContain('scale(1.1)')
     expect(afterExpand).toEqual({ open: true, groups: 1 })
-    expect(dialogOf(workflow).open).toBe(true)
-    expect(workflow.findAll('dialog .ba-diagram-group')).toHaveLength(0)
+    expect(dialogOpen()).toBe(true)
+    expect(globalThis.document.querySelectorAll('[role="dialog"] .ba-diagram-group')).toHaveLength(0)
     expect(transformOf(workflow, true)).toBe(zoomed)
   })
 
   it('still closes when a step is opened from it', async () => {
     // Arrange
     const workflow = mountWorkflow()
-    await workflow.find('button[aria-label="Expand workflow diagram"]').trigger('click')
+    await expand(workflow)
 
     // Act
-    await workflow.find('dialog [data-node-id="status"]').trigger('click')
+    await find(workflow, true, '[data-node-id="status"]').trigger('click')
+    await flushPromises()
 
     // Assert
-    expect(dialogOf(workflow).open).toBe(false)
+    expect(dialogOpen()).toBe(false)
   })
 })
 

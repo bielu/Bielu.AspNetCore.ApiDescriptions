@@ -231,8 +231,9 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         // Arrange
         var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
         var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" });
-        await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
-        var dialog = workflow.Locator("dialog[open]");
+        await ExpandAsync(page, workflow);
+        // ScalarModal renders the full-screen overview in a portal at the end of <body>, outside the workflow.
+        var dialog = page.GetByRole(AriaRole.Dialog);
         var diagram = dialog.Locator(".ba-diagram");
         await diagram.HoverAsync();
         await page.Mouse.WheelAsync(0, -100);
@@ -250,6 +251,34 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         (await diagram.Locator(".ba-diagram-group").CountAsync()).ShouldBe(0);
     }
 
+    [BrowserFact]
+    public async Task FullScreenDataFlow_OpensWhatFlowsOverTheModal_AndClosingItKeepsTheModalOpen()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.GeneratedDocumentSlug);
+        var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · placeOrder" });
+        await ExpandAsync(page, workflow);
+        var modal = page.Locator("[role='dialog']:not(dialog)");
+        await modal.GetByRole(AriaRole.Tab, new() { Name = "Data flow" }).ClickAsync();
+        var flowDialog = page.Locator("dialog.ba-flow-dialog[open]");
+
+        // Act: ScalarModal closes on a click or Escape outside its content, which the What flows dialog (a native
+        // <dialog> in the top layer) must not count as.
+        await modal.Locator(".ba-diagram-edge-label.ba-diagram-link").First.ClickAsync();
+        await flowDialog.Locator(".ba-overview-title").ClickAsync();
+        var afterClick = new[] { await flowDialog.CountAsync(), await modal.CountAsync() };
+        await page.Keyboard.PressAsync("Escape");
+        var afterEscape = new[] { await flowDialog.CountAsync(), await modal.CountAsync() };
+        await modal.Locator(".ba-diagram-edge-label.ba-diagram-link").First.ClickAsync();
+        await flowDialog.GetByRole(AriaRole.Button, new() { Name = "Close" }).ClickAsync();
+
+        // Assert
+        afterClick.ShouldBe([1, 1]);
+        afterEscape.ShouldBe([0, 1]);
+        (await flowDialog.CountAsync()).ShouldBe(0);
+        (await modal.CountAsync()).ShouldBe(1);
+    }
+
     [BrowserTheory]
     [InlineData(false)]
     [InlineData(true)]
@@ -260,10 +289,10 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · loadAccount" });
         if (fullScreen)
         {
-            await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+            await ExpandAsync(page, workflow);
         }
 
-        var diagram = workflow.Locator(fullScreen ? "dialog[open] .ba-diagram" : ".ba-overview .ba-diagram");
+        var diagram = fullScreen ? page.GetByRole(AriaRole.Dialog).Locator(".ba-diagram") : workflow.Locator(".ba-overview .ba-diagram");
         await diagram.ScrollIntoViewIfNeededAsync();
         var toggle = diagram.Locator("[data-node-id='__workflow__:signIn'] .ba-diagram-toggle");
         var step = diagram.Locator("[data-node-id='getAccount'] rect").First;
@@ -395,6 +424,23 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
 
         // Assert
         nested.ShouldBe("getAccount calls getOrder");
+    }
+
+    /// <summary>
+    /// Opens the workflow's full-screen overview and waits for ScalarModal's fade-in to end: the panel slides up
+    /// 10px over 0.3s, so a position measured earlier moves under the test on a slow machine.
+    /// </summary>
+    private static async Task ExpandAsync(IPage page, ILocator workflow)
+    {
+        await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+        // Headless UI's dialog element has no box of its own: wait for it to exist, not to be visible.
+        await page.Locator("[role='dialog']:not(dialog)").WaitForAsync(new() { State = WaitForSelectorState.Attached });
+        await page.EvaluateAsync(
+            """
+            () => Promise.all(document.getAnimations()
+              .filter(animation => animation.effect?.getComputedTiming().endTime !== Infinity)
+              .map(animation => animation.finished))
+            """);
     }
 
     private static string Normalize(string? text) => string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));

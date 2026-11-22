@@ -41,12 +41,6 @@
 .bielu-arazzo .ba-target-message .ba-block-title code {
   @apply my-0 mx-1;
 }
-.bielu-arazzo .ba-subtitle {
-  margin: 10px 0 4px;
-  @apply text-c-2;
-  font-size: var(--scalar-mini, 12px);
-  @apply font-medium;
-}
 .bielu-arazzo .ba-replacements td:nth-child(2) {
   @apply text-center;
   width: 1.5em;
@@ -121,11 +115,4 @@
 .bielu-arazzo .ba-sequence-step.ba-diagram-link:hover text,
 .bielu-arazzo .ba-sequence-step:focus-visible text {
   @apply fill-c-accent underline;
-}
-/* A workflow's example input: a copy button over the JSON. */
-.bielu-arazzo .ba-example-actions {
-  @apply flex items-center gap-2 mx-0 my-1.5;
-}
-.bielu-arazzo .ba-example-warning {
-  @apply mx-0 my-1.5;
 }

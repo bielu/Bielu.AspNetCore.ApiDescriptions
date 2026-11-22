@@ -1,19 +1,38 @@
 /*
- * Styles for the @scalar/components the Arazzo view uses (ScalarDropdown for the export menu).
+ * Styles for the @scalar/components the Arazzo view uses (ScalarDropdown for the export menu,
+ * ScalarModal for the expanded workflow).
  *
  * The components carry Tailwind classes in their compiled templates, and Scalar's page stylesheet
  * does not contain all of them (and scopes the ones it has to `.scalar-app`), so they are generated
- * here, scoped to `.bielu-arazzo` like every other rule of the view. Only the component folders
- * listed are scanned: the view's own markup uses `ba-*` classes, not utilities. The package sits in
- * ./node_modules when this folder is installed on its own (the npm CI job) and in the repository
- * root's node_modules when the workspace is installed from there (the .NET build); Tailwind skips
- * whichever path does not exist.
+ * here, scoped to `.bielu-arazzo` like every other rule of the view, and to `.bielu-arazzo-modal`:
+ * the modal renders in a portal at the end of <body>, outside the view. Only the files listed are
+ * scanned. The package sits in ./node_modules when this folder is installed on its own (the npm CI
+ * job) and in the repository root's node_modules when the workspace is installed from there (the
+ * .NET build); Tailwind skips whichever path does not exist.
+ *
+ * The view's own components are moving from the `@apply` rules in this folder to utilities in their
+ * templates, one component at a time, each keeping its `ba-*` classes as hooks for tests and for the
+ * rules still written in CSS. The components already moved are listed after the packages.
  */
-@source "../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating}/*.js";
-@source "../../../../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating}/*.js";
+@source "../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating,ScalarModal}/*.js";
+@source "../../../../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating,ScalarModal}/*.js";
+@source "../components/ArazzoStep.vue";
+@source "../components/ArazzoWorkflow.vue";
 
-.bielu-arazzo {
+.bielu-arazzo,
+.bielu-arazzo-modal {
   @tailwind utilities source(none);
+}
+
+/*
+ * The expanded workflow fills most of the window: it needs the room for a workflow with an expanded one inside.
+ * The portal sits in a .scalar-app wrapper, so Scalar's own `.scalar-app .p-0` competes: one more class outranks it.
+ */
+.bielu-arazzo-modal .scalar-modal-body.ba-dialog-body {
+  /* The body is flex-1 in a panel of no set height, where a basis of 0 would size it to its content. */
+  flex: none;
+  height: 88svh;
+  padding: 16px;
 }
 
 /*
@@ -27,4 +46,36 @@
 }
 .dark-mode .bielu-arazzo .scalar-dropdown-item[data-v-3402682d]:hover {
   filter: brightness(1.1);
+}
+.bielu-arazzo-modal .scalar-modal-layout[data-v-b002945c] {
+  animation: 0.3s ease-in-out forwards fadein-layout-b002945c;
+}
+.bielu-arazzo-modal .scalar-modal[data-v-b002945c] {
+  box-shadow: var(--scalar-shadow-2);
+  animation: 0.3s ease-in-out 0.1s forwards fadein-modal-b002945c;
+  transform: translate3d(0, 10px, 0);
+}
+@media (max-width: 720px) and (max-height: 480px) {
+  .bielu-arazzo-modal .scalar-modal-layout .scalar-modal[data-v-b002945c] {
+    max-height: 90svh;
+    margin-top: 5svh;
+  }
+}
+@keyframes fadein-layout-b002945c {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fadein-modal-b002945c {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
