@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Bielu.Arazzo.Models;
 
 namespace Bielu.Arazzo.Validation;
@@ -47,14 +48,30 @@ public static partial class ArazzoReferenceValidator
     /// <param name="document">The Arazzo document whose steps are checked.</param>
     /// <param name="workspace">The workspace holding the source documents and their resolvers.</param>
     /// <returns>One error per reference that doesn't resolve; empty when all of them do.</returns>
-    public static IReadOnlyList<ArazzoError> Validate(ArazzoDocument document, ArazzoWorkspace workspace)
+    public static IReadOnlyList<ArazzoError> Validate(ArazzoDocument document, ArazzoWorkspace workspace) =>
+        ResolveStepTargets(document, workspace)
+            .Where(target => target.Status == ArazzoStepTargetStatus.Unresolved)
+            .Select(target => new ArazzoError(target.Path, $"{target.WorkflowId}.{target.StepId}: {target.Message}"))
+            .ToList();
+
+    /// <summary>
+    /// Resolves the target of every step in <paramref name="document"/> that has an <c>operationId</c>,
+    /// <c>operationPath</c> or <c>channelPath</c>, returning what each resolved to. Comparing the results for two
+    /// versions of the source documents shows which workflows an API change affects.
+    /// </summary>
+    /// <param name="document">The Arazzo document whose steps are resolved.</param>
+    /// <param name="workspace">The workspace holding the source documents and their resolvers.</param>
+    /// <returns>One entry per step with an API target, in document order. Steps that call a workflow are left out.</returns>
+    public static IReadOnlyList<ArazzoStepTarget> ResolveStepTargets(ArazzoDocument document, ArazzoWorkspace workspace)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(workspace);
 
-        var declared = document.SourceDescriptions.Select(source => source.Name).ToHashSet(StringComparer.Ordinal);
-        var registered = workspace.SourceNames.ToList();
-        var errors = new List<ArazzoError>();
+        var context = new ResolutionContext(
+            workspace,
+            document.SourceDescriptions.Select(source => source.Name).ToHashSet(StringComparer.Ordinal),
+            workspace.SourceNames.ToList());
+        var targets = new List<ArazzoStepTarget>();
 
         for (var w = 0; w < document.Workflows.Count; w++)
         {
@@ -62,13 +79,16 @@ public static partial class ArazzoReferenceValidator
             for (var s = 0; s < workflow.Steps.Count; s++)
             {
                 var step = workflow.Steps[s];
-                var context = new StepContext(
-                    $"/workflows/{w}/steps/{s}", $"{workflow.WorkflowId}.{step.StepId}", workspace, declared, registered, errors);
-                ValidateStep(step, context);
+                if (ResolveStep(step, context) is { } outcome)
+                {
+                    targets.Add(new ArazzoStepTarget(
+                        workflow.WorkflowId, step.StepId, $"/workflows/{w}/steps/{s}/{outcome.Field}", outcome.Reference,
+                        outcome.SourceName, outcome.Status, outcome.Target, outcome.Message));
+                }
             }
         }
 
-        return errors;
+        return targets;
     }
 
     /// <summary>
@@ -89,92 +109,105 @@ public static partial class ArazzoReferenceValidator
             .ToList();
     }
 
-    private static void ValidateStep(ArazzoStep step, StepContext context)
+    private static Outcome? ResolveStep(ArazzoStep step, ResolutionContext context)
     {
         if (step.OperationPath is not null)
         {
-            ValidatePointerReference(step.OperationPath, "operationPath", context,
-                (source, pointer) => context.Workspace.TryResolveOperationPath(source, pointer, out _));
-            return;
+            return ResolvePointerReference(step.OperationPath, "operationPath", context, context.Workspace.TryResolveOperationPath);
         }
 
         if (step.ChannelPath is not null)
         {
-            ValidatePointerReference(step.ChannelPath, "channelPath", context,
-                (source, pointer) => context.Workspace.TryResolveChannelPath(source, pointer, out _));
-            return;
+            return ResolvePointerReference(step.ChannelPath, "channelPath", context, context.Workspace.TryResolveChannelPath);
         }
 
         if (step.OperationId is not { } operationId)
         {
-            return;
+            return null;
         }
 
+        const string field = "operationId";
         var qualified = QualifiedOperationIdPattern().Match(operationId);
         if (qualified.Success)
         {
             var sourceName = qualified.Groups[1].Value;
-            if (ShouldResolve(sourceName, $"operationId '{operationId}'", "operationId", context) &&
-                !context.Workspace.TryResolveOperation(sourceName, qualified.Groups[2].Value, out _))
+            if (Unavailable(sourceName, $"operationId '{operationId}'", field, operationId, context) is { } unavailable)
             {
-                context.Add("operationId", $"operationId '{operationId}' did not resolve.");
+                return unavailable;
             }
 
-            return;
+            return context.Workspace.TryResolveOperation(sourceName, qualified.Groups[2].Value, out var operation)
+                ? Outcome.Resolved(field, operationId, sourceName, operation)
+                : Outcome.Unresolved(field, operationId, sourceName, $"operationId '{operationId}' did not resolve.");
         }
 
-        if (context.Registered.Count > 0 &&
-            !context.Registered.Any(source => context.Workspace.TryResolveOperation(source, operationId, out _)))
+        if (context.Registered.Count == 0)
         {
-            context.Add("operationId", $"operationId '{operationId}' did not resolve against any registered source.");
+            return new Outcome(field, operationId, null, ArazzoStepTargetStatus.Skipped, null, null);
         }
+
+        foreach (var source in context.Registered)
+        {
+            if (context.Workspace.TryResolveOperation(source, operationId, out var operation))
+            {
+                return Outcome.Resolved(field, operationId, source, operation);
+            }
+        }
+
+        return Outcome.Unresolved(field, operationId, null,
+            $"operationId '{operationId}' did not resolve against any registered source.");
     }
 
-    private static void ValidatePointerReference(
-        string reference, string field, StepContext context, Func<string, string, bool> resolve)
+    private static Outcome ResolvePointerReference(
+        string reference, string field, ResolutionContext context, TryResolvePointer resolve)
     {
         var match = SourceReferencePattern().Match(reference);
         if (!match.Success)
         {
-            context.Add(field, $"{field} '{reference}' did not resolve.");
-            return;
+            return Outcome.Unresolved(field, reference, null, $"{field} '{reference}' did not resolve.");
         }
 
         var sourceName = match.Groups[1].Value;
-        if (ShouldResolve(sourceName, $"{field} '{reference}'", field, context) &&
-            !resolve(sourceName, match.Groups[2].Value))
+        if (Unavailable(sourceName, $"{field} '{reference}'", field, reference, context) is { } unavailable)
         {
-            context.Add(field, $"{field} '{reference}' did not resolve.");
+            return unavailable;
         }
+
+        // A resolver may report a match without returning the node, so the result decides, not the node.
+        return resolve(sourceName, match.Groups[2].Value, out var target)
+            ? Outcome.Resolved(field, reference, sourceName, target)
+            : Outcome.Unresolved(field, reference, sourceName, $"{field} '{reference}' did not resolve.");
     }
 
     /// <summary>
-    /// Whether a reference into <paramref name="sourceName"/> can be resolved: only when the workspace has its
-    /// document. A declared source without one is skipped; an undeclared source is reported.
+    /// The outcome for a reference into <paramref name="sourceName"/> when it can't be resolved: skipped for a
+    /// declared source without a document, unresolved for an undeclared source. <see langword="null"/> when the
+    /// workspace has the source's document.
     /// </summary>
-    private static bool ShouldResolve(string sourceName, string reference, string field, StepContext context)
+    private static Outcome? Unavailable(string sourceName, string description, string field, string reference, ResolutionContext context)
     {
         if (context.Workspace.TryGetDocument(sourceName, out _))
         {
-            return true;
+            return null;
         }
 
-        if (!context.Declared.Contains(sourceName))
-        {
-            context.Add(field, $"{reference} names source '{sourceName}', which the document doesn't declare.");
-        }
-
-        return false;
+        return context.Declared.Contains(sourceName)
+            ? new Outcome(field, reference, sourceName, ArazzoStepTargetStatus.Skipped, null, null)
+            : Outcome.Unresolved(field, reference, sourceName,
+                $"{description} names source '{sourceName}', which the document doesn't declare.");
     }
 
-    private sealed record StepContext(
-        string Path,
-        string Location,
-        ArazzoWorkspace Workspace,
-        HashSet<string> Declared,
-        List<string> Registered,
-        List<ArazzoError> Errors)
+    private delegate bool TryResolvePointer(string sourceName, string jsonPointer, out JsonNode? node);
+
+    private sealed record ResolutionContext(ArazzoWorkspace Workspace, HashSet<string> Declared, List<string> Registered);
+
+    private sealed record Outcome(
+        string Field, string Reference, string? SourceName, ArazzoStepTargetStatus Status, JsonNode? Target, string? Message)
     {
-        public void Add(string field, string message) => Errors.Add(new ArazzoError($"{Path}/{field}", $"{Location}: {message}"));
+        public static Outcome Resolved(string field, string reference, string sourceName, JsonNode? target) =>
+            new(field, reference, sourceName, ArazzoStepTargetStatus.Resolved, target, null);
+
+        public static Outcome Unresolved(string field, string reference, string? sourceName, string message) =>
+            new(field, reference, sourceName, ArazzoStepTargetStatus.Unresolved, null, message);
     }
 }

@@ -1,7 +1,7 @@
 # CLI Tool
 
 The `dotnet arazzo` CLI tool provides commands for validating, linting, and diffing Arazzo workflow
-documents. It is a separate tool from `dotnet asyncapi` so `arazzo` stays independently discoverable on
+documents, and for finding the workflows an API change affects. It is a separate tool from `dotnet asyncapi` so `arazzo` stays independently discoverable on
 NuGet, but it reuses the same underlying infrastructure (`Bielu.Cli.Shared`) and mirrors its command
 shapes and output formats.
 
@@ -93,3 +93,46 @@ dotnet arazzo diff --base old.yaml --head new.yaml --fail-on-breaking
 - `--head <path>` - Path to the head (new) Arazzo document (required)
 - `--fail-on-breaking` - Exit with code 1 if breaking changes are detected
 - `--format <text|json|markdown>` - Output format (default: text)
+
+### `impact`
+
+List the workflow steps an OpenAPI or AsyncAPI change affects. `diff` compares two versions of the Arazzo
+document. `impact` keeps the Arazzo document fixed and compares two versions of the APIs it calls, the way a
+pull request that changes an endpoint or a message does. Every step's target is resolved against the source
+documents before the change (`--base`) and after it (`--head`):
+
+| Before | After | Reported as |
+| --- | --- | --- |
+| resolves | doesn't resolve | **Breaking**: the operation or channel was removed or renamed |
+| resolves | resolves, but its definition changed | Non-breaking, for review: its parameters, request body, responses, messages or payload schemas changed |
+| doesn't resolve | resolves | Non-breaking |
+| doesn't resolve | doesn't resolve | A warning: the workflow was already broken, which `validate --source` reports |
+
+A definition counts as changed after its local `$ref`s are followed, so a payload schema edited under
+`components` is caught at the step that sends or receives it. Property order and documentation-only keywords
+(`description`, `summary`, `title`, examples, `externalDocs`, `x-` extensions) are ignored.
+
+```bash
+dotnet arazzo impact --file checkout.arazzo.json \
+  --base shop=base/openapi.json --base events=base/asyncapi.json \
+  --head shop=openapi.json      --head events=asyncapi.json \
+  --fail-on-breaking --format markdown
+```
+
+```text
+info: Breaking:
+error:   - checkout.notify: channelPath '{$sourceDescriptions.events.url}#/channels/orders' did not resolve. It resolved before the change.
+info: NonBreaking:
+info:   - checkout.order: The operation '$sourceDescriptions.shop.createOrder' targets changed in source 'shop'. Review the step's parameters, request body, success criteria and outputs.
+```
+
+**Options:**
+- `--file <path>` - Path to the Arazzo document (required)
+- `--base <name>=<path>` - The source description `<name>`'s OpenAPI/AsyncAPI document before the change (repeatable, at least one)
+- `--head <name>=<path>` - The same source's document after the change (repeatable, at least one)
+- `--fail-on-breaking` - Exit with code 1 if a step's target no longer resolves
+- `--format <text|json|markdown>` - Output format (default: text); `markdown` suits a pull-request comment
+
+A source given only with `--base` or only with `--head` can't be compared, so its steps are skipped with a
+warning. An unqualified `operationId` is looked up in every source given, so qualify it
+(`$sourceDescriptions.<name>.<operationId>`) or pass every source it might live in.
