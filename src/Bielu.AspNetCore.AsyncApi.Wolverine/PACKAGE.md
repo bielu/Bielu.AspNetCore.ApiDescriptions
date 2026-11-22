@@ -14,6 +14,8 @@ being repeated in `[Channel]`/`[ReceiveOperation]` attributes that can drift fro
 dotnet add package Bielu.AspNetCore.AsyncApi.Wolverine
 ```
 
+Works with WolverineFx 6 (6.41.0 or newer) and WolverineFx 7, which is tested against 7.0.0-alpha.3.
+
 ## Usage
 
 ```csharp
@@ -51,7 +53,7 @@ What it generates:
 |-----------|----------|
 | A route for a message type (`ToKafkaTopic`, `ToSignalR`, ...) | A `send` operation on the endpoint's channel |
 | A listener with `DefaultIncomingMessage<T>()` | A `receive` operation on the listener's channel |
-| A handler that returns a message with no route (or any message, with `IncludeReplies()`) | The `reply` of that `receive` operation, addressed by the `reply-uri` header |
+| A handler that returns a message with no route (or any message, with `IncludeReplies()`) | The `reply` of that `receive` operation, addressed by the `reply-uri` header. A handler bound to one listener (a sticky handler) answers only on that listener |
 | The message type name (`[MessageIdentity]`, or Wolverine's default) | The message name, the same one used on the wire |
 | The SignalR transport | A channel at the path the `WolverineHub` is mapped at, with `x-signalr` bindings targeting `ReceiveMessage` |
 | A Kafka topic | A channel at the topic, with a `kafka` channel binding |

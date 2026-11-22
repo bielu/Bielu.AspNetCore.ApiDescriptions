@@ -262,6 +262,10 @@ jobs:
           path: ${{ runner.temp }}/feed
       - name: Build and run a ${{ matrix.framework }} consumer
         run: bash scripts/verify-packages.sh consume "${{ runner.temp }}/feed" ${{ matrix.framework }}
+      # The Wolverine integration is packed once, against its minimum WolverineFx, and has to work on every
+      # WolverineFx major it supports: run its tests against that one package on each of them.
+      - name: Test the packed Wolverine integration on each WolverineFx major
+        run: bash scripts/verify-packages.sh consume-wolverine "${{ runner.temp }}/feed" ${{ matrix.framework }} 6.41.0 7.0.0-alpha.3
 
   # Pull request: generate every `dotnet new` template for every supported framework from the packed
   # template pack and build the result, checking that the Framework choice reached the projects.

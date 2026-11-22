@@ -11,6 +11,11 @@ instead of from attributes. Whatever you configure with `ToKafkaTopic`, `ToSigna
 dotnet add package Bielu.AspNetCore.AsyncApi.Wolverine
 ```
 
+The package depends on WolverineFx 6.41.0 or newer and works with both WolverineFx 6 and 7: the same
+package is tested on each, for `net10.0` and `net11.0`. To move to Wolverine 7, upgrade the
+`WolverineFx` packages in your app. Nothing changes in this package or its configuration. Wolverine 7 is
+in preview, and support for it is tested against 7.0.0-alpha.3.
+
 ## Configuration
 
 Call `AddWolverine` on the options of each document that should include Wolverine messages:
@@ -91,6 +96,12 @@ A `receive` operation with a reply gets:
   (`receive.quotes.get-quote.reply`) and without an address, because the address is only known from the
   request
 - `reply.messages` listing the returned message types
+
+The handlers are the ones Wolverine runs for that listener. A handler bound to the listener, as
+`ListenToKafkaTopic("retail-prices").AddStickyHandler(typeof(RetailPriceHandler))` does, answers only
+there, so two listeners for the same message each list their own handler's replies. A listener without
+a bound handler uses the handlers bound to no endpoint. A listener whose handlers are all bound to other
+endpoints, such as local queues, only relays the message to them, so its operation has no reply.
 
 Only listeners with a default incoming message type have a `receive` operation, so only their handlers
 are covered. AsyncAPI 2.x has no reply object, so a 2.x document is left unchanged.
