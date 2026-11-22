@@ -1,0 +1,8 @@
+# Prettier formats the Scalar plugins' Vue components only, with Scalar's own .prettierrc (plus our
+# theme stylesheet), so the class order and layout match Scalar's codebase. Everything else keeps its
+# current formatting: Scalar formats TypeScript and CSS with Biome, not Prettier.
+*
+!*/
+!src/**/assets/src/**/*.vue
+**/node_modules/**
+**/dist/**

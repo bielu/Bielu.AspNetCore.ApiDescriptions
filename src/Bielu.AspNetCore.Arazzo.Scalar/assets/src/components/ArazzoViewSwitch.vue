@@ -2,7 +2,8 @@
 import type { WorkflowView } from '../helpers/workflow-graph'
 
 /** The id of the tab for `view`, which labels the panel `panelId` names while that view is shown. */
-export const viewTabId = (panelId: string, view: WorkflowView) => `${panelId}-tab-${view}`
+export const viewTabId = (panelId: string, view: WorkflowView) =>
+  `${panelId}-tab-${view}`
 </script>
 
 <script setup lang="ts">
@@ -60,6 +61,8 @@ const onKeydown = (event: KeyboardEvent, index: number) => {
       :tabindex="props.view === option.value ? 0 : -1"
       type="button"
       @click="emit('select', option.value)"
-      @keydown="onKeydown($event, index)">{{ option.label }}</button>
+      @keydown="onKeydown($event, index)">
+      {{ option.label }}
+    </button>
   </div>
 </template>

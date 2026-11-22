@@ -1,0 +1,16 @@
+{
+  "plugins": ["@ianvs/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
+  "trailingComma": "all",
+  "quoteProps": "consistent",
+  "tabWidth": 2,
+  "semi": false,
+  "singleQuote": true,
+  "singleAttributePerLine": true,
+  "bracketSameLine": true,
+  "endOfLine": "lf",
+  "importOrder": ["<BUILTIN_MODULES>", "", "<THIRD_PARTY_MODULES>", "", "^@/(.*)$", "", "^[./]"],
+  "importOrderParserPlugins": ["typescript"],
+  "importOrderTypeScriptVersion": "5.2.2",
+  "tailwindStylesheet": "./src/Bielu.AspNetCore.AsyncApi.Scalar/assets/src/tailwind.css",
+  "tailwindFunctions": ["cva", "cx"]
+}

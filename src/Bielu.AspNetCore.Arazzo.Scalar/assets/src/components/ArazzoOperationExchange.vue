@@ -9,7 +9,11 @@ import {
   type ExchangeContent,
 } from '../helpers/openapi-exchange'
 import type { StepTarget } from '../helpers/resolve-target'
-import type { ArazzoCriterion, ArazzoFailureAction, ArazzoSuccessAction } from '../types'
+import type {
+  ArazzoCriterion,
+  ArazzoFailureAction,
+  ArazzoSuccessAction,
+} from '../types'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
 
 /**
@@ -26,27 +30,41 @@ const props = defineProps<{
   actions: (ArazzoSuccessAction | ArazzoFailureAction)[]
 }>()
 
-const requestBody = computed(() => operationRequestBody(props.target, props.documents))
+const requestBody = computed(() =>
+  operationRequestBody(props.target, props.documents),
+)
 
 /** The media type shown: the one the step sends, else the first the operation lists. */
 const requestContent = computed(() => {
   const contents = requestBody.value?.contents ?? []
-  return contents.find((content) => content.contentType === props.contentType) ?? contents[0]
+  return (
+    contents.find((content) => content.contentType === props.contentType) ??
+    contents[0]
+  )
 })
 
 const otherRequestTypes = computed(() =>
-  (requestBody.value?.contents ?? []).filter((content) => content !== requestContent.value).map((content) => content.contentType),
+  (requestBody.value?.contents ?? [])
+    .filter((content) => content !== requestContent.value)
+    .map((content) => content.contentType),
 )
 
-const responses = computed(() => operationResponses(props.target, props.documents))
+const responses = computed(() =>
+  operationResponses(props.target, props.documents),
+)
 
-const handling = computed(() => responseHandling(responses.value, props.successCriteria, props.actions))
+const handling = computed(() =>
+  responseHandling(responses.value, props.successCriteria, props.actions),
+)
 
-const rowsOf = (content: ExchangeContent | undefined, root: Record<string, unknown>) =>
-  content?.schema ? schemaPropertyRows(content.schema, root) : undefined
+const rowsOf = (
+  content: ExchangeContent | undefined,
+  root: Record<string, unknown>,
+) => (content?.schema ? schemaPropertyRows(content.schema, root) : undefined)
 
 /** `ba-status-2` for a 2xx, so success, redirect and error statuses read apart at a glance. */
-const statusClass = (status: string): string => `ba-status-${/^\d/.test(status) ? status[0] : 'default'}`
+const statusClass = (status: string): string =>
+  `ba-status-${/^\d/.test(status) ? status[0] : 'default'}`
 </script>
 
 <template>
@@ -80,7 +98,8 @@ const statusClass = (status: string): string => `ba-status-${/^\d/.test(status) 
       v-if="requestContent?.example !== undefined"
       class="ba-extensions">
       <summary>Example request</summary>
-      <pre class="ba-code"><code>{{ formatValue(requestContent.example) }}</code></pre>
+      <pre
+        class="ba-code"><code>{{ formatValue(requestContent.example) }}</code></pre>
     </details>
     <div
       v-if="otherRequestTypes.length"
@@ -103,8 +122,12 @@ const statusClass = (status: string): string => `ba-status-${/^\d/.test(status) 
           <summary>
             <code
               class="ba-status"
-              :class="statusClass(response.status)">{{ response.status }}</code>
-            <span class="ba-response-description">{{ response.description }}</span>
+              :class="statusClass(response.status)"
+              >{{ response.status }}</code
+            >
+            <span class="ba-response-description">{{
+              response.description
+            }}</span>
             <span
               v-if="handling[response.status]?.success"
               class="ba-badge ba-response-handled"
@@ -133,20 +156,30 @@ const statusClass = (status: string): string => `ba-status-${/^\d/.test(status) 
               v-if="content.example !== undefined"
               class="ba-extensions">
               <summary>Example response</summary>
-              <pre class="ba-code"><code>{{ formatValue(content.example) }}</code></pre>
+              <pre
+                class="ba-code"><code>{{ formatValue(content.example) }}</code></pre>
             </details>
           </template>
           <div
             v-if="response.contents.length > 1"
             class="ba-muted">
-            Also {{ response.contents.slice(1).map((content) => content.contentType).join(', ') }}
+            Also
+            {{
+              response.contents
+                .slice(1)
+                .map((content) => content.contentType)
+                .join(', ')
+            }}
           </div>
           <div
             v-if="response.headers.length"
             class="ba-muted">
-            Headers: <code
+            Headers:
+            <code
               v-for="(header, index) in response.headers"
-              :key="header">{{ index ? ', ' : '' }}{{ header }}</code>
+              :key="header"
+              >{{ index ? ', ' : '' }}{{ header }}</code
+            >
           </div>
         </details>
         <div
@@ -154,8 +187,12 @@ const statusClass = (status: string): string => `ba-status-${/^\d/.test(status) 
           class="ba-response ba-response-empty">
           <code
             class="ba-status"
-            :class="statusClass(response.status)">{{ response.status }}</code>
-          <span class="ba-response-description">{{ response.description }}</span>
+            :class="statusClass(response.status)"
+            >{{ response.status }}</code
+          >
+          <span class="ba-response-description">{{
+            response.description
+          }}</span>
           <span
             v-if="handling[response.status]?.success"
             class="ba-badge ba-response-handled"

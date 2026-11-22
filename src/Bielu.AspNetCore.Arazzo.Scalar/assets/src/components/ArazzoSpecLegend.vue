@@ -11,31 +11,54 @@ const props = defineProps<{ layout: WorkflowLayout; view?: WorkflowView }>()
 
 /** The specs the steps target, in a fixed order. */
 const families = computed((): SpecFamily[] => {
-  const used = new Set(props.layout.nodes.map((node) => node.spec).filter(Boolean))
-  return (['openapi', 'asyncapi', 'arazzo'] as const).filter((family) => used.has(family))
+  const used = new Set(
+    props.layout.nodes.map((node) => node.spec).filter(Boolean),
+  )
+  return (['openapi', 'asyncapi', 'arazzo'] as const).filter((family) =>
+    used.has(family),
+  )
 })
 
 /** The other marks a reader meets in the overview, listed only when it uses them. */
-const workflowNodes = computed(() => props.layout.nodes.some((node) => node.kind === 'workflow'))
-const expandable = computed(() => props.layout.nodes.some((node) => node.expandable))
-const returns = computed(() => props.layout.edges.some((edge) => edge.kind === 'return'))
+const workflowNodes = computed(() =>
+  props.layout.nodes.some((node) => node.kind === 'workflow'),
+)
+const expandable = computed(() =>
+  props.layout.nodes.some((node) => node.expandable),
+)
+const returns = computed(() =>
+  props.layout.edges.some((edge) => edge.kind === 'return'),
+)
 const pages = computed(() => props.view === 'pages')
 const dataFlow = computed(() => props.view === 'data')
-const pageBands = computed(() => pages.value && (props.layout.bands ?? []).some((band) => band.pageId))
-const noPageBands = computed(() => pages.value && (props.layout.bands ?? []).some((band) => !band.pageId))
+const pageBands = computed(
+  () => pages.value && (props.layout.bands ?? []).some((band) => band.pageId),
+)
+const noPageBands = computed(
+  () => pages.value && (props.layout.bands ?? []).some((band) => !band.pageId),
+)
 /** An end node names its page, or (when its arrows land on different pages) each arrow names its own. */
 const landsOnPage = (kind: 'success' | 'failure'): boolean =>
   props.layout.nodes.some((node) => node.kind === kind && node.page) ||
-  props.layout.edges.some((edge) => edge.page && props.layout.nodes.some((node) => node.id === edge.to && node.kind === kind))
+  props.layout.edges.some(
+    (edge) =>
+      edge.page &&
+      props.layout.nodes.some(
+        (node) => node.id === edge.to && node.kind === kind,
+      ),
+  )
 const successPage = computed(() => pages.value && landsOnPage('success'))
 const failurePages = computed(() => pages.value && landsOnPage('failure'))
 
-const name = (family: SpecFamily): string => (family === 'arazzo' ? 'Workflow' : specLabel({ family, version: undefined }))
+const name = (family: SpecFamily): string =>
+  family === 'arazzo' ? 'Workflow' : specLabel({ family, version: undefined })
 </script>
 
 <template>
   <ul
-    v-if="families.length || workflowNodes || pageBands || noPageBands || dataFlow"
+    v-if="
+      families.length || workflowNodes || pageBands || noPageBands || dataFlow
+    "
     aria-label="Specs the steps target"
     class="ba-diagram-legend">
     <li
@@ -57,7 +80,10 @@ const name = (family: SpecFamily): string => (family === 'arazzo' ? 'Workflow' :
     <li v-if="dataFlow">
       <span
         class="ba-diagram-legend-line"
-        style="--ba-line-color: var(--scalar-color-3); border-top-style: solid" />
+        style="
+          --ba-line-color: var(--scalar-color-3);
+          border-top-style: solid;
+        " />
       Values passed (named on the arrow; ⓘ shows what flows)
     </li>
     <li v-if="pageBands">

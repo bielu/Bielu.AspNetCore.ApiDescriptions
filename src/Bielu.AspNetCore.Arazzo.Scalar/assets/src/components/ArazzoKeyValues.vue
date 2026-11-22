@@ -69,7 +69,9 @@ const follow = (event: MouseEvent, consumer: OutputConsumer) => {
               <a
                 v-if="consumer.anchor"
                 :href="`#${consumer.anchor}`"
-                @click="follow($event, consumer)">{{ consumer.label }}</a>
+                @click="follow($event, consumer)"
+                >{{ consumer.label }}</a
+              >
               <span v-else>{{ consumer.label }}</span>
             </template>
           </span>

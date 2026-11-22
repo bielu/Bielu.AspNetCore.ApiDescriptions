@@ -1,7 +1,21 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  useId,
+  watch,
+} from 'vue'
 import { expandStepEvent, STEP_REVEAL_EVENT } from '../helpers/navigation'
-import { INITIAL_PAN_ZOOM, panBy, panZoomForKey, type PanZoomState, zoomAt } from '../helpers/pan-zoom'
+import {
+  INITIAL_PAN_ZOOM,
+  panBy,
+  panZoomForKey,
+  type PanZoomState,
+  zoomAt,
+} from '../helpers/pan-zoom'
 import { specLabel } from '../helpers/target-spec'
 import {
   type LaidOutEdge,
@@ -34,11 +48,15 @@ const props = defineProps<{
   /** Grow the diagram to fill its box (up to twice its natural size), as the expanded view does. */
   fit?: boolean
   /** stepId → what looks wrong in that step of this workflow, marked on its box. */
-  problems?: Record<string, { severity: 'error' | 'warning'; count: number; messages: string[] }>
+  problems?: Record<
+    string,
+    { severity: 'error' | 'warning'; count: number; messages: string[] }
+  >
 }>()
 
 /** The problems of a top-level step box; a step of an expanded workflow is checked in that workflow's own section. */
-const problemsOf = (node: LaidOutNode) => (!node.group && node.stepId ? props.problems?.[node.stepId] : undefined)
+const problemsOf = (node: LaidOutNode) =>
+  !node.group && node.stepId ? props.problems?.[node.stepId] : undefined
 
 const emit = defineEmits<{
   /** A workflow node's +/− was used: show or hide the steps of the workflow it invokes. */
@@ -93,8 +111,14 @@ const measureScale = () => {
     return
   }
   const style = getComputedStyle(box)
-  const width = box.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0')
-  const height = box.clientHeight - parseFloat(style.paddingTop || '0') - parseFloat(style.paddingBottom || '0')
+  const width =
+    box.clientWidth -
+    parseFloat(style.paddingLeft || '0') -
+    parseFloat(style.paddingRight || '0')
+  const height =
+    box.clientHeight -
+    parseFloat(style.paddingTop || '0') -
+    parseFloat(style.paddingBottom || '0')
   if (width <= 0) {
     return
   }
@@ -105,7 +129,11 @@ const measureScale = () => {
   if (height <= 0) {
     return
   }
-  const whole = Math.min(width / props.layout.width, height / props.layout.height, 2)
+  const whole = Math.min(
+    width / props.layout.width,
+    height / props.layout.height,
+    2,
+  )
   if (whole >= READABLE_SCALE) {
     baseScale.value = whole
     overflowing.value = false
@@ -160,7 +188,9 @@ const resetView = () => {
 let anchor: { id: string; left: number; top: number } | undefined
 
 const nodeElement = (id: string): Element | null | undefined =>
-  viewport.value?.querySelector(`[data-node-id="${id.replace(/["\\]/g, '\\$&')}"]`)
+  viewport.value?.querySelector(
+    `[data-node-id="${id.replace(/["\\]/g, '\\$&')}"]`,
+  )
 
 watch(
   () => props.layout,
@@ -169,7 +199,11 @@ watch(
     anchor = undefined
     const after = pending && nodeElement(pending.id)?.getBoundingClientRect()
     if (pending && after) {
-      panZoom.value = panBy(panZoom.value, pending.left - after.left, pending.top - after.top)
+      panZoom.value = panBy(
+        panZoom.value,
+        pending.left - after.left,
+        pending.top - after.top,
+      )
     }
   },
   { flush: 'post' },
@@ -189,7 +223,9 @@ defineExpose({ resetView, remeasure, svg: () => svgElement.value })
 const onWheel = (event: WheelEvent) => {
   event.preventDefault()
   const bounds = viewport.value?.getBoundingClientRect()
-  const pivot = bounds ? { x: event.clientX - bounds.left, y: event.clientY - bounds.top } : { x: 0, y: 0 }
+  const pivot = bounds
+    ? { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
+    : { x: 0, y: 0 }
   panZoom.value = zoomAt(panZoom.value, event.deltaY < 0 ? 'in' : 'out', pivot)
 }
 
@@ -234,7 +270,9 @@ const onKeydown = (event: KeyboardEvent) => {
     return
   }
   const bounds = viewport.value?.getBoundingClientRect()
-  const center = bounds ? { x: bounds.width / 2, y: bounds.height / 2 } : { x: 0, y: 0 }
+  const center = bounds
+    ? { x: bounds.width / 2, y: bounds.height / 2 }
+    : { x: 0, y: 0 }
   const next = panZoomForKey(panZoom.value, event.key, center)
   if (next) {
     event.preventDefault()
@@ -254,7 +292,9 @@ const onNodeKeydown = (event: KeyboardEvent, node: LaidOutNode) => {
 const toggleWorkflow = (node: LaidOutNode) => {
   if (node.expandable && !moved) {
     const before = nodeElement(node.id)?.getBoundingClientRect()
-    anchor = before ? { id: node.id, left: before.left, top: before.top } : undefined
+    anchor = before
+      ? { id: node.id, left: before.left, top: before.top }
+      : undefined
     emit('toggleWorkflow', node.id)
   }
 }
@@ -277,47 +317,73 @@ const sectionOf = (node: LaidOutNode): string | undefined => {
   if (!node.stepId) {
     return undefined
   }
-  const group = node.group ? props.layout.groups.find((candidate) => candidate.id === node.group) : undefined
+  const group = node.group
+    ? props.layout.groups.find((candidate) => candidate.id === node.group)
+    : undefined
   // A workflow of another Arazzo document has no step sections on this page.
   if (group?.documentName) {
     return undefined
   }
   const workflowId = node.group ? group?.workflowId : props.workflowId
-  return workflowId ? props.stepSectionIds[workflowId]?.[node.stepId] : undefined
+  return workflowId
+    ? props.stepSectionIds[workflowId]?.[node.stepId]
+    : undefined
 }
 
-const isStepLink = (node: LaidOutNode): boolean => (node.kind === 'step' || node.kind === 'workflow') && Boolean(sectionOf(node))
+const isStepLink = (node: LaidOutNode): boolean =>
+  (node.kind === 'step' || node.kind === 'workflow') && Boolean(sectionOf(node))
 
 /** A workflow an action invokes has no step to open: the box itself toggles it. */
-const opensByToggling = (node: LaidOutNode): boolean => node.kind === 'workflow' && !isStepLink(node) && Boolean(node.expandable)
+const opensByToggling = (node: LaidOutNode): boolean =>
+  node.kind === 'workflow' && !isStepLink(node) && Boolean(node.expandable)
 
-const onNodeClick = (node: LaidOutNode) => (opensByToggling(node) ? toggleWorkflow(node) : openStep(node))
+const onNodeClick = (node: LaidOutNode) =>
+  opensByToggling(node) ? toggleWorkflow(node) : openStep(node)
 
 /** An arrow label's tooltip: the action it stands for, the page it lands on, and the whole label when it is shortened. */
 const edgeTitle = (edge: LaidOutEdge): string | undefined =>
-  [edge.action, (edge.page || edge.fullLabel) && (edge.fullLabel ?? edge.label)].filter(Boolean).join(': ') || undefined
+  [edge.action, (edge.page || edge.fullLabel) && (edge.fullLabel ?? edge.label)]
+    .filter(Boolean)
+    .join(': ') || undefined
 
 /** A box's title (with the technical id behind a Pages label), then the retries of the step itself, one per line. */
 const nodeTitle = (node: LaidOutNode): string | undefined => {
   const problems = problemsOf(node)
-  const base = [technicalTitle(node), ...(problems?.messages.map((message) => `${problems.severity === 'error' ? '✕' : '!'} ${message}`) ?? [])]
+  const base = [
+    technicalTitle(node),
+    ...(problems?.messages.map(
+      (message) => `${problems.severity === 'error' ? '✕' : '!'} ${message}`,
+    ) ?? []),
+  ]
     .filter(Boolean)
     .join('\n')
-  const title = node.technical && node.technical !== node.label ? [base, `(${node.technical})`].filter(Boolean).join(' ') : base
-  const retries = (node.retries ?? []).map((retry) => `Retries itself: ${retry.label}${retry.action ? ` (${retry.action})` : ''}`)
+  const title =
+    node.technical && node.technical !== node.label
+      ? [base, `(${node.technical})`].filter(Boolean).join(' ')
+      : base
+  const retries = (node.retries ?? []).map(
+    (retry) =>
+      `Retries itself: ${retry.label}${retry.action ? ` (${retry.action})` : ''}`,
+  )
   return retries.length ? [title, ...retries].filter(Boolean).join('\n') : title
 }
 
 const technicalTitle = (node: LaidOutNode): string | undefined => {
   if (node.kind === 'workflow') {
-    const what = node.stepId ? `Step ${node.label} invokes workflow ${node.workflowId}` : `Workflow ${node.workflowId}`
+    const what = node.stepId
+      ? `Step ${node.label} invokes workflow ${node.workflowId}`
+      : `Workflow ${node.workflowId}`
     if (node.cycle) {
       return `${what} (already expanded above: not expanded again)`
     }
-    return node.expandable ? `${what}. ${node.expanded ? 'Hide' : 'Show'} its steps with the button.` : what
+    return node.expandable
+      ? `${what}. ${node.expanded ? 'Hide' : 'Show'} its steps with the button.`
+      : what
   }
   if (node.kind === 'data') {
-    return node.id === '::inputs' ? "The workflow's inputs" : "The workflow's outputs"
+    return node.id === '::inputs'
+      ? "The workflow's inputs"
+      : "The workflow's outputs"
   }
   if (node.kind === 'failure' && node.actions?.length) {
     return `Ends the workflow: ${node.actions.join(', ')}`
@@ -339,14 +405,21 @@ const openStep = async (node: LaidOutNode) => {
     return
   }
   emit('openStep', node.id)
-  viewport.value?.dispatchEvent(new CustomEvent(STEP_REVEAL_EVENT, { bubbles: true, detail: { sectionId: id } }))
+  viewport.value?.dispatchEvent(
+    new CustomEvent(STEP_REVEAL_EVENT, {
+      bubbles: true,
+      detail: { sectionId: id },
+    }),
+  )
   await nextTick()
   const section = document.getElementById(id)
   section?.dispatchEvent(expandStepEvent())
   // The step and the workflow it belongs to open on that render; only then can it be scrolled to and focused.
   await nextTick()
   section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  section?.querySelector<HTMLElement>('.ba-step-toggle')?.focus({ preventScroll: true })
+  section
+    ?.querySelector<HTMLElement>('.ba-step-toggle')
+    ?.focus({ preventScroll: true })
 }
 
 /** A path through dagre's bend points, with each corner rounded by a quadratic curve. */
@@ -373,25 +446,39 @@ const specName = (family: NonNullable<LaidOutNode['spec']>): string =>
   family === 'arazzo' ? 'Workflow' : specLabel({ family, version: undefined })
 
 /** The toggle's width on the right of a workflow node; 0 for any other box. */
-const toggleWidth = (node: LaidOutNode): number => (node.kind === 'workflow' && (node.expandable || node.cycle) ? WORKFLOW_TOGGLE_WIDTH : 0)
+const toggleWidth = (node: LaidOutNode): number =>
+  node.kind === 'workflow' && (node.expandable || node.cycle)
+    ? WORKFLOW_TOGGLE_WIDTH
+    : 0
 
 /** The label sits between the spec marker on the left and the retry badge and toggle on the right. */
 const labelX = (node: LaidOutNode): number =>
-  node.x + (node.spec ? SPEC_MARKER_WIDTH / 2 : 0) - (toggleWidth(node) + retryBadgeWidth(node)) / 2
+  node.x +
+  (node.spec ? SPEC_MARKER_WIDTH / 2 : 0) -
+  (toggleWidth(node) + retryBadgeWidth(node)) / 2
 
 /** The retry badge's box: right of the label, left of the toggle, vertically centered. */
 const retryBadgeBox = (node: LaidOutNode) => {
   const width = retryBadgeWidth(node) - 6
-  return { x: node.x + node.width / 2 - toggleWidth(node) - width - 4, y: node.y - 9, width, height: 18 }
+  return {
+    x: node.x + node.width / 2 - toggleWidth(node) - width - 4,
+    y: node.y - 9,
+    width,
+    height: 18,
+  }
 }
 
-const viewBox = computed(() => `0 0 ${Math.max(props.layout.width, 1)} ${Math.max(props.layout.height, 1)}`)
+const viewBox = computed(
+  () =>
+    `0 0 ${Math.max(props.layout.width, 1)} ${Math.max(props.layout.height, 1)}`,
+)
 
-const label = computed(() =>
-  `Workflow diagram: ${props.layout.nodes
-    .filter((node) => node.kind === 'step' || node.kind === 'workflow')
-    .map((node) => node.label)
-    .join(', ')}`,
+const label = computed(
+  () =>
+    `Workflow diagram: ${props.layout.nodes
+      .filter((node) => node.kind === 'step' || node.kind === 'workflow')
+      .map((node) => node.label)
+      .join(', ')}`,
 )
 </script>
 
@@ -402,7 +489,10 @@ const label = computed(() =>
     class="ba-diagram"
     role="group"
     tabindex="0"
-    :class="{ 'ba-diagram-dragging': dragging, 'ba-diagram-grown': !fit && (layout.groups?.length ?? 0) > 0 }"
+    :class="{
+      'ba-diagram-dragging': dragging,
+      'ba-diagram-grown': !fit && (layout.groups?.length ?? 0) > 0,
+    }"
     @dblclick="resetView"
     @keydown="onKeydown"
     @pointercancel="stopDragging"
@@ -412,8 +502,13 @@ const label = computed(() =>
     @wheel="onWheel">
     <div
       class="ba-diagram-canvas"
-      :class="{ 'ba-diagram-canvas-fit': fit, 'ba-diagram-canvas-top': fit && overflowing }"
-      :style="{ transform: `translate(${panZoom.x}px, ${panZoom.y}px) scale(${panZoom.scale})` }">
+      :class="{
+        'ba-diagram-canvas-fit': fit,
+        'ba-diagram-canvas-top': fit && overflowing,
+      }"
+      :style="{
+        transform: `translate(${panZoom.x}px, ${panZoom.y}px) scale(${panZoom.scale})`,
+      }">
       <svg
         ref="svgElement"
         :aria-label="label"
@@ -450,7 +545,9 @@ const label = computed(() =>
             :width="group.width"
             :x="group.x - group.width / 2"
             :y="group.y - group.height / 2" />
-          <title v-if="truncateLabel(group.label) !== group.label">{{ group.label }}</title>
+          <title v-if="truncateLabel(group.label) !== group.label">
+            {{ group.label }}
+          </title>
           <text
             dominant-baseline="central"
             :x="group.x - group.width / 2 + GROUP_LABEL_INSET"
@@ -464,7 +561,10 @@ const label = computed(() =>
           :key="band.id"
           class="ba-diagram-band"
           :class="{ 'ba-diagram-band-none': !band.pageId }">
-          <title v-if="band.pageId">Page {{ band.pageId }}: {{ [band.title, band.route].filter(Boolean).join(' · ') }}</title>
+          <title v-if="band.pageId">
+            Page {{ band.pageId }}:
+            {{ [band.title, band.route].filter(Boolean).join(' · ') }}
+          </title>
           <rect
             :height="band.height"
             rx="6"
@@ -482,14 +582,20 @@ const label = computed(() =>
             :marker-end="`url(#${markerPrefix}-${edge.kind})`" />
           <g
             v-if="edge.label && edge.labelPosition"
-            :aria-label="edge.values?.length ? `Show what flows: ${edge.fullLabel ?? edge.label}` : undefined"
+            :aria-label="
+              edge.values?.length
+                ? `Show what flows: ${edge.fullLabel ?? edge.label}`
+                : undefined
+            "
             class="ba-diagram-edge-label"
             :class="{ 'ba-diagram-link': !!edge.values?.length }"
             :role="edge.values?.length ? 'button' : undefined"
             :tabindex="edge.values?.length ? 0 : undefined"
             @click="openFlow(edge)"
             @keydown="edge.values?.length && onFlowKeydown($event, edge)">
-            <title v-if="edge.values?.length">Show what flows: {{ edge.fullLabel ?? edge.label }}</title>
+            <title v-if="edge.values?.length">
+              Show what flows: {{ edge.fullLabel ?? edge.label }}
+            </title>
             <title v-else-if="edgeTitle(edge)">{{ edgeTitle(edge) }}</title>
             <rect
               :height="18"
@@ -500,7 +606,10 @@ const label = computed(() =>
             <text
               dominant-baseline="central"
               text-anchor="middle"
-              :x="edge.labelPosition.x - (edge.values?.length ? FLOW_ICON_ROOM / 2 : 0)"
+              :x="
+                edge.labelPosition.x -
+                (edge.values?.length ? FLOW_ICON_ROOM / 2 : 0)
+              "
               :y="edge.labelPosition.y">
               {{ edge.label }}
             </text>
@@ -510,14 +619,26 @@ const label = computed(() =>
               aria-hidden="true"
               class="ba-diagram-flow-icon">
               <circle
-                :cx="edge.labelPosition.x + edge.labelWidth / 2 - FLOW_ICON_ROOM / 2 - 2"
+                :cx="
+                  edge.labelPosition.x +
+                  edge.labelWidth / 2 -
+                  FLOW_ICON_ROOM / 2 -
+                  2
+                "
                 :cy="edge.labelPosition.y"
                 r="5" />
               <text
                 dominant-baseline="central"
                 text-anchor="middle"
-                :x="edge.labelPosition.x + edge.labelWidth / 2 - FLOW_ICON_ROOM / 2 - 2"
-                :y="edge.labelPosition.y + 0.5">i</text>
+                :x="
+                  edge.labelPosition.x +
+                  edge.labelWidth / 2 -
+                  FLOW_ICON_ROOM / 2 -
+                  2
+                "
+                :y="edge.labelPosition.y + 0.5">
+                i
+              </text>
             </g>
           </g>
         </g>
@@ -540,13 +661,19 @@ const label = computed(() =>
           <text
             dominant-baseline="central"
             :x="band.x - band.width / 2 + 8"
-            :y="band.y - band.height / 2 + BAND_LABEL_HEIGHT / 2 + 1">{{ band.label }}</text>
+            :y="band.y - band.height / 2 + BAND_LABEL_HEIGHT / 2 + 1">
+            {{ band.label }}
+          </text>
         </g>
 
         <g
           v-for="node in layout.nodes"
           :key="node.id"
-          :aria-label="isStepLink(node) ? `Go to step ${node.label}${node.spec ? ` (${specName(node.spec)})` : ''}` : undefined"
+          :aria-label="
+            isStepLink(node)
+              ? `Go to step ${node.label}${node.spec ? ` (${specName(node.spec)})` : ''}`
+              : undefined
+          "
           :class="[
             `ba-diagram-node ba-diagram-node-${node.kind}`,
             {
@@ -569,7 +696,9 @@ const label = computed(() =>
             :x="node.x - node.width / 2"
             :y="node.y - node.height / 2" />
           <rect
-            v-if="(node.kind === 'step' || node.kind === 'workflow') && node.spec"
+            v-if="
+              (node.kind === 'step' || node.kind === 'workflow') && node.spec
+            "
             :class="`ba-diagram-spec ba-spec-${node.spec}`"
             :height="node.height - 2"
             rx="5"
@@ -594,14 +723,18 @@ const label = computed(() =>
             dominant-baseline="central"
             text-anchor="middle"
             :x="labelX(node)"
-            :y="node.subtitle ? node.y - 8 : node.y">{{ node.label }}</text>
+            :y="node.subtitle ? node.y - 8 : node.y">
+            {{ node.label }}
+          </text>
           <text
             v-if="node.subtitle"
             class="ba-diagram-subtitle"
             dominant-baseline="central"
             text-anchor="middle"
             :x="labelX(node)"
-            :y="node.y + 9">{{ node.subtitle }}</text>
+            :y="node.y + 9">
+            {{ node.subtitle }}
+          </text>
           <g
             v-if="problemsOf(node)"
             class="ba-diagram-problem"
@@ -614,7 +747,9 @@ const label = computed(() =>
               dominant-baseline="central"
               text-anchor="middle"
               :x="node.x + node.width / 2 - 2"
-              :y="node.y - node.height / 2 + 2.5">{{ problemsOf(node)!.severity === 'error' ? '✕' : '!' }}</text>
+              :y="node.y - node.height / 2 + 2.5">
+              {{ problemsOf(node)!.severity === 'error' ? '✕' : '!' }}
+            </text>
           </g>
           <g
             v-if="retryBadge(node)"
@@ -636,7 +771,11 @@ const label = computed(() =>
           <g
             v-if="node.kind === 'workflow' && (node.expandable || node.cycle)"
             :aria-expanded="node.expandable ? node.expanded : undefined"
-            :aria-label="node.cycle ? `Workflow ${node.workflowId} is already expanded above` : `${node.expanded ? 'Hide' : 'Show'} the steps of workflow ${node.workflowId}`"
+            :aria-label="
+              node.cycle
+                ? `Workflow ${node.workflowId} is already expanded above`
+                : `${node.expanded ? 'Hide' : 'Show'} the steps of workflow ${node.workflowId}`
+            "
             class="ba-diagram-toggle"
             :class="{ 'ba-diagram-toggle-cycle': node.cycle }"
             :role="node.expandable ? 'button' : 'img'"

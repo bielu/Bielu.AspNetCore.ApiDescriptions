@@ -1,14 +1,34 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onErrorCaptured,
+  onMounted,
+  ref,
+  watch,
+} from 'vue'
 import { renderMarkdown } from '../helpers/markdown'
 import { type DocumentWatch, watchDocuments } from '../helpers/document-watch'
-import { componentsEntryId, STEP_REVEAL_EVENT, toWorkflowViews } from '../helpers/navigation'
+import {
+  componentsEntryId,
+  STEP_REVEAL_EVENT,
+  toWorkflowViews,
+} from '../helpers/navigation'
 import { normalizeArazzoDocument } from '../helpers/normalize'
 import { sourcesLoaded } from '../helpers/resolve-target'
 import type { ArazzoPluginOptions } from '../helpers/plugin-options'
 import { filterWorkflows } from '../helpers/search'
-import { countStepsBySpec, specLabel, summarizeSources } from '../helpers/target-spec'
-import type { ArazzoDocument, PluginEventBus, PluginNavigationEntry } from '../types'
+import {
+  countStepsBySpec,
+  specLabel,
+  summarizeSources,
+} from '../helpers/target-spec'
+import type {
+  ArazzoDocument,
+  PluginEventBus,
+  PluginNavigationEntry,
+} from '../types'
 import { diagnose } from '../helpers/diagnostics'
 import { provideDiagnostics } from '../helpers/diagnostics-scope'
 import ArazzoComponents from './ArazzoComponents.vue'
@@ -36,7 +56,9 @@ const props = defineProps<{
 
 const root = ref<HTMLElement>()
 
-const layout = computed(() => (typeof props.options?.layout === 'string' ? props.options.layout : 'modern'))
+const layout = computed(() =>
+  typeof props.options?.layout === 'string' ? props.options.layout : 'modern',
+)
 
 /**
  * The document as the view reads it: malformed entries dropped, so a broken document renders what it
@@ -53,13 +75,18 @@ const info = computed(() => arazzo.value?.info ?? {})
 const renderError = ref<string>()
 onErrorCaptured((error) => {
   renderError.value = error instanceof Error ? error.message : String(error)
-  console.error('[bielu-arazzo] Part of the Arazzo document could not be rendered.', error)
+  console.error(
+    '[bielu-arazzo] Part of the Arazzo document could not be rendered.',
+    error,
+  )
   return false
 })
 
 const description = computed(() => renderMarkdown(info.value.description))
 
-const workflows = computed(() => (arazzo.value ? toWorkflowViews(arazzo.value, props.navigation ?? []) : []))
+const workflows = computed(() =>
+  arazzo.value ? toWorkflowViews(arazzo.value, props.navigation ?? []) : [],
+)
 
 /** The document's own extensions and its `info`'s, shown together in the header (the root's win on a clash). */
 const documentExtensions = computed(() => ({ ...info.value, ...arazzo.value }))
@@ -67,7 +94,13 @@ const documentExtensions = computed(() => ({ ...info.value, ...arazzo.value }))
 /** The text in the filter box; the workflows and steps it leaves are `filter`, everything when empty. */
 const query = ref('')
 const matches = computed(() =>
-  filterWorkflows(workflows.value, query.value, arazzo.value ? { document: arazzo.value, config: props.arazzoOptions ?? {} } : undefined),
+  filterWorkflows(
+    workflows.value,
+    query.value,
+    arazzo.value
+      ? { document: arazzo.value, config: props.arazzoOptions ?? {} }
+      : undefined,
+  ),
 )
 
 /**
@@ -83,15 +116,30 @@ watch(query, () => {
 })
 const filter = computed(() => {
   const current = matches.value
-  if (!current || (revealed.value.size === 0 && revealedWorkflows.value.size === 0)) {
+  if (
+    !current ||
+    (revealed.value.size === 0 && revealedWorkflows.value.size === 0)
+  ) {
     return current
   }
   const steps = new Set([...current.steps, ...revealed.value])
-  const owners = workflows.value.filter((view) => view.steps.some((entry) => revealed.value.has(entry.id))).map((view) => view.id)
-  return { ...current, steps, workflows: new Set([...current.workflows, ...owners, ...revealedWorkflows.value]) }
+  const owners = workflows.value
+    .filter((view) => view.steps.some((entry) => revealed.value.has(entry.id)))
+    .map((view) => view.id)
+  return {
+    ...current,
+    steps,
+    workflows: new Set([
+      ...current.workflows,
+      ...owners,
+      ...revealedWorkflows.value,
+    ]),
+  }
 })
 const onRevealStep = (event: Event) => {
-  const { sectionId, workflowId } = (event as CustomEvent<{ sectionId?: string; workflowId?: string }>).detail ?? {}
+  const { sectionId, workflowId } =
+    (event as CustomEvent<{ sectionId?: string; workflowId?: string }>)
+      .detail ?? {}
   if (sectionId && matches.value && !matches.value.steps.has(sectionId)) {
     revealed.value = new Set([...revealed.value, sectionId])
   }
@@ -100,15 +148,28 @@ const onRevealStep = (event: Event) => {
   }
 }
 onMounted(() => root.value?.addEventListener(STEP_REVEAL_EVENT, onRevealStep))
-onBeforeUnmount(() => root.value?.removeEventListener(STEP_REVEAL_EVENT, onRevealStep))
+onBeforeUnmount(() =>
+  root.value?.removeEventListener(STEP_REVEAL_EVENT, onRevealStep),
+)
 
 /** workflowId → stepId → section id, so an overview box opens its step in whichever workflow it belongs to. */
 const stepSectionIds = computed(() =>
-  Object.fromEntries(workflows.value.map((view) => [view.workflow.workflowId, Object.fromEntries(view.steps.map((entry) => [entry.step.stepId, entry.id]))])),
+  Object.fromEntries(
+    workflows.value.map((view) => [
+      view.workflow.workflowId,
+      Object.fromEntries(
+        view.steps.map((entry) => [entry.step.stepId, entry.id]),
+      ),
+    ]),
+  ),
 )
 
 /** workflowId → its section's sidebar id, so a step that invokes a workflow links to it. */
-const workflowNavIds = computed(() => Object.fromEntries(workflows.value.map((view) => [view.workflow.workflowId, view.id])))
+const workflowNavIds = computed(() =>
+  Object.fromEntries(
+    workflows.value.map((view) => [view.workflow.workflowId, view.id]),
+  ),
+)
 
 /** The components section's sidebar id; `undefined` when the document declares no components. */
 const componentsId = computed(() => componentsEntryId(props.navigation ?? []))
@@ -130,10 +191,14 @@ const diagnostics = computed(() =>
 provideDiagnostics(() => diagnostics.value)
 
 /** Each source description with its spec, whether it is loaded, and how many steps use it. */
-const sources = computed(() => (arazzo.value ? summarizeSources(arazzo.value, loadedDocuments.value) : []))
+const sources = computed(() =>
+  arazzo.value ? summarizeSources(arazzo.value, loadedDocuments.value) : [],
+)
 
 /** "3 OpenAPI steps · 2 AsyncAPI steps": how the workflows split between the specs. */
-const stepsBySpec = computed(() => (arazzo.value ? countStepsBySpec(arazzo.value, loadedDocuments.value) : []))
+const stepsBySpec = computed(() =>
+  arazzo.value ? countStepsBySpec(arazzo.value, loadedDocuments.value) : [],
+)
 
 /**
  * The workspace documents, re-read whenever one is added. Scalar loads the sibling documents after
@@ -158,7 +223,8 @@ const refreshDocuments = (): boolean => {
  * Every source description has a loaded document to resolve into, Arazzo ones included, and so do the Arazzo
  * sources of the Arazzo documents they lead to: a workflow called in another document can load after this one.
  */
-const allSourcesLoaded = () => (arazzo.value ? sourcesLoaded(arazzo.value, props.documents ?? {}) : true)
+const allSourcesLoaded = () =>
+  arazzo.value ? sourcesLoaded(arazzo.value, props.documents ?? {}) : true
 watch(
   () => props.documents,
   () => {
@@ -185,7 +251,9 @@ const observeSections = () => {
   if (!root.value || typeof IntersectionObserver === 'undefined') {
     return
   }
-  const sections = Array.from(root.value.querySelectorAll<HTMLElement>('[data-nav-id]'))
+  const sections = Array.from(
+    root.value.querySelectorAll<HTMLElement>('[data-nav-id]'),
+  )
   observer = new IntersectionObserver(
     (records) => {
       for (const record of records) {
@@ -197,7 +265,9 @@ const observeSections = () => {
       }
       const active = sections.filter((section) => visible.has(section)).pop()
       if (active?.dataset.navId) {
-        props.eventBus?.emit('intersecting:nav-item', { id: active.dataset.navId })
+        props.eventBus?.emit('intersecting:nav-item', {
+          id: active.dataset.navId,
+        })
       }
     },
     { rootMargin: '0px 0px -70% 0px' },
@@ -210,7 +280,8 @@ onMounted(() => {
   documentsWatch = watchDocuments({
     check: refreshDocuments,
     isComplete: allSourcesLoaded,
-    isHidden: () => typeof document !== 'undefined' && document.visibilityState === 'hidden',
+    isHidden: () =>
+      typeof document !== 'undefined' && document.visibilityState === 'hidden',
   })
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
@@ -273,7 +344,12 @@ onBeforeUnmount(() => {
               :key="entry.family"
               class="ba-spec"
               :class="`ba-spec-${entry.family}`">
-              {{ entry.count }} {{ entry.family === 'arazzo' ? 'workflow' : specLabel({ family: entry.family, version: undefined }) }}
+              {{ entry.count }}
+              {{
+                entry.family === 'arazzo'
+                  ? 'workflow'
+                  : specLabel({ family: entry.family, version: undefined })
+              }}
               {{ entry.count === 1 ? 'step' : 'steps' }}
             </span>
           </span>
@@ -283,13 +359,23 @@ onBeforeUnmount(() => {
             <tr
               v-for="summary in sources"
               :key="summary.source.name">
-              <td><code>{{ summary.source.name }}</code></td>
+              <td>
+                <code>{{ summary.source.name }}</code>
+              </td>
               <td>
                 <span
                   v-if="summary.family"
                   class="ba-spec"
-                  :class="[`ba-spec-${summary.family}`, { 'ba-spec-unresolved': !summary.documentName }]">
-                  {{ specLabel({ family: summary.family, version: summary.version }) }}
+                  :class="[
+                    `ba-spec-${summary.family}`,
+                    { 'ba-spec-unresolved': !summary.documentName },
+                  ]">
+                  {{
+                    specLabel({
+                      family: summary.family,
+                      version: summary.version,
+                    })
+                  }}
                 </span>
                 <span
                   v-else
@@ -299,7 +385,8 @@ onBeforeUnmount(() => {
               </td>
               <td class="ba-muted ba-nowrap">
                 <template v-if="!summary.documentName">Not loaded · </template>
-                {{ summary.stepCount }} {{ summary.stepCount === 1 ? 'step' : 'steps' }}
+                {{ summary.stepCount }}
+                {{ summary.stepCount === 1 ? 'step' : 'steps' }}
               </td>
               <td>
                 <a
@@ -328,7 +415,10 @@ onBeforeUnmount(() => {
         <span
           aria-live="polite"
           class="ba-muted">
-          <template v-if="filter">{{ filter.matchingSteps }} of {{ filter.totalSteps }} steps</template>
+          <template v-if="filter"
+            >{{ filter.matchingSteps }} of
+            {{ filter.totalSteps }} steps</template
+          >
         </span>
       </div>
     </header>

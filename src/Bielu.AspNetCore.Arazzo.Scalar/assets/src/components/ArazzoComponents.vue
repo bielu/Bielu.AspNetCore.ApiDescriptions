@@ -3,7 +3,14 @@ import { computed } from 'vue'
 import { provideExpressionScope } from '../helpers/expression-scope'
 import { componentAnchor } from '../helpers/expressions'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
-import type { ArazzoComponents, ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoSuccessAction, PluginEventBus } from '../types'
+import type {
+  ArazzoComponents,
+  ArazzoDocument,
+  ArazzoFailureAction,
+  ArazzoParameter,
+  ArazzoSuccessAction,
+  PluginEventBus,
+} from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoExtensions from './ArazzoExtensions.vue'
@@ -24,26 +31,46 @@ const props = defineProps<{
 }>()
 
 // Components belong to no workflow: their `$components` and `$workflows` expressions link, `$steps` ones cannot.
-provideExpressionScope(() => ({ document: props.document, componentsId: props.id, workflowNavIds: props.workflowNavIds }))
+provideExpressionScope(() => ({
+  document: props.document,
+  componentsId: props.id,
+  workflowNavIds: props.workflowNavIds,
+}))
 
-const entries = <T,>(record: Record<string, T> | undefined): [string, T][] => Object.entries(record ?? {})
+const entries = <T,>(record: Record<string, T> | undefined): [string, T][] =>
+  Object.entries(record ?? {})
 
 const inputs = computed(() =>
-  entries(props.components.inputs).map(([name, schema]) => ({ name, schema, rows: schemaPropertyRows(schema) })),
+  entries(props.components.inputs).map(([name, schema]) => ({
+    name,
+    schema,
+    rows: schemaPropertyRows(schema),
+  })),
 )
 
-const parameters = computed(() => entries(props.components.parameters as Record<string, ArazzoParameter> | undefined))
+const parameters = computed(() =>
+  entries(
+    props.components.parameters as Record<string, ArazzoParameter> | undefined,
+  ),
+)
 
 const successActions = computed(() =>
-  entries(props.components.successActions as Record<string, ArazzoSuccessAction> | undefined),
+  entries(
+    props.components.successActions as
+      Record<string, ArazzoSuccessAction> | undefined,
+  ),
 )
 
 const failureActions = computed(() =>
-  entries(props.components.failureActions as Record<string, ArazzoFailureAction> | undefined),
+  entries(
+    props.components.failureActions as
+      Record<string, ArazzoFailureAction> | undefined,
+  ),
 )
 
 /** How a step or workflow refers to a component: `$components.parameters.tenant`. */
-const reference = (kind: string, name: string): string => `$components.${kind}.${name}`
+const reference = (kind: string, name: string): string =>
+  `$components.${kind}.${name}`
 </script>
 
 <template>
@@ -92,7 +119,9 @@ const reference = (kind: string, name: string): string => `$components.${kind}.$
             :id="componentAnchor(id, 'parameters', name)"
             :key="name"
             class="ba-anchor-target">
-            <td><code :title="reference('parameters', name)">{{ name }}</code></td>
+            <td>
+              <code :title="reference('parameters', name)">{{ name }}</code>
+            </td>
             <td>
               {{ parameter.name }}
               <span

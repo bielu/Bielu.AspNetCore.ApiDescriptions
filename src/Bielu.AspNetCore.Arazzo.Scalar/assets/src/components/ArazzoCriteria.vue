@@ -26,7 +26,9 @@ defineProps<{
         class="ba-badge ba-criterion-type">
         {{ criterionTypeLabel(criterion.type) }}
       </span>
-      <code class="ba-condition"><ArazzoExpressionText :text="criterion.condition" /></code>
+      <code class="ba-condition"
+        ><ArazzoExpressionText :text="criterion.condition"
+      /></code>
       <span
         v-if="criterion.context"
         class="ba-muted">

@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { downloadBlob, safeName, standaloneSvg, svgToPng, toMermaid } from '../helpers/diagram-export'
+import {
+  downloadBlob,
+  safeName,
+  standaloneSvg,
+  svgToPng,
+  toMermaid,
+} from '../helpers/diagram-export'
 import type { WorkflowLayout } from '../helpers/workflow-graph'
 
 /**
@@ -26,14 +32,18 @@ const say = (message: string) => {
   clear = setTimeout(() => (status.value = ''), 2500)
 }
 
-const fileName = (extension: string) => `${safeName(props.name)}-overview.${extension}`
+const fileName = (extension: string) =>
+  `${safeName(props.name)}-overview.${extension}`
 
 const close = () => menu.value?.removeAttribute('open')
 
 const downloadSvg = () => {
   const svg = props.svg()
   if (svg) {
-    downloadBlob(new Blob([standaloneSvg(svg, props.layout)], { type: 'image/svg+xml' }), fileName('svg'))
+    downloadBlob(
+      new Blob([standaloneSvg(svg, props.layout)], { type: 'image/svg+xml' }),
+      fileName('svg'),
+    )
     say('SVG downloaded')
   }
   close()
@@ -46,7 +56,14 @@ const downloadPng = async () => {
     return
   }
   try {
-    downloadBlob(await svgToPng(standaloneSvg(svg, props.layout), props.layout.width, props.layout.height), fileName('png'))
+    downloadBlob(
+      await svgToPng(
+        standaloneSvg(svg, props.layout),
+        props.layout.width,
+        props.layout.height,
+      ),
+      fileName('png'),
+    )
     say('PNG downloaded')
   } catch {
     say('The PNG could not be made; try SVG')
@@ -60,7 +77,10 @@ const copyMermaid = async () => {
     say('Mermaid copied')
   } catch {
     // No clipboard (an insecure page, or permission refused): offer the file instead.
-    downloadBlob(new Blob([toMermaid(props.layout)], { type: 'text/plain' }), fileName('mmd'))
+    downloadBlob(
+      new Blob([toMermaid(props.layout)], { type: 'text/plain' }),
+      fileName('mmd'),
+    )
     say('Mermaid downloaded')
   }
 }
@@ -93,18 +113,26 @@ const copyMermaid = async () => {
       <button
         role="menuitem"
         type="button"
-        @click="downloadSvg">Download SVG</button>
+        @click="downloadSvg">
+        Download SVG
+      </button>
       <button
         role="menuitem"
         type="button"
-        @click="downloadPng">Download PNG</button>
+        @click="downloadPng">
+        Download PNG
+      </button>
       <button
         role="menuitem"
         type="button"
-        @click="copyMermaid">Copy as Mermaid</button>
+        @click="copyMermaid">
+        Copy as Mermaid
+      </button>
     </div>
   </details>
   <span
     aria-live="polite"
-    class="ba-muted ba-export-status">{{ status }}</span>
+    class="ba-muted ba-export-status"
+    >{{ status }}</span
+  >
 </template>

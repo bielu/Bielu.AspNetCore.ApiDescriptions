@@ -22,7 +22,9 @@ const emit = defineEmits<{
 }>()
 
 const hrefOf = (link: FlowLink): string =>
-  link.navId ? navigationHref(link.navId, window.location) : `${window.location.pathname}${window.location.search}#${link.anchor ?? ''}`
+  link.navId
+    ? navigationHref(link.navId, window.location)
+    : `${window.location.pathname}${window.location.search}#${link.anchor ?? ''}`
 
 /**
  * A schema in another document opens its page in Scalar; an input of this workflow scrolls to its row. Followed
@@ -35,7 +37,12 @@ const follow = (event: MouseEvent, link: FlowLink) => {
     openInOtherDocument(event, hrefOf(link))
   } else if (link.anchor) {
     event.preventDefault()
-    void goToAnchor(event.currentTarget as Element, { anchor: link.anchor }, nextTick, { focus: event.detail === 0 })
+    void goToAnchor(
+      event.currentTarget as Element,
+      { anchor: link.anchor },
+      nextTick,
+      { focus: event.detail === 0 },
+    )
   }
 }
 </script>
@@ -59,7 +66,8 @@ const follow = (event: MouseEvent, link: FlowLink) => {
           <span
             v-if="value.origin"
             class="ba-muted">
-            · {{ value.origin }}</span>
+            · {{ value.origin }}</span
+          >
         </dd>
         <template v-if="value.uses.length">
           <dt>Used as</dt>
@@ -71,7 +79,9 @@ const follow = (event: MouseEvent, link: FlowLink) => {
             <a
               class="ba-flow-link"
               :href="hrefOf(value.link)"
-              @click="follow($event, value.link)">{{ value.link.label }} ↗</a>
+              @click="follow($event, value.link)"
+              >{{ value.link.label }} ↗</a
+            >
           </dd>
         </template>
       </dl>
@@ -81,7 +91,8 @@ const follow = (event: MouseEvent, link: FlowLink) => {
       <p
         v-else
         class="ba-muted ba-flow-no-schema">
-        No schema found: the value's document isn't loaded or doesn't describe it.
+        No schema found: the value's document isn't loaded or doesn't describe
+        it.
       </p>
     </section>
   </div>
