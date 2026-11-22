@@ -1,0 +1,30 @@
+/*
+ * Styles for the @scalar/components the Arazzo view uses (ScalarDropdown for the export menu).
+ *
+ * The components carry Tailwind classes in their compiled templates, and Scalar's page stylesheet
+ * does not contain all of them (and scopes the ones it has to `.scalar-app`), so they are generated
+ * here, scoped to `.bielu-arazzo` like every other rule of the view. Only the component folders
+ * listed are scanned: the view's own markup uses `ba-*` classes, not utilities. The package sits in
+ * ./node_modules when this folder is installed on its own (the npm CI job) and in the repository
+ * root's node_modules when the workspace is installed from there (the .NET build); Tailwind skips
+ * whichever path does not exist.
+ */
+@source "../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating}/*.js";
+@source "../../../../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating}/*.js";
+
+.bielu-arazzo {
+  @tailwind utilities source(none);
+}
+
+/*
+ * The components' scoped styles, copied from @scalar/components 0.35.1's vue-styles.css. The
+ * data-v hashes belong to that version, the one bundled here, so they match the rendered elements
+ * whatever Scalar version the page runs. Update them together with the package.
+ */
+.dark-mode .bielu-arazzo .scalar-dropdown-item[data-v-128eed00]:hover,
+.dark-mode .bielu-arazzo .scalar-dropdown-item[data-highlighted][data-v-128eed00] {
+  filter: brightness(1.1);
+}
+.dark-mode .bielu-arazzo .scalar-dropdown-item[data-v-3402682d]:hover {
+  filter: brightness(1.1);
+}

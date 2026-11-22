@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ScalarDropdown, ScalarDropdownItem } from '@scalar/components/dropdown'
 import { ref } from 'vue'
+
 import {
   downloadBlob,
   safeName,
@@ -21,8 +23,6 @@ const props = defineProps<{
   name: string
 }>()
 
-const menu = ref<HTMLDetailsElement>()
-
 /** What the last action did, read out to screen readers and shown for a moment. */
 const status = ref('')
 let clear: ReturnType<typeof setTimeout> | undefined
@@ -35,8 +35,6 @@ const say = (message: string) => {
 const fileName = (extension: string) =>
   `${safeName(props.name)}-overview.${extension}`
 
-const close = () => menu.value?.removeAttribute('open')
-
 const downloadSvg = () => {
   const svg = props.svg()
   if (svg) {
@@ -46,12 +44,10 @@ const downloadSvg = () => {
     )
     say('SVG downloaded')
   }
-  close()
 }
 
 const downloadPng = async () => {
   const svg = props.svg()
-  close()
   if (!svg) {
     return
   }
@@ -71,7 +67,6 @@ const downloadPng = async () => {
 }
 
 const copyMermaid = async () => {
-  close()
   try {
     await navigator.clipboard.writeText(toMermaid(props.layout))
     say('Mermaid copied')
@@ -87,13 +82,13 @@ const copyMermaid = async () => {
 </script>
 
 <template>
-  <details
-    ref="menu"
-    class="ba-export">
-    <summary
+  <!-- Scalar's dropdown: it closes itself after a pick, on Escape and on a click outside. -->
+  <ScalarDropdown placement="bottom-end">
+    <button
       aria-label="Export workflow diagram"
       class="ba-icon-button"
-      title="Export">
+      title="Export"
+      type="button">
       <svg
         aria-hidden="true"
         fill="none"
@@ -106,30 +101,15 @@ const copyMermaid = async () => {
         width="14">
         <path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10" />
       </svg>
-    </summary>
-    <div
-      class="ba-export-menu"
-      role="menu">
-      <button
-        role="menuitem"
-        type="button"
-        @click="downloadSvg">
-        Download SVG
-      </button>
-      <button
-        role="menuitem"
-        type="button"
-        @click="downloadPng">
-        Download PNG
-      </button>
-      <button
-        role="menuitem"
-        type="button"
-        @click="copyMermaid">
-        Copy as Mermaid
-      </button>
-    </div>
-  </details>
+    </button>
+    <template #items>
+      <ScalarDropdownItem @click="downloadSvg">Download SVG</ScalarDropdownItem>
+      <ScalarDropdownItem @click="downloadPng">Download PNG</ScalarDropdownItem>
+      <ScalarDropdownItem @click="copyMermaid"
+        >Copy as Mermaid</ScalarDropdownItem
+      >
+    </template>
+  </ScalarDropdown>
   <span
     aria-live="polite"
     class="ba-muted ba-export-status"

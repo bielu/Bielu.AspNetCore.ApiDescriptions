@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ArazzoDiagramExport from '../src/components/ArazzoDiagramExport.vue'
 import ArazzoWorkflowDiagram from '../src/components/ArazzoWorkflowDiagram.vue'
@@ -178,6 +178,17 @@ describe('the export menu', () => {
     return { diagram, menu }
   }
 
+  /** Opens the menu (its items only exist while it is open) and picks an item. */
+  const pick = async (menu: VueWrapper, name: string) => {
+    // The dropdown wires its trigger up in a watcher after mounting.
+    await flushPromises()
+    await menu.find('button[aria-label="Export workflow diagram"]').trigger('click')
+    await flushPromises()
+    const item = menu.findAll('[role="menuitem"]').find((button) => button.text() === name)
+    expect(item, `menu item "${name}"`).toBeDefined()
+    await item!.trigger('click')
+  }
+
   /** Captures the files the menu saves, by the link it clicks. */
   const captureDownloads = () => {
     const saved: { name: string; blob: Blob }[] = []
@@ -200,7 +211,7 @@ describe('the export menu', () => {
     const { diagram, menu } = mountMenu()
 
     // Act
-    await menu.findAll('button').find((button) => button.text() === 'Download SVG')!.trigger('click')
+    await pick(menu, 'Download SVG')
 
     // Assert
     expect(saved.map((file) => file.name)).toEqual(['place_order-overview.svg'])
@@ -217,7 +228,7 @@ describe('the export menu', () => {
     vi.stubGlobal('navigator', { clipboard: { writeText } })
     const saved = captureDownloads()
     const { diagram, menu } = mountMenu()
-    const copy = () => menu.findAll('button').find((button) => button.text() === 'Copy as Mermaid')!.trigger('click')
+    const copy = () => pick(menu, 'Copy as Mermaid')
 
     // Act
     await copy()
@@ -239,6 +250,23 @@ describe('the export menu', () => {
     diagram.unmount()
   })
 
+  it('closes the menu once an item is picked', async () => {
+    // Arrange
+    captureDownloads()
+    const { diagram, menu } = mountMenu()
+    const trigger = menu.find('button[aria-label="Export workflow diagram"]')
+
+    // Act
+    await pick(menu, 'Download SVG')
+    await flushPromises()
+
+    // Assert
+    expect(menu.findAll('[role="menuitem"]')).toHaveLength(0)
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+    menu.unmount()
+    diagram.unmount()
+  })
+
   it('says when the PNG cannot be made', async () => {
     // Arrange: an image that never loads.
     captureDownloads()
@@ -254,7 +282,7 @@ describe('the export menu', () => {
     const { diagram, menu } = mountMenu()
 
     // Act
-    await menu.findAll('button').find((button) => button.text() === 'Download PNG')!.trigger('click')
+    await pick(menu, 'Download PNG')
     await new Promise((resolve) => setTimeout(resolve, 5))
     await flushPromises()
 
