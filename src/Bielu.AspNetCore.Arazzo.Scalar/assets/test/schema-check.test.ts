@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { exampleWithCheck } from '../src/helpers/example-input'
-import { conformsTo, follow, matchesPattern, mayBacktrack } from '../src/helpers/schema-check'
+import { conformsTo, follow, matchesPattern, matchesQuickly, patternShape } from '../src/helpers/schema-check'
 
 describe('conformsTo', () => {
   it('follows a pointer through an array to the schema it names', () => {
@@ -48,6 +48,19 @@ describe('conformsTo', () => {
     expect(exampleWithCheck(schema)).toEqual({ value: { name: 'string', loop: null }, needsEdits: false })
   })
 
+  it('still checks the keywords next to a reference that closes a cycle', () => {
+    // Arrange: `b` refers back to `a`, and adds a minimum of its own.
+    const schema = {
+      $defs: { a: { $ref: '#/$defs/b' }, b: { $ref: '#/$defs/a', minimum: 10 } },
+      properties: { n: { $ref: '#/$defs/a', example: 5 } },
+    }
+
+    // Act / Assert
+    expect(conformsTo({ n: 5 }, schema)).toBe(false)
+    expect(conformsTo({ n: 10 }, schema)).toBe(true)
+    expect(exampleWithCheck(schema)).toEqual({ value: { n: 5 }, needsEdits: true })
+  })
+
   it('compares objects without regard to the order of their properties', () => {
     // Arrange
     const unique = { type: 'array', uniqueItems: true }
@@ -89,28 +102,61 @@ describe('matchesPattern', () => {
     expect(performance.now() - started).toBeLessThan(100)
   })
 
+  it('does not run adjacent repeats that overlap on a value long enough to make them slow', () => {
+    // Arrange: no repeated group, but eight repeats of the same character backtrack polynomially, n⁹.
+    const value = 'a'.repeat(100)
+
+    // Act
+    const started = performance.now()
+    const matched = matchesPattern(value, '^a*a*a*a*a*a*a*a*b$')
+
+    // Assert
+    expect(matched).toBe(true)
+    expect(performance.now() - started).toBeLessThan(100)
+    expect(matchesQuickly('^a*a*a*a*a*a*a*a*b$', 100)).toBe(false)
+    // On a value short enough, the same pattern is still checked.
+    expect(matchesPattern('aaa', '^a*a*a*a*a*a*a*a*b$')).toBe(false)
+  })
+
   it('still checks ordinary patterns, and leaves out very long values', () => {
     // Act / Assert
     expect(matchesPattern('123', '^\\d+$')).toBe(true)
     expect(matchesPattern('12a', '^\\d+$')).toBe(false)
+    expect(matchesPattern('12.50', '^\\d+(\\.\\d+)?$')).toBe(true)
+    expect(matchesPattern('12.', '^\\d+(\\.\\d+)?$')).toBe(false)
     expect(matchesPattern('x'.repeat(1001), '^\\d+$')).toBe(true)
   })
 
+  it('bounds the work of a pattern by its repeats, optional parts and alternatives', () => {
+    // Act / Assert: (n + 1)^(repeats + 1) · 2^optionals · choices, within 10⁷.
+    expect(matchesQuickly('^\\d+(\\.\\d+)?$', 169)).toBe(true)
+    expect(matchesQuickly('^\\d+(\\.\\d+)?$', 170)).toBe(false)
+    expect(matchesQuickly('^\\d{3}-\\d{4}$', 1000)).toBe(true)
+    expect(matchesQuickly('^(?:red|green|blue)$', 1000)).toBe(true)
+  })
+
   it.each([
-    ['(a*)*b', true],
-    ['(a+)+$', true],
-    ['^(a|aa)+$', true],
-    ['((ab)*c)+', true],
-    ['(\\d{1,3}){2,}', true],
-    ['^[a-z]+$', false],
-    ['^(?:ab)+$', false],
-    ['^\\d{3}-\\d{4}$', false],
-    ['^[(a*)]+$', false],
-    ['\\(a*\\)*', false],
-    ['^(a{2})+$', false],
-  ])('flags %s as a backtracking risk: %s', (pattern, risky) => {
+    ['(a*)*b', { unbounded: true }],
+    ['(a+)+$', { unbounded: true }],
+    ['^(a|aa)+$', { unbounded: true }],
+    ['((ab)*c)+', { unbounded: true }],
+    ['(\\d{1,3}){2,}', { unbounded: true }],
+    ['(a+){9}', { unbounded: true }],
+    ['^(a)\\1$', { unbounded: true }],
+    ['^(?<x>a)\\k<x>$', { unbounded: true }],
+    ['^a*a*a*b$', { repeats: 3, optionals: 0, choices: 1, unbounded: false }],
+    ['^[a-z]+$', { repeats: 1, unbounded: false }],
+    ['^(?:ab)+$', { repeats: 1, optionals: 0, unbounded: false }],
+    ['^(?=a)a+?$', { repeats: 1, optionals: 0, unbounded: false }],
+    ['^\\d{3}-\\d{4}$', { repeats: 0, unbounded: false }],
+    ['^\\d{1,3}$', { repeats: 1, unbounded: false }],
+    ['^[(a*)|?]+$', { repeats: 1, optionals: 0, choices: 1, unbounded: false }],
+    ['\\(a*\\)*', { repeats: 2, unbounded: false }],
+    ['^(a{2})+$', { repeats: 1, unbounded: false }],
+    ['^(red|green)-(s|m|l)?$', { repeats: 0, optionals: 1, choices: 6, unbounded: false }],
+  ])('reads the shape of %s', (pattern, shape) => {
     // Act / Assert
-    expect(mayBacktrack(pattern)).toBe(risky)
+    expect(patternShape(pattern)).toMatchObject(shape)
   })
 })
 
@@ -128,6 +174,38 @@ describe('exampleWithCheck limits', () => {
 
     // Assert
     expect(count(example.value)).toBeLessThanOrEqual(1001)
+    expect(example.needsEdits).toBe(true)
+  })
+
+  it('counts every property against the budget, including those with boolean schemas', () => {
+    // Arrange: two nested arrays of 50 objects with 2000 `true` properties each would make about 5 million values.
+    const wide = { type: 'object', properties: Object.fromEntries(Array.from({ length: 2000 }, (_, index) => [`p${index}`, true])) }
+    const schema = { type: 'array', minItems: 50, items: { type: 'array', minItems: 50, items: wide } }
+    const count = (value: unknown): number =>
+      Array.isArray(value)
+        ? value.reduce((sum: number, item) => sum + count(item), 1)
+        : value && typeof value === 'object'
+          ? Object.values(value).reduce((sum: number, item) => sum + count(item), 1)
+          : 1
+
+    // Act
+    const example = exampleWithCheck(schema)!
+
+    // Assert
+    expect(count(example.value)).toBeLessThanOrEqual(1001)
+    expect(example.needsEdits).toBe(true)
+  })
+
+  it('says an example cut short needs edits even when what is left satisfies the schema', () => {
+    // Arrange: `null` is a valid value for every property, so only the cut says the example is incomplete.
+    const schema = { type: 'object', properties: Object.fromEntries(Array.from({ length: 1500 }, (_, index) => [`p${index}`, { type: ['string', 'null'] }])) }
+
+    // Act
+    const example = exampleWithCheck(schema)!
+
+    // Assert
+    expect(Object.keys(example.value as object).length).toBeLessThan(1500)
+    expect(conformsTo(example.value, schema)).toBe(true)
     expect(example.needsEdits).toBe(true)
   })
 

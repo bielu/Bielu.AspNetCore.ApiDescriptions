@@ -112,20 +112,68 @@ const hasType = (value: unknown, type: unknown): boolean => {
   }
 }
 
-/** Whether the pattern repeats at `index`: `*`, `+` or an open-ended or ranged `{n,…}`. */
-const repeatsAt = (pattern: string, index: number): boolean =>
-  pattern[index] === '*' || pattern[index] === '+' || (pattern[index] === '{' && /^\{\d+,/.test(pattern.slice(index, index + 16)))
+/** How a quantifier repeats what it follows: a variable number of times, zero or once, or a fixed number. */
+type Quantifier = { kind: 'repeat' | 'optional' | 'fixed' | 'once'; length: number }
+
+/** The quantifier at `index` (`*`, `+`, `?`, `{n}`, `{n,}`, `{n,m}`, each maybe lazy), if there is one. */
+const quantifierAt = (pattern: string, index: number): Quantifier | undefined => {
+  const character = pattern[index]
+  let quantifier: Quantifier | undefined
+  if (character === '*' || character === '+') {
+    quantifier = { kind: 'repeat', length: 1 }
+  } else if (character === '?') {
+    quantifier = { kind: 'optional', length: 1 }
+  } else if (character === '{') {
+    const match = /^\{(\d+)(,(\d*))?\}/.exec(pattern.slice(index, index + 24))
+    if (!match) {
+      return undefined
+    }
+    const min = Number(match[1])
+    const max = match[2] === undefined ? min : match[3] === '' ? Number.POSITIVE_INFINITY : Number(match[3])
+    quantifier = { kind: max > min ? 'repeat' : min > 1 ? 'fixed' : 'once', length: match[0].length }
+  }
+  if (quantifier && pattern[index + quantifier.length] === '?') {
+    quantifier.length++
+  }
+  return quantifier
+}
 
 /**
- * Whether a pattern repeats a group that itself repeats or has alternatives (`(a*)*`, `(a|aa)+`): the shapes
- * that make a backtracking engine take exponential time on a near miss. A heuristic: it also flags some safe
- * patterns (`(cat|dog)+`), which only means they are not checked.
+ * What bounds how long a backtracking engine can take on a pattern: how many quantifiers repeat a variable
+ * number of times, how many are optional, the alternatives it chooses between, and the two shapes no input
+ * length bounds: a group repeated (or repeated a fixed number of times) that itself repeats or has
+ * alternatives (`(a*)*`, `(a|aa)+`, `(a+){9}`), and backreferences (`\1`, `\k<name>`).
  */
-export const mayBacktrack = (pattern: string): boolean => {
-  const groups = [{ repeats: false, alternatives: false }]
+export type PatternShape = { repeats: number; optionals: number; choices: number; unbounded: boolean }
+
+export const patternShape = (pattern: string): PatternShape => {
+  const shape: PatternShape = { repeats: 0, optionals: 0, choices: 1, unbounded: false }
+  type Group = { repeats: boolean; branches: number }
+  const groups: Group[] = [{ repeats: false, branches: 1 }]
+  const current = () => groups[groups.length - 1]!
+  let closed: Group | undefined
   for (let index = 0; index < pattern.length; index++) {
-    const character = pattern[index]
+    const character = pattern[index]!
+    const quantifier = index > 0 ? quantifierAt(pattern, index) : undefined
+    if (quantifier) {
+      if (quantifier.kind === 'repeat') {
+        shape.repeats++
+        current().repeats = true
+      } else if (quantifier.kind === 'optional') {
+        shape.optionals++
+      }
+      if (closed && (quantifier.kind === 'repeat' || quantifier.kind === 'fixed') && (closed.repeats || closed.branches > 1)) {
+        shape.unbounded = true
+      }
+      index += quantifier.length - 1
+      closed = undefined
+      continue
+    }
+    closed = undefined
     if (character === '\\') {
+      if (/[1-9k]/.test(pattern[index + 1] ?? '')) {
+        shape.unbounded = true
+      }
       index++
     } else if (character === '[') {
       for (index++; index < pattern.length && pattern[index] !== ']'; index++) {
@@ -134,33 +182,52 @@ export const mayBacktrack = (pattern: string): boolean => {
         }
       }
     } else if (character === '(') {
-      groups.push({ repeats: false, alternatives: false })
+      groups.push({ repeats: false, branches: 1 })
+      // `(?:`, `(?=`, `(?!`, `(?<=`, `(?<!`, `(?<name>`: the `?` is not a quantifier.
+      const prefix = /^\(\?(?:[:=!]|<[=!]|<[^>]*>)/.exec(pattern.slice(index, index + 64))
+      index += prefix ? prefix[0].length - 1 : 0
     } else if (character === '|') {
-      groups[groups.length - 1]!.alternatives = true
+      current().branches++
     } else if (character === ')') {
-      const group = groups.length > 1 ? groups.pop()! : { repeats: false, alternatives: false }
-      const repeated = repeatsAt(pattern, index + 1)
-      if (repeated && (group.repeats || group.alternatives)) {
-        return true
-      }
-      groups[groups.length - 1]!.repeats ||= repeated || group.repeats
-    } else if (repeatsAt(pattern, index)) {
-      groups[groups.length - 1]!.repeats = true
+      const group = groups.length > 1 ? groups.pop()! : { repeats: false, branches: 1 }
+      shape.choices *= group.branches
+      current().repeats ||= group.repeats
+      closed = group
     }
   }
-  return false
+  shape.choices *= groups[0]!.branches
+  return shape
 }
 
-/** Values longer than this are not matched against a `pattern`: even a polynomial pattern gets slow on them. */
+/** The most attempts a pattern may need on a value for it to be run. */
+const MAX_PATTERN_STEPS = 10_000_000
+
+/** Values longer than this are not matched against a `pattern`, whatever its shape. */
 const MAX_PATTERN_INPUT = 1000
 
 /**
- * Whether `value` matches a schema `pattern`. The match runs on the render thread, so a pattern this engine
- * cannot read, one that may backtrack catastrophically ({@link mayBacktrack}), or a very long value is not
- * held against the value.
+ * Whether a backtracking engine is bound to match `pattern` against a value of `length` characters quickly.
+ * Without unbounded shapes ({@link PatternShape}), each of the `repeats` quantifiers takes one of at most
+ * `length + 1` counts at each of `length + 1` start positions, each optional part is in or out, and each set of
+ * alternatives picks one, so the attempts are at most `(length + 1)^(repeats + 1) · 2^optionals · choices`.
+ * So `^\d+(\.\d+)?$` (two repeats, one optional part) is run on values of up to 169 characters, while
+ * `^a*a*a*a*a*a*a*a*b$` is run on none but the shortest.
+ */
+export const matchesQuickly = (pattern: string, length: number): boolean => {
+  if (length > MAX_PATTERN_INPUT) {
+    return false
+  }
+  const shape = patternShape(pattern)
+  return !shape.unbounded && (length + 1) ** (shape.repeats + 1) * 2 ** shape.optionals * shape.choices <= MAX_PATTERN_STEPS
+}
+
+/**
+ * Whether `value` matches a schema `pattern`. The match runs on the render thread and cannot be interrupted, so
+ * it is only run when it is bound to be quick ({@link matchesQuickly}); otherwise, as for a pattern this engine
+ * cannot read, the pattern is not held against the value.
  */
 export const matchesPattern = (value: string, pattern: unknown): boolean => {
-  if (typeof pattern !== 'string' || value.length > MAX_PATTERN_INPUT || mayBacktrack(pattern)) {
+  if (typeof pattern !== 'string' || !matchesQuickly(pattern, value.length)) {
     return true
   }
   try {
@@ -172,7 +239,7 @@ export const matchesPattern = (value: string, pattern: unknown): boolean => {
 
 /**
  * `refs` are the references already followed for this same value, so a cycle (`a` → `b` → `a`) ends: going
- * round it again says nothing more.
+ * round it again would only check the same schemas again.
  */
 const check = (value: unknown, input: unknown, roots: unknown[], depth: number, refs: ReadonlySet<string> = new Set()): boolean => {
   if (typeof input === 'boolean') {
@@ -183,11 +250,9 @@ const check = (value: unknown, input: unknown, roots: unknown[], depth: number, 
     return true
   }
   const ref = typeof input.$ref === 'string' ? input.$ref : undefined
-  if (ref) {
-    if (refs.has(ref)) {
-      return true
-    }
-    // Both apply: the schema referred to, in full, and the keywords written next to the `$ref`.
+  // Both apply: the schema referred to, in full, and the keywords written next to the `$ref`. A reference
+  // already followed for this value is not followed again, but its siblings still are checked below.
+  if (ref && !refs.has(ref)) {
     const target = refTarget(input, roots)
     if (target !== undefined && !check(value, target, roots, depth + 1, new Set(refs).add(ref))) {
       return false

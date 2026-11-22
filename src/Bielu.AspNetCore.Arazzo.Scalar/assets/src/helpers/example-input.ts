@@ -17,7 +17,22 @@ const MAX_VALUES = 1000
 const MAX_STRING_LENGTH = 1000
 
 /** How many values the example being made may still make. */
-type Budget = { left: number }
+/**
+ * How many values the example being made may still make, and whether anything was left out or cut short to
+ * stay within the limits: then the example needs edits whether or not the shorter one happens to satisfy the
+ * schema (a `null` left in place of a `["string", "null"]` value does).
+ */
+type Budget = { left: number; cut: boolean }
+
+/** Takes one value from the budget; `false`, and the example marked as cut, when there is none left. */
+const spend = (budget: Budget): boolean => {
+  if (budget.left <= 0) {
+    budget.cut = true
+    return false
+  }
+  budget.left--
+  return true
+}
 
 /** A value for a string in a known `format`, so the example reads like real input. */
 const FORMAT_EXAMPLES: Record<string, string> = {
@@ -58,10 +73,9 @@ const typeOf = (schema: Schema): string | undefined => {
 }
 
 const generate = (input: Schema, roots: unknown[], depth: number, seen: ReadonlySet<string>, budget: Budget): unknown => {
-  if (budget.left <= 0) {
+  if (!spend(budget)) {
     return null
   }
-  budget.left--
   const { schema, ref } = follow(input, roots)
   if (ref && seen.has(ref)) {
     // A recursive schema: stop rather than nest forever.
@@ -101,12 +115,23 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
   switch (typeOf(schema)) {
     case 'object': {
       const properties = isSchema(schema.properties) ? schema.properties : {}
-      return Object.fromEntries(
-        Object.entries(properties)
-          // A property whose schema is `false` must be absent.
-          .filter(([, property]) => property !== false)
-          .map(([name, property]) => [name, isSchema(property) ? generate(property, roots, depth + 1, nested, budget) : null]),
-      )
+      const value: Record<string, unknown> = {}
+      for (const [name, property] of Object.entries(properties)) {
+        // A property whose schema is `false` must be absent.
+        if (property === false) {
+          continue
+        }
+        if (isSchema(property)) {
+          value[name] = generate(property, roots, depth + 1, nested, budget)
+        } else if (spend(budget)) {
+          value[name] = null
+        }
+        // Every property counts, so once the budget is spent the rest are left out.
+        if (budget.cut) {
+          break
+        }
+      }
+      return value
     }
     case 'array': {
       // One item, or as many as minItems asks for, but no more than maxItems allows.
@@ -114,7 +139,7 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
       const max = typeof schema.maxItems === 'number' ? schema.maxItems : Number.POSITIVE_INFINITY
       const count = Math.min(Math.max(1, min), max, MAX_ITEMS)
       const items: unknown[] = []
-      for (let index = 0; isSchema(schema.items) && index < count && budget.left > 0; index++) {
+      for (let index = 0; isSchema(schema.items) && index < count && !budget.cut; index++) {
         items.push(generate(schema.items, roots, depth + 1, nested, budget))
       }
       return items
@@ -132,17 +157,20 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
     case 'null':
       return null
     case 'string':
-      return generateString(schema)
+      return generateString(schema, budget)
     default:
       return null
   }
 }
 
 /** A string within `minLength` and `maxLength`: the sample for its `format`, else `string` padded or cut to fit. */
-const generateString = (schema: Schema): string => {
+const generateString = (schema: Schema, budget: Budget): string => {
   const min = typeof schema.minLength === 'number' ? schema.minLength : 0
   const max = typeof schema.maxLength === 'number' ? schema.maxLength : Number.POSITIVE_INFINITY
   const sample = typeof schema.format === 'string' ? FORMAT_EXAMPLES[schema.format] : undefined
+  if (sample === undefined && min > MAX_STRING_LENGTH) {
+    budget.cut = true
+  }
   return sample ?? 'string'.padEnd(Math.min(min, MAX_STRING_LENGTH), 'x').slice(0, max)
 }
 
@@ -153,15 +181,17 @@ export type SchemaExample = { value: unknown; needsEdits: boolean }
  * {@link exampleFromSchema}, also saying whether the example needs edits before use: the example, made up or
  * authored, is checked against the schema ({@link conformsTo}), and `needsEdits` is set when it does not
  * satisfy it, such as a string `pattern`, a `format` sample longer than `maxLength` or a `minItems` above
- * `maxItems`. `undefined` when there is no schema.
+ * `maxItems`, and also when the example was cut short to stay within its limits (at most 1000 values, strings
+ * of at most 1000 characters). `undefined` when there is no schema.
  */
 export const exampleWithCheck = (schema: unknown, document?: unknown): SchemaExample | undefined => {
   if (!isSchema(schema)) {
     return undefined
   }
   const roots = [schema, document]
-  const value = generate(schema, roots, 0, new Set(), { left: MAX_VALUES })
-  return { value, needsEdits: !conformsTo(value, schema, roots) }
+  const budget: Budget = { left: MAX_VALUES, cut: false }
+  const value = generate(schema, roots, 0, new Set(), budget)
+  return { value, needsEdits: budget.cut || !conformsTo(value, schema, roots) }
 }
 
 /**
