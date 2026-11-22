@@ -35,7 +35,7 @@ const mountWorkflow = (document: ArazzoDocument = shop) => {
 }
 
 const toggle = (wrapper: VueWrapper, name: 'Technical' | 'Pages') =>
-  wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === name)
+  wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === name)
 
 beforeEach(() => {
   localStorage.clear()
@@ -57,7 +57,7 @@ describe('the Technical | Pages toggle', () => {
     const wrapper = mountWorkflow()
 
     // Assert: Technical, Data flow and Sequence only.
-    expect(wrapper.findAll('.ba-overview .ba-view-toggle button').map((button) => button.text())).toEqual(['Technical', 'Data flow', 'Sequence'])
+    expect(wrapper.findAll('.ba-overview .ba-view-tabs button').map((button) => button.text())).toEqual(['Technical', 'Data flow', 'Sequence'])
   })
 
   it('offers no Pages view when the document does not use the pages extensions', () => {

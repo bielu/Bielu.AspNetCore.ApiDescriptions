@@ -160,8 +160,9 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     at a readable size is scaled to fit; a taller one (a workflow with another expanded inside it) is drawn
     a little larger than its natural size from the top, and the reader pans down, rather than shrinking it
     until its text can't be read.
-  - **Data flow.** The overview's **Technical | Data flow** toggle (with **Pages** when the document describes
-    its pages) switches it from the order steps run in to the values passed between them: the workflow's
+  - **Data flow.** The tabs under the overview's title (**Technical**, **Data flow**, **Sequence**, and **Pages**
+    when the document describes its pages; in the full-window view they share a bar with the legend) switch it
+    from the order steps run in to the values passed between them: the workflow's
     inputs, each step, other workflows whose outputs a step reads, and the workflow's outputs, with an arrow
     from where each value comes from to everything that reads it, named on the arrow ("orderId, total"). It
     is built from the Runtime Expressions the steps hold (`$inputs`, `$steps.<id>.outputs`,
@@ -333,7 +334,7 @@ app.MapScalarApiReference(options => options
 With the fluent API, add them with `WithExtension` on the options, workflows and steps, and through an
 action's `Extensions`; the [`ArazzoScalar` example](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/tree/main/src/examples/ArazzoScalar)
 does. When any of the three options is set and the document uses it, the overview (inline and full window)
-gets a **Technical | Pages** toggle. Technical, the view described above, is the default; the choice applies
+gets a **Pages** tab beside Technical, Data flow and Sequence. Technical, the view described above, is the default; the choice applies
 to every workflow on the page and is remembered in the browser.
 
 ![The trackOrder overview in the Pages view, with placeOrder expanded: steps in labelled page bands (Checkout, Payment, Order confirmed, Order status), plain-language labels, and failure ends named after the page they show](../../images/arazzo/scalar-pages-view.png)
@@ -364,7 +365,7 @@ In the Pages view:
 - Everything else is as in the Technical view: the same order, colors and arrows, and expanding and
   collapsing keeps the zoom and the node under the pointer. Switching views keeps the zoom too. The legend
   explains the bands and end pages.
-- Whether the toggle appears counts the actions every step runs, so a page on a workflow-level
+- Whether the Pages tab appears counts the actions every step runs, so a page on a workflow-level
   `successActions`/`failureActions` entry is enough.
 - The step list shows each step's page and label above its heading.
 

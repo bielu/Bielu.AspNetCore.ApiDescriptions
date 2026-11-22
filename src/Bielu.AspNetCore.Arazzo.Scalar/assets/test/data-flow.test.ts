@@ -141,7 +141,7 @@ describe('the Data flow view', () => {
   it('switches the overview to the values passed, and is remembered', async () => {
     // Arrange
     wrapper = mountWorkflow()
-    const dataFlow = wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === 'Data flow')!
+    const dataFlow = wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === 'Data flow')!
 
     // Act
     await dataFlow.trigger('click')
@@ -176,7 +176,7 @@ describe('the Data flow view', () => {
       expect(scale()).not.toBeCloseTo(100 / dataFlowWidth)
 
       // Act
-      await wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === 'Data flow')!.trigger('click')
+      await wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === 'Data flow')!.trigger('click')
       await flushPromises()
 
       // Assert

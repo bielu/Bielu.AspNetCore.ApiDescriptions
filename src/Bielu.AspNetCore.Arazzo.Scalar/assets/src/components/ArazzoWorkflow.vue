@@ -30,6 +30,7 @@ import ArazzoKeyValues from './ArazzoKeyValues.vue'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
 import ArazzoSpecLegend from './ArazzoSpecLegend.vue'
 import ArazzoStep from './ArazzoStep.vue'
+import ArazzoViewSwitch from './ArazzoViewSwitch.vue'
 import ArazzoWorkflowDiagram from './ArazzoWorkflowDiagram.vue'
 
 const props = defineProps<{
@@ -454,17 +455,6 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
         <div class="ba-overview">
           <div class="ba-overview-header">
             <div class="ba-overview-title">Workflow overview</div>
-            <div
-              aria-label="Overview view"
-              class="ba-view-toggle"
-              role="group">
-              <button
-                v-for="option in views"
-                :key="option.value"
-                :aria-pressed="overviewView === option.value"
-                type="button"
-                @click="setWorkflowView(option.value)">{{ option.label }}</button>
-            </div>
             <ArazzoDiagramExport
               v-if="overviewView !== 'sequence'"
               :layout="diagram"
@@ -489,6 +479,12 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
               </svg>
             </button>
           </div>
+          <ArazzoViewSwitch
+            class="ba-overview-tabs"
+            fill
+            :view="overviewView"
+            :views="views"
+            @select="setWorkflowView" />
           <ArazzoSequenceDiagram
             v-if="overviewView === 'sequence'"
             :sequence="sequence"
@@ -521,21 +517,6 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       <div class="ba-dialog-header">
         <div class="ba-overview-title">Workflow overview · {{ workflow.summary || workflow.workflowId }}</div>
         <div class="ba-dialog-actions">
-          <div
-            aria-label="Overview view"
-            class="ba-view-toggle"
-            role="group">
-            <button
-              v-for="option in views"
-              :key="option.value"
-              :aria-pressed="overviewView === option.value"
-              type="button"
-              @click="setWorkflowView(option.value)">{{ option.label }}</button>
-          </div>
-          <ArazzoSpecLegend
-            v-if="overviewView !== 'sequence'"
-            :layout="diagram"
-            :view="overviewView" />
           <ArazzoDiagramExport
             v-if="overviewView !== 'sequence'"
             :layout="diagram"
@@ -567,6 +548,17 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
             </svg>
           </button>
         </div>
+      </div>
+      <!-- A tab bar under the title: the views on the left, what the diagram's marks mean on the right. -->
+      <div class="ba-dialog-tab-bar">
+        <ArazzoViewSwitch
+          :view="overviewView"
+          :views="views"
+          @select="setWorkflowView" />
+        <ArazzoSpecLegend
+          v-if="overviewView !== 'sequence'"
+          :layout="diagram"
+          :view="overviewView" />
       </div>
       <ArazzoSequenceDiagram
         v-if="overviewView === 'sequence'"

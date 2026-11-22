@@ -262,19 +262,64 @@
   font-size: 10.5px;
   font-weight: normal;
 }
-.bielu-arazzo .ba-view-toggle {
-  @apply inline-flex;
-  margin-left: auto;
-  @apply mr-1.5 border border-border rounded overflow-hidden;
+/* The overview's views as tabs on a row of their own, underlined rather than boxed: every view's name stays on
+   one line, and a strip too narrow for them all scrolls sideways rather than wrapping a name. */
+.bielu-arazzo .ba-view-tabs {
+  @apply inline-flex gap-1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid var(--scalar-border-color);
 }
-.bielu-arazzo .ba-view-toggle button {
-  @apply py-0.5 px-2 text-c-2 cursor-pointer;
+.bielu-arazzo .ba-view-tabs button {
+  @apply py-1 px-2 text-c-2 cursor-pointer;
   border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   background: transparent;
   font-size: var(--scalar-mini, 12px);
+  white-space: nowrap;
 }
-.bielu-arazzo .ba-view-toggle button[aria-pressed='true'] {
-  @apply bg-b-3 text-c-1;
+.bielu-arazzo .ba-view-tabs button:hover,
+.bielu-arazzo .ba-view-tabs button[aria-pressed='true'] {
+  @apply text-c-1;
+}
+.bielu-arazzo .ba-view-tabs button[aria-pressed='true'] {
+  border-bottom-color: var(--scalar-color-accent);
+}
+/* Inside the strip, which scrolls and so clips what is drawn outside it: the focus ring goes inside the tab. */
+.bielu-arazzo .ba-view-tabs button:focus-visible {
+  outline: 2px solid var(--scalar-color-accent);
+  outline-offset: -2px;
+  @apply rounded;
+}
+/* Beside the steps: the tabs share the overview's width, under its title and actions. */
+.bielu-arazzo .ba-view-tabs-fill {
+  @apply flex w-full;
+}
+.bielu-arazzo .ba-view-tabs-fill button {
+  flex: 1 1 0;
+}
+.bielu-arazzo .ba-overview-tabs {
+  @apply mb-2;
+}
+/* With the tabs on their own row, the header is the title and the actions: keep the actions together on the right. */
+.bielu-arazzo .ba-overview-header .ba-overview-title {
+  margin-right: auto;
+}
+/* The expanded overview: the tabs on the left of a full-width bar, the legend on its right, one line under both. */
+.bielu-arazzo .ba-dialog-tab-bar {
+  @apply flex items-end justify-between gap-4 mb-2;
+  border-bottom: 1px solid var(--scalar-border-color);
+}
+.bielu-arazzo .ba-dialog-tab-bar .ba-view-tabs {
+  border-bottom: 0;
+}
+.bielu-arazzo .ba-dialog-tab-bar .ba-view-tabs button {
+  @apply py-1.5 px-3;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-arazzo .ba-dialog-tab-bar .ba-diagram-legend {
+  @apply pb-1.5;
 }
 .bielu-arazzo .ba-step-page {
   @apply flex flex-wrap items-center gap-1.5 mb-0.5 text-c-2;
