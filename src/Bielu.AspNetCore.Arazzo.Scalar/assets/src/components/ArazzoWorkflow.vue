@@ -10,6 +10,7 @@ import { renderMarkdown } from '../helpers/markdown'
 import { STEP_EXPAND_EVENT, type WorkflowView } from '../helpers/navigation'
 import { buildDataFlowGraph } from '../helpers/data-flow'
 import { buildSequence } from '../helpers/sequence'
+import { describeFlow } from '../helpers/data-flow-values'
 import { resolveReusables, resolveReusablesWithReference } from '../helpers/reusable'
 import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
 import type { ArazzoPluginOptions } from '../helpers/plugin-options'
@@ -17,10 +18,11 @@ import { resolveStepTarget } from '../helpers/resolve-target'
 import { describeStep } from '../helpers/step-description'
 import { targetSpec } from '../helpers/target-spec'
 import { setWorkflowView, workflowView } from '../helpers/view-mode'
-import { buildWorkflowGraph, layoutWorkflowGraph, type WorkflowView as OverviewView } from '../helpers/workflow-graph'
+import { buildWorkflowGraph, layoutWorkflowGraph, type LaidOutEdge, type WorkflowView as OverviewView } from '../helpers/workflow-graph'
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep as StepObject, ArazzoSuccessAction, PluginEventBus } from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
+import ArazzoDataFlowDetails from './ArazzoDataFlowDetails.vue'
 import ArazzoDiagramExport from './ArazzoDiagramExport.vue'
 import ArazzoSequenceDiagram from './ArazzoSequenceDiagram.vue'
 import ArazzoExtensions from './ArazzoExtensions.vue'
@@ -276,6 +278,41 @@ const closeOnBackdrop = (event: MouseEvent) => {
     dialog.value?.close()
   }
 }
+
+/** Data flow view: the arrow whose values are shown in the flow dialog, over the overview (inline or full window). */
+const flowEdge = ref<LaidOutEdge>()
+const flowDialog = ref<HTMLDialogElement>()
+
+const flowDetails = computed(() => {
+  const edge = flowEdge.value
+  if (!edge?.values?.length) {
+    return undefined
+  }
+  const label = (id: string) => diagram.value.nodes.find((node) => node.id === id)?.label ?? id
+  return {
+    from: label(edge.from),
+    to: label(edge.to),
+    values: describeFlow(props.document, workflow.value, edge.from, edge.to, edge.values, props.documents, props.view.id),
+  }
+})
+
+const openFlow = async (edge: LaidOutEdge) => {
+  flowEdge.value = edge
+  await nextTick()
+  flowDialog.value?.showModal()
+}
+
+/** Following a link from the flow dialog closes it, and the full-window overview under it. */
+const closeFlow = () => {
+  flowDialog.value?.close()
+  dialog.value?.close()
+}
+
+const closeFlowOnBackdrop = (event: MouseEvent) => {
+  if (event.target === flowDialog.value) {
+    flowDialog.value?.close()
+  }
+}
 </script>
 
 <template>
@@ -463,6 +500,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
             :problems="stepProblems"
             :stepSectionIds="stepSectionIds"
             :workflowId="workflow.workflowId"
+            @openFlow="openFlow"
             @toggleWorkflow="toggleWorkflow" />
           <div class="ba-overview-footer">
             <ArazzoSpecLegend
@@ -545,8 +583,43 @@ const closeOnBackdrop = (event: MouseEvent) => {
         :problems="stepProblems"
         :stepSectionIds="stepSectionIds"
         :workflowId="workflow.workflowId"
+        @openFlow="openFlow"
         @openStep="dialog?.close()"
         @toggleWorkflow="toggleWorkflow" />
+    </dialog>
+
+    <dialog
+      ref="flowDialog"
+      :aria-label="flowDetails ? `What flows from ${flowDetails.from} to ${flowDetails.to}` : 'What flows'"
+      class="ba-dialog ba-flow-dialog"
+      @click="closeFlowOnBackdrop">
+      <div class="ba-dialog-header">
+        <div class="ba-overview-title">What flows · {{ flowEdge?.label }}</div>
+        <div class="ba-dialog-actions">
+          <button
+            aria-label="Close"
+            class="ba-icon-button"
+            title="Close"
+            type="button"
+            @click="flowDialog?.close()">
+            <svg
+              aria-hidden="true"
+              fill="none"
+              height="14"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="1.6"
+              viewBox="0 0 16 16"
+              width="14">
+              <path d="M3 3l10 10M13 3L3 13" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <ArazzoDataFlowDetails
+        v-if="flowDetails"
+        v-bind="flowDetails"
+        @navigate="closeFlow" />
     </dialog>
   </section>
 </template>

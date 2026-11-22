@@ -171,6 +171,15 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
 
     ![The placeOrder workflow in the Data flow view: inputs to create, create's orderId and total to the steps that read them and to the workflow's outputs](../../images/arazzo/scalar-data-flow.jpg)
 
+    Each arrow's label opens what flows along it (by pointer, Enter or Space): for every value, the expression it is
+    set from (`$response.body#/id`, or a Selector Object's context and JSONPath) and what that is (the `201`
+    response body of `POST /orders`, a message payload, the workflow's inputs), where the receiving step or the
+    workflow's outputs use it (`request body /orderId`, `correlation`), its schema as the loaded OpenAPI or
+    AsyncAPI document describes it, and a link to where that schema is defined: the named schema's page in
+    Scalar (**Schema Order**), else the operation or channel, or the input's row.
+
+    ![What flows from create to requestPayment: orderId and total, each set from the 201 response body of POST /orders, with its schema and a link to the Order schema](../../images/arazzo/scalar-data-flow-values.jpg)
+
   - **Sequence.** The **Sequence** view draws who the workflow talks to, in the order its steps run (by
     `dependsOn` when the workflow uses it): a lane for the client running it, one per source description it
     talks to (named after the source, with its spec and document title), and one per workflow it invokes. An

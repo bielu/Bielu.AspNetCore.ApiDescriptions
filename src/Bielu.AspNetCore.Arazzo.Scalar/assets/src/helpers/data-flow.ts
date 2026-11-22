@@ -98,7 +98,8 @@ export const buildDataFlowGraph = (
   const edges: WorkflowGraphEdge[] = []
   for (const [from, byConsumer] of flows) {
     for (const [to, names] of byConsumer) {
-      edges.push({ from, to, kind: 'next', label: [...names].sort().join(', ') })
+      const values = [...names].sort()
+      edges.push({ from, to, kind: 'next', label: values.join(', '), values })
     }
   }
   // In the order the nodes are drawn, so the layout reads top-down the way the document does.

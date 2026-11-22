@@ -75,6 +75,16 @@ export const targetNavigationId = (
 }
 
 /**
+ * The id of the sidebar entry Scalar gives a named schema of a loaded document (`#/components/schemas/Order`,
+ * listed under Models), so a link can open the schema's page. `undefined` when the document lists no such model.
+ */
+export const schemaNavigationId = (documentName: string, ref: string, documents: Record<string, unknown>): string | undefined => {
+  const root = (documents[documentName] as { 'x-scalar-navigation'?: unknown } | undefined)?.['x-scalar-navigation']
+  const entry = findEntry(root, (candidate) => candidate.type === 'model' && (candidate as { ref?: unknown }).ref === ref)
+  return typeof entry?.id === 'string' ? entry.id : undefined
+}
+
+/**
  * The page URL that opens a sidebar entry: this page with the entry's id as the hash. That is the
  * deep-link form Scalar reads on load to pick the document and scroll to the entry.
  */
