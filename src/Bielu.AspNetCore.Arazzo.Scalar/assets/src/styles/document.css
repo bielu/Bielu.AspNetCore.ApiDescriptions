@@ -91,11 +91,6 @@
   @apply py-4 px-0;
   scroll-margin-top: var(--refs-viewport-offset, 0px);
 }
-.bielu-arazzo .ba-step-title {
-  margin: 2px 0 8px;
-  font-size: var(--scalar-heading-4, 18px);
-  @apply font-medium;
-}
 .bielu-arazzo .ba-badges {
   @apply flex flex-wrap gap-1.5 my-2 mx-0;
 }

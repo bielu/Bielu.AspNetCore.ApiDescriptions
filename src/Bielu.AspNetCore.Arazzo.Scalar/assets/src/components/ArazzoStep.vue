@@ -346,7 +346,7 @@ const nestedVerb = (kind: string): string =>
     class="ba-step"
     :class="{ 'ba-step-closed': !open }"
     :data-nav-id="id">
-    <div class="ba-step-header">
+    <div class="ba-step-header flex items-start gap-1.5">
       <button
         :aria-controls="bodyId"
         :aria-expanded="open"
@@ -356,15 +356,16 @@ const nestedVerb = (kind: string): string =>
         @click="open = !open">
         <svg
           aria-hidden="true"
-          class="ba-chevron"
+          class="ba-chevron block h-4 w-4 fill-none stroke-current stroke-[1.8] transition-[transform] duration-150 ease-[ease] [stroke-linecap:round] [stroke-linejoin:round] motion-reduce:transition-none"
+          :class="open ? 'transform-[rotate(90deg)]' : 'transform-none'"
           viewBox="0 0 16 16">
           <path d="M6 4l4 4-4 4" />
         </svg>
       </button>
-      <div class="ba-step-heading">
+      <div class="ba-step-heading min-w-0 flex-1">
         <div
           v-if="page && (page.page || page.label)"
-          class="ba-step-page">
+          class="ba-step-page mb-0.5 flex flex-wrap items-center gap-1.5 text-(length:--scalar-small) text-c-2">
           <!-- The space between badge and label is explicit: Vue drops whitespace between elements once it contains a newline. -->
           <span
             v-if="page.page"
@@ -374,19 +375,21 @@ const nestedVerb = (kind: string): string =>
         </div>
         <div
           v-if="open && heading.title !== step.stepId"
-          class="ba-kicker ba-step-id">
+          class="ba-kicker ba-step-id font-code text-c-3">
           {{ step.stepId }}
         </div>
         <ArazzoAnchor
           :eventBus="eventBus"
           :navId="id">
           <h3
-            class="ba-step-title"
-            :class="{ 'ba-step-title-id': heading.title === step.stepId }">
+            class="ba-step-title mx-0 mt-0.5 mb-2 text-(length:--scalar-heading-4) font-medium"
+            :class="{
+              'ba-step-title-id font-code': heading.title === step.stepId,
+            }">
             {{ heading.title }}
             <span
               v-if="severity"
-              class="ba-step-problems"
+              class="ba-step-problems ml-1.5 rounded-[9px] bg-(--ba-diagnostic-color) px-1.5 py-0 align-middle text-(length:--scalar-mini) font-medium text-b-1"
               :class="`ba-diagnostic-${severity}`"
               :title="problems.map((problem) => problem.message).join('\n')">
               {{ severity === 'error' ? '✕' : '!' }} {{ problems.length }}
@@ -395,7 +398,7 @@ const nestedVerb = (kind: string): string =>
         </ArazzoAnchor>
         <div
           v-if="!open && collapsedSummary"
-          class="ba-step-collapsed-summary">
+          class="ba-step-collapsed-summary mt-1 text-(length:--scalar-small) wrap-anywhere text-c-2">
           <span
             v-if="spec"
             class="ba-spec"
@@ -472,10 +475,14 @@ const nestedVerb = (kind: string): string =>
           'ba-target-unresolved':
             target.kind !== 'workflow' && !target.documentName,
         }">
-        <div class="ba-target-header">
+        <div
+          class="ba-target-header flex flex-wrap items-center gap-1.5 rounded border border-border bg-b-2 px-3 py-2.5"
+          :class="{
+            'border-dashed': target.kind !== 'workflow' && !target.documentName,
+          }">
           <span
             v-if="spec"
-            class="ba-spec"
+            class="ba-spec order-2 mr-0 ml-auto bg-transparent bg-none text-c-3"
             :class="[
               `ba-spec-${spec.family}`,
               { 'ba-spec-unresolved': !spec.resolved },
@@ -492,7 +499,7 @@ const nestedVerb = (kind: string): string =>
           </span>
           <span
             v-if="target.kind !== 'operation'"
-            class="ba-target-label"
+            class="ba-target-label mr-2 text-(length:--scalar-mini) font-medium text-c-2 uppercase"
             >{{
               channelAction ||
               (target.kind === 'workflow' ? 'Invoke' : 'Channel')
@@ -500,7 +507,7 @@ const nestedVerb = (kind: string): string =>
           >
           <a
             v-if="targetLink"
-            class="ba-target-link"
+            class="ba-target-link inline-flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0 wrap-anywhere [word-break:normal] text-inherit no-underline"
             :href="targetLink.href"
             :title="
               targetLink.external
@@ -508,18 +515,19 @@ const nestedVerb = (kind: string): string =>
                 : 'Go to the workflow'
             "
             @click="followTargetLink">
-            <code class="ba-target-signature">{{
-              targetSignature || targetName || target.identifier
-            }}</code>
+            <code
+              class="ba-target-signature mr-2 min-w-0 font-code font-medium wrap-anywhere"
+              >{{ targetSignature || targetName || target.identifier }}</code
+            >
             <span
               aria-hidden="true"
-              class="ba-target-arrow">
+              class="ba-target-arrow text-(length:--scalar-small) text-c-accent">
               {{ targetLink.external ? '↗' : '↓' }}
             </span>
           </a>
           <template v-else>
             <code
-              class="ba-target-signature"
+              class="ba-target-signature mr-2 min-w-0 font-code font-medium wrap-anywhere"
               :title="target.identifier"
               >{{ targetSignature || targetName || target.identifier }}</code
             >
@@ -530,7 +538,7 @@ const nestedVerb = (kind: string): string =>
             (targetSignature && targetName !== targetSignature) ||
             targetDocumentTitle
           "
-          class="ba-target-meta">
+          class="ba-target-meta mx-0 mt-2 mb-3 flex flex-wrap gap-x-4 gap-y-1.5 text-(length:--scalar-small) wrap-anywhere text-c-3">
           <code
             v-if="
               targetSignature && targetName && targetName !== targetSignature
@@ -546,7 +554,7 @@ const nestedVerb = (kind: string): string =>
         </div>
         <div
           v-if="nested"
-          class="ba-nested">
+          class="ba-nested mt-2">
           <button
             :aria-controls="nestedId"
             :aria-expanded="nestedOpen"
@@ -562,10 +570,11 @@ const nestedVerb = (kind: string): string =>
             v-show="nestedOpen"
             :id="nestedId"
             :aria-label="`Steps of workflow ${nested.workflowId}`"
-            class="ba-nested-steps">
+            class="ba-nested-steps mx-0 mt-2 mb-0 pl-5 text-(length:--scalar-small)">
             <li
               v-for="nestedStep in nested.steps"
-              :key="nestedStep.stepId">
+              :key="nestedStep.stepId"
+              class="px-0 py-0.5">
               <!-- Explicit spaces: Vue drops whitespace between elements once it contains a newline. -->
               <code>{{ nestedStep.stepId }}</code>{{ ' '
               }}<span class="ba-muted">{{ nestedVerb(nestedStep.kind) }}</span
@@ -579,7 +588,7 @@ const nestedVerb = (kind: string): string =>
           v-html="targetDetails" />
         <div
           v-if="targetParameterRows.length"
-          class="ba-target-parameters">
+          class="ba-target-parameters mt-3">
           <div class="ba-block-title">
             {{
               target.kind === 'channel'
@@ -618,7 +627,7 @@ const nestedVerb = (kind: string): string =>
         <div
           v-for="message in messages"
           :key="message.name"
-          class="ba-target-message">
+          class="ba-target-message mt-6">
           <div class="ba-block-title">
             {{ messageHeading }}
             <code>{{ message.title || message.name }}</code>
@@ -675,7 +684,10 @@ const nestedVerb = (kind: string): string =>
           v-if="step.requestBody.payload !== undefined"
           class="ba-code"><code><ArazzoExpressionText :text="formatValue(step.requestBody.payload)" /></code></pre>
         <template v-if="step.requestBody.replacements?.length">
-          <div class="ba-subtitle">Replacements</div>
+          <div
+            class="ba-subtitle mx-0 mt-2.5 mb-1 text-(length:--scalar-mini) font-medium text-c-2">
+            Replacements
+          </div>
           <table class="ba-table ba-replacements">
             <tbody>
               <tr

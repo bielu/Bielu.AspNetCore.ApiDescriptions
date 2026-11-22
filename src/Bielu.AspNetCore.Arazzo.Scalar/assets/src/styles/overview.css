@@ -217,17 +217,6 @@
   @apply stroke-c-3;
   stroke-dasharray: 1 3;
 }
-.bielu-arazzo .ba-nested {
-  @apply mt-2;
-}
-.bielu-arazzo .ba-nested-steps {
-  @apply pl-5;
-  margin: 8px 0 0;
-  font-size: var(--scalar-small, 13px);
-}
-.bielu-arazzo .ba-nested-steps li {
-  @apply py-0.5 px-0;
-}
 /* Pages view: a band per page, behind the steps the user takes on it. */
 .bielu-arazzo .ba-diagram-band rect {
   fill: color-mix(in srgb, var(--scalar-color-accent) 7%, transparent);
@@ -320,10 +309,6 @@
 }
 .bielu-arazzo .ba-dialog-tab-bar .ba-diagram-legend {
   @apply pb-1.5;
-}
-.bielu-arazzo .ba-step-page {
-  @apply flex flex-wrap items-center gap-1.5 mb-0.5 text-c-2;
-  font-size: var(--scalar-small, 13px);
 }
 .bielu-arazzo .ba-diagram-legend-band {
   @apply w-3.5 h-2.5;

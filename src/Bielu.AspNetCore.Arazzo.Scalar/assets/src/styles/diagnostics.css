@@ -48,15 +48,6 @@
 .bielu-arazzo .ba-diagnostic-where {
   @apply font-code;
 }
-.bielu-arazzo .ba-step-problems {
-  @apply ml-1.5 py-0 px-1.5;
-  border-radius: 9px;
-  background: var(--ba-diagnostic-color);
-  color: var(--scalar-background-1);
-  font-size: var(--scalar-mini, 12px);
-  @apply font-medium;
-  vertical-align: middle;
-}
 .bielu-arazzo .ba-diagram-problem circle {
   fill: var(--ba-diagnostic-color);
   stroke: var(--scalar-background-1);

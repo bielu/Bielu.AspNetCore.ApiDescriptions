@@ -5,14 +5,18 @@
  * The components carry Tailwind classes in their compiled templates, and Scalar's page stylesheet
  * does not contain all of them (and scopes the ones it has to `.scalar-app`), so they are generated
  * here, scoped to `.bielu-arazzo` like every other rule of the view, and to `.bielu-arazzo-modal`:
- * the modal renders in a portal at the end of <body>, outside the view. Only the component folders
- * listed are scanned: the view's own markup uses `ba-*` classes, not utilities. The package sits in
- * ./node_modules when this folder is installed on its own (the npm CI job) and in the repository
- * root's node_modules when the workspace is installed from there (the .NET build); Tailwind skips
- * whichever path does not exist.
+ * the modal renders in a portal at the end of <body>, outside the view. Only the files listed are
+ * scanned. The package sits in ./node_modules when this folder is installed on its own (the npm CI
+ * job) and in the repository root's node_modules when the workspace is installed from there (the
+ * .NET build); Tailwind skips whichever path does not exist.
+ *
+ * The view's own components are moving from the `@apply` rules in this folder to utilities in their
+ * templates, one component at a time, each keeping its `ba-*` classes as hooks for tests and for the
+ * rules still written in CSS. The components already moved are listed after the packages.
  */
 @source "../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating,ScalarModal}/*.js";
 @source "../../../../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating,ScalarModal}/*.js";
+@source "../components/ArazzoStep.vue";
 
 .bielu-arazzo,
 .bielu-arazzo-modal {
