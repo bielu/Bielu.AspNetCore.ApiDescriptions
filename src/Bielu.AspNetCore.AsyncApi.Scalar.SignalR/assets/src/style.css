@@ -4,6 +4,16 @@
  */
 @import "@bielu/scalar-core/tailwind.css";
 
+/*
+ * The @scalar/components the console uses carry their Tailwind classes in their compiled templates,
+ * and Scalar's own stylesheet does not contain all of them, so they are generated here as well.
+ * The package sits in ./node_modules when this folder is installed on its own (the npm CI jobs) and
+ * in the repository root's node_modules when the workspace is installed from there (the .NET build);
+ * Tailwind skips whichever path does not exist.
+ */
+@source "../node_modules/@scalar/components/dist/components/{ScalarButton,ScalarForm,ScalarLoading,ScalarTextArea,ScalarTextInput}/*.js";
+@source "../../../../node_modules/@scalar/components/dist/components/{ScalarButton,ScalarForm,ScalarLoading,ScalarTextArea,ScalarTextInput}/*.js";
+
 bielu-signalr-console {
   @tailwind utilities source("./components");
 }

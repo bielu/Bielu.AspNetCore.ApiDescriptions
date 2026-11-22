@@ -39,23 +39,14 @@
   @apply text-xxs tracking-wide text-c-3 uppercase;
 }
 
-/* Text inputs, selects and textareas. */
-@utility bielu-input {
-  @apply rounded border border-border bg-b-2 px-2 py-1.5;
-  color: inherit;
+/*
+ * A native <select>, drawn like the consoles' ScalarTextInput fields (Scalar's ScalarFormInput look).
+ * Buttons, text inputs and editors are @scalar/components; selects stay native, because
+ * ScalarListbox would add about 50 KB (Headless UI and Floating UI) to every console bundle.
+ */
+@utility bielu-select {
+  @apply cursor-pointer rounded bg-b-1 px-2 py-1.5 text-c-1 shadow-border outline-offset-[-1px] focus-visible:outline dark:bg-b-1.5;
   font: inherit;
-}
-
-/* A secondary button; add bielu-btn-primary for the main action. */
-@utility bielu-btn {
-  @apply cursor-pointer rounded border border-border bg-b-2 px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:opacity-50;
-  color: inherit;
-  font-family: inherit;
-  font-size: inherit;
-}
-
-@utility bielu-btn-primary {
-  @apply border-transparent bg-b-btn text-c-btn hover:bg-h-btn;
 }
 
 /* The coloured method/kind tag (INVOKE, SEND, EVENT, UNARY…); colour it with text-* and bg-*. */
@@ -66,12 +57,6 @@
 /* A small rounded status label; colour it with text-* and bg-*. */
 @utility bielu-pill {
   @apply rounded-full px-2 py-0.5 text-3xs tracking-wide whitespace-nowrap uppercase;
-}
-
-/* A JSON editor (request body, arguments, metadata). */
-@utility bielu-code-editor {
-  @apply box-border w-full resize-y rounded border border-border bg-b-2 p-2.5 font-code text-sm;
-  color: inherit;
 }
 
 /* A call result or sample payload; give it a border-l-* colour (green ok, red failed, c-3 sample). */
