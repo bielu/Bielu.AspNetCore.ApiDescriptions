@@ -303,7 +303,6 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         await page.Mouse.WheelAsync(0, -100);
         var canvas = workflow.Locator(".ba-overview .ba-diagram-canvas");
         var zoomed = await canvas.EvaluateAsync<string>("canvas => canvas.style.transform");
-        var scale = await diagram.Locator("svg").First.GetAttributeAsync("data-scale");
 
         // Act
         await workflow.Locator(".ba-overview").GetByRole(AriaRole.Button, new() { Name = "Pages" }).ClickAsync();
@@ -311,10 +310,10 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         var labels = (await diagram.Locator(".ba-diagram-node text").AllTextContentsAsync()).Select(Normalize).ToList();
         var stepPage = Normalize(await workflow.Locator(".ba-step .ba-step-page").Last.InnerTextAsync());
 
-        // Assert
+        // Assert: the reader's zoom stays. The fit scale (the svg's data-scale) is measured again for the
+        // Pages graph, which another view's scale may not fit, so it is not compared.
         zoomed.ShouldContain("scale(1.1)");
         (await canvas.EvaluateAsync<string>("canvas => canvas.style.transform")).ShouldBe(zoomed);
-        (await diagram.Locator("svg").First.GetAttributeAsync("data-scale")).ShouldBe(scale);
         bands.ShouldContain("Order list · /orders");
         bands.ShouldContain("No page");
         labels.ShouldContain("Load the order list");
