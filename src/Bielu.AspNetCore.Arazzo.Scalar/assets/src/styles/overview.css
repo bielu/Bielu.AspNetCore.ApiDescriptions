@@ -209,50 +209,6 @@
   font-size: 10.5px;
   font-weight: normal;
 }
-/* The overview's views as tabs on a row of their own, underlined rather than boxed: every view's name stays on
-   one line, and a strip too narrow for them all scrolls sideways rather than wrapping a name. */
-.bielu-arazzo .ba-view-tabs {
-  @apply inline-flex gap-1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  border-bottom: 1px solid var(--scalar-border-color);
-}
-.bielu-arazzo .ba-view-tabs button {
-  @apply py-1 px-2 text-c-2 cursor-pointer;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  background: transparent;
-  font-size: var(--scalar-mini, 12px);
-  white-space: nowrap;
-}
-.bielu-arazzo .ba-view-tabs button:hover,
-.bielu-arazzo .ba-view-tabs button[aria-selected='true'] {
-  @apply text-c-1;
-}
-.bielu-arazzo .ba-view-tabs button[aria-selected='true'] {
-  border-bottom-color: var(--scalar-color-accent);
-}
-/* Inside the strip, which scrolls and so clips what is drawn outside it: the focus ring goes inside the tab. */
-.bielu-arazzo .ba-view-tabs button:focus-visible {
-  outline: 2px solid var(--scalar-color-accent);
-  outline-offset: -2px;
-  @apply rounded;
-}
-/* Beside the steps: the tabs share the overview's width, under its title and actions. */
-.bielu-arazzo .ba-view-tabs-fill {
-  @apply flex w-full;
-}
-.bielu-arazzo .ba-view-tabs-fill button {
-  flex: 1 1 0;
-}
-.bielu-arazzo .ba-dialog-tab-bar .ba-view-tabs {
-  border-bottom: 0;
-}
-.bielu-arazzo .ba-dialog-tab-bar .ba-view-tabs button {
-  @apply py-1.5 px-3;
-  font-size: var(--scalar-small, 13px);
-}
 .bielu-arazzo .ba-dialog-tab-bar .ba-diagram-legend {
   @apply pb-1.5;
 }
