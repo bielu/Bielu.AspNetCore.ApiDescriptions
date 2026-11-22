@@ -23,6 +23,9 @@ dotnet arazzo lint --file workflows.arazzo.yaml
 
 # Compare two revisions, failing on a breaking change
 dotnet arazzo diff --base old.yaml --head new.yaml --fail-on-breaking
+
+# Which workflow steps does an OpenAPI/AsyncAPI change break?
+dotnet arazzo impact --file workflows.arazzo.yaml --base events=old/asyncapi.json --head events=asyncapi.json --fail-on-breaking
 ```
 
 `validate` covers duplicate ids, mutually exclusive step targets and malformed `inputs` schemas. With

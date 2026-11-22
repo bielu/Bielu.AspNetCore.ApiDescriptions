@@ -5,6 +5,31 @@ Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.AsyncApiJsonSourceResolv
 Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver
 Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver.OpenApiJsonSourceResolver() -> void
 Bielu.Arazzo.Validation.ArazzoReferenceValidator
+Bielu.Arazzo.Validation.ArazzoStepTarget
+Bielu.Arazzo.Validation.ArazzoStepTarget.<Clone>$() -> Bielu.Arazzo.Validation.ArazzoStepTarget!
+Bielu.Arazzo.Validation.ArazzoStepTarget.ArazzoStepTarget(string! WorkflowId, string! StepId, string! Path, string! Reference, string? SourceName, Bielu.Arazzo.Validation.ArazzoStepTargetStatus Status, System.Text.Json.Nodes.JsonNode? Target, string? Message) -> void
+Bielu.Arazzo.Validation.ArazzoStepTarget.Deconstruct(out string! WorkflowId, out string! StepId, out string! Path, out string! Reference, out string? SourceName, out Bielu.Arazzo.Validation.ArazzoStepTargetStatus Status, out System.Text.Json.Nodes.JsonNode? Target, out string? Message) -> void
+Bielu.Arazzo.Validation.ArazzoStepTarget.Equals(Bielu.Arazzo.Validation.ArazzoStepTarget? other) -> bool
+Bielu.Arazzo.Validation.ArazzoStepTarget.Message.get -> string?
+Bielu.Arazzo.Validation.ArazzoStepTarget.Message.init -> void
+Bielu.Arazzo.Validation.ArazzoStepTarget.Path.get -> string!
+Bielu.Arazzo.Validation.ArazzoStepTarget.Path.init -> void
+Bielu.Arazzo.Validation.ArazzoStepTarget.Reference.get -> string!
+Bielu.Arazzo.Validation.ArazzoStepTarget.Reference.init -> void
+Bielu.Arazzo.Validation.ArazzoStepTarget.SourceName.get -> string?
+Bielu.Arazzo.Validation.ArazzoStepTarget.SourceName.init -> void
+Bielu.Arazzo.Validation.ArazzoStepTarget.Status.get -> Bielu.Arazzo.Validation.ArazzoStepTargetStatus
+Bielu.Arazzo.Validation.ArazzoStepTarget.Status.init -> void
+Bielu.Arazzo.Validation.ArazzoStepTarget.StepId.get -> string!
+Bielu.Arazzo.Validation.ArazzoStepTarget.StepId.init -> void
+Bielu.Arazzo.Validation.ArazzoStepTarget.Target.get -> System.Text.Json.Nodes.JsonNode?
+Bielu.Arazzo.Validation.ArazzoStepTarget.Target.init -> void
+Bielu.Arazzo.Validation.ArazzoStepTarget.WorkflowId.get -> string!
+Bielu.Arazzo.Validation.ArazzoStepTarget.WorkflowId.init -> void
+Bielu.Arazzo.Validation.ArazzoStepTargetStatus
+Bielu.Arazzo.Validation.ArazzoStepTargetStatus.Resolved = 0 -> Bielu.Arazzo.Validation.ArazzoStepTargetStatus
+Bielu.Arazzo.Validation.ArazzoStepTargetStatus.Skipped = 2 -> Bielu.Arazzo.Validation.ArazzoStepTargetStatus
+Bielu.Arazzo.Validation.ArazzoStepTargetStatus.Unresolved = 1 -> Bielu.Arazzo.Validation.ArazzoStepTargetStatus
 override Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.SourceType.get -> string!
 override Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.TryResolveChannelPath(System.Text.Json.Nodes.JsonNode! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
 override Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.TryResolveOperation(System.Text.Json.Nodes.JsonNode! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
@@ -12,5 +37,11 @@ override Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.TryResolveOpera
 override Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver.SourceType.get -> string!
 override Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver.TryResolveOperation(System.Text.Json.Nodes.JsonNode! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
 override Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver.TryResolveOperationPath(System.Text.Json.Nodes.JsonNode! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+override Bielu.Arazzo.Validation.ArazzoStepTarget.Equals(object? obj) -> bool
+override Bielu.Arazzo.Validation.ArazzoStepTarget.GetHashCode() -> int
+override Bielu.Arazzo.Validation.ArazzoStepTarget.ToString() -> string!
+static Bielu.Arazzo.Validation.ArazzoReferenceValidator.ResolveStepTargets(Bielu.Arazzo.Models.ArazzoDocument! document, Bielu.Arazzo.ArazzoWorkspace! workspace) -> System.Collections.Generic.IReadOnlyList<Bielu.Arazzo.Validation.ArazzoStepTarget!>!
 static Bielu.Arazzo.Validation.ArazzoReferenceValidator.UncheckedSources(Bielu.Arazzo.Models.ArazzoDocument! document, Bielu.Arazzo.ArazzoWorkspace! workspace) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Bielu.Arazzo.Validation.ArazzoReferenceValidator.Validate(Bielu.Arazzo.Models.ArazzoDocument! document, Bielu.Arazzo.ArazzoWorkspace! workspace) -> System.Collections.Generic.IReadOnlyList<Bielu.Arazzo.Validation.ArazzoError!>!
+static Bielu.Arazzo.Validation.ArazzoStepTarget.operator !=(Bielu.Arazzo.Validation.ArazzoStepTarget? left, Bielu.Arazzo.Validation.ArazzoStepTarget? right) -> bool
+static Bielu.Arazzo.Validation.ArazzoStepTarget.operator ==(Bielu.Arazzo.Validation.ArazzoStepTarget? left, Bielu.Arazzo.Validation.ArazzoStepTarget? right) -> bool
