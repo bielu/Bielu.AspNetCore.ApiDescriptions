@@ -44,6 +44,9 @@ public sealed class ArazzoWorkspace
         _documentsBySourceName[sourceName] = (sourceType, document);
     }
 
+    /// <summary>The names of the sources a document was registered for, in registration order.</summary>
+    public IEnumerable<string> SourceNames => _documentsBySourceName.Keys;
+
     /// <summary>Looks up the document registered for <paramref name="sourceName"/>. Returns false if none was registered.</summary>
     public bool TryGetDocument(string sourceName, out object? document)
     {
