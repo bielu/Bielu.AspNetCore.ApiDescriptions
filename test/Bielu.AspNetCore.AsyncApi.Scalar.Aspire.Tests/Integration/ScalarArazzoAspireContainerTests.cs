@@ -110,7 +110,8 @@ public class ScalarArazzoAspireContainerTests(ITestOutputHelper output)
             output.WriteLine($"Page {page.Url}: {await page.Locator("body").InnerTextAsync()}");
             throw;
         }
-        await page.GetByRole(AriaRole.Button, new() { Name = "Pages", Exact = true }).First.ClickAsync();
+        // The overview offers its views as tabs (#324).
+        await page.GetByRole(AriaRole.Tab, new() { Name = "Pages", Exact = true }).First.ClickAsync();
 
         // Assert: the module the browser asked for is the configured one, with every option and the custom query.
         var requested = new Uri(modules.ShouldHaveSingleItem());
