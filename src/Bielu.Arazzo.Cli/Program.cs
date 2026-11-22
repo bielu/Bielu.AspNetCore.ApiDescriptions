@@ -4,7 +4,7 @@
 using Bielu.Arazzo.Cli.Commands;
 using Bielu.Cli.Shared;
 
-// Usage: dotnet arazzo validate --file <path> [--file <path> ...] [--strict] [--format text|json]
+// Usage: dotnet arazzo validate --file <path> [--file <path> ...] [--source <name>=<path> ...] [--resolve-local-sources] [--strict] [--format text|json]
 // Usage: dotnet arazzo lint --file <path> [--file <path> ...] [--strict] [--format text|json]
 // Usage: dotnet arazzo diff --base <path> --head <path> [--fail-on-breaking] [--format text|json|markdown]
 
@@ -45,6 +45,24 @@ int RunValidate(string[] validateArgs)
                 }
 
                 context.Files.Add(file);
+                break;
+            case "--source":
+                if (!CliArgumentReader.TryReadValue(validateArgs, ref i, "--source", logger, out var source))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                var separator = source.IndexOf('=');
+                if (separator <= 0 || separator == source.Length - 1)
+                {
+                    logger.Error($"--source expects <name>=<path>, but got '{source}'.");
+                    return CliExitCode.Failure;
+                }
+
+                context.Sources[source[..separator]] = source[(separator + 1)..];
+                break;
+            case "--resolve-local-sources":
+                context.ResolveLocalSources = true;
                 break;
             case "--strict":
                 context.Strict = true;
@@ -185,6 +203,11 @@ static void PrintUsage()
     Console.WriteLine("  --file <path>            Path or glob to Arazzo document(s) (required, repeatable)");
     Console.WriteLine("  --strict                 Treat warnings as errors");
     Console.WriteLine("  --format <text|json>     Output format (default: text)");
+    Console.WriteLine();
+    Console.WriteLine("validate only:");
+    Console.WriteLine("  --source <name>=<path>   Check step references against the OpenAPI/AsyncAPI file for the");
+    Console.WriteLine("                           source description <name> (repeatable)");
+    Console.WriteLine("  --resolve-local-sources  Also load each source whose url is a relative path to a file");
     Console.WriteLine();
     Console.WriteLine("diff options:");
     Console.WriteLine("  --base <path>            Path to the base (old) Arazzo document (required)");

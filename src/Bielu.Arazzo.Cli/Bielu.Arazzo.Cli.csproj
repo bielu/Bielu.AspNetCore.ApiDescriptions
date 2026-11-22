@@ -22,6 +22,7 @@
         <ProjectReference Include="..\Bielu.Arazzo\Bielu.Arazzo.csproj" />
         <ProjectReference Include="..\Bielu.Arazzo.Readers\Bielu.Arazzo.Readers.csproj" />
         <ProjectReference Include="..\Bielu.Cli.Shared\Bielu.Cli.Shared.csproj" />
+        <ProjectReference Include="..\Bielu.Spec.Shared\Bielu.Spec.Shared.csproj" />
     </ItemGroup>
 
 </Project>

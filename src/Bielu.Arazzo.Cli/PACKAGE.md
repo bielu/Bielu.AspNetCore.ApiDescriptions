@@ -15,6 +15,9 @@ dotnet tool install --global Bielu.Arazzo.Cli
 # Specification validity plus structural invariants
 dotnet arazzo validate --file workflows.arazzo.yaml --strict
 
+# Also check every step reference against the OpenAPI/AsyncAPI documents it targets
+dotnet arazzo validate --file workflows.arazzo.yaml --source shop=openapi.json --source events=asyncapi.yaml
+
 # Authoring and graph-shape checks
 dotnet arazzo lint --file workflows.arazzo.yaml
 
@@ -22,7 +25,9 @@ dotnet arazzo lint --file workflows.arazzo.yaml
 dotnet arazzo diff --base old.yaml --head new.yaml --fail-on-breaking
 ```
 
-`validate` covers duplicate ids, mutually exclusive step targets and malformed `inputs` schemas.
+`validate` covers duplicate ids, mutually exclusive step targets and malformed `inputs` schemas. With
+`--source` (or `--resolve-local-sources`), it also fails when a step's `operationId`, `operationPath` or
+`channelPath` doesn't exist in its source document, so a renamed operation fails CI.
 `lint` adds what validity does not require: missing summaries and descriptions, identifiers that
 travel badly across tooling, circular `dependsOn` graphs, dangling same-document references, and
 `components` entries that are declared but never used.
