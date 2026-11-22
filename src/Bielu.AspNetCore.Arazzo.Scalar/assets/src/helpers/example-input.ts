@@ -6,6 +6,19 @@ const MAX_DEPTH = 8
 /** An array example holds at most this many items, whatever `minItems` asks for. */
 const MAX_ITEMS = 50
 
+/**
+ * A whole example makes at most this many values. Nested arrays multiply (six levels of `minItems: 50` ask for
+ * 50⁶ values), and the example is made while the workflow renders, so past this the rest is left out, or `null`,
+ * and the example is marked as needing edits.
+ */
+const MAX_VALUES = 1000
+
+/** A made-up string is at most this long, whatever `minLength` asks for; a longer bound marks the example as needing edits. */
+const MAX_STRING_LENGTH = 1000
+
+/** How many values the example being made may still make. */
+type Budget = { left: number }
+
 /** A value for a string in a known `format`, so the example reads like real input. */
 const FORMAT_EXAMPLES: Record<string, string> = {
   uuid: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
@@ -44,7 +57,11 @@ const typeOf = (schema: Schema): string | undefined => {
   return undefined
 }
 
-const generate = (input: Schema, roots: unknown[], depth: number, seen: ReadonlySet<string>): unknown => {
+const generate = (input: Schema, roots: unknown[], depth: number, seen: ReadonlySet<string>, budget: Budget): unknown => {
+  if (budget.left <= 0) {
+    return null
+  }
+  budget.left--
   const { schema, ref } = follow(input, roots)
   if (ref && seen.has(ref)) {
     // A recursive schema: stop rather than nest forever.
@@ -69,11 +86,11 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
   }
   const alternatives = [schema.oneOf, schema.anyOf].find((list): list is unknown[] => Array.isArray(list) && list.length > 0)
   if (alternatives && isSchema(alternatives[0])) {
-    return generate(alternatives[0], roots, depth, nested)
+    return generate(alternatives[0], roots, depth, nested, budget)
   }
   if (Array.isArray(schema.allOf) && schema.allOf.every(isSchema)) {
-    const own = isSchema(schema.properties) ? [generate({ ...schema, allOf: undefined }, roots, depth, nested)] : []
-    const parts = [...schema.allOf.map((part) => generate(part as Schema, roots, depth, nested)), ...own]
+    const own = isSchema(schema.properties) ? [generate({ ...schema, allOf: undefined }, roots, depth, nested, budget)] : []
+    const parts = [...schema.allOf.map((part) => generate(part as Schema, roots, depth, nested, budget)), ...own]
     if (parts.every(isSchema)) {
       return Object.assign({}, ...parts)
     }
@@ -85,7 +102,10 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
     case 'object': {
       const properties = isSchema(schema.properties) ? schema.properties : {}
       return Object.fromEntries(
-        Object.entries(properties).map(([name, property]) => [name, isSchema(property) ? generate(property, roots, depth + 1, nested) : null]),
+        Object.entries(properties)
+          // A property whose schema is `false` must be absent.
+          .filter(([, property]) => property !== false)
+          .map(([name, property]) => [name, isSchema(property) ? generate(property, roots, depth + 1, nested, budget) : null]),
       )
     }
     case 'array': {
@@ -93,7 +113,11 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
       const min = typeof schema.minItems === 'number' ? schema.minItems : 0
       const max = typeof schema.maxItems === 'number' ? schema.maxItems : Number.POSITIVE_INFINITY
       const count = Math.min(Math.max(1, min), max, MAX_ITEMS)
-      return isSchema(schema.items) ? Array.from({ length: count }, () => generate(schema.items as Schema, roots, depth + 1, nested)) : []
+      const items: unknown[] = []
+      for (let index = 0; isSchema(schema.items) && index < count && budget.left > 0; index++) {
+        items.push(generate(schema.items, roots, depth + 1, nested, budget))
+      }
+      return items
     }
     case 'integer':
     case 'number': {
@@ -119,7 +143,7 @@ const generateString = (schema: Schema): string => {
   const min = typeof schema.minLength === 'number' ? schema.minLength : 0
   const max = typeof schema.maxLength === 'number' ? schema.maxLength : Number.POSITIVE_INFINITY
   const sample = typeof schema.format === 'string' ? FORMAT_EXAMPLES[schema.format] : undefined
-  return sample ?? 'string'.padEnd(min, 'x').slice(0, max)
+  return sample ?? 'string'.padEnd(Math.min(min, MAX_STRING_LENGTH), 'x').slice(0, max)
 }
 
 /** An example made from a schema, and whether some of its values do not satisfy the schema yet. */
@@ -136,7 +160,7 @@ export const exampleWithCheck = (schema: unknown, document?: unknown): SchemaExa
     return undefined
   }
   const roots = [schema, document]
-  const value = generate(schema, roots, 0, new Set())
+  const value = generate(schema, roots, 0, new Set(), { left: MAX_VALUES })
   return { value, needsEdits: !conformsTo(value, schema, roots) }
 }
 
