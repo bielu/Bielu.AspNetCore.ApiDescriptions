@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Bielu.AspNetCore.Arazzo.Analyzers.Tests;
 
-public class ArazzoAnalyzerTests
+public partial class ArazzoAnalyzerTests
 {
     private const string Usings = @"
 using Bielu.Arazzo.Models;
@@ -32,10 +32,10 @@ using Microsoft.Extensions.DependencyInjection;
         .ToArray();
 
     private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(string source,
-        OutputKind outputKind = OutputKind.ConsoleApplication)
+        OutputKind outputKind = OutputKind.ConsoleApplication, params MetadataReference[] extraReferences)
     {
-        var compilation = CSharpCompilation.Create("Test", [CSharpSyntaxTree.ParseText(Usings + source)], References,
-            new CSharpCompilationOptions(outputKind));
+        var compilation = CSharpCompilation.Create("Test", [CSharpSyntaxTree.ParseText(Usings + source)],
+            [.. References, .. extraReferences], new CSharpCompilationOptions(outputKind));
 
         // A test whose code doesn't compile against the real API would pass for the wrong reason.
         compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();

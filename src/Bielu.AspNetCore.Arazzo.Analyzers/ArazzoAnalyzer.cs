@@ -18,7 +18,8 @@ public sealed class ArazzoAnalyzer : DiagnosticAnalyzer
         RuleBARAZZO005CorrelationIdWithoutReceive.Descriptor,
         ArazzoDocumentReferences.UndeclaredSourceDescriptor,
         ArazzoDocumentReferences.UnknownIdDescriptor,
-        RuleBARAZZO008UnregisteredSourceDocument.Descriptor);
+        RuleBARAZZO008UnregisteredSourceDocument.Descriptor,
+        RuleBARAZZO009UnknownChannel.Descriptor);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -36,5 +37,6 @@ public sealed class ArazzoAnalyzer : DiagnosticAnalyzer
 
         ArazzoDocumentReferences.Register(context);
         RuleBARAZZO008UnregisteredSourceDocument.Register(context);
+        RuleBARAZZO009UnknownChannel.Register(context);
     }
 }

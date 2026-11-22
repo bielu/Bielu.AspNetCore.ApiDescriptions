@@ -16,3 +16,4 @@ BARAZZO005 | Usage | Warning | WithCorrelationId is set on a step whose action i
 BARAZZO006 | Usage | Warning | A step references a source description the document never declares.
 BARAZZO007 | Usage | Warning | DependsOn or Workflow references a step or workflow the document never defines.
 BARAZZO008 | Usage | Info | AddAsyncApiSource or AddOpenApiSource points at a document the project never registers.
+BARAZZO009 | Usage | Warning | A Channel step targets a channel of a self-wired AsyncAPI source that no [Channel] attribute declares.

@@ -92,6 +92,28 @@ public sealed class ArazzoStepBuilder
         return this;
     }
 
+    /// <summary>
+    /// Targets an AsyncAPI channel, as <see cref="Channel(string, string, ArazzoStepAction)"/> does, and says
+    /// whether the channel is created at runtime rather than declared with a <c>[Channel]</c> attribute.
+    /// </summary>
+    /// <param name="sourceName">The AsyncAPI source description.</param>
+    /// <param name="channelName">The channel's key in the AsyncAPI document.</param>
+    /// <param name="action">Whether the step sends to or receives from the channel.</param>
+    /// <param name="dynamic">
+    /// <see langword="true"/> when a runtime mapping, such as Wolverine's message routing or a document transformer,
+    /// adds the channel to the document. Analyzer BARAZZO009 can only see <c>[Channel]</c> attributes, so it skips a
+    /// dynamic channel instead of reporting it as unknown. The generated step is the same either way, and startup
+    /// validation still checks the channel against the live document.
+    /// </param>
+    /// <example>
+    /// <code>
+    /// options.AddWorkflow("checkout", wf => wf
+    ///     .Step("publish", s => s.Channel("events", "orders", ArazzoStepAction.Send, dynamic: true)));
+    /// </code>
+    /// </example>
+    public ArazzoStepBuilder Channel(string sourceName, string channelName, ArazzoStepAction action, bool dynamic) =>
+        Channel(sourceName, channelName, action);
+
     /// <summary>Links this step's channel action to a <c>correlationId</c> defined in the AsyncAPI document. Only applicable when the step's action is "receive".</summary>
     public ArazzoStepBuilder WithCorrelationId(string correlationId)
     {

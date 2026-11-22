@@ -373,6 +373,7 @@ compile time. Most of these mistakes otherwise surface as an exception at startu
 | BARAZZO006 | Warning | A `Channel`, `OperationPath` or `Workflow(sourceName, workflowId)` step naming a source description the document never declares. |
 | BARAZZO007 | Warning | `DependsOn` or `Workflow` naming a workflow, or a step of the same workflow, that the document never defines. |
 | BARAZZO008 | Info | `AddAsyncApiSource`/`AddOpenApiSource` pointing at a document name the project never registers with `AddAsyncApi`/`AddOpenApi`. |
+| BARAZZO009 | Warning | A `Channel` step into a self-wired AsyncAPI source (`AddAsyncApiSource`) naming a channel no `[Channel]` attribute in the project or its references declares. |
 
 The analyzers only read what's written inline: string constants, marker types, and the lambdas passed to
 `AddArazzo`, `AddWorkflow` and `Step`. When a check can't see the whole picture, it stays quiet rather than
@@ -380,6 +381,21 @@ guess. That happens when a builder is passed to a helper method, an id isn't a c
 branches, or something other than `AddArazzo` configures `ArazzoOptions` (for example
 `Configure<ArazzoOptions>`). Several `AddArazzo` calls with the same document name are merged, as they are
 at runtime.
+
+BARAZZO009 compares a step's channel with the document key the AsyncAPI generator gives each `[Channel]`: its
+name without the characters outside `[A-Za-z0-9._-]`. So `[Channel("orders/{id}")]` is keyed `ordersid`, and a
+step that uses the declared name is reported with the key to use. A channel added at runtime is invisible to
+the analyzer, whether Wolverine's message routing or a document transformer adds it. Mark the step with
+`dynamic: true` and the analyzer skips it, while startup validation still checks it against the live document:
+
+```csharp
+options.AddWorkflow("checkout", wf => wf
+    .Step("publish", s => s.Channel("events", "orders", ArazzoStepAction.Send, dynamic: true)));
+```
+
+The rule also stays quiet when the project calls `AddWolverine()`, when it declares no `[Channel]` at all, and
+when a referenced assembly uses the AsyncAPI attributes but none of its channels can be read from metadata
+(they are on non-public members).
 
 > ⚠️ **Security note:** `Bielu.AspNetCore.Arazzo` only *serves* and *validates* workflow documents — it
 > does not execute them. Any future execution engine is intended to be CLI/test-only by design, and would
