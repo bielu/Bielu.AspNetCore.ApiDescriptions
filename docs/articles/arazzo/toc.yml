@@ -2,6 +2,8 @@
   href: overview.md
 - name: CLI Tool
   href: cli.md
+- name: Keeping workflows in step
+  href: ci.md
 - name: Scalar
   href: scalar.md
 - name: AsyncAPI docs →
