@@ -309,7 +309,7 @@ describe('the sequence diagram', () => {
     // Arrange
     const [view] = toWorkflowViews(document, traverseArazzoDocument({ documentId: 'doc', document: document as unknown as Record<string, unknown> }))
     wrapper = mount(ArazzoWorkflow, { attachTo: globalThis.document.body, props: { view: view!, document, documents } })
-    await wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === 'Sequence')!.trigger('click')
+    await wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === 'Sequence')!.trigger('click')
     await flushPromises()
     const dialog = wrapper.find('dialog').element as HTMLDialogElement
     const close = vi.spyOn(dialog, 'close')
@@ -334,7 +334,7 @@ describe('the sequence diagram', () => {
     wrapper = mount(ArazzoWorkflow, { props: { view: view!, document, documents } })
 
     // Act
-    await wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === 'Sequence')!.trigger('click')
+    await wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === 'Sequence')!.trigger('click')
     await flushPromises()
 
     // Assert

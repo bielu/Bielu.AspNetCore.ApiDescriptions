@@ -141,14 +141,14 @@ describe('the Data flow view', () => {
   it('switches the overview to the values passed, and is remembered', async () => {
     // Arrange
     wrapper = mountWorkflow()
-    const dataFlow = wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === 'Data flow')!
+    const dataFlow = wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === 'Data flow')!
 
     // Act
     await dataFlow.trigger('click')
     await flushPromises()
 
     // Assert
-    expect(dataFlow.attributes('aria-pressed')).toBe('true')
+    expect(dataFlow.attributes('aria-selected')).toBe('true')
     expect(wrapper.find(`.ba-overview [data-node-id="${INPUTS_NODE_ID}"]`).classes()).toContain('ba-diagram-node-data')
     expect(wrapper.findAll('.ba-overview .ba-diagram-edge-label text').map((label) => label.text())).toContain('orderId, total')
     expect(wrapper.find('.ba-overview .ba-diagram-legend').text()).toContain('Values passed')
@@ -176,7 +176,7 @@ describe('the Data flow view', () => {
       expect(scale()).not.toBeCloseTo(100 / dataFlowWidth)
 
       // Act
-      await wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === 'Data flow')!.trigger('click')
+      await wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === 'Data flow')!.trigger('click')
       await flushPromises()
 
       // Assert

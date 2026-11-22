@@ -65,6 +65,11 @@
 .bielu-arazzo .ba-dialog::backdrop {
   background: rgb(0 0 0 / 0.45);
 }
+/* The panel the expanded overview's view tabs control: the rest of the dialog, for the diagram to fill. */
+.bielu-arazzo .ba-dialog-panel {
+  @apply flex flex-1 flex-col;
+  min-height: 0;
+}
 .bielu-arazzo .ba-dialog-actions {
   @apply flex items-center gap-1.5;
 }

@@ -35,7 +35,7 @@ const mountWorkflow = (document: ArazzoDocument = shop) => {
 }
 
 const toggle = (wrapper: VueWrapper, name: 'Technical' | 'Pages') =>
-  wrapper.findAll('.ba-overview .ba-view-toggle button').find((button) => button.text() === name)
+  wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === name)
 
 beforeEach(() => {
   localStorage.clear()
@@ -57,7 +57,7 @@ describe('the Technical | Pages toggle', () => {
     const wrapper = mountWorkflow()
 
     // Assert: Technical, Data flow and Sequence only.
-    expect(wrapper.findAll('.ba-overview .ba-view-toggle button').map((button) => button.text())).toEqual(['Technical', 'Data flow', 'Sequence'])
+    expect(wrapper.findAll('.ba-overview .ba-view-tabs button').map((button) => button.text())).toEqual(['Technical', 'Data flow', 'Sequence'])
   })
 
   it('offers no Pages view when the document does not use the pages extensions', () => {
@@ -78,7 +78,7 @@ describe('the Technical | Pages toggle', () => {
 
     // Assert
     expect(technical).toBe('load')
-    expect(toggle(wrapper, 'Pages')!.attributes('aria-pressed')).toBe('true')
+    expect(toggle(wrapper, 'Pages')!.attributes('aria-selected')).toBe('true')
     expect(wrapper.find('.ba-overview [data-node-id="load"] text').text()).toBe('Load the order list')
     expect(wrapper.find('.ba-overview .ba-diagram-band-title text').text()).toBe('Order list · /orders')
   })
@@ -110,9 +110,9 @@ describe('the Technical | Pages toggle', () => {
     const afterReload = mountWorkflow()
 
     // Assert
-    expect(toggle(second, 'Pages')!.attributes('aria-pressed')).toBe('true')
+    expect(toggle(second, 'Pages')!.attributes('aria-selected')).toBe('true')
     expect(localStorage.getItem(VIEW_STORAGE_KEY)).toBe('pages')
-    expect(toggle(afterReload, 'Pages')!.attributes('aria-pressed')).toBe('true')
+    expect(toggle(afterReload, 'Pages')!.attributes('aria-selected')).toBe('true')
   })
 
   it('shows each step\'s page and label in the step list in the Pages view', async () => {

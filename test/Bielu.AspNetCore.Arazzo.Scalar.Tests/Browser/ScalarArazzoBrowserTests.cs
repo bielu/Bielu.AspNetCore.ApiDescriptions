@@ -305,7 +305,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         var zoomed = await canvas.EvaluateAsync<string>("canvas => canvas.style.transform");
 
         // Act
-        await workflow.Locator(".ba-overview").GetByRole(AriaRole.Button, new() { Name = "Pages" }).ClickAsync();
+        await workflow.Locator(".ba-overview").GetByRole(AriaRole.Tab, new() { Name = "Pages" }).ClickAsync();
         var bands = (await diagram.Locator(".ba-diagram-band-title text").AllTextContentsAsync()).Select(Normalize).ToList();
         var labels = (await diagram.Locator(".ba-diagram-node text").AllTextContentsAsync()).Select(Normalize).ToList();
         var stepPage = Normalize(await workflow.Locator(".ba-step .ba-step-page").Last.InnerTextAsync());
@@ -333,11 +333,44 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
     }
 
     [BrowserFact]
+    public async Task ViewTabs_SitUnderTheTitle_EachOnOneLine_WithTheActionsTogetherOnTheRight()
+    {
+        // Arrange
+        var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
+        var overview = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" }).Locator(".ba-overview");
+        await overview.ScrollIntoViewIfNeededAsync();
+        // The view is remembered across the page; Technical offers both actions (Sequence has no export).
+        await overview.Locator(".ba-view-tabs").GetByRole(AriaRole.Tab, new() { Name = "Technical" }).ClickAsync();
+
+        // Act
+        var header = await overview.Locator(".ba-overview-header").BoundingBoxAsync();
+        var title = await overview.Locator(".ba-overview-title").BoundingBoxAsync();
+        var export = await overview.GetByLabel("Export workflow diagram").BoundingBoxAsync();
+        var expand = await overview.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).BoundingBoxAsync();
+        var tabs = overview.Locator(".ba-view-tabs button");
+        var boxes = new List<LocatorBoundingBoxResult>();
+        for (var index = 0; index < await tabs.CountAsync(); index++)
+        {
+            boxes.Add((await tabs.Nth(index).BoundingBoxAsync())!);
+        }
+
+        // Assert: four tabs, in one row under the header, none wrapped onto a second line.
+        boxes.Count.ShouldBe(4);
+        boxes.ShouldAllBe(box => box.Y >= header!.Y + header.Height - 1);
+        boxes.Select(box => Math.Round(box.Y)).Distinct().Count().ShouldBe(1);
+        boxes.ShouldAllBe(box => box.Height < 2 * title!.Height + 8);
+        // The title on one line, and the export and expand actions side by side at the right of the header.
+        title!.Height.ShouldBeLessThan(header!.Height + 1);
+        (expand!.X - (export!.X + export.Width)).ShouldBeLessThan(16);
+        (header.X + header.Width - (expand.X + expand.Width)).ShouldBeLessThan(4);
+    }
+
+    [BrowserFact]
     public async Task PagesView_IsNotOfferedForADocumentThatDoesNotUseIt()
     {
         // Arrange / Act
         var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.GeneratedDocumentSlug);
-        var toggles = page.Locator(".bielu-arazzo .ba-view-toggle");
+        var toggles = page.Locator(".bielu-arazzo .ba-view-tabs");
 
         // Assert: every workflow still offers its other views, just not Pages.
         (await toggles.CountAsync()).ShouldBeGreaterThan(0);
