@@ -51,39 +51,7 @@
   @apply text-center;
   width: 1.5em;
 }
-/* The overview's export menu: a small dropdown under its button. */
-.bielu-arazzo .ba-export {
-  @apply relative inline-block;
-}
-.bielu-arazzo .ba-export > summary {
-  @apply cursor-pointer;
-  list-style: none;
-}
-.bielu-arazzo .ba-export > summary::-webkit-details-marker {
-  @apply hidden;
-}
-.bielu-arazzo .ba-export-menu {
-  @apply absolute flex flex-col p-1 border border-border rounded bg-b-1;
-  right: 0;
-  top: calc(100% + 4px);
-  z-index: 10;
-  min-width: 160px;
-  box-shadow: var(--scalar-shadow-1, 0 4px 12px rgb(0 0 0 / 0.2));
-}
-.bielu-arazzo .ba-export-menu button {
-  @apply py-1.5 px-2;
-  border: none;
-  @apply rounded;
-  background: none;
-  @apply text-c-1;
-  font: inherit;
-  font-size: var(--scalar-small, 13px);
-  @apply text-left cursor-pointer;
-}
-.bielu-arazzo .ba-export-menu button:hover,
-.bielu-arazzo .ba-export-menu button:focus-visible {
-  @apply bg-b-2;
-}
+/* The overview's export menu is ScalarDropdown (see scalar-components.css); only its status line is ours. */
 .bielu-arazzo .ba-export-status:empty {
   @apply hidden;
 }
