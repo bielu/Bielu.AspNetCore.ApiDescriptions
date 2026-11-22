@@ -142,6 +142,9 @@ describe('matchesPattern', () => {
     ['((ab)*c)+', { unbounded: true }],
     ['(\\d{1,3}){2,}', { unbounded: true }],
     ['(a+){9}', { unbounded: true }],
+    ['^(a?){30}b$', { unbounded: true }],
+    ['^((a?)b){2,}$', { unbounded: true }],
+    ['^((a|b)c)+$', { unbounded: true }],
     ['^(a)\\1$', { unbounded: true }],
     ['^(?<x>a)\\k<x>$', { unbounded: true }],
     ['^a*a*a*b$', { repeats: 3, optionals: 0, choices: 1, unbounded: false }],
@@ -154,13 +157,59 @@ describe('matchesPattern', () => {
     ['\\(a*\\)*', { repeats: 2, unbounded: false }],
     ['^(a{2})+$', { repeats: 1, unbounded: false }],
     ['^(red|green)-(s|m|l)?$', { repeats: 0, optionals: 1, choices: 6, unbounded: false }],
+    ['^(ab){3}(c?)$', { repeats: 0, optionals: 1, unbounded: false }],
   ])('reads the shape of %s', (pattern, shape) => {
     // Act / Assert
     expect(patternShape(pattern)).toMatchObject(shape)
   })
+
+  it('does not run a group repeated a fixed number of times around an optional part', () => {
+    // Arrange: each of the 30 copies of `a?` takes `a` or not, 2³⁰ ways, though the pattern has one `?`.
+    const value = 'a'.repeat(30)
+
+    // Act
+    const started = performance.now()
+    const matched = matchesPattern(value, '^(a?){30}b$')
+
+    // Assert
+    expect(matched).toBe(true)
+    expect(performance.now() - started).toBeLessThan(100)
+  })
 })
 
 describe('exampleWithCheck limits', () => {
+  it('counts an authored example by its size, so arrays cannot repeat a large one into a huge example', () => {
+    // Arrange: 100 copies of a million-character example would be about 100 MB of JSON.
+    const schema = {
+      type: 'object',
+      properties: {
+        data: { type: 'array', minItems: 10, items: { type: 'array', minItems: 10, items: { type: 'string', example: 'x'.repeat(1_000_000) } } },
+      },
+    }
+
+    // Act
+    const example = exampleWithCheck(schema)!
+
+    // Assert
+    expect(JSON.stringify(example.value).length).toBeLessThan(110_000)
+    expect(example.needsEdits).toBe(true)
+  })
+
+  it('keeps authored examples that fit, and fits as many as it can', () => {
+    // Arrange: ten 30,000-character examples do not all fit; the ones that do are kept.
+    const schema = { type: 'array', minItems: 10, items: { type: 'string', example: 'y'.repeat(30_000) } }
+
+    // Act
+    const example = exampleWithCheck(schema)!
+    const values = example.value as (string | null)[]
+
+    // Assert
+    expect(values.filter((value) => value !== null)).toHaveLength(3)
+    expect(values.slice(0, 3).every((value) => value?.length === 30_000)).toBe(true)
+    expect(example.needsEdits).toBe(true)
+    expect(exampleWithCheck({ type: 'string', example: 'short' })).toEqual({ value: 'short', needsEdits: false })
+  })
+
   it('bounds the whole example, not only each array, and says it needs edits', () => {
     // Arrange: six nested arrays of minItems 50 would ask for 50⁶ values.
     let schema: Record<string, unknown> = { type: 'integer' }

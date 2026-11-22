@@ -16,13 +16,64 @@ const MAX_VALUES = 1000
 /** A made-up string is at most this long, whatever `minLength` asks for; a longer bound marks the example as needing edits. */
 const MAX_STRING_LENGTH = 1000
 
-/** How many values the example being made may still make. */
 /**
- * How many values the example being made may still make, and whether anything was left out or cut short to
- * stay within the limits: then the example needs edits whether or not the shorter one happens to satisfy the
- * schema (a `null` left in place of a `["string", "null"]` value does).
+ * The example's JSON is at most about this many characters. An authored `example` counts its own size, so one
+ * large value repeated by `minItems` cannot make the example huge; a value that does not fit is left `null`.
  */
-type Budget = { left: number; cut: boolean }
+const MAX_EXAMPLE_LENGTH = 100_000
+
+/**
+ * How many values, and how many characters of JSON, the example being made may still take, and whether anything
+ * was left out or cut short to stay within the limits: then the example needs edits whether or not the shorter
+ * one happens to satisfy the schema (a `null` left in place of a `["string", "null"]` value does).
+ */
+type Budget = { left: number; length: number; cut: boolean }
+
+/** About how long `value` is as JSON, counting no further than `limit`: past it, more than `limit`. */
+const jsonLength = (value: unknown, limit: number): number => {
+  let total = 0
+  const visit = (node: unknown): void => {
+    if (total > limit) {
+      return
+    }
+    if (typeof node === 'string') {
+      total += node.length + 2
+    } else if (Array.isArray(node)) {
+      total += 2
+      for (const item of node) {
+        total += 1
+        visit(item)
+        if (total > limit) {
+          return
+        }
+      }
+    } else if (node && typeof node === 'object') {
+      total += 2
+      for (const [key, item] of Object.entries(node)) {
+        total += key.length + 4
+        visit(item)
+        if (total > limit) {
+          return
+        }
+      }
+    } else {
+      total += String(node).length
+    }
+  }
+  visit(value)
+  return total
+}
+
+/** `value` when its JSON fits in what the example has left (taking that much), else `null`, and the example marked as cut. */
+const fit = <T>(budget: Budget, value: T): T | null => {
+  const length = jsonLength(value, budget.length)
+  if (length > budget.length) {
+    budget.cut = true
+    return null
+  }
+  budget.length -= length
+  return value
+}
 
 /** Takes one value from the budget; `false`, and the example marked as cut, when there is none left. */
 const spend = (budget: Budget): boolean => {
@@ -82,21 +133,21 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
     return typeOf(schema) === 'array' ? [] : {}
   }
   const nested = ref ? new Set(seen).add(ref) : seen
-  // What the author wrote wins over anything made up.
+  // What the author wrote wins over anything made up, as long as it fits.
   if ('example' in schema && schema.example !== undefined) {
-    return schema.example
+    return fit(budget, schema.example)
   }
   if (Array.isArray(schema.examples) && schema.examples.length) {
-    return schema.examples[0]
+    return fit(budget, schema.examples[0])
   }
   if ('const' in schema) {
-    return schema.const
+    return fit(budget, schema.const)
   }
   if ('default' in schema && schema.default !== undefined) {
-    return schema.default
+    return fit(budget, schema.default)
   }
   if (Array.isArray(schema.enum) && schema.enum.length) {
-    return schema.enum[0]
+    return fit(budget, schema.enum[0])
   }
   const alternatives = [schema.oneOf, schema.anyOf].find((list): list is unknown[] => Array.isArray(list) && list.length > 0)
   if (alternatives && isSchema(alternatives[0])) {
@@ -157,7 +208,7 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
     case 'null':
       return null
     case 'string':
-      return generateString(schema, budget)
+      return fit(budget, generateString(schema, budget))
     default:
       return null
   }
@@ -182,14 +233,14 @@ export type SchemaExample = { value: unknown; needsEdits: boolean }
  * authored, is checked against the schema ({@link conformsTo}), and `needsEdits` is set when it does not
  * satisfy it, such as a string `pattern`, a `format` sample longer than `maxLength` or a `minItems` above
  * `maxItems`, and also when the example was cut short to stay within its limits (at most 1000 values, strings
- * of at most 1000 characters). `undefined` when there is no schema.
+ * of at most 1000 characters, and about 100,000 characters of JSON, authored values included). `undefined` when there is no schema.
  */
 export const exampleWithCheck = (schema: unknown, document?: unknown): SchemaExample | undefined => {
   if (!isSchema(schema)) {
     return undefined
   }
   const roots = [schema, document]
-  const budget: Budget = { left: MAX_VALUES, cut: false }
+  const budget: Budget = { left: MAX_VALUES, length: MAX_EXAMPLE_LENGTH, cut: false }
   const value = generate(schema, roots, 0, new Set(), budget)
   return { value, needsEdits: budget.cut || !conformsTo(value, schema, roots) }
 }

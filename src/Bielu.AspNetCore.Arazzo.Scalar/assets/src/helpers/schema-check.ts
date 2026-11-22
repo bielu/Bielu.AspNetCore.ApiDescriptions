@@ -141,15 +141,17 @@ const quantifierAt = (pattern: string, index: number): Quantifier | undefined =>
 /**
  * What bounds how long a backtracking engine can take on a pattern: how many quantifiers repeat a variable
  * number of times, how many are optional, the alternatives it chooses between, and the two shapes no input
- * length bounds: a group repeated (or repeated a fixed number of times) that itself repeats or has
- * alternatives (`(a*)*`, `(a|aa)+`, `(a+){9}`), and backreferences (`\1`, `\k<name>`).
+ * length bounds: a group repeated (or repeated a fixed number of times) with any choice inside it, at any
+ * depth: a repeat, an optional part or alternatives (`(a*)*`, `(a|aa)+`, `(a+){9}`, `(a?){30}`, `((a|b)c)+`),
+ * whose choices multiply with each repetition; and backreferences (`\1`, `\k<name>`).
  */
 export type PatternShape = { repeats: number; optionals: number; choices: number; unbounded: boolean }
 
 export const patternShape = (pattern: string): PatternShape => {
   const shape: PatternShape = { repeats: 0, optionals: 0, choices: 1, unbounded: false }
-  type Group = { repeats: boolean; branches: number }
-  const groups: Group[] = [{ repeats: false, branches: 1 }]
+  /** `varies`: the group, or a group inside it, repeats, has an optional part or has alternatives. */
+  type Group = { varies: boolean; branches: number }
+  const groups: Group[] = [{ varies: false, branches: 1 }]
   const current = () => groups[groups.length - 1]!
   let closed: Group | undefined
   for (let index = 0; index < pattern.length; index++) {
@@ -158,11 +160,12 @@ export const patternShape = (pattern: string): PatternShape => {
     if (quantifier) {
       if (quantifier.kind === 'repeat') {
         shape.repeats++
-        current().repeats = true
+        current().varies = true
       } else if (quantifier.kind === 'optional') {
         shape.optionals++
+        current().varies = true
       }
-      if (closed && (quantifier.kind === 'repeat' || quantifier.kind === 'fixed') && (closed.repeats || closed.branches > 1)) {
+      if (closed && (quantifier.kind === 'repeat' || quantifier.kind === 'fixed') && (closed.varies || closed.branches > 1)) {
         shape.unbounded = true
       }
       index += quantifier.length - 1
@@ -182,16 +185,16 @@ export const patternShape = (pattern: string): PatternShape => {
         }
       }
     } else if (character === '(') {
-      groups.push({ repeats: false, branches: 1 })
+      groups.push({ varies: false, branches: 1 })
       // `(?:`, `(?=`, `(?!`, `(?<=`, `(?<!`, `(?<name>`: the `?` is not a quantifier.
       const prefix = /^\(\?(?:[:=!]|<[=!]|<[^>]*>)/.exec(pattern.slice(index, index + 64))
       index += prefix ? prefix[0].length - 1 : 0
     } else if (character === '|') {
       current().branches++
     } else if (character === ')') {
-      const group = groups.length > 1 ? groups.pop()! : { repeats: false, branches: 1 }
+      const group = groups.length > 1 ? groups.pop()! : { varies: false, branches: 1 }
       shape.choices *= group.branches
-      current().repeats ||= group.repeats
+      current().varies ||= group.varies || group.branches > 1
       closed = group
     }
   }
