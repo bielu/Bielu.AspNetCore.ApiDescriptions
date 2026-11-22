@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { Badge } from '@scalar/blocks/shared'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ArazzoDocument from '../src/components/ArazzoDocument.vue'
@@ -286,5 +287,28 @@ describe('the rendered step', () => {
     expect(rows[0]!.find('.ba-status').classes()).toContain('ba-status-2')
     expect(rows[1]!.text()).toContain('exists')
     expect(rows[1]!.find('details').exists()).toBe(false)
+  })
+
+  it("draws the response badges with Scalar's Badge, the handled one in solid green like an OpenAPI x-badge", async () => {
+    // Act
+    wrapper = mount(ArazzoDocument, {
+      attachTo: globalThis.document.body,
+      props: {
+        document: arazzo,
+        documentName: 'flows',
+        documents,
+        navigation: traverseArazzoDocument({ documentId: 'flows', document: arazzo as unknown as Record<string, unknown> }),
+      },
+    })
+    await flushPromises()
+
+    // Assert
+    const badges = wrapper.findAllComponents(Badge).filter((badge) => badge.element.closest('.ba-responses'))
+    expect(badges.map((badge) => badge.text())).toEqual(['Success criteria', 'exists', 'badRequest'])
+    const [handled, action] = badges as [(typeof badges)[number], (typeof badges)[number]]
+    expect(handled.classes()).toEqual(expect.arrayContaining(['ba-badge', 'ba-response-handled', 'badge', 'badge-colored']))
+    expect(handled.attributes('style')).toContain('--badge-color: var(--scalar-color-green)')
+    expect(action.classes()).toEqual(expect.arrayContaining(['ba-badge', 'badge']))
+    expect(action.classes()).not.toContain('badge-colored')
   })
 })

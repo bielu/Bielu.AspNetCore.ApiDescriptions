@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Badge as ScalarBadge } from '@scalar/blocks/shared'
 import { ScalarModal, useModal } from '@scalar/components/modal'
 import {
   computed,
@@ -491,12 +492,12 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
     <div
       v-if="workflow.dependsOn?.length"
       class="ba-badges">
-      <span
+      <ScalarBadge
         v-for="dependency in workflow.dependsOn"
         :key="dependency"
         class="ba-badge">
         Depends on: {{ dependency }}
-      </span>
+      </ScalarBadge>
     </div>
 
     <div

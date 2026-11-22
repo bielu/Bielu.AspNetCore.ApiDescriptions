@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Badge as ScalarBadge } from '@scalar/blocks/shared'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   criterionTypeLabel,
@@ -367,10 +368,10 @@ const nestedVerb = (kind: string): string =>
           v-if="page && (page.page || page.label)"
           class="ba-step-page mb-0.5 flex flex-wrap items-center gap-1.5 text-(length:--scalar-small) text-c-2">
           <!-- The space between badge and label is explicit: Vue drops whitespace between elements once it contains a newline. -->
-          <span
+          <ScalarBadge
             v-if="page.page"
             class="ba-badge ba-page-badge"
-            >{{ page.page }}</span>{{ ' '
+            >{{ page.page }}</ScalarBadge>{{ ' '
           }}<span v-if="page.label">{{ page.label }}</span>
         </div>
         <div
@@ -442,25 +443,25 @@ const nestedVerb = (kind: string): string =>
           step.correlationId
         "
         class="ba-badges">
-        <span
+        <ScalarBadge
           v-for="dependency in step.dependsOn"
           :key="dependency"
           class="ba-badge">
           Depends on: {{ dependency }}
-        </span>
-        <span
+        </ScalarBadge>
+        <ScalarBadge
           v-if="typeof step.timeout === 'number'"
           class="ba-badge"
           :title="`Fails when the step takes longer than ${step.timeout} ms`">
           Timeout: {{ formatDuration(step.timeout) }}
-        </span>
-        <span
+        </ScalarBadge>
+        <ScalarBadge
           v-if="step.correlationId"
           class="ba-badge"
           title="Links the received message to the request it answers">
           Correlation ID:
           <code><ArazzoExpressionText :text="step.correlationId" /></code>
-        </span>
+        </ScalarBadge>
       </div>
 
       <div
@@ -694,11 +695,11 @@ const nestedVerb = (kind: string): string =>
                 v-for="(replacement, index) in step.requestBody.replacements"
                 :key="index">
                 <td>
-                  <span
+                  <ScalarBadge
                     v-if="criterionTypeLabel(replacement.targetSelectorType)"
                     class="ba-badge ba-criterion-type">
                     {{ criterionTypeLabel(replacement.targetSelectorType) }}
-                  </span>
+                  </ScalarBadge>
                   <code>{{ replacement.target }}</code>
                 </td>
                 <td

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Badge as ScalarBadge } from '@scalar/blocks/shared'
 import { resolveReusables } from '../helpers/reusable'
 import type {
   ArazzoDocument,
@@ -65,7 +66,7 @@ const parametersOf = (
         :key="keys?.[index] ?? action.name"
         class="ba-anchor-target">
         <span class="ba-action-name">{{ action.name }}</span>
-        <span class="ba-badge">{{ describe(action) }}</span>
+        <ScalarBadge class="ba-badge">{{ describe(action) }}</ScalarBadge>
         <ArazzoCriteria
           v-if="action.criteria?.length"
           :criteria="action.criteria"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Badge as ScalarBadge } from '@scalar/blocks/shared'
 import { computed } from 'vue'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
 import { renderMarkdown } from '../helpers/markdown'
@@ -128,19 +129,20 @@ const statusClass = (status: string): string =>
             <span class="ba-response-description">{{
               response.description
             }}</span>
-            <span
+            <ScalarBadge
               v-if="handling[response.status]?.success"
               class="ba-badge ba-response-handled"
+              color="var(--scalar-color-green)"
               title="The step's success criteria check for this status">
               Success criteria
-            </span>
-            <span
+            </ScalarBadge>
+            <ScalarBadge
               v-for="action in handling[response.status]?.actions ?? []"
               :key="action"
               class="ba-badge"
               :title="`Action ${action} checks for this status`">
               {{ action }}
-            </span>
+            </ScalarBadge>
           </summary>
           <template
             v-for="content in response.contents.slice(0, 1)"
@@ -193,19 +195,20 @@ const statusClass = (status: string): string =>
           <span class="ba-response-description">{{
             response.description
           }}</span>
-          <span
+          <ScalarBadge
             v-if="handling[response.status]?.success"
             class="ba-badge ba-response-handled"
+            color="var(--scalar-color-green)"
             title="The step's success criteria check for this status">
             Success criteria
-          </span>
-          <span
+          </ScalarBadge>
+          <ScalarBadge
             v-for="action in handling[response.status]?.actions ?? []"
             :key="action"
             class="ba-badge"
             :title="`Action ${action} checks for this status`">
             {{ action }}
-          </span>
+          </ScalarBadge>
         </div>
       </li>
     </ul>

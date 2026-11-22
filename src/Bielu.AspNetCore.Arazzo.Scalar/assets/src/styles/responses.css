@@ -35,9 +35,6 @@
 .bielu-arazzo .ba-status-5 {
   @apply text-red;
 }
-.bielu-arazzo .ba-response-handled {
-  border-color: var(--scalar-color-green, #30a46c);
-}
 .bielu-arazzo .ba-target-message .ba-block-title code {
   @apply my-0 mx-1;
 }

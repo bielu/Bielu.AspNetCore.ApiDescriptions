@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Badge as ScalarBadge } from '@scalar/blocks/shared'
 import { computed } from 'vue'
 import { asSelector, criterionTypeLabel, formatValue } from '../helpers/format'
 import ArazzoExpressionText from './ArazzoExpressionText.vue'
@@ -17,11 +18,11 @@ const selector = computed(() => asSelector(props.value))
   <span
     v-if="selector"
     class="ba-selector">
-    <span
+    <ScalarBadge
       v-if="criterionTypeLabel(selector.type)"
       class="ba-badge ba-criterion-type">
       {{ criterionTypeLabel(selector.type) }}
-    </span>
+    </ScalarBadge>
     <code>{{ selector.selector }}</code>
     <span class="ba-muted"> on </span>
     <code><ArazzoExpressionText :text="selector.context" /></code>

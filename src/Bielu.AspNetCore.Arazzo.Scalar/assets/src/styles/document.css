@@ -94,8 +94,3 @@
 .bielu-arazzo .ba-badges {
   @apply flex flex-wrap gap-1.5 my-2 mx-0;
 }
-.bielu-arazzo .ba-badge {
-  @apply inline-block rounded bg-b-2 border border-border text-c-2;
-  padding: 1px 8px;
-  font-size: var(--scalar-mini, 12px);
-}
