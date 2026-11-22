@@ -305,7 +305,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         var zoomed = await canvas.EvaluateAsync<string>("canvas => canvas.style.transform");
 
         // Act
-        await workflow.Locator(".ba-overview").GetByRole(AriaRole.Button, new() { Name = "Pages" }).ClickAsync();
+        await workflow.Locator(".ba-overview").GetByRole(AriaRole.Tab, new() { Name = "Pages" }).ClickAsync();
         var bands = (await diagram.Locator(".ba-diagram-band-title text").AllTextContentsAsync()).Select(Normalize).ToList();
         var labels = (await diagram.Locator(".ba-diagram-node text").AllTextContentsAsync()).Select(Normalize).ToList();
         var stepPage = Normalize(await workflow.Locator(".ba-step .ba-step-page").Last.InnerTextAsync());
@@ -340,7 +340,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         var overview = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" }).Locator(".ba-overview");
         await overview.ScrollIntoViewIfNeededAsync();
         // The view is remembered across the page; Technical offers both actions (Sequence has no export).
-        await overview.Locator(".ba-view-tabs").GetByRole(AriaRole.Button, new() { Name = "Technical" }).ClickAsync();
+        await overview.Locator(".ba-view-tabs").GetByRole(AriaRole.Tab, new() { Name = "Technical" }).ClickAsync();
 
         // Act
         var header = await overview.Locator(".ba-overview-header").BoundingBoxAsync();

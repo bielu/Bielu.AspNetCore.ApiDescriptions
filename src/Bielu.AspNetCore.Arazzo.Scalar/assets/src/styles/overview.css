@@ -280,10 +280,10 @@
   white-space: nowrap;
 }
 .bielu-arazzo .ba-view-tabs button:hover,
-.bielu-arazzo .ba-view-tabs button[aria-pressed='true'] {
+.bielu-arazzo .ba-view-tabs button[aria-selected='true'] {
   @apply text-c-1;
 }
-.bielu-arazzo .ba-view-tabs button[aria-pressed='true'] {
+.bielu-arazzo .ba-view-tabs button[aria-selected='true'] {
   border-bottom-color: var(--scalar-color-accent);
 }
 /* Inside the strip, which scrolls and so clips what is drawn outside it: the focus ring goes inside the tab. */

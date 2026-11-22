@@ -148,7 +148,7 @@ describe('the Data flow view', () => {
     await flushPromises()
 
     // Assert
-    expect(dataFlow.attributes('aria-pressed')).toBe('true')
+    expect(dataFlow.attributes('aria-selected')).toBe('true')
     expect(wrapper.find(`.ba-overview [data-node-id="${INPUTS_NODE_ID}"]`).classes()).toContain('ba-diagram-node-data')
     expect(wrapper.findAll('.ba-overview .ba-diagram-edge-label text').map((label) => label.text())).toContain('orderId, total')
     expect(wrapper.find('.ba-overview .ba-diagram-legend').text()).toContain('Values passed')

@@ -161,7 +161,8 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     a little larger than its natural size from the top, and the reader pans down, rather than shrinking it
     until its text can't be read.
   - **Data flow.** The tabs under the overview's title (**Technical**, **Data flow**, **Sequence**, and **Pages**
-    when the document describes its pages; in the full-window view they share a bar with the legend) switch it
+    when the document describes its pages; in the full-window view they share a bar with the legend; the Left
+    and Right arrow keys move between them) switch it
     from the order steps run in to the values passed between them: the workflow's
     inputs, each step, other workflows whose outputs a step reads, and the workflow's outputs, with an arrow
     from where each value comes from to everything that reads it, named on the arrow ("orderId, total"). It

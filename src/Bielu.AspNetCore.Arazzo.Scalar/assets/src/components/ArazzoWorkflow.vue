@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
 import { provideExpressionScope } from '../helpers/expression-scope'
 import { inputsAnchor, outputsAnchor, workflowOutputConsumers } from '../helpers/expressions'
@@ -30,7 +30,7 @@ import ArazzoKeyValues from './ArazzoKeyValues.vue'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
 import ArazzoSpecLegend from './ArazzoSpecLegend.vue'
 import ArazzoStep from './ArazzoStep.vue'
-import ArazzoViewSwitch from './ArazzoViewSwitch.vue'
+import ArazzoViewSwitch, { viewTabId } from './ArazzoViewSwitch.vue'
 import ArazzoWorkflowDiagram from './ArazzoWorkflowDiagram.vue'
 
 const props = defineProps<{
@@ -150,6 +150,11 @@ const views = computed((): { value: OverviewView; label: string }[] => [
   { value: 'sequence', label: 'Sequence' },
   ...(pagesAvailable.value ? [{ value: 'pages' as const, label: 'Pages' }] : []),
 ])
+
+/** The panels the view tabs control, beside the steps and in the expanded overview; unique per workflow on the page. */
+const viewPanelId = `ba-view-${useId()}`
+const inlinePanelId = `${viewPanelId}-inline`
+const dialogPanelId = `${viewPanelId}-dialog`
 
 /** Pages view: each step's page (title and route) and plain-language label, for the step list. */
 const stepPages = computed(() => {
@@ -482,22 +487,28 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
           <ArazzoViewSwitch
             class="ba-overview-tabs"
             fill
+            :panelId="inlinePanelId"
             :view="overviewView"
             :views="views"
             @select="setWorkflowView" />
-          <ArazzoSequenceDiagram
-            v-if="overviewView === 'sequence'"
-            :sequence="sequence"
-            :stepSectionIds="ownStepSections" />
-          <ArazzoWorkflowDiagram
-            v-else
-            ref="inline"
-            :layout="diagram"
-            :problems="stepProblems"
-            :stepSectionIds="stepSectionIds"
-            :workflowId="workflow.workflowId"
-            @openFlow="openFlow"
-            @toggleWorkflow="toggleWorkflow" />
+          <div
+            :id="inlinePanelId"
+            :aria-labelledby="viewTabId(inlinePanelId, overviewView)"
+            role="tabpanel">
+            <ArazzoSequenceDiagram
+              v-if="overviewView === 'sequence'"
+              :sequence="sequence"
+              :stepSectionIds="ownStepSections" />
+            <ArazzoWorkflowDiagram
+              v-else
+              ref="inline"
+              :layout="diagram"
+              :problems="stepProblems"
+              :stepSectionIds="stepSectionIds"
+              :workflowId="workflow.workflowId"
+              @openFlow="openFlow"
+              @toggleWorkflow="toggleWorkflow" />
+          </div>
           <div class="ba-overview-footer">
             <ArazzoSpecLegend
               v-if="overviewView !== 'sequence'"
@@ -552,6 +563,7 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       <!-- A tab bar under the title: the views on the left, what the diagram's marks mean on the right. -->
       <div class="ba-dialog-tab-bar">
         <ArazzoViewSwitch
+          :panelId="dialogPanelId"
           :view="overviewView"
           :views="views"
           @select="setWorkflowView" />
@@ -560,24 +572,30 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
           :layout="diagram"
           :view="overviewView" />
       </div>
-      <ArazzoSequenceDiagram
-        v-if="overviewView === 'sequence'"
-        fit
-        :sequence="sequence"
-        :stepSectionIds="ownStepSections"
-        @navigate="onSequenceNavigate" />
-      <ArazzoWorkflowDiagram
-        v-else
-        ref="expanded"
-        class="ba-diagram-large"
-        fit
-        :layout="diagram"
-        :problems="stepProblems"
-        :stepSectionIds="stepSectionIds"
-        :workflowId="workflow.workflowId"
-        @openFlow="openFlow"
-        @openStep="dialog?.close()"
-        @toggleWorkflow="toggleWorkflow" />
+      <div
+        :id="dialogPanelId"
+        :aria-labelledby="viewTabId(dialogPanelId, overviewView)"
+        class="ba-dialog-panel"
+        role="tabpanel">
+        <ArazzoSequenceDiagram
+          v-if="overviewView === 'sequence'"
+          fit
+          :sequence="sequence"
+          :stepSectionIds="ownStepSections"
+          @navigate="onSequenceNavigate" />
+        <ArazzoWorkflowDiagram
+          v-else
+          ref="expanded"
+          class="ba-diagram-large"
+          fit
+          :layout="diagram"
+          :problems="stepProblems"
+          :stepSectionIds="stepSectionIds"
+          :workflowId="workflow.workflowId"
+          @openFlow="openFlow"
+          @openStep="dialog?.close()"
+          @toggleWorkflow="toggleWorkflow" />
+      </div>
     </dialog>
 
     <dialog
