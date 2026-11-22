@@ -231,7 +231,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         // Arrange
         var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.AccountDocumentSlug);
         var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · browseOrders" });
-        await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+        await ExpandAsync(page, workflow);
         // ScalarModal renders the full-screen overview in a portal at the end of <body>, outside the workflow.
         var dialog = page.GetByRole(AriaRole.Dialog);
         var diagram = dialog.Locator(".ba-diagram");
@@ -257,7 +257,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         // Arrange
         var page = await fixture.OpenArazzoDocumentAsync(documentSlug: ScalarArazzoBrowserFixture.GeneratedDocumentSlug);
         var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · placeOrder" });
-        await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+        await ExpandAsync(page, workflow);
         var modal = page.Locator("[role='dialog']:not(dialog)");
         await modal.GetByRole(AriaRole.Tab, new() { Name = "Data flow" }).ClickAsync();
         var flowDialog = page.Locator("dialog.ba-flow-dialog[open]");
@@ -289,7 +289,7 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         var workflow = page.Locator(".bielu-arazzo .ba-workflow", new() { HasText = "Workflow · loadAccount" });
         if (fullScreen)
         {
-            await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+            await ExpandAsync(page, workflow);
         }
 
         var diagram = fullScreen ? page.GetByRole(AriaRole.Dialog).Locator(".ba-diagram") : workflow.Locator(".ba-overview .ba-diagram");
@@ -424,6 +424,23 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
 
         // Assert
         nested.ShouldBe("getAccount calls getOrder");
+    }
+
+    /// <summary>
+    /// Opens the workflow's full-screen overview and waits for ScalarModal's fade-in to end: the panel slides up
+    /// 10px over 0.3s, so a position measured earlier moves under the test on a slow machine.
+    /// </summary>
+    private static async Task ExpandAsync(IPage page, ILocator workflow)
+    {
+        await workflow.GetByRole(AriaRole.Button, new() { Name = "Expand workflow diagram" }).ClickAsync();
+        // Headless UI's dialog element has no box of its own: wait for it to exist, not to be visible.
+        await page.Locator("[role='dialog']:not(dialog)").WaitForAsync(new() { State = WaitForSelectorState.Attached });
+        await page.EvaluateAsync(
+            """
+            () => Promise.all(document.getAnimations()
+              .filter(animation => animation.effect?.getComputedTiming().endTime !== Infinity)
+              .map(animation => animation.finished))
+            """);
     }
 
     private static string Normalize(string? text) => string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
