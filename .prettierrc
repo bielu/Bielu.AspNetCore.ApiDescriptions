@@ -7,7 +7,7 @@
   "singleQuote": true,
   "singleAttributePerLine": true,
   "bracketSameLine": true,
-  "endOfLine": "lf",
+  "endOfLine": "auto",
   "importOrder": ["<BUILTIN_MODULES>", "", "<THIRD_PARTY_MODULES>", "", "^@/(.*)$", "", "^[./]"],
   "importOrderParserPlugins": ["typescript"],
   "importOrderTypeScriptVersion": "5.2.2",
