@@ -10,7 +10,8 @@ const props = defineProps<{
   eventBus?: PluginEventBus
 }>()
 
-const copy = () => props.eventBus?.emit('copy-url:nav-item', { id: props.navId })
+const copy = () =>
+  props.eventBus?.emit('copy-url:nav-item', { id: props.navId })
 </script>
 
 <template>

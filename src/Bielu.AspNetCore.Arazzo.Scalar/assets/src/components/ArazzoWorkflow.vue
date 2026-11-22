@@ -1,8 +1,24 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
-import { diagnosticKey, useDiagnostics, worstSeverity } from '../helpers/diagnostics-scope'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  useId,
+  watch,
+} from 'vue'
+import {
+  diagnosticKey,
+  useDiagnostics,
+  worstSeverity,
+} from '../helpers/diagnostics-scope'
 import { provideExpressionScope } from '../helpers/expression-scope'
-import { inputsAnchor, outputsAnchor, workflowOutputConsumers } from '../helpers/expressions'
+import {
+  inputsAnchor,
+  outputsAnchor,
+  workflowOutputConsumers,
+} from '../helpers/expressions'
 import { exampleWithCheck } from '../helpers/example-input'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
 import { resolveLocalRef } from '../helpers/extensions'
@@ -11,15 +27,37 @@ import { STEP_EXPAND_EVENT, type WorkflowView } from '../helpers/navigation'
 import { buildDataFlowGraph } from '../helpers/data-flow'
 import { buildSequence } from '../helpers/sequence'
 import { describeFlow } from '../helpers/data-flow-values'
-import { resolveReusables, resolveReusablesWithReference } from '../helpers/reusable'
-import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
+import {
+  resolveReusables,
+  resolveReusablesWithReference,
+} from '../helpers/reusable'
+import {
+  labelOf,
+  pageOf,
+  pageRegistry,
+  pagesInUse,
+  pageTitle,
+  type PagesConfig,
+} from '../helpers/pages'
 import type { ArazzoPluginOptions } from '../helpers/plugin-options'
 import { resolveStepTarget } from '../helpers/resolve-target'
 import { describeStep } from '../helpers/step-description'
 import { targetSpec } from '../helpers/target-spec'
 import { setWorkflowView, workflowView } from '../helpers/view-mode'
-import { buildWorkflowGraph, layoutWorkflowGraph, type LaidOutEdge, type WorkflowView as OverviewView } from '../helpers/workflow-graph'
-import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep as StepObject, ArazzoSuccessAction, PluginEventBus } from '../types'
+import {
+  buildWorkflowGraph,
+  layoutWorkflowGraph,
+  type LaidOutEdge,
+  type WorkflowView as OverviewView,
+} from '../helpers/workflow-graph'
+import type {
+  ArazzoDocument,
+  ArazzoFailureAction,
+  ArazzoParameter,
+  ArazzoStep as StepObject,
+  ArazzoSuccessAction,
+  PluginEventBus,
+} from '../types'
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoDataFlowDetails from './ArazzoDataFlowDetails.vue'
@@ -61,14 +99,20 @@ const workflow = computed(() => props.view.workflow)
 const description = computed(() => renderMarkdown(workflow.value.description))
 
 /** The inputs schema, followed through a `$ref` to `components.inputs` when it is one. */
-const inputs = computed(() => resolveLocalRef(props.document, workflow.value.inputs))
+const inputs = computed(() =>
+  resolveLocalRef(props.document, workflow.value.inputs),
+)
 
 const inputRows = computed(() => schemaPropertyRows(inputs.value))
 
 /** A sample of what to pass the workflow, made from its inputs schema, to copy and edit. */
 const example = computed(() => exampleWithCheck(inputs.value, props.document))
 
-const exampleInput = computed(() => (example.value === undefined ? undefined : JSON.stringify(example.value.value, null, 2)))
+const exampleInput = computed(() =>
+  example.value === undefined
+    ? undefined
+    : JSON.stringify(example.value.value, null, 2),
+)
 
 /** "Copied" for a moment after the copy button, read out to screen readers. */
 const copyStatus = ref('')
@@ -83,7 +127,10 @@ const copyExample = async () => {
 }
 
 const parameters = computed(() =>
-  resolveReusablesWithReference<ArazzoParameter>(props.document, workflow.value.parameters).map(({ entry, reference }) => ({
+  resolveReusablesWithReference<ArazzoParameter>(
+    props.document,
+    workflow.value.parameters,
+  ).map(({ entry, reference }) => ({
     name: entry.name,
     value: entry.value,
     location: entry.in,
@@ -94,15 +141,25 @@ const parameters = computed(() =>
 /** Each output with the steps of other workflows that read it (`$workflows.<id>.outputs.<name>`). */
 const outputs = computed(() => {
   const consumers = workflowOutputConsumers(expressionScope.value)
-  return Object.entries(workflow.value.outputs ?? {}).map(([name, value]) => ({ name, value, usedBy: consumers[name] }))
+  return Object.entries(workflow.value.outputs ?? {}).map(([name, value]) => ({
+    name,
+    value,
+    usedBy: consumers[name],
+  }))
 })
 
 const successActions = computed(() =>
-  resolveReusables<ArazzoSuccessAction>(props.document, workflow.value.successActions),
+  resolveReusables<ArazzoSuccessAction>(
+    props.document,
+    workflow.value.successActions,
+  ),
 )
 
 const failureActions = computed(() =>
-  resolveReusables<ArazzoFailureAction>(props.document, workflow.value.failureActions),
+  resolveReusables<ArazzoFailureAction>(
+    props.document,
+    workflow.value.failureActions,
+  ),
 )
 
 /** The workflow nodes whose steps the overview shows; shared by the inline and the expanded diagram. */
@@ -135,7 +192,9 @@ const pagesConfig = computed((): PagesConfig => {
 })
 
 /** The Technical | Pages toggle is offered only when the pages options are set and this document uses them. */
-const pagesAvailable = computed(() => pagesInUse(props.document, pagesConfig.value))
+const pagesAvailable = computed(() =>
+  pagesInUse(props.document, pagesConfig.value),
+)
 
 /** The reader's view; Pages falls back to Technical where this document has no pages. */
 const overviewView = computed((): OverviewView => {
@@ -148,7 +207,9 @@ const views = computed((): { value: OverviewView; label: string }[] => [
   { value: 'technical', label: 'Technical' },
   { value: 'data', label: 'Data flow' },
   { value: 'sequence', label: 'Sequence' },
-  ...(pagesAvailable.value ? [{ value: 'pages' as const, label: 'Pages' }] : []),
+  ...(pagesAvailable.value
+    ? [{ value: 'pages' as const, label: 'Pages' }]
+    : []),
 ])
 
 /** The panels the view tabs control, beside the steps and in the expanded overview; unique per workflow on the page. */
@@ -166,24 +227,46 @@ const stepPages = computed(() => {
     props.view.steps.map(({ step }) => {
       const page = pageOf(step, pagesConfig.value)
       const route = page ? registry[page]?.route : undefined
-      return [step.stepId, { page: page ? [pageTitle(registry, page), route].filter(Boolean).join(' · ') : undefined, label: labelOf(step, pagesConfig.value) }]
+      return [
+        step.stepId,
+        {
+          page: page
+            ? [pageTitle(registry, page), route].filter(Boolean).join(' · ')
+            : undefined,
+          label: labelOf(step, pagesConfig.value),
+        },
+      ]
     }),
   )
 })
 
 /** Sequence view: who the workflow talks to, and in which order. */
-const sequence = computed(() => buildSequence(props.document, workflow.value, props.documents))
+const sequence = computed(() =>
+  buildSequence(props.document, workflow.value, props.documents),
+)
 
 /** stepId → section id, for the sequence diagram's step names. */
-const ownStepSections = computed(() => Object.fromEntries(props.view.steps.map((entry) => [entry.step.stepId, entry.id])))
+const ownStepSections = computed(() =>
+  Object.fromEntries(
+    props.view.steps.map((entry) => [entry.step.stepId, entry.id]),
+  ),
+)
 
 /** The spec a step's target is described in, resolved in the document the step belongs to. */
-const specOf = (step: StepObject, owner: ArazzoDocument) => targetSpec(owner, step, resolveStepTarget(owner, step, props.documents), props.documents)?.family
+const specOf = (step: StepObject, owner: ArazzoDocument) =>
+  targetSpec(
+    owner,
+    step,
+    resolveStepTarget(owner, step, props.documents),
+    props.documents,
+  )?.family
 
 /** Each step box is marked with the spec its target is described in. */
 const diagram = computed(() =>
   overviewView.value === 'data'
-    ? layoutWorkflowGraph(buildDataFlowGraph(props.document, workflow.value, specOf))
+    ? layoutWorkflowGraph(
+        buildDataFlowGraph(props.document, workflow.value, specOf),
+      )
     : layoutWorkflowGraph(
         // A step of an expanded workflow from another Arazzo document resolves its target in that document.
         buildWorkflowGraph(props.document, workflow.value, specOf, {
@@ -194,20 +277,29 @@ const diagram = computed(() =>
           documents: props.documents,
           documentName: props.documentName,
           // Each box says what its step does (`POST /orders`, `← receives orderPlaced`), in its own document.
-          describeStep: (step, owner) => describeStep(step, owner, props.documents),
+          describeStep: (step, owner) =>
+            describeStep(step, owner, props.documents),
         }),
       ),
 )
 
 const stepSectionIds = computed(
-  () => props.stepSectionIds ?? { [workflow.value.workflowId]: Object.fromEntries(props.view.steps.map((entry) => [entry.step.stepId, entry.id])) },
+  () =>
+    props.stepSectionIds ?? {
+      [workflow.value.workflowId]: Object.fromEntries(
+        props.view.steps.map((entry) => [entry.step.stepId, entry.id]),
+      ),
+    },
 )
 
 /** The scope the workflow's Runtime Expressions are read in, for every value, condition and payload under it. */
 const expressionScope = computed(() => ({
   document: props.document,
   workflow: workflow.value,
-  workflowNavIds: { ...props.workflowNavIds, [workflow.value.workflowId]: props.view.id },
+  workflowNavIds: {
+    ...props.workflowNavIds,
+    [workflow.value.workflowId]: props.view.id,
+  },
   stepSectionIds: stepSectionIds.value,
   componentsId: props.componentsId,
 }))
@@ -218,9 +310,22 @@ const allDiagnostics = useDiagnostics()
 const stepProblems = computed(() =>
   Object.fromEntries(
     props.view.steps.flatMap(({ step }) => {
-      const problems = allDiagnostics.value.get(diagnosticKey(workflow.value.workflowId, step.stepId))
+      const problems = allDiagnostics.value.get(
+        diagnosticKey(workflow.value.workflowId, step.stepId),
+      )
       const severity = worstSeverity(problems)
-      return severity ? [[step.stepId, { severity, count: problems!.length, messages: problems!.map((problem) => problem.message) }]] : []
+      return severity
+        ? [
+            [
+              step.stepId,
+              {
+                severity,
+                count: problems!.length,
+                messages: problems!.map((problem) => problem.message),
+              },
+            ],
+          ]
+        : []
     }),
   ),
 )
@@ -232,7 +337,10 @@ const open = ref(true)
 
 const toggle = () => {
   open.value = !open.value
-  props.eventBus?.emit('toggle:nav-item', { id: props.view.id, open: open.value })
+  props.eventBus?.emit('toggle:nav-item', {
+    id: props.view.id,
+    open: open.value,
+  })
 }
 
 /** A step of this workflow asked to open (`STEP_EXPAND_EVENT` bubbling up from it): show the workflow's body too. */
@@ -243,7 +351,9 @@ const openForStep = () => {
   }
 }
 onMounted(() => root.value?.addEventListener(STEP_EXPAND_EVENT, openForStep))
-onBeforeUnmount(() => root.value?.removeEventListener(STEP_EXPAND_EVENT, openForStep))
+onBeforeUnmount(() =>
+  root.value?.removeEventListener(STEP_EXPAND_EVENT, openForStep),
+)
 
 /**
  * Folds or unfolds every step of the workflow at once; each step can still be toggled on its own
@@ -251,7 +361,10 @@ onBeforeUnmount(() => root.value?.removeEventListener(STEP_EXPAND_EVENT, openFor
  */
 const expandSignal = ref({ open: true, version: 0 })
 const toggleSteps = () => {
-  expandSignal.value = { open: !expandSignal.value.open, version: expandSignal.value.version + 1 }
+  expandSignal.value = {
+    open: !expandSignal.value.open,
+    version: expandSignal.value.version + 1,
+  }
 }
 
 /** The expanded overview, in a native `<dialog>`: it brings the backdrop, Escape to close, and focus handling. */
@@ -294,11 +407,20 @@ const flowDetails = computed(() => {
   if (!edge?.values?.length) {
     return undefined
   }
-  const label = (id: string) => diagram.value.nodes.find((node) => node.id === id)?.label ?? id
+  const label = (id: string) =>
+    diagram.value.nodes.find((node) => node.id === id)?.label ?? id
   return {
     from: label(edge.from),
     to: label(edge.to),
-    values: describeFlow(props.document, workflow.value, edge.from, edge.to, edge.values, props.documents, props.view.id),
+    values: describeFlow(
+      props.document,
+      workflow.value,
+      edge.from,
+      edge.to,
+      edge.values,
+      props.documents,
+      props.view.id,
+    ),
   }
 })
 
@@ -326,7 +448,10 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
     :id="view.id"
     ref="root"
     class="ba-workflow"
-    :class="{ 'ba-workflow-classic': classic, 'ba-workflow-closed': classic && !open }"
+    :class="{
+      'ba-workflow-classic': classic,
+      'ba-workflow-closed': classic && !open,
+    }"
     :data-nav-id="view.id">
     <div class="ba-workflow-header">
       <div class="ba-workflow-heading">
@@ -334,7 +459,9 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
         <ArazzoAnchor
           :eventBus="eventBus"
           :navId="view.id">
-          <h2 class="ba-workflow-title">{{ workflow.summary || workflow.workflowId }}</h2>
+          <h2 class="ba-workflow-title">
+            {{ workflow.summary || workflow.workflowId }}
+          </h2>
         </ArazzoAnchor>
       </div>
       <div class="ba-workflow-actions">
@@ -402,12 +529,15 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
               </button>
               <span
                 aria-live="polite"
-                class="ba-muted">{{ copyStatus }}</span>
+                class="ba-muted"
+                >{{ copyStatus }}</span
+              >
             </div>
             <p
               v-if="example?.needsEdits"
               class="ba-muted ba-example-warning">
-              Some values don't satisfy the inputs schema (a pattern or length it can't meet): edit them before use.
+              Some values don't satisfy the inputs schema (a pattern or length
+              it can't meet): edit them before use.
             </p>
             <pre class="ba-code"><code>{{ exampleInput }}</code></pre>
           </details>
@@ -514,7 +644,9 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
               v-if="overviewView !== 'sequence'"
               :layout="diagram"
               :view="overviewView" />
-            <span class="ba-muted ba-overview-hint">Select a step to view details</span>
+            <span class="ba-muted ba-overview-hint"
+              >Select a step to view details</span
+            >
           </div>
         </div>
       </aside>
@@ -526,7 +658,9 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       class="ba-dialog"
       @click="closeOnBackdrop">
       <div class="ba-dialog-header">
-        <div class="ba-overview-title">Workflow overview · {{ workflow.summary || workflow.workflowId }}</div>
+        <div class="ba-overview-title">
+          Workflow overview · {{ workflow.summary || workflow.workflowId }}
+        </div>
         <div class="ba-dialog-actions">
           <ArazzoDiagramExport
             v-if="overviewView !== 'sequence'"
@@ -600,7 +734,11 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
 
     <dialog
       ref="flowDialog"
-      :aria-label="flowDetails ? `What flows from ${flowDetails.from} to ${flowDetails.to}` : 'What flows'"
+      :aria-label="
+        flowDetails
+          ? `What flows from ${flowDetails.from} to ${flowDetails.to}`
+          : 'What flows'
+      "
       class="ba-dialog ba-flow-dialog"
       @click="closeFlowOnBackdrop">
       <div class="ba-dialog-header">

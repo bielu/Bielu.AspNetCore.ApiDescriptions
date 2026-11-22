@@ -103,6 +103,7 @@ Rules of thumb:
 - **Public API tracking:** projects that have a `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` next to their csproj (every packable library; not the analyzers, source generator, CLI tools or templates) are checked by `Microsoft.CodeAnalysis.PublicApiAnalyzers`; `src/Directory.Build.props` turns it on for any project with those files. When you change the public surface, update `PublicAPI.Unshipped.txt`, or the build fails (RS0016/RS0017). A new library project starts with both files holding only `#nullable enable`; `dotnet format analyzers <csproj> --diagnostics RS0016` fills Unshipped. Never edit `PublicAPI.Shipped.txt` by hand: `scripts/ship-public-api.mjs` moves Unshipped into Shipped as part of `npm run version` when a stable version is released.
 - **`InternalsVisibleTo`:** core internals are exposed to `*.Tests`, `*.Merger`, and `*.Cli` — prefer `internal` over `public` for implementation details that only those consume.
 - **Formatting:** governed by [`.editorconfig`](./.editorconfig) (4-space indent for C#, UTF-8 BOM, final newline). Run `dotnet format` before committing.
+- **Vue formatting:** the Scalar plugins' `.vue` components use Scalar's own Prettier setup ([`.prettierrc`](./.prettierrc): `prettier-plugin-tailwindcss` class order, sorted imports, one attribute per line). Run `npm run format:vue`; CI runs `npm run format:vue:check`. TypeScript and CSS are not Prettier-formatted, as in Scalar (which uses Biome for them). Vue drops whitespace between two elements once it contains a newline, so a space that must render between inline elements is written as `{{ ' ' }}`, never left to the line layout. CI runs `npm run check:vue-whitespace`, which fails when a changed template renders a different number of spaces between elements than its base.
 - **Style idioms** (follow the surrounding code):
   - Public APIs get XML doc comments, often with `<example>`/`<code>` blocks.
   - Validate arguments with `ArgumentNullException.ThrowIfNull(...)`.
@@ -175,7 +176,7 @@ cd src/examples/StreetlightsAPI && dotnet run
 
 1. `dotnet build` succeeds with no errors.
 2. `dotnet test` passes.
-3. `dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx --exclude-diagnostics IL2026 IL3050` is clean.
+3. `dotnet format --verify-no-changes src/Bielu.AspNetCore.AsyncApi.slnx --exclude-diagnostics IL2026 IL3050` is clean, and so is `npm run format:vue:check`.
 4. Public-API changes are reflected in `PublicAPI.Unshipped.txt` and XML docs.
 5. Update `README.md` / `CHANGELOG.md` when behavior or public APIs change.
 6. Target the `main` branch. CI runs build, format check, and tests on every PR.

@@ -21,7 +21,9 @@ const entries = computed(() => extensionsOf(props.of))
       <template
         v-for="[name, value] in entries"
         :key="name">
-        <dt><code>{{ name }}</code></dt>
+        <dt>
+          <code>{{ name }}</code>
+        </dt>
         <dd><ArazzoValue :value="value" /></dd>
       </template>
     </dl>

@@ -8,12 +8,24 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { getAuthState, resolveGrpcAuth } from '../auth'
 import { resolveDocuments } from '../discovery'
 import { loadGrpcServices } from '../grpc-bindings'
-import { descriptorsUrlFor, invokeServerStreaming, invokeUnary, loadDescriptorRegistry } from '../grpc-client'
-import type { GrpcDocumentRef, GrpcMethodModel, GrpcServiceModel } from '../types'
+import {
+  descriptorsUrlFor,
+  invokeServerStreaming,
+  invokeUnary,
+  loadDescriptorRegistry,
+} from '../grpc-client'
+import type {
+  GrpcDocumentRef,
+  GrpcMethodModel,
+  GrpcServiceModel,
+} from '../types'
 
 // `options` is the Scalar configuration Scalar binds to the element; `documents` is an optional
 // explicit override. Documents are otherwise auto-discovered from `options.sources`.
-const props = defineProps<{ options?: Record<string, any>; documents?: GrpcDocumentRef[] }>()
+const props = defineProps<{
+  options?: Record<string, any>
+  documents?: GrpcDocumentRef[]
+}>()
 
 type LogEntry = { time: string; dir: 'in' | 'out' | 'sys'; text: string }
 
@@ -38,10 +50,12 @@ const results = reactive<Record<string, { ok: boolean; text: string }>>({})
 const selectedMethodIds = reactive<Record<string, string>>({})
 const selectedMessageIndex = reactive<Record<string, number>>({})
 
-const serviceKey = (service: GrpcServiceModel) => `${service.documentName}:${service.channelName}`
+const serviceKey = (service: GrpcServiceModel) =>
+  `${service.documentName}:${service.channelName}`
 // A service-scoped key for a method. All displayed methods belong to the selected service, so the
 // selected service key uniquely scopes them.
-const methodKey = (method: GrpcMethodModel) => `${selectedKey.value}:${method.id}`
+const methodKey = (method: GrpcMethodModel) =>
+  `${selectedKey.value}:${method.id}`
 
 const uniqueDocuments = computed(() => {
   const seen = new Set<string>()
@@ -58,23 +72,33 @@ const uniqueDocuments = computed(() => {
 // Scope the visible services to Scalar's active document when known (so the console reflects the
 // document the user is viewing), otherwise to the manually picked document. Falls back to all
 // services only when neither is set.
-const scopedDocumentName = computed(() => activeDocumentSlug.value ?? selectedDocumentName.value)
+const scopedDocumentName = computed(
+  () => activeDocumentSlug.value ?? selectedDocumentName.value,
+)
 const filteredServices = computed(() =>
   scopedDocumentName.value
-    ? services.value.filter((service) => service.documentName === scopedDocumentName.value)
+    ? services.value.filter(
+        (service) => service.documentName === scopedDocumentName.value,
+      )
     : services.value,
 )
 
 // The document picker only makes sense when the console spans several documents itself. Once it is
 // scoped to Scalar's active document, the active document is authoritative, so the picker is hidden.
-const showDocumentPicker = computed(() => !activeDocumentSlug.value && uniqueDocuments.value.length > 1)
+const showDocumentPicker = computed(
+  () => !activeDocumentSlug.value && uniqueDocuments.value.length > 1,
+)
 
 const selectedService = computed(
-  () => filteredServices.value.find((service) => serviceKey(service) === selectedKey.value) ?? null,
+  () =>
+    filteredServices.value.find(
+      (service) => serviceKey(service) === selectedKey.value,
+    ) ?? null,
 )
 // The selected method id for the current service, persisted per service so switching keeps each choice.
 const selectedMethodId = computed<string | null>({
-  get: () => (selectedKey.value ? selectedMethodIds[selectedKey.value] ?? null : null),
+  get: () =>
+    selectedKey.value ? (selectedMethodIds[selectedKey.value] ?? null) : null,
   set: (value) => {
     if (selectedKey.value && value) {
       selectedMethodIds[selectedKey.value] = value
@@ -82,16 +106,24 @@ const selectedMethodId = computed<string | null>({
   },
 })
 const selectedMethod = computed(
-  () => selectedService.value?.methods.find((method) => method.id === selectedMethodId.value) ?? null,
+  () =>
+    selectedService.value?.methods.find(
+      (method) => method.id === selectedMethodId.value,
+    ) ?? null,
 )
 
 // gRPC-Web only supports unary and server-streaming calls (missing method types are treated as
 // unary). Client-/bidi-streaming methods render as documentation with a "not invokable" badge.
 const isInvokable = (method: GrpcMethodModel) =>
-  method.methodType === undefined || method.methodType === 'unary' || method.methodType === 'serverStreaming'
+  method.methodType === undefined ||
+  method.methodType === 'unary' ||
+  method.methodType === 'serverStreaming'
 
 const effectiveBaseUrl = computed(() =>
-  (baseUrlOverride.value || selectedService.value?.baseUrl || '').replace(/\/+$/, ''),
+  (baseUrlOverride.value || selectedService.value?.baseUrl || '').replace(
+    /\/+$/,
+    '',
+  ),
 )
 
 const methodUrl = computed(() => {
@@ -162,7 +194,9 @@ function parseMetadata(raw: string): Record<string, string> {
   }
   const parsed = JSON.parse(text)
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('metadata must be a JSON object of header names to string values')
+    throw new Error(
+      'metadata must be a JSON object of header names to string values',
+    )
   }
   const headers: Record<string, string> = {}
   for (const [key, value] of Object.entries(parsed)) {
@@ -182,26 +216,37 @@ async function testRequest(method: GrpcMethodModel) {
   try {
     request = parseRequest(requestJson[key])
   } catch (error: any) {
-    results[key] = { ok: false, text: `Invalid JSON request: ${error?.message ?? error}` }
+    results[key] = {
+      ok: false,
+      text: `Invalid JSON request: ${error?.message ?? error}`,
+    }
     return
   }
   let headers: Record<string, string>
   try {
     headers = parseMetadata(metadataJson[key])
   } catch (error: any) {
-    results[key] = { ok: false, text: `Invalid metadata: ${error?.message ?? error}` }
+    results[key] = {
+      ok: false,
+      text: `Invalid metadata: ${error?.message ?? error}`,
+    }
     return
   }
 
   // Resolve Scalar's current auth state → no-op on stock Scalar or when no scheme is selected.
   // Explicit metadata entered in the editor wins over auth-derived headers of the same name.
-  const authResult = resolveGrpcAuth(service.documentName, service.securitySchemes, getAuthState())
+  const authResult = resolveGrpcAuth(
+    service.documentName,
+    service.securitySchemes,
+    getAuthState(),
+  )
   for (const warn of authResult.warnings) {
     addLog('sys', `Auth warning: ${warn}`)
   }
   headers = { ...authResult.headers, ...headers }
 
-  const hasSchemes = service.securitySchemes && Object.keys(service.securitySchemes).length > 0
+  const hasSchemes =
+    service.securitySchemes && Object.keys(service.securitySchemes).length > 0
   if (hasSchemes && Object.keys(authResult.headers).length === 0) {
     addLog(
       'sys',
@@ -211,26 +256,46 @@ async function testRequest(method: GrpcMethodModel) {
   }
 
   invoking.value = true
-  addLog('out', `${service.service}/${method.method} ${JSON.stringify(request)}`)
+  addLog(
+    'out',
+    `${service.service}/${method.method} ${JSON.stringify(request)}`,
+  )
   try {
-    const registry = await loadDescriptorRegistry(descriptorsUrlFor(effectiveBaseUrl.value))
+    const registry = await loadDescriptorRegistry(
+      descriptorsUrlFor(effectiveBaseUrl.value),
+    )
     const callOptions = {
       baseUrl: effectiveBaseUrl.value,
       headers,
-      timeoutMs: method.deadlineSeconds ? method.deadlineSeconds * 1000 : undefined,
+      timeoutMs: method.deadlineSeconds
+        ? method.deadlineSeconds * 1000
+        : undefined,
     }
     if (method.methodType === 'serverStreaming') {
       const items: JsonValue[] = []
-      await invokeServerStreaming(registry, service.service, method.method, request, callOptions, (message) => {
-        items.push(message)
-        addLog('in', `← ${JSON.stringify(message)}`)
-      })
+      await invokeServerStreaming(
+        registry,
+        service.service,
+        method.method,
+        request,
+        callOptions,
+        (message) => {
+          items.push(message)
+          addLog('in', `← ${JSON.stringify(message)}`)
+        },
+      )
       results[key] = {
         ok: true,
         text: `Stream completed: ${items.length} message(s).\n${JSON.stringify(items, null, 2)}`,
       }
     } else {
-      const response = await invokeUnary(registry, service.service, method.method, request, callOptions)
+      const response = await invokeUnary(
+        registry,
+        service.service,
+        method.method,
+        request,
+        callOptions,
+      )
       results[key] = { ok: true, text: JSON.stringify(response, null, 2) }
       addLog('in', `← ${JSON.stringify(response)}`)
     }
@@ -313,7 +378,9 @@ async function init() {
   loading.value = true
   error.value = null
   try {
-    services.value = await loadGrpcServices(resolveDocuments(props.options, props.documents))
+    services.value = await loadGrpcServices(
+      resolveDocuments(props.options, props.documents),
+    )
     // Seed a default document for the picker; the active-document scope (when detected) overrides it.
     if (services.value.length > 0 && !selectedDocumentName.value) {
       selectedDocumentName.value = services.value[0].documentName
@@ -337,163 +404,246 @@ onMounted(() => {
 <template>
   <section
     ref="rootEl"
-    class="bgr mt-8 max-w-(--bgr-content-max-width,none) border-t border-border px-(--bgr-content-padding,var(--scalar-content-padding,24px)) pt-10 pb-12 font-sans text-base text-c-1"
-  >
+    class="bgr mt-8 max-w-(--bgr-content-max-width,none) border-t border-border px-(--bgr-content-padding,var(--scalar-content-padding,24px)) pt-10 pb-12 font-sans text-base text-c-1">
     <header class="mb-5 flex items-center gap-3">
       <h2 class="m-0 text-xl">gRPC</h2>
       <span class="bielu-pill bg-b-2 text-c-2">gRPC-Web</span>
     </header>
 
-    <p v-if="loading" class="text-c-3">Loading gRPC services…</p>
+    <p
+      v-if="loading"
+      class="text-c-3">
+      Loading gRPC services…
+    </p>
     <div v-else-if="error">
       <p>Failed to load gRPC services.</p>
       <p class="text-c-3">{{ error }}</p>
     </div>
-    <p v-else-if="filteredServices.length === 0" class="text-c-3">
-      No gRPC services found in {{ activeDocumentSlug ? 'this document' : 'the AsyncAPI document(s)' }}.
+    <p
+      v-else-if="filteredServices.length === 0"
+      class="text-c-3">
+      No gRPC services found in
+      {{ activeDocumentSlug ? 'this document' : 'the AsyncAPI document(s)' }}.
     </p>
 
     <template v-else>
       <!-- Target bar -->
-      <div class="bielu-card mb-3.5">
+      <div class="mb-3.5 bielu-card">
         <div class="flex flex-wrap items-end gap-3">
-          <label v-if="showDocumentPicker" class="flex flex-col gap-1">
+          <label
+            v-if="showDocumentPicker"
+            class="flex flex-col gap-1">
             <span class="bielu-caption">Document</span>
-            <select class="bielu-select" v-model="selectedDocumentName">
-              <option v-for="doc in uniqueDocuments" :key="doc" :value="doc">{{ doc }}</option>
+            <select
+              class="bielu-select"
+              v-model="selectedDocumentName">
+              <option
+                v-for="doc in uniqueDocuments"
+                :key="doc"
+                :value="doc">
+                {{ doc }}
+              </option>
             </select>
           </label>
           <label class="flex flex-col gap-1">
             <span class="bielu-caption">Service</span>
-            <select class="bielu-select" v-model="selectedKey">
-              <option v-for="service in filteredServices" :key="serviceKey(service)" :value="serviceKey(service)">
+            <select
+              class="bielu-select"
+              v-model="selectedKey">
+              <option
+                v-for="service in filteredServices"
+                :key="serviceKey(service)"
+                :value="serviceKey(service)">
                 {{ service.service }}
               </option>
             </select>
           </label>
           <label class="flex min-w-48 flex-1 flex-col gap-1">
             <span class="bielu-caption">Base URL</span>
-            <ScalarTextInput v-model="baseUrlOverride" class="px-2 py-1.5" spellcheck="false" />
+            <ScalarTextInput
+              v-model="baseUrlOverride"
+              class="px-2 py-1.5"
+              spellcheck="false" />
           </label>
         </div>
-        <div v-if="selectedService?.protoFile" class="mt-3 flex flex-wrap items-center gap-3">
+        <div
+          v-if="selectedService?.protoFile"
+          class="mt-3 flex flex-wrap items-center gap-3">
           <span class="text-xxs text-c-3">{{ selectedService.protoFile }}</span>
         </div>
       </div>
 
       <!-- Two columns on wide screens (method invocation | message log); stacked on narrow. -->
       <div class="grid grid-cols-1 items-start gap-x-8 min-[60rem]:grid-cols-2">
-      <!-- Left column: pick a method, edit the prefilled request, invoke over gRPC-Web. -->
-      <div class="min-w-0">
-      <h3 class="mt-5 mb-2 text-base font-medium">Methods</h3>
-      <p v-if="!selectedService || selectedService.methods.length === 0" class="text-c-3">
-        No RPC methods declared for this service.
-      </p>
-      <article v-else class="bielu-card mb-3.5">
-        <div class="flex flex-wrap items-end gap-3">
-          <label class="flex min-w-48 flex-1 flex-col gap-1">
-            <span class="bielu-caption">Method</span>
-            <select class="bielu-select" v-model="selectedMethodId">
-              <option v-for="method in selectedService.methods" :key="method.id" :value="method.id">
-                {{ method.method }} · {{ methodTypeLabel(method) }}
-              </option>
-            </select>
-          </label>
-          <label v-if="selectedMethod && selectedMethod.messages.length > 1" class="flex min-w-48 flex-1 flex-col gap-1">
-            <span class="bielu-caption">Message</span>
-            <select
-              class="bielu-select"
-              :value="selectedMessageIndex[methodKey(selectedMethod)] ?? 0"
-              @change="applyExample(selectedMethod, Number(($event.target as HTMLSelectElement).value))"
-            >
-              <option v-for="(message, index) in selectedMethod.messages" :key="message.name" :value="index">
-                {{ message.title || message.name }}
-              </option>
-            </select>
-          </label>
+        <!-- Left column: pick a method, edit the prefilled request, invoke over gRPC-Web. -->
+        <div class="min-w-0">
+          <h3 class="mt-5 mb-2 text-base font-medium">Methods</h3>
+          <p
+            v-if="!selectedService || selectedService.methods.length === 0"
+            class="text-c-3">
+            No RPC methods declared for this service.
+          </p>
+          <article
+            v-else
+            class="mb-3.5 bielu-card">
+            <div class="flex flex-wrap items-end gap-3">
+              <label class="flex min-w-48 flex-1 flex-col gap-1">
+                <span class="bielu-caption">Method</span>
+                <select
+                  class="bielu-select"
+                  v-model="selectedMethodId">
+                  <option
+                    v-for="method in selectedService.methods"
+                    :key="method.id"
+                    :value="method.id">
+                    {{ method.method }} · {{ methodTypeLabel(method) }}
+                  </option>
+                </select>
+              </label>
+              <label
+                v-if="selectedMethod && selectedMethod.messages.length > 1"
+                class="flex min-w-48 flex-1 flex-col gap-1">
+                <span class="bielu-caption">Message</span>
+                <select
+                  class="bielu-select"
+                  :value="selectedMessageIndex[methodKey(selectedMethod)] ?? 0"
+                  @change="
+                    applyExample(
+                      selectedMethod,
+                      Number(($event.target as HTMLSelectElement).value),
+                    )
+                  ">
+                  <option
+                    v-for="(message, index) in selectedMethod.messages"
+                    :key="message.name"
+                    :value="index">
+                    {{ message.title || message.name }}
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <template v-if="selectedMethod">
+              <div class="mt-3.5 flex items-center gap-2.5">
+                <span
+                  :class="
+                    methodTag({ kind: selectedMethod.methodType ?? 'unary' })
+                  ">
+                  {{ methodTypeLabel(selectedMethod) }}
+                </span>
+                <span class="font-code font-medium">{{
+                  selectedMethod.method
+                }}</span>
+                <span
+                  v-if="!isInvokable(selectedMethod)"
+                  class="bielu-pill bg-orange/16 text-orange"
+                  >not invokable from the browser</span
+                >
+              </div>
+              <p
+                v-if="selectedMethod.summary"
+                class="mt-1.5 mb-0 text-c-3">
+                {{ selectedMethod.summary }}
+              </p>
+              <p class="mt-1.5 mb-0 text-xxs text-c-3">
+                {{ selectedMethod.requestType ?? '?' }} →
+                {{ selectedMethod.responseType ?? '?'
+                }}<template v-if="selectedMethod.deadlineSeconds">
+                  · deadline {{ selectedMethod.deadlineSeconds }}s</template
+                >
+                <template v-if="selectedMethod.idempotencyLevel">
+                  · {{ selectedMethod.idempotencyLevel }}</template
+                >
+              </p>
+
+              <template v-if="isInvokable(selectedMethod)">
+                <div class="mt-2.5 flex items-center justify-between">
+                  <span class="text-xxs text-c-3">Request message (JSON)</span>
+                  <button
+                    type="button"
+                    class="cursor-pointer border-0 bg-transparent p-0 text-xxs text-blue disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="selectedMethod.messages.length === 0"
+                    @click="
+                      applyExample(
+                        selectedMethod,
+                        selectedMessageIndex[methodKey(selectedMethod)] ?? 0,
+                      )
+                    ">
+                    ↺ Reset to example
+                  </button>
+                </div>
+                <ScalarTextArea
+                  v-model="requestJson[methodKey(selectedMethod)]"
+                  class="mt-2.5 p-2.5 font-code text-sm"
+                  rows="6"
+                  spellcheck="false"
+                  placeholder='Request message as JSON, e.g. { "name": "world" }' />
+                <div class="mt-2.5 flex items-center justify-between">
+                  <span class="text-xxs text-c-3"
+                    >Metadata (JSON object of headers, optional)</span
+                  >
+                </div>
+                <ScalarTextArea
+                  v-model="metadataJson[methodKey(selectedMethod)]"
+                  class="mt-2.5 p-2.5 font-code text-sm"
+                  rows="2"
+                  spellcheck="false"
+                  placeholder='{ "x-correlation-id": "1234" }' />
+                <div class="mt-2.5 flex items-center justify-between">
+                  <span class="text-xxs text-c-3">{{ methodUrl }}</span>
+                  <!-- ScalarButton marks itself aria-disabled but still clicks; testRequest returns while invoking. -->
+                  <ScalarButton
+                    size="sm"
+                    :disabled="invoking"
+                    @click="testRequest(selectedMethod)">
+                    ▶ Test Request
+                  </ScalarButton>
+                </div>
+                <pre
+                  v-if="results[methodKey(selectedMethod)]"
+                  :class="
+                    resultBlock({ ok: results[methodKey(selectedMethod)].ok })
+                  "
+                  >{{ results[methodKey(selectedMethod)].text }}</pre>
+              </template>
+              <p
+                v-else
+                class="mt-1.5 mb-0 text-c-3">
+                gRPC-Web supports unary and server-streaming calls only; client-
+                and bidirectional-streaming methods are shown for documentation.
+                The example request below is generated from the AsyncAPI payload
+                schema.
+              </p>
+              <pre
+                v-if="
+                  !isInvokable(selectedMethod) &&
+                  selectedMethod.messages.length > 0
+                "
+                class="bielu-result mt-2.5 border-l-c-3"
+                >{{ selectedMethod.messages[0].example }}</pre>
+            </template>
+          </article>
         </div>
 
-        <template v-if="selectedMethod">
-          <div class="mt-3.5 flex items-center gap-2.5">
-            <span :class="methodTag({ kind: selectedMethod.methodType ?? 'unary' })">
-              {{ methodTypeLabel(selectedMethod) }}
-            </span>
-            <span class="font-code font-medium">{{ selectedMethod.method }}</span>
-            <span v-if="!isInvokable(selectedMethod)" class="bielu-pill bg-orange/16 text-orange">not invokable from the browser</span>
-          </div>
-          <p v-if="selectedMethod.summary" class="mt-1.5 mb-0 text-c-3">{{ selectedMethod.summary }}</p>
-          <p class="mt-1.5 mb-0 text-xxs text-c-3">
-            {{ selectedMethod.requestType ?? '?' }} → {{ selectedMethod.responseType ?? '?'
-            }}<template v-if="selectedMethod.deadlineSeconds"> · deadline {{ selectedMethod.deadlineSeconds }}s</template>
-            <template v-if="selectedMethod.idempotencyLevel"> · {{ selectedMethod.idempotencyLevel }}</template>
-          </p>
-
-          <template v-if="isInvokable(selectedMethod)">
-            <div class="mt-2.5 flex items-center justify-between">
-              <span class="text-xxs text-c-3">Request message (JSON)</span>
-              <button
-                type="button"
-                class="cursor-pointer border-0 bg-transparent p-0 text-xxs text-blue disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="selectedMethod.messages.length === 0"
-                @click="applyExample(selectedMethod, selectedMessageIndex[methodKey(selectedMethod)] ?? 0)"
-              >
-                ↺ Reset to example
-              </button>
-            </div>
-            <ScalarTextArea
-              v-model="requestJson[methodKey(selectedMethod)]"
-              class="mt-2.5 p-2.5 font-code text-sm"
-              rows="6"
-              spellcheck="false"
-              placeholder='Request message as JSON, e.g. { "name": "world" }'
-            />
-            <div class="mt-2.5 flex items-center justify-between">
-              <span class="text-xxs text-c-3">Metadata (JSON object of headers, optional)</span>
-            </div>
-            <ScalarTextArea
-              v-model="metadataJson[methodKey(selectedMethod)]"
-              class="mt-2.5 p-2.5 font-code text-sm"
-              rows="2"
-              spellcheck="false"
-              placeholder='{ "x-correlation-id": "1234" }'
-            />
-            <div class="mt-2.5 flex items-center justify-between">
-              <span class="text-xxs text-c-3">{{ methodUrl }}</span>
-              <!-- ScalarButton marks itself aria-disabled but still clicks; testRequest returns while invoking. -->
-              <ScalarButton size="sm" :disabled="invoking" @click="testRequest(selectedMethod)">
-                ▶ Test Request
-              </ScalarButton>
-            </div>
-            <pre
-              v-if="results[methodKey(selectedMethod)]"
-              :class="resultBlock({ ok: results[methodKey(selectedMethod)].ok })"
-            >{{ results[methodKey(selectedMethod)].text }}</pre>
-          </template>
-          <p v-else class="mt-1.5 mb-0 text-c-3">
-            gRPC-Web supports unary and server-streaming calls only; client- and bidirectional-streaming
-            methods are shown for documentation. The example request below is generated from the AsyncAPI
-            payload schema.
-          </p>
-          <pre
-            v-if="!isInvokable(selectedMethod) && selectedMethod.messages.length > 0"
-            class="bielu-result mt-2.5 border-l-c-3"
-          >{{ selectedMethod.messages[0].example }}</pre>
-        </template>
-      </article>
-      </div>
-
-      <!-- Right column: the live message log. -->
-      <div class="min-w-0">
-      <h3 class="mt-5 mb-2 text-base font-medium">Messages</h3>
-      <ul class="bielu-log">
-        <li v-for="(entry, index) in log" :key="index" class="flex gap-2 py-0.5">
-          <span class="opacity-55">{{ entry.time }}</span>
-          <span :class="logBadge({ dir: entry.dir })">{{ entry.dir }}</span>
-          <span>{{ entry.text }}</span>
-        </li>
-        <li v-if="log.length === 0" class="text-c-3">No messages yet.</li>
-      </ul>
-      </div>
+        <!-- Right column: the live message log. -->
+        <div class="min-w-0">
+          <h3 class="mt-5 mb-2 text-base font-medium">Messages</h3>
+          <ul class="bielu-log">
+            <li
+              v-for="(entry, index) in log"
+              :key="index"
+              class="flex gap-2 py-0.5">
+              <span class="opacity-55">{{ entry.time }}</span>
+              <span :class="logBadge({ dir: entry.dir })">{{ entry.dir }}</span>
+              <span>{{ entry.text }}</span>
+            </li>
+            <li
+              v-if="log.length === 0"
+              class="text-c-3">
+              No messages yet.
+            </li>
+          </ul>
+        </div>
       </div>
     </template>
   </section>

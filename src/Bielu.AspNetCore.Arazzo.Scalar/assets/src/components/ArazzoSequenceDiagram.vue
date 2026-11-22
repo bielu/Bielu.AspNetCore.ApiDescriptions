@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, useId } from 'vue'
 import { goToAnchor } from '../helpers/navigation'
-import { CLIENT_ID, type Sequence, type SequenceMessage } from '../helpers/sequence'
+import {
+  CLIENT_ID,
+  type Sequence,
+  type SequenceMessage,
+} from '../helpers/sequence'
 
 /**
  * The workflow as a sequence diagram: a lane for the client and one per service or broker it talks to, and the
@@ -34,17 +38,40 @@ const MIN_SCALE = 0.85
 
 const markerId = `ba-seq-${useId()}`
 
-const cut = (text: string, length = MAX_LABEL): string => (text.length > length ? `${text.slice(0, length - 1)}…` : text)
+const cut = (text: string, length = MAX_LABEL): string =>
+  text.length > length ? `${text.slice(0, length - 1)}…` : text
 
-const laneX = computed(() => new Map(props.sequence.participants.map((participant, index) => [participant.id, GUTTER + index * LANE + LANE / 2])))
+const laneX = computed(
+  () =>
+    new Map(
+      props.sequence.participants.map((participant, index) => [
+        participant.id,
+        GUTTER + index * LANE + LANE / 2,
+      ]),
+    ),
+)
 
 /** Each message with its row: the first message of a step carries the step's name. */
 const rows = computed(() => {
   let y = HEADER + 24
   return props.sequence.messages.map((message, index) => {
-    const first = index === 0 || props.sequence.messages[index - 1]!.stepId !== message.stepId
-    const row = { message, y, first, x1: laneX.value.get(message.from) ?? GUTTER, x2: laneX.value.get(message.to) ?? GUTTER }
-    y += ROW + (message.note ? NOTE : 0) + (index + 1 < props.sequence.messages.length && props.sequence.messages[index + 1]!.stepId !== message.stepId ? 8 : 0)
+    const first =
+      index === 0 ||
+      props.sequence.messages[index - 1]!.stepId !== message.stepId
+    const row = {
+      message,
+      y,
+      first,
+      x1: laneX.value.get(message.from) ?? GUTTER,
+      x2: laneX.value.get(message.to) ?? GUTTER,
+    }
+    y +=
+      ROW +
+      (message.note ? NOTE : 0) +
+      (index + 1 < props.sequence.messages.length &&
+      props.sequence.messages[index + 1]!.stepId !== message.stepId
+        ? 8
+        : 0)
     return row
   })
 })
@@ -56,14 +83,17 @@ const height = computed(() => {
 })
 
 /** A response or a delivered message is drawn dashed, as in UML: what comes back, rather than what is sent. */
-const dashed = (message: SequenceMessage): boolean => message.kind === 'response'
+const dashed = (message: SequenceMessage): boolean =>
+  message.kind === 'response'
 
 const open = (event: Event, stepId: string) => {
   const section = props.stepSectionIds[stepId]
   if (section) {
     const from = event.currentTarget as Element
     emit('navigate', stepId)
-    void goToAnchor(from, { anchor: section, stepSection: section }, nextTick, { focus: true })
+    void goToAnchor(from, { anchor: section, stepSection: section }, nextTick, {
+      focus: true,
+    })
   }
 }
 
@@ -84,7 +114,10 @@ const isClient = (id: string) => id === CLIENT_ID
     <svg
       :aria-label="`Sequence of ${sequence.messages.length} messages between ${sequence.participants.map((participant) => participant.label).join(', ')}`"
       role="group"
-      :style="{ minWidth: `${width * MIN_SCALE}px`, maxWidth: `${width * (fit ? 1.4 : 1)}px` }"
+      :style="{
+        minWidth: `${width * MIN_SCALE}px`,
+        maxWidth: `${width * (fit ? 1.4 : 1)}px`,
+      }"
       :viewBox="`0 0 ${width} ${height}`"
       width="100%">
       <defs>
@@ -107,7 +140,11 @@ const isClient = (id: string) => id === CLIENT_ID
         :key="participant.id"
         class="ba-sequence-participant"
         :class="{ 'ba-sequence-client': isClient(participant.id) }">
-        <title>{{ [participant.label, participant.detail].filter(Boolean).join(' — ') }}</title>
+        <title>
+          {{
+            [participant.label, participant.detail].filter(Boolean).join(' — ')
+          }}
+        </title>
         <line
           class="ba-sequence-lifeline"
           :x1="laneX.get(participant.id)"
@@ -132,14 +169,18 @@ const isClient = (id: string) => id === CLIENT_ID
           dominant-baseline="central"
           text-anchor="middle"
           :x="laneX.get(participant.id)"
-          :y="participant.detail ? 14 : 4 + (HEADER - 10) / 2">{{ cut(participant.label, 24) }}</text>
+          :y="participant.detail ? 14 : 4 + (HEADER - 10) / 2">
+          {{ cut(participant.label, 24) }}
+        </text>
         <text
           v-if="participant.detail"
           class="ba-sequence-detail"
           dominant-baseline="central"
           text-anchor="middle"
           :x="laneX.get(participant.id)"
-          y="29">{{ cut(participant.detail, 30) }}</text>
+          y="29">
+          {{ cut(participant.detail, 30) }}
+        </text>
       </g>
 
       <g
@@ -160,9 +201,14 @@ const isClient = (id: string) => id === CLIENT_ID
           <text
             dominant-baseline="central"
             x="8"
-            :y="row.y">{{ cut(row.message.stepId, 16) }}</text>
+            :y="row.y">
+            {{ cut(row.message.stepId, 16) }}
+          </text>
         </g>
-        <title>{{ row.message.label }}{{ row.message.note ? ` — ${row.message.note}` : '' }}</title>
+        <title>
+          {{ row.message.label
+          }}{{ row.message.note ? ` — ${row.message.note}` : '' }}
+        </title>
         <line
           class="ba-sequence-line"
           :class="{ 'ba-sequence-dashed': dashed(row.message) }"
@@ -175,13 +221,17 @@ const isClient = (id: string) => id === CLIENT_ID
           class="ba-sequence-label"
           text-anchor="middle"
           :x="(row.x1 + row.x2) / 2"
-          :y="row.y - 6">{{ cut(row.message.label, 36) }}</text>
+          :y="row.y - 6">
+          {{ cut(row.message.label, 36) }}
+        </text>
         <text
           v-if="row.message.note"
           class="ba-sequence-note"
           text-anchor="middle"
           :x="(row.x1 + row.x2) / 2"
-          :y="row.y + 13">{{ cut(row.message.note, 60) }}</text>
+          :y="row.y + 13">
+          {{ cut(row.message.note, 60) }}
+        </text>
       </g>
     </svg>
   </div>

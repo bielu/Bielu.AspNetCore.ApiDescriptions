@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick } from 'vue'
 import { useExpressionScope } from '../helpers/expression-scope'
-import { resolveExpression, splitExpressions, type ExpressionTarget } from '../helpers/expressions'
+import {
+  resolveExpression,
+  splitExpressions,
+  type ExpressionTarget,
+} from '../helpers/expressions'
 import { goToAnchor } from '../helpers/navigation'
 
 /**
@@ -16,7 +20,10 @@ const scope = useExpressionScope()
 const segments = computed(() =>
   splitExpressions(props.text).map((segment) => ({
     text: segment.text,
-    target: segment.expression && scope.value ? resolveExpression(segment.text, scope.value) : undefined,
+    target:
+      segment.expression && scope.value
+        ? resolveExpression(segment.text, scope.value)
+        : undefined,
   })),
 )
 
@@ -38,15 +45,21 @@ const follow = (event: MouseEvent, target: ExpressionTarget) => {
       class="ba-expression ba-expression-link"
       :href="`#${segment.target.anchor}`"
       :title="segment.target.title"
-      @click="follow($event, segment.target)">{{ segment.text }}</a>
+      @click="follow($event, segment.target)"
+      >{{ segment.text }}</a
+    >
     <span
       v-else-if="segment.target?.broken"
       class="ba-expression ba-expression-broken"
-      :title="segment.target.broken">{{ segment.text }}</span>
+      :title="segment.target.broken"
+      >{{ segment.text }}</span
+    >
     <span
       v-else-if="segment.target"
       class="ba-expression"
-      :title="segment.target.title">{{ segment.text }}</span>
+      :title="segment.target.title"
+      >{{ segment.text }}</span
+    >
     <template v-else>{{ segment.text }}</template>
   </template>
 </template>

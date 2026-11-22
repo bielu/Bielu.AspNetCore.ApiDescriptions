@@ -15,13 +15,21 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { getAuthState, resolveSignalRAuth } from '../auth'
 import { resolveDocuments } from '../discovery'
 import { loadSignalRHubs } from '../signalr-bindings'
-import type { SignalRDocumentRef, SignalRHubModel, SignalROperationModel } from '../types'
+import type {
+  SignalRDocumentRef,
+  SignalRHubModel,
+  SignalROperationModel,
+} from '../types'
 
 // `options` is the Scalar configuration Scalar binds to the element; `documents` is an optional
 // explicit override. Documents are otherwise auto-discovered from `options.sources`.
-const props = defineProps<{ options?: Record<string, any>; documents?: SignalRDocumentRef[] }>()
+const props = defineProps<{
+  options?: Record<string, any>
+  documents?: SignalRDocumentRef[]
+}>()
 
-type TransportChoice = 'auto' | 'webSockets' | 'serverSentEvents' | 'longPolling'
+type TransportChoice =
+  'auto' | 'webSockets' | 'serverSentEvents' | 'longPolling'
 type LogEntry = { time: string; dir: 'in' | 'out' | 'sys'; text: string }
 
 const loading = ref(true)
@@ -46,7 +54,8 @@ const selectedMessageIndex = reactive<Record<string, number>>({})
 
 let connection: HubConnection | null = null
 
-const hubKey = (hub: SignalRHubModel) => `${hub.documentName}:${hub.channelName}`
+const hubKey = (hub: SignalRHubModel) =>
+  `${hub.documentName}:${hub.channelName}`
 // A hub-scoped key for an operation. All displayed operations belong to the selected hub, so the
 // selected hub key uniquely scopes them.
 const opKey = (op: SignalROperationModel) => `${selectedKey.value}:${op.id}`
@@ -66,7 +75,9 @@ const uniqueDocuments = computed(() => {
 // Scope the visible hubs to Scalar's active document when known (so the console reflects the
 // document the user is viewing), otherwise to the manually picked document. Falls back to all hubs
 // only when neither is set.
-const scopedDocumentName = computed(() => activeDocumentSlug.value ?? selectedDocumentName.value)
+const scopedDocumentName = computed(
+  () => activeDocumentSlug.value ?? selectedDocumentName.value,
+)
 const filteredHubs = computed(() =>
   scopedDocumentName.value
     ? hubs.value.filter((h) => h.documentName === scopedDocumentName.value)
@@ -75,32 +86,57 @@ const filteredHubs = computed(() =>
 
 // The document picker only makes sense when the console spans several documents itself. Once it is
 // scoped to Scalar's active document, the active document is authoritative, so the picker is hidden.
-const showDocumentPicker = computed(() => !activeDocumentSlug.value && uniqueDocuments.value.length > 1)
+const showDocumentPicker = computed(
+  () => !activeDocumentSlug.value && uniqueDocuments.value.length > 1,
+)
 
-const selectedHub = computed(() => filteredHubs.value.find((hub) => hubKey(hub) === selectedKey.value) ?? null)
-const clientToServer = computed(() => selectedHub.value?.operations.filter((op) => op.direction === 'clientToServer') ?? [])
-const serverToClient = computed(() => selectedHub.value?.operations.filter((op) => op.direction === 'serverToClient') ?? [])
+const selectedHub = computed(
+  () =>
+    filteredHubs.value.find((hub) => hubKey(hub) === selectedKey.value) ?? null,
+)
+const clientToServer = computed(
+  () =>
+    selectedHub.value?.operations.filter(
+      (op) => op.direction === 'clientToServer',
+    ) ?? [],
+)
+const serverToClient = computed(
+  () =>
+    selectedHub.value?.operations.filter(
+      (op) => op.direction === 'serverToClient',
+    ) ?? [],
+)
 // The selected method id for the current hub, persisted per hub so switching hubs keeps each choice.
 const selectedMethodId = computed<string | null>({
-  get: () => (selectedKey.value ? selectedMethodIds[selectedKey.value] ?? null : null),
+  get: () =>
+    selectedKey.value ? (selectedMethodIds[selectedKey.value] ?? null) : null,
   set: (value) => {
     if (selectedKey.value && value) {
       selectedMethodIds[selectedKey.value] = value
     }
   },
 })
-const selectedMethod = computed(() => clientToServer.value.find((op) => op.id === selectedMethodId.value) ?? null)
+const selectedMethod = computed(
+  () =>
+    clientToServer.value.find((op) => op.id === selectedMethodId.value) ?? null,
+)
 const isConnected = computed(() => state.value === HubConnectionState.Connected)
 // Variants as cva recipes, like Scalar's components. Class names are written out in full, so Tailwind
 // finds them when it scans this file for the utilities to generate.
 const statePill = cva({
   base: 'bielu-pill',
-  variants: { connected: { true: 'bg-green/18 text-green', false: 'bg-b-2 text-c-2' } },
+  variants: {
+    connected: { true: 'bg-green/18 text-green', false: 'bg-b-2 text-c-2' },
+  },
 })
 const methodTag = cva({
   base: 'bielu-tag',
   variants: {
-    kind: { invoke: 'bg-blue/16 text-blue', send: 'bg-orange/16 text-orange', event: 'bg-green/16 text-green' },
+    kind: {
+      invoke: 'bg-blue/16 text-blue',
+      send: 'bg-orange/16 text-orange',
+      event: 'bg-green/16 text-green',
+    },
   },
 })
 const logBadge = cva({
@@ -112,7 +148,9 @@ const resultBlock = cva({
   variants: { ok: { true: 'border-l-green', false: 'border-l-red' } },
 })
 
-const stateLabel = computed(() => HubConnectionState[state.value] ?? 'Disconnected')
+const stateLabel = computed(
+  () => HubConnectionState[state.value] ?? 'Disconnected',
+)
 
 const hubUrl = computed(() => {
   const hub = selectedHub.value
@@ -178,13 +216,18 @@ async function connect() {
 
   // Resolve Scalar's current auth state → no-op on stock Scalar or when no scheme is selected.
   const authState = getAuthState()
-  const authResult = resolveSignalRAuth(hub.documentName, hub.securitySchemes, authState)
+  const authResult = resolveSignalRAuth(
+    hub.documentName,
+    hub.securitySchemes,
+    authState,
+  )
   for (const warn of authResult.warnings) {
     addLog('sys', `Auth warning: ${warn}`)
   }
 
   // Warn when the hub declares security schemes but no credentials were resolved.
-  const hasSchemes = hub.securitySchemes && Object.keys(hub.securitySchemes).length > 0
+  const hasSchemes =
+    hub.securitySchemes && Object.keys(hub.securitySchemes).length > 0
   const resolvedCredentials =
     Object.keys(authResult.queryParams).length > 0 || !!authResult.accessToken
   if (hasSchemes && !resolvedCredentials) {
@@ -209,7 +252,8 @@ async function connect() {
   }
 
   const flag = transportFlag()
-  const withUrlOptions: IHttpConnectionOptions = flag !== undefined ? { transport: flag } : {}
+  const withUrlOptions: IHttpConnectionOptions =
+    flag !== undefined ? { transport: flag } : {}
   if (authResult.accessToken) {
     const token = authResult.accessToken
     withUrlOptions.accessTokenFactory = () => token
@@ -223,7 +267,10 @@ async function connect() {
 
   for (const op of serverToClient.value) {
     connection.on(op.target, (...args: unknown[]) => {
-      addLog('in', `${op.target}(${args.map((arg) => JSON.stringify(arg)).join(', ')})`)
+      addLog(
+        'in',
+        `${op.target}(${args.map((arg) => JSON.stringify(arg)).join(', ')})`,
+      )
     })
   }
 
@@ -276,20 +323,32 @@ async function testRequest(op: SignalROperationModel) {
   try {
     args = parseArgs(invokeArgs[key])
   } catch (error: any) {
-    results[key] = { ok: false, text: `Invalid JSON arguments: ${error?.message ?? error}` }
+    results[key] = {
+      ok: false,
+      text: `Invalid JSON arguments: ${error?.message ?? error}`,
+    }
     return
   }
-  addLog('out', `${op.target}(${args.map((arg) => JSON.stringify(arg)).join(', ')})`)
+  addLog(
+    'out',
+    `${op.target}(${args.map((arg) => JSON.stringify(arg)).join(', ')})`,
+  )
   try {
     if (op.callType === 'send') {
       await connection.send(op.target, ...args)
       results[key] = { ok: true, text: 'Sent (fire-and-forget, no response).' }
     } else if (op.callType === 'streamInvocation') {
       const items = await streamAll(op.target, args)
-      results[key] = { ok: true, text: `Stream completed: ${items.length} item(s).\n${JSON.stringify(items, null, 2)}` }
+      results[key] = {
+        ok: true,
+        text: `Stream completed: ${items.length} item(s).\n${JSON.stringify(items, null, 2)}`,
+      }
     } else {
       const result = await connection.invoke(op.target, ...args)
-      const text = result === undefined ? 'Completed (no return value).' : JSON.stringify(result, null, 2)
+      const text =
+        result === undefined
+          ? 'Completed (no return value).'
+          : JSON.stringify(result, null, 2)
       results[key] = { ok: true, text }
       if (result !== undefined) {
         addLog('in', `← ${JSON.stringify(result)}`)
@@ -386,7 +445,9 @@ function detectActiveDocumentSlug(): string | null {
 
 async function init() {
   loading.value = true
-  hubs.value = await loadSignalRHubs(resolveDocuments(props.options, props.documents))
+  hubs.value = await loadSignalRHubs(
+    resolveDocuments(props.options, props.documents),
+  )
   // Seed a default document for the picker; the active-document scope (when detected) overrides it.
   if (hubs.value.length > 0 && !selectedDocumentName.value) {
     selectedDocumentName.value = hubs.value[0].documentName
@@ -404,43 +465,70 @@ onBeforeUnmount(() => void disconnect())
 <template>
   <section
     ref="rootEl"
-    class="bsr mt-8 max-w-(--bsr-content-max-width,none) border-t border-border px-(--bsr-content-padding,var(--scalar-content-padding,24px)) pt-10 pb-12 font-sans text-base text-c-1"
-  >
+    class="bsr mt-8 max-w-(--bsr-content-max-width,none) border-t border-border px-(--bsr-content-padding,var(--scalar-content-padding,24px)) pt-10 pb-12 font-sans text-base text-c-1">
     <header class="mb-5 flex items-center gap-3">
       <h2 class="m-0 text-xl">SignalR</h2>
-      <span :class="statePill({ connected: isConnected })">{{ stateLabel }}</span>
+      <span :class="statePill({ connected: isConnected })">{{
+        stateLabel
+      }}</span>
     </header>
 
-    <p v-if="loading" class="text-c-3">Loading SignalR hubs…</p>
-    <p v-else-if="filteredHubs.length === 0" class="text-c-3">
-      No SignalR hubs found in {{ activeDocumentSlug ? 'this document' : 'the AsyncAPI document(s)' }}.
+    <p
+      v-if="loading"
+      class="text-c-3">
+      Loading SignalR hubs…
+    </p>
+    <p
+      v-else-if="filteredHubs.length === 0"
+      class="text-c-3">
+      No SignalR hubs found in
+      {{ activeDocumentSlug ? 'this document' : 'the AsyncAPI document(s)' }}.
     </p>
 
     <template v-else>
       <!-- Connection bar -->
-      <div class="bielu-card mb-3.5">
+      <div class="mb-3.5 bielu-card">
         <div class="flex flex-wrap items-end gap-3">
-          <label v-if="showDocumentPicker" class="flex flex-col gap-1">
+          <label
+            v-if="showDocumentPicker"
+            class="flex flex-col gap-1">
             <span class="bielu-caption">Document</span>
-            <select class="bielu-select" v-model="selectedDocumentName">
-              <option v-for="doc in uniqueDocuments" :key="doc" :value="doc">{{ doc }}</option>
+            <select
+              class="bielu-select"
+              v-model="selectedDocumentName">
+              <option
+                v-for="doc in uniqueDocuments"
+                :key="doc"
+                :value="doc">
+                {{ doc }}
+              </option>
             </select>
           </label>
           <label class="flex flex-col gap-1">
             <span class="bielu-caption">Hub</span>
-            <select class="bielu-select" v-model="selectedKey">
-              <option v-for="hub in filteredHubs" :key="hubKey(hub)" :value="hubKey(hub)">
+            <select
+              class="bielu-select"
+              v-model="selectedKey">
+              <option
+                v-for="hub in filteredHubs"
+                :key="hubKey(hub)"
+                :value="hubKey(hub)">
                 {{ hub.channelName }} ({{ hub.hubPath }})
               </option>
             </select>
           </label>
           <label class="flex min-w-48 flex-1 flex-col gap-1">
             <span class="bielu-caption">Base URL</span>
-            <ScalarTextInput v-model="baseUrlOverride" class="px-2 py-1.5" spellcheck="false" />
+            <ScalarTextInput
+              v-model="baseUrlOverride"
+              class="px-2 py-1.5"
+              spellcheck="false" />
           </label>
           <label class="flex flex-col gap-1">
             <span class="bielu-caption">Transport</span>
-            <select class="bielu-select" v-model="transport">
+            <select
+              class="bielu-select"
+              v-model="transport">
               <option value="auto">Auto</option>
               <option value="webSockets">WebSockets</option>
               <option value="serverSentEvents">Server-Sent Events</option>
@@ -449,106 +537,179 @@ onBeforeUnmount(() => void disconnect())
           </label>
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-3">
-          <code class="min-w-40 flex-1 font-code text-sm wrap-anywhere text-c-2">{{ hubUrl }}</code>
-          <ScalarButton v-if="!isConnected" size="sm" @click="connect">Connect</ScalarButton>
-          <ScalarButton v-else size="sm" variant="outlined" @click="disconnect">Disconnect</ScalarButton>
+          <code
+            class="min-w-40 flex-1 font-code text-sm wrap-anywhere text-c-2"
+            >{{ hubUrl }}</code
+          >
+          <ScalarButton
+            v-if="!isConnected"
+            size="sm"
+            @click="connect"
+            >Connect</ScalarButton
+          >
+          <ScalarButton
+            v-else
+            size="sm"
+            variant="outlined"
+            @click="disconnect"
+            >Disconnect</ScalarButton
+          >
         </div>
       </div>
 
       <!-- Two columns on wide screens (interactive methods | events + log); stacked on narrow. -->
       <div class="grid grid-cols-1 items-start gap-x-8 min-[60rem]:grid-cols-2">
-      <!-- Left column: client -> server methods. Pick one, edit the prefilled example, send. -->
-      <div class="min-w-0">
-      <h3 class="mt-5 mb-2 text-base font-medium">Methods</h3>
-      <p v-if="clientToServer.length === 0" class="text-c-3">No invocable hub methods.</p>
-      <article v-else class="bielu-card mb-3.5">
-        <div class="flex flex-wrap items-end gap-3">
-          <label class="flex min-w-48 flex-1 flex-col gap-1">
-            <span class="bielu-caption">Method</span>
-            <select class="bielu-select" v-model="selectedMethodId">
-              <option v-for="op in clientToServer" :key="op.id" :value="op.id">
-                {{ op.target }} · {{ methodLabel(op) }}
-              </option>
-            </select>
-          </label>
-          <label v-if="selectedMethod && selectedMethod.messages.length > 1" class="flex min-w-48 flex-1 flex-col gap-1">
-            <span class="bielu-caption">Message</span>
-            <select
-              class="bielu-select"
-              :value="selectedMessageIndex[opKey(selectedMethod)] ?? 0"
-              @change="applyExample(selectedMethod, Number(($event.target as HTMLSelectElement).value))"
-            >
-              <option v-for="(message, index) in selectedMethod.messages" :key="message.name" :value="index">
-                {{ message.title || message.name }}
-              </option>
-            </select>
-          </label>
+        <!-- Left column: client -> server methods. Pick one, edit the prefilled example, send. -->
+        <div class="min-w-0">
+          <h3 class="mt-5 mb-2 text-base font-medium">Methods</h3>
+          <p
+            v-if="clientToServer.length === 0"
+            class="text-c-3">
+            No invocable hub methods.
+          </p>
+          <article
+            v-else
+            class="mb-3.5 bielu-card">
+            <div class="flex flex-wrap items-end gap-3">
+              <label class="flex min-w-48 flex-1 flex-col gap-1">
+                <span class="bielu-caption">Method</span>
+                <select
+                  class="bielu-select"
+                  v-model="selectedMethodId">
+                  <option
+                    v-for="op in clientToServer"
+                    :key="op.id"
+                    :value="op.id">
+                    {{ op.target }} · {{ methodLabel(op) }}
+                  </option>
+                </select>
+              </label>
+              <label
+                v-if="selectedMethod && selectedMethod.messages.length > 1"
+                class="flex min-w-48 flex-1 flex-col gap-1">
+                <span class="bielu-caption">Message</span>
+                <select
+                  class="bielu-select"
+                  :value="selectedMessageIndex[opKey(selectedMethod)] ?? 0"
+                  @change="
+                    applyExample(
+                      selectedMethod,
+                      Number(($event.target as HTMLSelectElement).value),
+                    )
+                  ">
+                  <option
+                    v-for="(message, index) in selectedMethod.messages"
+                    :key="message.name"
+                    :value="index">
+                    {{ message.title || message.name }}
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <template v-if="selectedMethod">
+              <div class="mt-3.5 flex items-center gap-2.5">
+                <span
+                  :class="methodTag({ kind: methodKind(selectedMethod) })"
+                  >{{ methodLabel(selectedMethod) }}</span
+                >
+                <span class="font-code font-medium">{{
+                  selectedMethod.target
+                }}</span>
+                <span class="text-xxs text-c-3">client → server</span>
+              </div>
+              <p
+                v-if="selectedMethod.summary"
+                class="mt-1.5 mb-0 text-c-3">
+                {{ selectedMethod.summary }}
+              </p>
+
+              <div class="mt-2.5 flex items-center justify-between">
+                <span class="text-xxs text-c-3">Arguments (JSON array)</span>
+                <button
+                  type="button"
+                  class="cursor-pointer border-0 bg-transparent p-0 text-xxs text-blue disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="selectedMethod.messages.length === 0"
+                  @click="
+                    applyExample(
+                      selectedMethod,
+                      selectedMessageIndex[opKey(selectedMethod)] ?? 0,
+                    )
+                  ">
+                  ↺ Reset to example
+                </button>
+              </div>
+              <ScalarTextArea
+                v-model="invokeArgs[opKey(selectedMethod)]"
+                class="mt-2.5 p-2.5 font-code text-sm"
+                rows="6"
+                spellcheck="false"
+                placeholder='Arguments as a JSON array, e.g. ["alice", "hello"]' />
+              <div class="mt-2.5 flex items-center justify-between">
+                <span class="text-xxs text-c-3">{{ hubUrl }}</span>
+                <!-- ScalarButton marks itself aria-disabled but still clicks; testRequest reports "not connected". -->
+                <ScalarButton
+                  size="sm"
+                  :disabled="!isConnected"
+                  @click="testRequest(selectedMethod)">
+                  ▶ Test Request
+                </ScalarButton>
+              </div>
+              <pre
+                v-if="results[opKey(selectedMethod)]"
+                :class="resultBlock({ ok: results[opKey(selectedMethod)].ok })"
+                >{{ results[opKey(selectedMethod)].text }}</pre>
+            </template>
+          </article>
         </div>
 
-        <template v-if="selectedMethod">
-          <div class="mt-3.5 flex items-center gap-2.5">
-            <span :class="methodTag({ kind: methodKind(selectedMethod) })">{{ methodLabel(selectedMethod) }}</span>
-            <span class="font-code font-medium">{{ selectedMethod.target }}</span>
-            <span class="text-xxs text-c-3">client → server</span>
-          </div>
-          <p v-if="selectedMethod.summary" class="mt-1.5 mb-0 text-c-3">{{ selectedMethod.summary }}</p>
+        <!-- Right column: the live message log (the useful part) above the events reference. -->
+        <div class="min-w-0">
+          <!-- Live message log -->
+          <h3 class="mt-5 mb-2 text-base font-medium">Messages</h3>
+          <ul class="bielu-log">
+            <li
+              v-for="(entry, index) in log"
+              :key="index"
+              class="flex gap-2 py-0.5">
+              <span class="opacity-55">{{ entry.time }}</span>
+              <span :class="logBadge({ dir: entry.dir })">{{ entry.dir }}</span>
+              <span>{{ entry.text }}</span>
+            </li>
+            <li
+              v-if="log.length === 0"
+              class="text-c-3">
+              No messages yet.
+            </li>
+          </ul>
 
-          <div class="mt-2.5 flex items-center justify-between">
-            <span class="text-xxs text-c-3">Arguments (JSON array)</span>
-            <button
-              type="button"
-              class="cursor-pointer border-0 bg-transparent p-0 text-xxs text-blue disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="selectedMethod.messages.length === 0"
-              @click="applyExample(selectedMethod, selectedMessageIndex[opKey(selectedMethod)] ?? 0)"
-            >
-              ↺ Reset to example
-            </button>
-          </div>
-          <ScalarTextArea
-            v-model="invokeArgs[opKey(selectedMethod)]"
-            class="mt-2.5 p-2.5 font-code text-sm"
-            rows="6"
-            spellcheck="false"
-            placeholder='Arguments as a JSON array, e.g. ["alice", "hello"]'
-          />
-          <div class="mt-2.5 flex items-center justify-between">
-            <span class="text-xxs text-c-3">{{ hubUrl }}</span>
-            <!-- ScalarButton marks itself aria-disabled but still clicks; testRequest reports "not connected". -->
-            <ScalarButton size="sm" :disabled="!isConnected" @click="testRequest(selectedMethod)">
-              ▶ Test Request
-            </ScalarButton>
-          </div>
-          <pre v-if="results[opKey(selectedMethod)]" :class="resultBlock({ ok: results[opKey(selectedMethod)].ok })">{{ results[opKey(selectedMethod)].text }}</pre>
-        </template>
-      </article>
-      </div>
-
-      <!-- Right column: the live message log (the useful part) above the events reference. -->
-      <div class="min-w-0">
-      <!-- Live message log -->
-      <h3 class="mt-5 mb-2 text-base font-medium">Messages</h3>
-      <ul class="bielu-log">
-        <li v-for="(entry, index) in log" :key="index" class="flex gap-2 py-0.5">
-          <span class="opacity-55">{{ entry.time }}</span>
-          <span :class="logBadge({ dir: entry.dir })">{{ entry.dir }}</span>
-          <span>{{ entry.text }}</span>
-        </li>
-        <li v-if="log.length === 0" class="text-c-3">No messages yet.</li>
-      </ul>
-
-      <!-- Server -> client events reference -->
-      <h3 class="mt-5 mb-2 text-base font-medium">Events</h3>
-      <p v-if="serverToClient.length === 0" class="text-c-3">No server-to-client events.</p>
-      <article v-for="op in serverToClient" :key="op.id" class="bielu-card mb-3.5">
-        <div class="flex items-center gap-2.5">
-          <span :class="methodTag({ kind: 'event' })">EVENT</span>
-          <span class="font-code font-medium">{{ op.target }}</span>
-          <span class="text-xxs text-c-3">server → client</span>
+          <!-- Server -> client events reference -->
+          <h3 class="mt-5 mb-2 text-base font-medium">Events</h3>
+          <p
+            v-if="serverToClient.length === 0"
+            class="text-c-3">
+            No server-to-client events.
+          </p>
+          <article
+            v-for="op in serverToClient"
+            :key="op.id"
+            class="mb-3.5 bielu-card">
+            <div class="flex items-center gap-2.5">
+              <span :class="methodTag({ kind: 'event' })">EVENT</span>
+              <span class="font-code font-medium">{{ op.target }}</span>
+              <span class="text-xxs text-c-3">server → client</span>
+            </div>
+            <p
+              v-if="op.summary"
+              class="mt-1.5 mb-0 text-c-3">
+              {{ op.summary }}
+            </p>
+            <pre
+              v-if="op.messages.length > 0"
+              class="bielu-result mt-2.5 border-l-c-3"
+              >{{ op.messages[0].example }}</pre>
+          </article>
         </div>
-        <p v-if="op.summary" class="mt-1.5 mb-0 text-c-3">{{ op.summary }}</p>
-        <pre v-if="op.messages.length > 0" class="bielu-result mt-2.5 border-l-c-3">{{ op.messages[0].example }}</pre>
-      </article>
-      </div>
       </div>
     </template>
   </section>

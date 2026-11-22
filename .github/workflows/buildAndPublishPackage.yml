@@ -131,6 +131,27 @@ jobs:
       artifact-name: npm-scalar-arazzo
 
   # Pull request: require a changeset so the version bump + changelog are recorded.
+  # Pull request: the Scalar plugins' Vue components are formatted with Scalar's own Prettier setup
+  # (class order from prettier-plugin-tailwindcss), so moved code needs no reformatting upstream.
+  vue-format-check:
+    needs: pr-changes
+    if: github.event_name == 'pull_request' && needs.pr-changes.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      # The Tailwind plugin reads Scalar's theme from the workspace, so the workspace is installed;
+      # no package script needs to run for that.
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run format:vue:check
+      # Prettier may move a space between two elements onto its own line, where Vue drops it.
+      - run: npm run check:vue-whitespace -- "${{ github.event.pull_request.base.sha }}"
+
   changeset-check:
     needs: pr-changes
     if: github.event_name == 'pull_request' && needs.pr-changes.outputs.skip != 'true'

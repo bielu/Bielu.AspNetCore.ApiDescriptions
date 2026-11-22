@@ -14,17 +14,27 @@ const summary = computed(() => diagnosticSummary(props.diagnostics))
 /** Errors first, then warnings, each in document order. */
 const sorted = computed(() => [
   ...props.diagnostics.filter((diagnostic) => diagnostic.severity === 'error'),
-  ...props.diagnostics.filter((diagnostic) => diagnostic.severity === 'warning'),
+  ...props.diagnostics.filter(
+    (diagnostic) => diagnostic.severity === 'warning',
+  ),
 ])
 
-const where = (diagnostic: Diagnostic): string => [diagnostic.workflowId, diagnostic.stepId].filter(Boolean).join(' / ')
+const where = (diagnostic: Diagnostic): string =>
+  [diagnostic.workflowId, diagnostic.stepId].filter(Boolean).join(' / ')
 
 const follow = (event: MouseEvent, diagnostic: Diagnostic) => {
   if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) {
     return
   }
   event.preventDefault()
-  void goToAnchor(event.currentTarget as Element, { anchor: diagnostic.anchor, stepSection: diagnostic.stepId ? diagnostic.anchor : undefined }, nextTick)
+  void goToAnchor(
+    event.currentTarget as Element,
+    {
+      anchor: diagnostic.anchor,
+      stepSection: diagnostic.stepId ? diagnostic.anchor : undefined,
+    },
+    nextTick,
+  )
 }
 </script>
 
@@ -32,11 +42,17 @@ const follow = (event: MouseEvent, diagnostic: Diagnostic) => {
   <details
     v-if="summary"
     class="ba-diagnostics"
-    :class="sorted[0]?.severity === 'error' ? 'ba-diagnostics-error' : 'ba-diagnostics-warning'">
+    :class="
+      sorted[0]?.severity === 'error'
+        ? 'ba-diagnostics-error'
+        : 'ba-diagnostics-warning'
+    ">
     <summary>
       <span
         aria-hidden="true"
-        class="ba-diagnostic-icon">{{ sorted[0]?.severity === 'error' ? '✕' : '!' }}</span>
+        class="ba-diagnostic-icon"
+        >{{ sorted[0]?.severity === 'error' ? '✕' : '!' }}</span
+      >
       {{ summary }} found in this document
     </summary>
     <ul class="ba-diagnostic-list">
@@ -49,10 +65,14 @@ const follow = (event: MouseEvent, diagnostic: Diagnostic) => {
           v-if="diagnostic.anchor"
           class="ba-diagnostic-where"
           :href="`#${diagnostic.anchor}`"
-          @click="follow($event, diagnostic)">{{ where(diagnostic) }}</a>
+          @click="follow($event, diagnostic)"
+          >{{ where(diagnostic) }}</a
+        >
         <span
           v-else
-          class="ba-diagnostic-where">{{ where(diagnostic) }}</span>
+          class="ba-diagnostic-where"
+          >{{ where(diagnostic) }}</span
+        >
         <span>{{ diagnostic.message }}</span>
       </li>
     </ul>

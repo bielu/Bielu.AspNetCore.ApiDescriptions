@@ -40,7 +40,8 @@ defineProps<{
         v-if="row.children?.length"
         class="ba-schema-children">
         <summary>
-          Show {{ row.children.length }} child {{ row.children.length === 1 ? 'property' : 'properties' }}
+          Show {{ row.children.length }} child
+          {{ row.children.length === 1 ? 'property' : 'properties' }}
         </summary>
         <ArazzoSchemaProperties :rows="row.children" />
       </details>
