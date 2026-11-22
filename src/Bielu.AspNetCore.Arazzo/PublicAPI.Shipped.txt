@@ -137,3 +137,7 @@ override Bielu.AspNetCore.Arazzo.SourceResolvers.AsyncApiSourceResolver.TryResol
 override Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.SourceType.get -> string!
 override Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.TryResolveOperation(Microsoft.OpenApi.OpenApiDocument! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
 override Bielu.AspNetCore.Arazzo.SourceResolvers.OpenApiSourceResolver.TryResolveOperationPath(Microsoft.OpenApi.OpenApiDocument! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddSelfWiredSource(string! sourceName, Bielu.Arazzo.Models.ArazzoSourceDescriptionType type, string! documentName, string! url) -> Bielu.AspNetCore.Arazzo.Services.ArazzoOptions!
+Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider
+Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider.GetDocumentAsync(string! documentName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<object?>
+Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider.SourceType.get -> string!
