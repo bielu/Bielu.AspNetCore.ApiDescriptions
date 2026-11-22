@@ -16,7 +16,8 @@
     "version": "changeset version && node scripts/apply-nuget-version.mjs && node scripts/sync-scalar-public-api.mjs && node scripts/ship-public-api.mjs && npm install --package-lock-only --no-audit --no-fund",
     "changeset:status": "changeset status --since=origin/main",
     "format:vue": "prettier --write \"src/**/assets/src/**/*.vue\"",
-    "format:vue:check": "prettier --check \"src/**/assets/src/**/*.vue\""
+    "format:vue:check": "prettier --check \"src/**/assets/src/**/*.vue\"",
+    "check:vue-whitespace": "node scripts/check-vue-whitespace.mjs"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.0",

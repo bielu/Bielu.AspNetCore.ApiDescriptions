@@ -140,6 +140,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -148,6 +149,8 @@ jobs:
       # no package script needs to run for that.
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run format:vue:check
+      # Prettier may move a space between two elements onto its own line, where Vue drops it.
+      - run: npm run check:vue-whitespace -- "${{ github.event.pull_request.base.sha }}"
 
   changeset-check:
     needs: pr-changes

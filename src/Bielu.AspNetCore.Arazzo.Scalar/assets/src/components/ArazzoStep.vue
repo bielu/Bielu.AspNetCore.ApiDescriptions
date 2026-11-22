@@ -566,9 +566,10 @@ const nestedVerb = (kind: string): string =>
             <li
               v-for="nestedStep in nested.steps"
               :key="nestedStep.stepId">
-              <code>{{ nestedStep.stepId }}</code>
-              <span class="ba-muted">{{ nestedVerb(nestedStep.kind) }}</span>
-              <code>{{ nestedStep.target }}</code>
+              <!-- Explicit spaces: Vue drops whitespace between elements once it contains a newline. -->
+              <code>{{ nestedStep.stepId }}</code>{{ ' '
+              }}<span class="ba-muted">{{ nestedVerb(nestedStep.kind) }}</span
+              >{{ ' ' }}<code>{{ nestedStep.target }}</code>
             </li>
           </ol>
         </div>
