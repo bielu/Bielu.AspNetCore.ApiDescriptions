@@ -112,8 +112,11 @@ export type WorkflowGraph = {
 }
 
 /** The two ways the overview can be read: the technical flow, or the pages a user goes through. */
-/** `technical` and `pages` show the order steps run in; `data` the values passed between them. */
-export type WorkflowView = 'technical' | 'pages' | 'data'
+/**
+ * `technical` and `pages` show the order steps run in; `data` the values passed between them; `sequence` who
+ * talks to whom (drawn by the sequence diagram, not this graph).
+ */
+export type WorkflowView = 'technical' | 'pages' | 'data' | 'sequence'
 
 /** What a band of steps without a page is called. */
 export const NO_PAGE_TITLE = 'No page'

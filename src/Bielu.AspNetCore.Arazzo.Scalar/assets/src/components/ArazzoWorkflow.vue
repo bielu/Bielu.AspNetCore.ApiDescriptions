@@ -9,6 +9,7 @@ import { resolveLocalRef } from '../helpers/extensions'
 import { renderMarkdown } from '../helpers/markdown'
 import { STEP_EXPAND_EVENT, type WorkflowView } from '../helpers/navigation'
 import { buildDataFlowGraph } from '../helpers/data-flow'
+import { buildSequence } from '../helpers/sequence'
 import { resolveReusables, resolveReusablesWithReference } from '../helpers/reusable'
 import { labelOf, pageOf, pageRegistry, pagesInUse, pageTitle, type PagesConfig } from '../helpers/pages'
 import type { ArazzoPluginOptions } from '../helpers/plugin-options'
@@ -21,6 +22,7 @@ import type { ArazzoDocument, ArazzoFailureAction, ArazzoParameter, ArazzoStep a
 import ArazzoActions from './ArazzoActions.vue'
 import ArazzoAnchor from './ArazzoAnchor.vue'
 import ArazzoDiagramExport from './ArazzoDiagramExport.vue'
+import ArazzoSequenceDiagram from './ArazzoSequenceDiagram.vue'
 import ArazzoExtensions from './ArazzoExtensions.vue'
 import ArazzoKeyValues from './ArazzoKeyValues.vue'
 import ArazzoSchemaProperties from './ArazzoSchemaProperties.vue'
@@ -142,6 +144,7 @@ const overviewView = computed((): OverviewView => {
 const views = computed((): { value: OverviewView; label: string }[] => [
   { value: 'technical', label: 'Technical' },
   { value: 'data', label: 'Data flow' },
+  { value: 'sequence', label: 'Sequence' },
   ...(pagesAvailable.value ? [{ value: 'pages' as const, label: 'Pages' }] : []),
 ])
 
@@ -159,6 +162,12 @@ const stepPages = computed(() => {
     }),
   )
 })
+
+/** Sequence view: who the workflow talks to, and in which order. */
+const sequence = computed(() => buildSequence(props.document, workflow.value, props.documents))
+
+/** stepId → section id, for the sequence diagram's step names. */
+const ownStepSections = computed(() => Object.fromEntries(props.view.steps.map((entry) => [entry.step.stepId, entry.id])))
 
 /** The spec a step's target is described in, resolved in the document the step belongs to. */
 const specOf = (step: StepObject, owner: ArazzoDocument) => targetSpec(owner, step, resolveStepTarget(owner, step, props.documents), props.documents)?.family
@@ -258,6 +267,9 @@ const expand = async () => {
   await nextTick()
   expanded.value?.resetView()
 }
+
+/** Opening a step from the full-window sequence (pointer or keyboard) closes the window, as a box in the full-window overview does. */
+const onSequenceNavigate = () => dialog.value?.close()
 
 const closeOnBackdrop = (event: MouseEvent) => {
   if (event.target === dialog.value) {
@@ -417,6 +429,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
                 @click="setWorkflowView(option.value)">{{ option.label }}</button>
             </div>
             <ArazzoDiagramExport
+              v-if="overviewView !== 'sequence'"
               :layout="diagram"
               :name="workflow.workflowId"
               :svg="() => inline?.svg()" />
@@ -439,7 +452,12 @@ const closeOnBackdrop = (event: MouseEvent) => {
               </svg>
             </button>
           </div>
+          <ArazzoSequenceDiagram
+            v-if="overviewView === 'sequence'"
+            :sequence="sequence"
+            :stepSectionIds="ownStepSections" />
           <ArazzoWorkflowDiagram
+            v-else
             ref="inline"
             :layout="diagram"
             :problems="stepProblems"
@@ -448,6 +466,7 @@ const closeOnBackdrop = (event: MouseEvent) => {
             @toggleWorkflow="toggleWorkflow" />
           <div class="ba-overview-footer">
             <ArazzoSpecLegend
+              v-if="overviewView !== 'sequence'"
               :layout="diagram"
               :view="overviewView" />
             <span class="ba-muted ba-overview-hint">Select a step to view details</span>
@@ -476,13 +495,16 @@ const closeOnBackdrop = (event: MouseEvent) => {
               @click="setWorkflowView(option.value)">{{ option.label }}</button>
           </div>
           <ArazzoSpecLegend
+            v-if="overviewView !== 'sequence'"
             :layout="diagram"
             :view="overviewView" />
           <ArazzoDiagramExport
+            v-if="overviewView !== 'sequence'"
             :layout="diagram"
             :name="workflow.workflowId"
             :svg="() => expanded?.svg()" />
           <button
+            v-if="overviewView !== 'sequence'"
             class="ba-toggle"
             type="button"
             @click="expanded?.resetView()">
@@ -508,7 +530,14 @@ const closeOnBackdrop = (event: MouseEvent) => {
           </button>
         </div>
       </div>
+      <ArazzoSequenceDiagram
+        v-if="overviewView === 'sequence'"
+        fit
+        :sequence="sequence"
+        :stepSectionIds="ownStepSections"
+        @navigate="onSequenceNavigate" />
       <ArazzoWorkflowDiagram
+        v-else
         ref="expanded"
         class="ba-diagram-large"
         fit

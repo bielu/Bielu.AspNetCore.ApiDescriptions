@@ -87,6 +87,73 @@
 .bielu-arazzo .ba-export-status:empty {
   @apply hidden;
 }
+/* Sequence view: lanes with lifelines, and the steps' messages between them, top to bottom. */
+.bielu-arazzo .ba-sequence {
+  @apply overflow-x-auto;
+}
+.bielu-arazzo .ba-sequence-fit {
+  @apply flex-1 flex;
+  /* Centred by the SVG's auto margins, not justify-content, which would cut off the left of a wider diagram. */
+  @apply items-start overflow-auto p-4;
+}
+.bielu-arazzo .ba-sequence svg {
+  @apply block flex-none my-0 mx-auto;
+}
+.bielu-arazzo .ba-sequence-participant rect {
+  @apply fill-b-2 stroke-border;
+}
+.bielu-arazzo .ba-sequence-client rect {
+  fill: color-mix(in srgb, var(--scalar-color-accent) 10%, var(--scalar-background-1));
+  @apply stroke-c-accent;
+}
+.bielu-arazzo .ba-sequence-participant text {
+  @apply fill-c-1 font-sans;
+  font-size: 12px;
+  @apply font-medium;
+}
+.bielu-arazzo .ba-sequence-participant rect.ba-diagram-spec {
+  fill: var(--ba-spec-color);
+  @apply stroke-none;
+}
+.bielu-arazzo .ba-sequence-participant text.ba-sequence-detail {
+  @apply fill-c-3;
+  font-size: 10px;
+  @apply font-normal;
+}
+.bielu-arazzo .ba-sequence-lifeline {
+  @apply stroke-border;
+  stroke-dasharray: 4 4;
+}
+.bielu-arazzo .ba-sequence-line {
+  @apply stroke-c-2;
+  stroke-width: 1.4;
+}
+.bielu-arazzo .ba-sequence-dashed {
+  stroke-dasharray: 5 3;
+}
+.bielu-arazzo .ba-sequence-send .ba-sequence-line,
+.bielu-arazzo .ba-sequence-receive .ba-sequence-line {
+  @apply stroke-purple;
+}
+.bielu-arazzo .ba-sequence-arrow {
+  @apply fill-c-2;
+}
+.bielu-arazzo .ba-sequence-label {
+  @apply fill-c-1 font-code;
+  font-size: 11px;
+}
+.bielu-arazzo .ba-sequence-note {
+  @apply fill-c-3 font-sans;
+  font-size: 10px;
+}
+.bielu-arazzo .ba-sequence-step text {
+  @apply fill-c-2 font-code;
+  font-size: 11px;
+}
+.bielu-arazzo .ba-sequence-step.ba-diagram-link:hover text,
+.bielu-arazzo .ba-sequence-step:focus-visible text {
+  @apply fill-c-accent underline;
+}
 /* A workflow's example input: a copy button over the JSON. */
 .bielu-arazzo .ba-example-actions {
   @apply flex items-center gap-2 mx-0 my-1.5;

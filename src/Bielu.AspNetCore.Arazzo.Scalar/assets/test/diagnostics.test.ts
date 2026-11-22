@@ -250,6 +250,41 @@ describe('diagnose', () => {
     expect(diagnose(document, { documents: {} })).toEqual([])
   })
 
+  it('treats the step outputs a step reads as prerequisites, as the Sequence view orders them', () => {
+    // Arrange
+    const document = documentWith({
+      workflowId: 'w',
+      steps: [
+        { stepId: 'start' },
+        { stepId: 'consume', dependsOn: ['start'], parameters: [{ name: 'id', in: 'query', value: '$steps.produce.outputs.id' }] },
+        { stepId: 'produce', dependsOn: ['start'], outputs: { id: '$response.body#/id' } },
+      ],
+    })
+
+    // Act / Assert
+    expect(diagnose(document, { documents: {} })).toEqual([])
+  })
+
+  it('still reports an output a step reads that does not exist, and a step waiting on itself', () => {
+    // Arrange
+    const document = documentWith({
+      workflowId: 'w',
+      steps: [
+        { stepId: 'start' },
+        { stepId: 'a', dependsOn: ['start'], parameters: [{ name: 'x', in: 'query', value: '$steps.b.outputs.id' }], outputs: { id: '$response.body#/id' } },
+        { stepId: 'b', dependsOn: ['start'], parameters: [{ name: 'x', in: 'query', value: '$steps.a.outputs.nope' }], outputs: { id: '$response.body#/id' } },
+      ],
+    })
+
+    // Act
+    const diagnostics = diagnose(document, { documents: {} })
+
+    // Assert
+    const waitsOnItself = 'warning: Waits on itself: its prerequisites (dependsOn and the step outputs it reads) depend on it in turn, so it never runs'
+    expect(messages(diagnostics, 'a')).toEqual([waitsOnItself])
+    expect(messages(diagnostics, 'b')).toEqual([waitsOnItself, 'error: $steps.a.outputs.nope: Step a has no output “nope”'])
+  })
+
   it('reports duplicate step ids, and anchors each problem to its section', () => {
     // Arrange
     const document = documentWith({ workflowId: 'w', steps: [{ stepId: 'a' }, { stepId: 'a' }] })
