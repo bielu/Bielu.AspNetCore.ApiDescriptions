@@ -208,6 +208,93 @@ describe('describeFlow', () => {
     expect(orderId).toMatchObject({ source: '$response.body#/id', origin: 'the response body', uses: ['query parameter order', 'correlation'] })
     expect(orderId!.schema).toBeUndefined()
   })
+
+  it('follows a Selector Object that forwards another output by its context, then its selector', () => {
+    // Arrange: `paid` passes on part of `create`'s total.
+    const paid = { ...placeOrder.steps![1]!, outputs: { amount: { context: '$steps.create.outputs.total', selector: '$.amount', type: 'jsonpath' } } }
+    const xpath = { ...paid, outputs: { amount: { context: '$steps.create.outputs.total', selector: '/amount', type: 'xpath' } } }
+    const forwarding = (step: typeof paid): Workflow => ({ ...placeOrder, steps: [placeOrder.steps![0]!, step as never], outputs: { amount: '$steps.paid.outputs.amount' } })
+
+    // Act
+    const [amount] = describeFlow(document, forwarding(paid), 'paid', OUTPUTS_NODE_ID, ['amount'], documents)
+    const [unknown] = describeFlow(document, forwarding(xpath), 'paid', OUTPUTS_NODE_ID, ['amount'], documents)
+
+    // Assert: described where the context comes from, narrowed by the selector; the display text keeps both.
+    expect(amount).toMatchObject({
+      source: '$steps.create.outputs.total · $.amount',
+      origin: '201 response body of POST /orders',
+      schema: { type: 'number' },
+      link: { label: 'Schema money', navId: 'orders/model/money' },
+    })
+    // A selector this cannot follow still says where the context comes from, but not the selected part's schema.
+    expect(unknown).toMatchObject({ origin: '201 response body of POST /orders' })
+    expect(unknown!.schema).toBeUndefined()
+  })
+
+  it("resolves the inputs schema's own definitions, read directly or through a pointer", () => {
+    // Arrange: `order` refers to a definition inside the inputs schema, which the Arazzo document doesn't have.
+    const inputs = {
+      type: 'object',
+      properties: { order: { $ref: '#/$defs/Order' } },
+      $defs: { Order: { type: 'object', properties: { id: { type: 'string', format: 'uuid' } } } },
+    }
+    const withDefs: Workflow = {
+      workflowId: 'withDefs',
+      inputs,
+      steps: [{ stepId: 'echo', operationId: 'x', requestBody: { payload: '$inputs.order' }, outputs: { orderId: '$inputs.order#/id' } }],
+      outputs: { orderId: '$steps.echo.outputs.orderId' },
+    }
+    const owner: ArazzoDocument = { arazzo: '1.1.0', workflows: [withDefs] }
+
+    // Act
+    const [order] = describeFlow(owner, withDefs, INPUTS_NODE_ID, 'echo', ['order'], {})
+    const [orderId] = describeFlow(owner, withDefs, 'echo', OUTPUTS_NODE_ID, ['orderId'], {})
+
+    // Assert
+    expect(order!.schema).toMatchObject({ type: 'object' })
+    expect(order!.schema!.children!.map((row) => row.name)).toEqual(['id'])
+    expect(orderId).toMatchObject({ origin: "the workflow's inputs", schema: { type: 'string', details: ['uuid'] } })
+  })
+
+  it('keeps the schema an external response reference resolved to, and the reference for its link', () => {
+    // Arrange: Scalar resolved an external `$ref` and put the result next to it.
+    const external = structuredClone(ordersApi) as typeof ordersApi & Record<string, unknown>
+    const content = external.paths['/orders'].post.responses['201'].content!['application/json'] as { schema: Record<string, unknown> }
+    content.schema = { $ref: 'https://schemas.test/order.json', '$ref-value': ordersApi.components.schemas.order }
+
+    // Act
+    const [orderId] = describeFlow(document, placeOrder, 'create', OUTPUTS_NODE_ID, ['orderId'], { ...documents, orders: external })
+
+    // Assert
+    expect(orderId).toMatchObject({ origin: '201 response body of POST /orders', schema: { type: 'string', details: ['uuid'] } })
+  })
+
+  it("says where a step's success and failure actions read a value", () => {
+    // Arrange: `paid` reads the order id only in its actions.
+    const paid = {
+      ...placeOrder.steps![1]!,
+      parameters: [],
+      correlationId: undefined,
+      onSuccess: [{ name: 'shipped', type: 'end', criteria: [{ condition: '$steps.create.outputs.orderId != null' }] }],
+      onFailure: [{ reference: '$components.failureActions.retryOrder' }],
+    }
+    const owner: ArazzoDocument = {
+      ...document,
+      components: {
+        ...document.components,
+        failureActions: {
+          retryOrder: { name: 'retryOrder', type: 'goto', workflowId: 'retry', parameters: [{ name: 'order', value: '$steps.create.outputs.orderId' }] },
+        },
+      },
+    }
+    const workflow: Workflow = { ...placeOrder, steps: [placeOrder.steps![0]!, paid as never] }
+
+    // Act
+    const [orderId] = describeFlow({ ...owner, workflows: [workflow] }, workflow, 'create', 'paid', ['orderId'], documents)
+
+    // Assert
+    expect(orderId!.uses).toEqual(['success action shipped criteria', 'failure action retryOrder parameter order'])
+  })
 })
 
 describe('the Data flow details', () => {
@@ -254,6 +341,31 @@ describe('the Data flow details', () => {
     expect(input!.text()).toBe("The workflow's inputs ↗")
     expect(input!.attributes('href')).toMatch(/#doc\/workflow\/placeOrder\/inputs\/sku$/)
     expect(onNavigate).toHaveBeenCalledOnce()
+  })
+
+  it('moves the focus to the input row when its link is followed from the keyboard, not by pointer', async () => {
+    // Arrange
+    const row = globalThis.document.createElement('div')
+    row.id = 'doc/workflow/placeOrder/inputs/sku'
+    globalThis.document.body.append(row)
+    const values = describeFlow(document, placeOrder, INPUTS_NODE_ID, 'create', ['sku'], documents, 'doc/workflow/placeOrder')
+    wrapper = mount(ArazzoDataFlowDetails, { attachTo: globalThis.document.body, props: { from: 'Inputs', to: 'create', values } })
+    const link = wrapper.find('a.ba-flow-link')
+
+    try {
+      // Act: a pointer click (`detail` 1) scrolls only; Enter on the link (`detail` 0) also moves the focus.
+      await link.trigger('click', { detail: 1 })
+      await flushPromises()
+      const afterPointer = globalThis.document.activeElement
+      await link.trigger('click', { detail: 0 })
+      await flushPromises()
+
+      // Assert
+      expect(afterPointer).not.toBe(row)
+      expect(globalThis.document.activeElement).toBe(row)
+    } finally {
+      row.remove()
+    }
   })
 
   it('marks each Data flow arrow label with an info icon, with room for it, and no other view', async () => {

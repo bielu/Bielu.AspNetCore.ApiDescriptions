@@ -1,4 +1,12 @@
-import type { ArazzoDocument, ArazzoParameter, ArazzoStep, ArazzoWorkflow } from '../types'
+import type {
+  ArazzoDocument,
+  ArazzoFailureAction,
+  ArazzoParameter,
+  ArazzoReusableObject,
+  ArazzoStep,
+  ArazzoSuccessAction,
+  ArazzoWorkflow,
+} from '../types'
 import { INPUTS_NODE_ID, OUTPUTS_NODE_ID } from './data-flow'
 import { expressionsIn, inputsAnchor, parseExpression } from './expressions'
 import { asSelector, schemaPropertyRows, type SchemaPropertyRow } from './format'
@@ -88,7 +96,10 @@ const jsonPathSegments = (path: string): string[] | undefined => {
  * (Arazzo 1.1) a Selector Object, `{ context: '$response.body', selector: '$.total', type: 'jsonpath' }`. A
  * selector this cannot follow (an XPath, a JSONPath with filters) still names its context.
  */
-const outputOf = (step: ArazzoStep, name: string): { text: string; base: string; segments?: string[] } | undefined => {
+const outputOf = (
+  step: ArazzoStep,
+  name: string,
+): { text: string; base: string; segments?: string[]; selected?: boolean } | undefined => {
   const value = step.outputs?.[name]
   if (typeof value === 'string') {
     return { text: value, ...splitPointer(value.trim()) }
@@ -99,7 +110,8 @@ const outputOf = (step: ArazzoStep, name: string): { text: string; base: string;
   }
   const type = typeof selector.type === 'string' ? selector.type : selector.type.type
   const segments = type === 'jsonpath' ? jsonPathSegments(selector.selector) : type === 'jsonpointer' ? parseJsonPointer(selector.selector) : undefined
-  return { text: `${selector.context} · ${selector.selector}`, base: selector.context.trim(), ...(segments ? { segments } : {}) }
+  // `text` is for display only; `base` (the context) and `segments` (the selector) are what is followed.
+  return { text: `${selector.context} · ${selector.selector}`, base: selector.context.trim(), selected: true, ...(segments ? { segments } : {}) }
 }
 
 /** A schema found for a value, with the document its `$ref`s resolve against and where it is defined. */
@@ -157,9 +169,11 @@ const stepOutputSchema = (
     const response = successResponse(step, operationResponses(target, documents))
     const content = response?.contents.find((candidate) => /json/i.test(candidate.contentType)) ?? response?.contents[0]
     const operation = target?.kind === 'operation' && target.method && target.path ? ` of ${target.method.toUpperCase()} ${target.path}` : ''
-    // Walked from the `$ref` the response gives, so the named schema the value is in (`Order`) can be linked.
+    // Walked from the `$ref` the response gives, so the named schema the value is in (`Order`) can be linked, with
+    // the schema it resolved to alongside: an external `$ref` cannot be followed from the reference alone.
     const refs: string[] = []
-    const schema = content && segments ? schemaAt(response.root, content.schemaRef ? { $ref: content.schemaRef } : content.schema, segments, refs) : undefined
+    const start = content?.schemaRef ? { $ref: content.schemaRef, ...(content.schema ? { '$ref-value': content.schema } : {}) } : content?.schema
+    const schema = content && segments ? schemaAt(response.root, start, segments, refs) : undefined
     const link = targetLink(target, refs, documents)
     return response
       ? { schema, root: response.root, origin: `${response.status} response body${operation}`, ...(link ? { link } : {}) }
@@ -182,8 +196,17 @@ const stepOutputSchema = (
     const link = targetLink(target, [], documents)
     return { origin: `message header ${base.slice('$message.header.'.length)}`, ...(link ? { link } : {}) }
   }
-  // An output passed on from an input or another step's output: describe it where it came from.
-  return depth < 4 ? sourceSchema(document, workflow, output.text, documents, depth + 1, workflowNavId) : {}
+  // An output passed on from an input or another step's output: describe it where it came from. The expression
+  // (a Selector Object's context) is followed on its own, then the pointer or selector narrows what it found.
+  if (depth >= 4) {
+    return {}
+  }
+  const forwarded = sourceSchema(document, workflow, base, documents, depth + 1, workflowNavId)
+  if (!segments) {
+    // A selector this cannot follow selects some part of the context, whose schema is not known.
+    return output.selected ? { ...forwarded, schema: undefined } : forwarded
+  }
+  return { ...forwarded, schema: isRecord(forwarded.root) ? schemaAt(forwarded.root, forwarded.schema, segments) : undefined }
 }
 
 /**
@@ -191,12 +214,15 @@ const stepOutputSchema = (
  * (`#/$defs/…`) as root, linked to the input's row on this page when the workflow's section id is known.
  */
 const inputSchema = (document: ArazzoDocument, workflow: ArazzoWorkflow, segments: string[], workflowNavId: string | undefined): Found => {
-  const root = document as unknown as AnyRecord
-  const inputs = deref(root, workflow.inputs)
+  const arazzo = document as unknown as AnyRecord
+  const inputs = deref(arazzo, workflow.inputs)
   const link = workflowNavId ? { link: { label: "The workflow's inputs", anchor: inputsAnchor(workflowNavId, segments[0]) } } : {}
-  return isRecord(inputs)
-    ? { schema: schemaAt(root, inputs, segments), root: { ...root, ...inputs }, origin: "the workflow's inputs", ...link }
-    : { origin: "the workflow's inputs", ...link }
+  if (!isRecord(inputs)) {
+    return { origin: "the workflow's inputs", ...link }
+  }
+  // Walked against both, so the inputs schema's own `#/$defs/…` resolve as well as the document's components.
+  const root = { ...arazzo, ...inputs }
+  return { schema: schemaAt(root, inputs, segments), root, origin: "the workflow's inputs", ...link }
 }
 
 /** Where an expression's value is made, followed back to a schema when it can be. */
@@ -246,6 +272,23 @@ const expressionsOf = (value: unknown): string[] =>
         ? Object.values(value).flatMap(expressionsOf)
         : []
 
+/**
+ * The places a step's `onSuccess` or `onFailure` actions read a value: each action's criteria and the parameters
+ * it passes to the workflow it goes to, components followed, as the Data flow graph counts them.
+ */
+const actionPlaces = (
+  document: ArazzoDocument,
+  kind: 'success' | 'failure',
+  actions: (ArazzoSuccessAction | ArazzoFailureAction | ArazzoReusableObject)[] | undefined,
+): { place: string; value: unknown }[] =>
+  resolveReusables<ArazzoSuccessAction | ArazzoFailureAction>(document, actions).flatMap((action) => {
+    const label = action.name ? `${kind} action ${action.name}` : `${kind} action`
+    return [
+      ...(action.criteria ?? []).map((criterion) => ({ place: `${label} criteria`, value: criterion.condition })),
+      ...resolveReusables<ArazzoParameter>(document, action.parameters).map((parameter) => ({ place: `${label} parameter ${parameter.name}`, value: parameter.value })),
+    ]
+  })
+
 /** The places of a consumer that read a value, with the first expression that does. */
 const placesIn = (
   document: ArazzoDocument,
@@ -266,6 +309,8 @@ const placesIn = (
     ...(step.requestBody?.replacements ?? []).map((replacement) => ({ place: `request body ${replacement.target}`, value: replacement.value })),
     { place: 'correlation', value: step.correlationId },
     ...(step.successCriteria ?? []).map((criterion) => ({ place: 'success criteria', value: criterion.condition })),
+    ...actionPlaces(document, 'success', step.onSuccess),
+    ...actionPlaces(document, 'failure', step.onFailure),
     ...Object.entries(step.outputs ?? {}).map(([name, value]) => ({ place: `output ${name}`, value })),
   ]
 }

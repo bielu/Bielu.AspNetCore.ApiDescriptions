@@ -24,14 +24,18 @@ const emit = defineEmits<{
 const hrefOf = (link: FlowLink): string =>
   link.navId ? navigationHref(link.navId, window.location) : `${window.location.pathname}${window.location.search}#${link.anchor ?? ''}`
 
-/** A schema in another document opens its page in Scalar; an input of this workflow scrolls to its row. */
+/**
+ * A schema in another document opens its page in Scalar; an input of this workflow scrolls to its row. Followed
+ * from the keyboard (a click with no pointer, `detail` 0), the row also takes the focus, so the keyboard carries on
+ * from where the reader was taken.
+ */
 const follow = (event: MouseEvent, link: FlowLink) => {
   emit('navigate')
   if (link.navId) {
     openInOtherDocument(event, hrefOf(link))
   } else if (link.anchor) {
     event.preventDefault()
-    void goToAnchor(event.currentTarget as Element, { anchor: link.anchor }, nextTick)
+    void goToAnchor(event.currentTarget as Element, { anchor: link.anchor }, nextTick, { focus: event.detail === 0 })
   }
 }
 </script>
