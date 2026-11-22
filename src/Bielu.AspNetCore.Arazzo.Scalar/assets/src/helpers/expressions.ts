@@ -13,6 +13,18 @@ import { resolveReusable } from './reusable'
 const EXPRESSION =
   /\$(?:url|method|statusCode|request|response|message|inputs|outputs|steps|workflows|sourceDescriptions|components|self)\b(?:[.#][^\s{}()'"`,;=<>!&|[\]]*)?/g
 
+/**
+ * Drops the trailing run of `.` and `#`. A backward scan rather than `/[.#]+$/`, which retries from every
+ * character of a long run of them that does not end the text and so takes quadratic time.
+ */
+const trimTrailingPunctuation = (value: string): string => {
+  let end = value.length
+  while (end > 0 && (value[end - 1] === '.' || value[end - 1] === '#')) {
+    end--
+  }
+  return value.slice(0, end)
+}
+
 /** One piece of a text: plain text, or a Runtime Expression found in it. */
 export type ExpressionSegment = { text: string; expression?: true }
 
@@ -28,7 +40,7 @@ export const splitExpressions = (text: string): ExpressionSegment[] => {
     const start = match.index
     const end = start + match[0].length
     const whole = !text.slice(0, start).trim() && !text.slice(end).trim()
-    const expression = whole || text[end] === '}' ? match[0] : match[0].replace(/[.#]+$/, '')
+    const expression = whole || text[end] === '}' ? match[0] : trimTrailingPunctuation(match[0])
     if (start > last) {
       segments.push({ text: text.slice(last, start) })
     }
