@@ -310,10 +310,20 @@ public class ScalarArazzoBrowserTests(ScalarArazzoBrowserFixture fixture) : ICla
         var labels = (await diagram.Locator(".ba-diagram-node text").AllTextContentsAsync()).Select(Normalize).ToList();
         var stepPage = Normalize(await workflow.Locator(".ba-step .ba-step-page").Last.InnerTextAsync());
 
-        // Assert: the reader's zoom stays. The fit scale (the svg's data-scale) is measured again for the
-        // Pages graph, which another view's scale may not fit, so it is not compared.
+        // Assert: the reader's zoom stays, and the fit scale (the svg's data-scale) is measured again for
+        // the Pages graph, so it fits the box rather than keeping the previous view's scale.
         zoomed.ShouldContain("scale(1.1)");
         (await canvas.EvaluateAsync<string>("canvas => canvas.style.transform")).ShouldBe(zoomed);
+        var fit = await diagram.EvaluateAsync<double[]>(
+            """
+            box => {
+              const style = getComputedStyle(box)
+              const width = box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+              const svg = box.querySelector('svg')
+              return [Number(svg.dataset.scale), Math.min(width / Number(svg.getAttribute('width')), 1)]
+            }
+            """);
+        fit[0].ShouldBe(fit[1], 0.0001);
         bands.ShouldContain("Order list · /orders");
         bands.ShouldContain("No page");
         labels.ShouldContain("Load the order list");
