@@ -143,6 +143,10 @@ describe('matchesPattern', () => {
     ['(\\d{1,3}){2,}', { unbounded: true }],
     ['(a+){9}', { unbounded: true }],
     ['^(a?){30}b$', { unbounded: true }],
+    [`^(a{${'0'.repeat(40)}1,})+b$`, { unbounded: true }],
+    ['^a{1,2', { unbounded: true }],
+    ['^a{,3}$', { repeats: 0, unbounded: false }],
+    [`^(?<${'n'.repeat(80)}>a)+$`, { repeats: 1, optionals: 0, unbounded: false }],
     ['^((a?)b){2,}$', { unbounded: true }],
     ['^((a|b)c)+$', { unbounded: true }],
     ['^(a)\\1$', { unbounded: true }],
@@ -161,6 +165,19 @@ describe('matchesPattern', () => {
   ])('reads the shape of %s', (pattern, shape) => {
     // Act / Assert
     expect(patternShape(pattern)).toMatchObject(shape)
+  })
+
+  it('reads a braced quantifier whatever its length, so leading zeros cannot hide a repeat', () => {
+    // Arrange: `{0…01,}` is `{1,}`, a repeat inside a repeated group.
+    const pattern = `^(a{${'0'.repeat(30)}1,})+b$`
+
+    // Act
+    const started = performance.now()
+    const matched = matchesPattern('a'.repeat(30), pattern)
+
+    // Assert
+    expect(matched).toBe(true)
+    expect(performance.now() - started).toBeLessThan(100)
   })
 
   it('does not run a group repeated a fixed number of times around an optional part', () => {
@@ -193,6 +210,24 @@ describe('exampleWithCheck limits', () => {
     // Assert
     expect(JSON.stringify(example.value).length).toBeLessThan(110_000)
     expect(example.needsEdits).toBe(true)
+  })
+
+  it('counts the property names it writes, escapes included, against the size of the example', () => {
+    // Arrange: 100 copies of an object with a million-character property name would be about 100 MB of JSON.
+    const longName = { type: 'array', minItems: 10, items: { type: 'array', minItems: 10, items: { type: 'object', properties: { ['x'.repeat(1_000_000)]: { type: 'integer' } } } } }
+    // 40,000 quotes are 80,000 characters once escaped: two copies do not fit, though unescaped they would.
+    const quoted = { type: 'array', minItems: 2, items: { type: 'object', properties: { ['"'.repeat(40_000)]: { type: 'integer' } } } }
+
+    // Act
+    const long = exampleWithCheck(longName)!
+    const escaped = exampleWithCheck(quoted)!
+
+    // Assert
+    expect(JSON.stringify(long.value).length).toBeLessThan(110_000)
+    expect(long.needsEdits).toBe(true)
+    expect(JSON.stringify(escaped.value).length).toBeLessThan(110_000)
+    expect(escaped.needsEdits).toBe(true)
+    expect(exampleWithCheck({ type: 'object', properties: { name: { type: 'string' } } })).toEqual({ value: { name: 'string' }, needsEdits: false })
   })
 
   it('keeps authored examples that fit, and fits as many as it can', () => {

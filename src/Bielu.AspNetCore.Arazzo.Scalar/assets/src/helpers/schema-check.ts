@@ -113,7 +113,14 @@ const hasType = (value: unknown, type: unknown): boolean => {
 }
 
 /** How a quantifier repeats what it follows: a variable number of times, zero or once, or a fixed number. */
-type Quantifier = { kind: 'repeat' | 'optional' | 'fixed' | 'once'; length: number }
+/** `unreadable`: a `{` and a digit this scanner cannot read as a whole quantifier, so its work is not known. */
+type Quantifier = { kind: 'repeat' | 'optional' | 'fixed' | 'once' | 'unreadable'; length: number }
+
+/** `{n}`, `{n,}` or `{n,m}` at `lastIndex`, however many digits (leading zeros included) it has. */
+const BRACED_QUANTIFIER = /\{(\d+)(,(\d*))?\}/y
+
+/** What opens a group other than a plain one, at `lastIndex`, however long its name. */
+const GROUP_PREFIX = /\(\?(?:[:=!]|<[=!]|<[^>]*>)/y
 
 /** The quantifier at `index` (`*`, `+`, `?`, `{n}`, `{n,}`, `{n,m}`, each maybe lazy), if there is one. */
 const quantifierAt = (pattern: string, index: number): Quantifier | undefined => {
@@ -124,9 +131,11 @@ const quantifierAt = (pattern: string, index: number): Quantifier | undefined =>
   } else if (character === '?') {
     quantifier = { kind: 'optional', length: 1 }
   } else if (character === '{') {
-    const match = /^\{(\d+)(,(\d*))?\}/.exec(pattern.slice(index, index + 24))
+    BRACED_QUANTIFIER.lastIndex = index
+    const match = BRACED_QUANTIFIER.exec(pattern)
     if (!match) {
-      return undefined
+      // `{` then a digit starts a quantifier; one this scanner cannot read is not trusted to be bounded.
+      return /\d/.test(pattern[index + 1] ?? '') ? { kind: 'unreadable', length: 1 } : undefined
     }
     const min = Number(match[1])
     const max = match[2] === undefined ? min : match[3] === '' ? Number.POSITIVE_INFINITY : Number(match[3])
@@ -158,7 +167,9 @@ export const patternShape = (pattern: string): PatternShape => {
     const character = pattern[index]!
     const quantifier = index > 0 ? quantifierAt(pattern, index) : undefined
     if (quantifier) {
-      if (quantifier.kind === 'repeat') {
+      if (quantifier.kind === 'unreadable') {
+        shape.unbounded = true
+      } else if (quantifier.kind === 'repeat') {
         shape.repeats++
         current().varies = true
       } else if (quantifier.kind === 'optional') {
@@ -187,7 +198,8 @@ export const patternShape = (pattern: string): PatternShape => {
     } else if (character === '(') {
       groups.push({ varies: false, branches: 1 })
       // `(?:`, `(?=`, `(?!`, `(?<=`, `(?<!`, `(?<name>`: the `?` is not a quantifier.
-      const prefix = /^\(\?(?:[:=!]|<[=!]|<[^>]*>)/.exec(pattern.slice(index, index + 64))
+      GROUP_PREFIX.lastIndex = index
+      const prefix = GROUP_PREFIX.exec(pattern)
       index += prefix ? prefix[0].length - 1 : 0
     } else if (character === '|') {
       current().branches++

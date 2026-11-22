@@ -29,6 +29,22 @@ const MAX_EXAMPLE_LENGTH = 100_000
  */
 type Budget = { left: number; length: number; cut: boolean }
 
+/**
+ * How long `text` is as a JSON string, quotes and escapes included (`"` and `\` take two characters, control
+ * characters up to six). A string longer than `limit` is past it whatever its escapes, so it is not serialized.
+ */
+const quotedLength = (text: string, limit: number): number => (text.length > limit ? text.length + 2 : JSON.stringify(text).length)
+
+/** Takes `length` characters of JSON from the budget; `false`, and the example marked as cut, when they do not fit. */
+const take = (budget: Budget, length: number): boolean => {
+  if (length > budget.length) {
+    budget.cut = true
+    return false
+  }
+  budget.length -= length
+  return true
+}
+
 /** About how long `value` is as JSON, counting no further than `limit`: past it, more than `limit`. */
 const jsonLength = (value: unknown, limit: number): number => {
   let total = 0
@@ -37,7 +53,7 @@ const jsonLength = (value: unknown, limit: number): number => {
       return
     }
     if (typeof node === 'string') {
-      total += node.length + 2
+      total += quotedLength(node, limit)
     } else if (Array.isArray(node)) {
       total += 2
       for (const item of node) {
@@ -50,7 +66,7 @@ const jsonLength = (value: unknown, limit: number): number => {
     } else if (node && typeof node === 'object') {
       total += 2
       for (const [key, item] of Object.entries(node)) {
-        total += key.length + 4
+        total += quotedLength(key, limit) + 2
         visit(item)
         if (total > limit) {
           return
@@ -65,15 +81,7 @@ const jsonLength = (value: unknown, limit: number): number => {
 }
 
 /** `value` when its JSON fits in what the example has left (taking that much), else `null`, and the example marked as cut. */
-const fit = <T>(budget: Budget, value: T): T | null => {
-  const length = jsonLength(value, budget.length)
-  if (length > budget.length) {
-    budget.cut = true
-    return null
-  }
-  budget.length -= length
-  return value
-}
+const fit = <T>(budget: Budget, value: T): T | null => (take(budget, jsonLength(value, budget.length)) ? value : null)
 
 /** Takes one value from the budget; `false`, and the example marked as cut, when there is none left. */
 const spend = (budget: Budget): boolean => {
@@ -171,6 +179,10 @@ const generate = (input: Schema, roots: unknown[], depth: number, seen: Readonly
         // A property whose schema is `false` must be absent.
         if (property === false) {
           continue
+        }
+        // The name is written once per copy of the object, so it counts too: `"name": `, escapes included.
+        if (!take(budget, quotedLength(name, budget.length) + 2)) {
+          break
         }
         if (isSchema(property)) {
           value[name] = generate(property, roots, depth + 1, nested, budget)
