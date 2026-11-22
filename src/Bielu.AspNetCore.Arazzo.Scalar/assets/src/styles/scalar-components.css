@@ -1,6 +1,6 @@
 /*
- * Styles for the @scalar/components the Arazzo view uses (ScalarDropdown for the export menu,
- * ScalarModal for the expanded workflow).
+ * Styles for the Scalar components the Arazzo view uses: from @scalar/components, ScalarDropdown for
+ * the export menu and ScalarModal for the expanded workflow; from @scalar/blocks, Badge for every badge.
  *
  * The components carry Tailwind classes in their compiled templates, and Scalar's page stylesheet
  * does not contain all of them (and scopes the ones it has to `.scalar-app`), so they are generated
@@ -16,6 +16,8 @@
  */
 @source "../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating,ScalarModal}/*.js";
 @source "../../../../../node_modules/@scalar/components/dist/components/{ScalarDropdown,ScalarFloating,ScalarModal}/*.js";
+@source "../../node_modules/@scalar/blocks/dist/shared/Badge*.js";
+@source "../../../../../node_modules/@scalar/blocks/dist/shared/Badge*.js";
 @source "../components/ArazzoStep.vue";
 @source "../components/ArazzoWorkflow.vue";
 
@@ -36,9 +38,10 @@
 }
 
 /*
- * The components' scoped styles, copied from @scalar/components 0.35.1's vue-styles.css. The
- * data-v hashes belong to that version, the one bundled here, so they match the rendered elements
- * whatever Scalar version the page runs. Update them together with the package.
+ * The components' scoped styles, copied from @scalar/components 0.35.1's vue-styles.css (and, at
+ * the end, Badge's from @scalar/blocks 0.7.3's). The data-v hashes belong to those versions, the
+ * ones bundled here, so they match the rendered elements whatever Scalar version the page runs.
+ * Update them together with the packages.
  */
 .dark-mode .bielu-arazzo .scalar-dropdown-item[data-v-128eed00]:hover,
 .dark-mode .bielu-arazzo .scalar-dropdown-item[data-highlighted][data-v-128eed00] {
@@ -77,5 +80,15 @@
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+  }
+}
+/* Badge: a colour fills the pill, and its text turns black or white, whichever reads on it. */
+.bielu-arazzo .badge.badge-colored[data-v-eecf5e58] {
+  background-color: var(--badge-color);
+  color: color-mix(in srgb, var(--badge-color), black 40%);
+}
+@supports (color: lch(from red calc((50 - l) * infinity) 0 0)) {
+  .bielu-arazzo .badge.badge-colored[data-v-eecf5e58] {
+    color: lch(from var(--badge-color) calc((50 - l) * infinity) 0 0 / 1);
   }
 }

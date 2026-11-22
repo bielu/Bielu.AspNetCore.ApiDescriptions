@@ -61,6 +61,7 @@
   },
   "devDependencies": {
     "@bielu/scalar-core": "file:../../Bielu.AspNetCore.AsyncApi.Scalar/assets",
+    "@scalar/blocks": "0.7.3",
     "@scalar/components": "0.35.1",
     "@scalar/types": "^0.30.0",
     "@scalar/use-hooks": "0.4.27",

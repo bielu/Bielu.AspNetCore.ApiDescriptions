@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Badge as ScalarBadge } from '@scalar/blocks/shared'
 import { criterionTypeLabel } from '../helpers/format'
 import type { ArazzoCriterion } from '../types'
 import ArazzoExpressionText from './ArazzoExpressionText.vue'
@@ -21,11 +22,11 @@ defineProps<{
     <li
       v-for="(criterion, index) in criteria"
       :key="index">
-      <span
+      <ScalarBadge
         v-if="criterionTypeLabel(criterion.type)"
         class="ba-badge ba-criterion-type">
         {{ criterionTypeLabel(criterion.type) }}
-      </span>
+      </ScalarBadge>
       <code class="ba-condition"
         ><ArazzoExpressionText :text="criterion.condition"
       /></code>
