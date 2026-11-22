@@ -388,7 +388,7 @@ at runtime.
 
 ## CLI Tool: `dotnet arazzo`
 
-`Bielu.Arazzo.Cli` provides `validate`, `lint`, and `diff` commands for Arazzo documents — see the
+`Bielu.Arazzo.Cli` provides `validate`, `lint`, `diff` and `impact` commands for Arazzo documents — see the
 [CLI Tool](cli.md) article for details.
 
 ## What's next
