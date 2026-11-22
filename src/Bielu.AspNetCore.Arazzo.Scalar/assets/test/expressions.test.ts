@@ -93,6 +93,21 @@ describe('splitExpressions', () => {
     expect(expressionsIn(' $steps.create.outputs.order.id. ')).toEqual(['$steps.create.outputs.order.id.'])
     expect(expressionsIn('Order {$steps.create.outputs.order.id.} placed.')).toEqual(['$steps.create.outputs.order.id.'])
   })
+
+  it('trims a long run of periods and hashes inside an expression in linear time', () => {
+    // Arrange
+    const expression = `$inputs.a${'#.'.repeat(50_000)}x`
+    const text = `Reads ${expression}#. now`
+
+    // Act
+    const started = performance.now()
+    const expressions = expressionsIn(text)
+    const elapsed = performance.now() - started
+
+    // Assert
+    expect(expressions).toEqual([expression])
+    expect(elapsed).toBeLessThan(1000)
+  })
 })
 
 describe('parseExpression', () => {
