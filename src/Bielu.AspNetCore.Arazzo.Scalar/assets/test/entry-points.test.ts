@@ -18,7 +18,9 @@ beforeEach(() => {
 })
 
 describe('the package root', () => {
-  it('exports the documented API and registers the document element', async () => {
+  // The first import transforms every component, @scalar/components' modal and Headless UI included: about 3 s on
+  // its own, longer while the rest of the suite runs in parallel.
+  it('exports the documented API and registers the document element', { timeout: 30_000 }, async () => {
     // Act
     const root = await import('../src/index')
 

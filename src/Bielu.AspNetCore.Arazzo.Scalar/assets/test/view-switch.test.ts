@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ArazzoViewSwitch, { viewTabId } from '../src/components/ArazzoViewSwitch.vue'
 import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
@@ -38,6 +38,13 @@ const mountWorkflow = () => {
   })
   mounted.push(wrapper)
   return wrapper
+}
+
+/** Opens the expanded overview: ScalarModal renders it in a portal at the end of <body>, only while it is open. */
+const expand = async (wrapper: VueWrapper) => {
+  await wrapper.find('button[aria-label="Expand workflow diagram"]').trigger('click')
+  await flushPromises()
+  return new DOMWrapper(globalThis.document.querySelector('[role="dialog"] .ba-dialog')!)
 }
 
 beforeEach(() => {
@@ -160,12 +167,12 @@ describe('the overview view tabs', () => {
   it('make a tab bar with the legend in the expanded overview, under its title and actions', async () => {
     // Arrange: the Pages view, whose legend explains the page bands.
     const wrapper = mountWorkflow()
+    const dialog = await expand(wrapper)
 
     // Act
-    await wrapper.findAll('.ba-dialog-tab-bar button').find((tab) => tab.text() === 'Pages')!.trigger('click')
+    await dialog.findAll('.ba-dialog-tab-bar button').find((tab) => tab.text() === 'Pages')!.trigger('click')
 
     // Assert
-    const dialog = wrapper.find('dialog.ba-dialog')
     expect(dialog.find('.ba-dialog-header .ba-view-tabs').exists()).toBe(false)
     expect(dialog.find('.ba-dialog-header .ba-diagram-legend').exists()).toBe(false)
     const bar = dialog.find('.ba-dialog-header + .ba-dialog-tab-bar')
@@ -180,7 +187,8 @@ describe('the overview view tabs', () => {
   it('switch the view in both places at once', async () => {
     // Arrange
     const wrapper = mountWorkflow()
-    const dialogTab = (name: string) => wrapper.findAll('.ba-dialog-tab-bar button').find((tab) => tab.text() === name)!
+    const dialog = await expand(wrapper)
+    const dialogTab = (name: string) => dialog.findAll('.ba-dialog-tab-bar button').find((tab) => tab.text() === name)!
 
     // Act
     await dialogTab('Pages').trigger('click')

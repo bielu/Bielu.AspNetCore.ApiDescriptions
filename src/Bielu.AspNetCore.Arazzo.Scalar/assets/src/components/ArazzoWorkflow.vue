@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ScalarModal, useModal } from '@scalar/components/modal'
 import {
   computed,
   nextTick,
@@ -367,8 +368,11 @@ const toggleSteps = () => {
   }
 }
 
-/** The expanded overview, in a native `<dialog>`: it brings the backdrop, Escape to close, and focus handling. */
-const dialog = ref<HTMLDialogElement>()
+/**
+ * The expanded overview, in Scalar's modal: it brings the backdrop, Escape and click-outside to close, and focus
+ * handling. Its content is only rendered while it is open, in a portal at the end of <body>.
+ */
+const modal = useModal()
 const expanded = ref<InstanceType<typeof ArazzoWorkflowDiagram>>()
 const inline = ref<InstanceType<typeof ArazzoWorkflowDiagram>>()
 
@@ -384,23 +388,24 @@ watch(
 )
 
 const expand = async () => {
-  dialog.value?.showModal()
+  modal.show()
+  // The modal renders its content on the next update; the diagram measures itself once it is there.
+  await nextTick()
   await nextTick()
   expanded.value?.resetView()
 }
 
 /** Opening a step from the full-window sequence (pointer or keyboard) closes the window, as a box in the full-window overview does. */
-const onSequenceNavigate = () => dialog.value?.close()
-
-const closeOnBackdrop = (event: MouseEvent) => {
-  if (event.target === dialog.value) {
-    dialog.value?.close()
-  }
-}
+const onSequenceNavigate = () => modal.hide()
 
 /** Data flow view: the arrow whose values are shown in the flow dialog, over the overview (inline or full window). */
 const flowEdge = ref<LaidOutEdge>()
 const flowDialog = ref<HTMLDialogElement>()
+/**
+ * The full-window overview's content, while it is open. The flow dialog moves into it then: ScalarModal treats a
+ * click or focus anywhere outside its own content as leaving it, and would close under the dialog.
+ */
+const modalContent = ref<HTMLElement>()
 
 const flowDetails = computed(() => {
   const edge = flowEdge.value
@@ -433,7 +438,7 @@ const openFlow = async (edge: LaidOutEdge) => {
 /** Following a link from the flow dialog closes it, and the full-window overview under it. */
 const closeFlow = () => {
   flowDialog.value?.close()
-  dialog.value?.close()
+  modal.hide()
 }
 
 const closeFlowOnBackdrop = (event: MouseEvent) => {
@@ -652,122 +657,137 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
       </aside>
     </div>
 
-    <dialog
-      ref="dialog"
+    <!-- Portalled out of the view, so the content carries the view's root class for its styles. -->
+    <ScalarModal
       :aria-label="`${workflow.summary || workflow.workflowId} overview`"
-      class="ba-dialog"
-      @click="closeOnBackdrop">
-      <div class="ba-dialog-header">
-        <div class="ba-overview-title">
-          Workflow overview · {{ workflow.summary || workflow.workflowId }}
+      bodyClass="ba-dialog-body"
+      class="bielu-arazzo-modal"
+      maxWidth="96vw"
+      size="xl"
+      :state="modal">
+      <div
+        ref="modalContent"
+        class="bielu-arazzo ba-dialog">
+        <div class="ba-dialog-header">
+          <div class="ba-overview-title">
+            Workflow overview · {{ workflow.summary || workflow.workflowId }}
+          </div>
+          <div class="ba-dialog-actions">
+            <ArazzoDiagramExport
+              v-if="overviewView !== 'sequence'"
+              :layout="diagram"
+              :name="workflow.workflowId"
+              :svg="() => expanded?.svg()" />
+            <button
+              v-if="overviewView !== 'sequence'"
+              class="ba-toggle"
+              type="button"
+              @click="expanded?.resetView()">
+              Reset view
+            </button>
+            <button
+              aria-label="Close"
+              class="ba-icon-button"
+              title="Close"
+              type="button"
+              @click="modal.hide()">
+              <svg
+                aria-hidden="true"
+                fill="none"
+                height="14"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+                viewBox="0 0 16 16"
+                width="14">
+                <path d="M3 3l10 10M13 3L3 13" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="ba-dialog-actions">
-          <ArazzoDiagramExport
+        <!-- A tab bar under the title: the views on the left, what the diagram's marks mean on the right. -->
+        <div class="ba-dialog-tab-bar">
+          <ArazzoViewSwitch
+            :panelId="dialogPanelId"
+            :view="overviewView"
+            :views="views"
+            @select="setWorkflowView" />
+          <ArazzoSpecLegend
             v-if="overviewView !== 'sequence'"
             :layout="diagram"
-            :name="workflow.workflowId"
-            :svg="() => expanded?.svg()" />
-          <button
-            v-if="overviewView !== 'sequence'"
-            class="ba-toggle"
-            type="button"
-            @click="expanded?.resetView()">
-            Reset view
-          </button>
-          <button
-            aria-label="Close"
-            class="ba-icon-button"
-            title="Close"
-            type="button"
-            @click="dialog?.close()">
-            <svg
-              aria-hidden="true"
-              fill="none"
-              height="14"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-width="1.6"
-              viewBox="0 0 16 16"
-              width="14">
-              <path d="M3 3l10 10M13 3L3 13" />
-            </svg>
-          </button>
+            :view="overviewView" />
+        </div>
+        <div
+          :id="dialogPanelId"
+          :aria-labelledby="viewTabId(dialogPanelId, overviewView)"
+          class="ba-dialog-panel"
+          role="tabpanel">
+          <ArazzoSequenceDiagram
+            v-if="overviewView === 'sequence'"
+            fit
+            :sequence="sequence"
+            :stepSectionIds="ownStepSections"
+            @navigate="onSequenceNavigate" />
+          <ArazzoWorkflowDiagram
+            v-else
+            ref="expanded"
+            class="ba-diagram-large"
+            fit
+            :layout="diagram"
+            :problems="stepProblems"
+            :stepSectionIds="stepSectionIds"
+            :workflowId="workflow.workflowId"
+            @openFlow="openFlow"
+            @openStep="modal.hide()"
+            @toggleWorkflow="toggleWorkflow" />
         </div>
       </div>
-      <!-- A tab bar under the title: the views on the left, what the diagram's marks mean on the right. -->
-      <div class="ba-dialog-tab-bar">
-        <ArazzoViewSwitch
-          :panelId="dialogPanelId"
-          :view="overviewView"
-          :views="views"
-          @select="setWorkflowView" />
-        <ArazzoSpecLegend
-          v-if="overviewView !== 'sequence'"
-          :layout="diagram"
-          :view="overviewView" />
-      </div>
-      <div
-        :id="dialogPanelId"
-        :aria-labelledby="viewTabId(dialogPanelId, overviewView)"
-        class="ba-dialog-panel"
-        role="tabpanel">
-        <ArazzoSequenceDiagram
-          v-if="overviewView === 'sequence'"
-          fit
-          :sequence="sequence"
-          :stepSectionIds="ownStepSections"
-          @navigate="onSequenceNavigate" />
-        <ArazzoWorkflowDiagram
-          v-else
-          ref="expanded"
-          class="ba-diagram-large"
-          fit
-          :layout="diagram"
-          :problems="stepProblems"
-          :stepSectionIds="stepSectionIds"
-          :workflowId="workflow.workflowId"
-          @openFlow="openFlow"
-          @openStep="dialog?.close()"
-          @toggleWorkflow="toggleWorkflow" />
-      </div>
-    </dialog>
+    </ScalarModal>
 
-    <dialog
-      ref="flowDialog"
-      :aria-label="
-        flowDetails
-          ? `What flows from ${flowDetails.from} to ${flowDetails.to}`
-          : 'What flows'
-      "
-      class="ba-dialog ba-flow-dialog"
-      @click="closeFlowOnBackdrop">
-      <div class="ba-dialog-header">
-        <div class="ba-overview-title">What flows · {{ flowEdge?.label }}</div>
-        <div class="ba-dialog-actions">
-          <button
-            aria-label="Close"
-            class="ba-icon-button"
-            title="Close"
-            type="button"
-            @click="flowDialog?.close()">
-            <svg
-              aria-hidden="true"
-              fill="none"
-              height="14"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-width="1.6"
-              viewBox="0 0 16 16"
-              width="14">
-              <path d="M3 3l10 10M13 3L3 13" />
-            </svg>
-          </button>
+    <!-- Escape closes this dialog only: kept from the window, where ScalarModal would close too. -->
+    <Teleport
+      :disabled="!modalContent"
+      :to="modalContent">
+      <dialog
+        ref="flowDialog"
+        :aria-label="
+          flowDetails
+            ? `What flows from ${flowDetails.from} to ${flowDetails.to}`
+            : 'What flows'
+        "
+        class="ba-dialog ba-flow-dialog"
+        @click="closeFlowOnBackdrop"
+        @keydown.esc.stop>
+        <div class="ba-dialog-header">
+          <div class="ba-overview-title">
+            What flows · {{ flowEdge?.label }}
+          </div>
+          <div class="ba-dialog-actions">
+            <button
+              aria-label="Close"
+              class="ba-icon-button"
+              title="Close"
+              type="button"
+              @click="flowDialog?.close()">
+              <svg
+                aria-hidden="true"
+                fill="none"
+                height="14"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+                viewBox="0 0 16 16"
+                width="14">
+                <path d="M3 3l10 10M13 3L3 13" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
-      <ArazzoDataFlowDetails
-        v-if="flowDetails"
-        v-bind="flowDetails"
-        @navigate="closeFlow" />
-    </dialog>
+        <ArazzoDataFlowDetails
+          v-if="flowDetails"
+          v-bind="flowDetails"
+          @navigate="closeFlow" />
+      </dialog>
+    </Teleport>
   </section>
 </template>
