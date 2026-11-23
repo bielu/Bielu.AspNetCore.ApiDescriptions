@@ -66,6 +66,7 @@ app.MapScalarApiReference(options => options
 | `PagesExtension` | none | [Pages view](#pages-view): a document-level extension holding the map of pages. |
 | `PageExtension` | none | Pages view: the extension naming the page of a step (the user is on it) or of an action (they land on it). May be the same key as `EndLabelExtension`. |
 | `LabelExtension` | none | Pages view: the extension holding a plain-language label on workflows, steps and actions. |
+| `ActorExtension` | none | [Sequence view](#actors): the extension on a step or a workflow naming who makes the step's call, in place of the client. |
 | `AssetsPath` | `/bielu/scalar/arazzo` | Where `MapScalarArazzoAssets` serves the script. |
 
 The options are written to the page as `window.__BIELU_SCALAR_ARAZZO__`, which the plugin reads when it
@@ -192,6 +193,16 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     (one level deep; a workflow that isn't loaded is a call into its lane). Failure paths are
     noted under the step's arrows ("on 400: rejected (end)") rather than drawn, so the main path reads straight
     down. Each step's name on the left opens the step.
+
+    <a id="actors"></a>**Actors.** Arazzo has no field for who makes a step's call, since the workflow's runner
+    makes them all, so every arrow starts at the client. To draw calls services make to each other (the orders
+    service asking the payment gateway to authorize a payment), set `ActorExtension` (such as `x-actor`) and
+    name the caller on the step, or on its workflow for all of its steps. A source description's name puts the
+    call on that source's lane; any other name gets a lane of its own. The step's request, message or workflow
+    call then starts from that lane, and its response or delivered message goes back to it. A stage's steps take
+    the actor of the step invoking their workflow unless they, or their workflow, name one. The client's lane is
+    left out when no step is the client's. The extension only changes the drawing: a runner still makes every
+    call itself.
 
     ![The placeOrder workflow in the Sequence view: Client, orders and events lanes, the POST /orders request and its 201, the messages sent and received with their timeouts and correlation](../../images/arazzo/scalar-sequence.jpg)
 
@@ -421,8 +432,8 @@ serves with `MapArazzo()` (`/arazzo/{documentName}.json` by default) as a source
 next to its OpenAPI and AsyncAPI documents. The app itself doesn't need `Bielu.AspNetCore.Arazzo.Scalar`
 for this: the container renders the documents.
 
-To set the [options](#options) (`EndLabelExtension` and the Pages view's `PagesExtension`,
-`PageExtension` and `LabelExtension`), call `WithArazzoOptions` instead of `WithArazzo`:
+To set the [options](#options) (`EndLabelExtension`, the Pages view's `PagesExtension`,
+`PageExtension` and `LabelExtension`, and the Sequence view's `ActorExtension`), call `WithArazzoOptions` instead of `WithArazzo`:
 
 ```csharp
 builder.AddScalarApiReference()

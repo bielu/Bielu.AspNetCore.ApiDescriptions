@@ -35,6 +35,8 @@ const ROW = 36
 const NOTE = 16
 /** A stage's title row, above its first message. */
 const BAND = 26
+/** How far a lane's call to itself loops out to the right. */
+const SELF = 28
 const MAX_LABEL = 28
 /** The smallest the diagram is drawn at (11px labels at about 9px); narrower than that, it scrolls instead. */
 const MIN_SCALE = 0.85
@@ -301,7 +303,16 @@ const isClient = (id: string) => id === CLIENT_ID
           {{ row.message.label
           }}{{ row.message.note ? ` — ${row.message.note}` : '' }}
         </title>
+        <!-- A lane calling itself (an actor that is also the step's target): a loop out to the right and back. -->
+        <path
+          v-if="row.x1 === row.x2"
+          class="ba-sequence-line ba-sequence-self"
+          :class="{ 'ba-sequence-dashed': dashed(row.message) }"
+          :d="`M${row.x1 + 4},${row.y - 7} h${SELF} v14 h-${SELF - 4}`"
+          fill="none"
+          :marker-end="`url(#${markerId})`" />
         <line
+          v-else
           class="ba-sequence-line"
           :class="{ 'ba-sequence-dashed': dashed(row.message) }"
           :marker-end="`url(#${markerId})`"
@@ -311,17 +322,17 @@ const isClient = (id: string) => id === CLIENT_ID
           :y2="row.y" />
         <text
           class="ba-sequence-label"
-          text-anchor="middle"
-          :x="(row.x1 + row.x2) / 2"
-          :y="row.y - 6">
+          :text-anchor="row.x1 === row.x2 ? 'start' : 'middle'"
+          :x="row.x1 === row.x2 ? row.x1 + SELF + 10 : (row.x1 + row.x2) / 2"
+          :y="row.x1 === row.x2 ? row.y + 4 : row.y - 6">
           {{ cut(row.message.label, 36) }}
         </text>
         <text
           v-if="row.message.note"
           class="ba-sequence-note"
-          text-anchor="middle"
-          :x="(row.x1 + row.x2) / 2"
-          :y="row.y + 13">
+          :text-anchor="row.x1 === row.x2 ? 'start' : 'middle'"
+          :x="row.x1 === row.x2 ? row.x1 + SELF + 10 : (row.x1 + row.x2) / 2"
+          :y="row.y + (row.x1 === row.x2 ? 17 : 13)">
           {{ cut(row.message.note, 60) }}
         </text>
       </g>

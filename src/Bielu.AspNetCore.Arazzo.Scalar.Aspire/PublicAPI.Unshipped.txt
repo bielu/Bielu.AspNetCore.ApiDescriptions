@@ -1,1 +1,3 @@
 ﻿#nullable enable
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.ActorExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.ActorExtension.set -> void

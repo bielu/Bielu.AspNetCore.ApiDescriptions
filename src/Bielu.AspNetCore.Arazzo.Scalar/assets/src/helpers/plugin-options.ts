@@ -16,10 +16,15 @@ export type ArazzoPluginOptions = {
   pageExtension?: string
   /** The Pages view: the extension holding a plain-language label of a workflow, step or action. */
   labelExtension?: string
+  /**
+   * The Sequence view: the extension on a step or a workflow naming who makes the step's call (a source
+   * description's name, or anyone else's); the client running the workflow when unset.
+   */
+  actorExtension?: string
 }
 
 /** The options; each must name a specification extension: `x-` followed by a name. */
-const OPTION_KEYS = ['endLabelExtension', 'pagesExtension', 'pageExtension', 'labelExtension'] as const
+const OPTION_KEYS = ['endLabelExtension', 'pagesExtension', 'pageExtension', 'labelExtension', 'actorExtension'] as const
 
 /** The rule .NET (`WithArazzoOptions`) and the Aspire helper apply too, so every input path accepts the same names. */
 const isSpecificationExtension = (value: unknown): value is string => typeof value === 'string' && value.startsWith('x-') && value.length > 2

@@ -123,6 +123,8 @@ public class ScalarArazzoOptionsExtensionsTests
     [InlineData("pages", "x-")]
     [InlineData("page", "x-")]
     [InlineData("label", "x-")]
+    [InlineData("actor", "x-")]
+    [InlineData("actor", "actor")]
     public void WithArazzoOptions_BarePrefixOrNonExtension_Throws(string option, string value)
     {
         // Act / Assert
@@ -139,12 +141,29 @@ public class ScalarArazzoOptionsExtensionsTests
                 case "page":
                     arazzo.PageExtension = value;
                     break;
+                case "actor":
+                    arazzo.ActorExtension = value;
+                    break;
                 default:
                     arazzo.LabelExtension = value;
                     break;
             }
         }));
         exception.Message.ShouldContain("'x-' followed by a name");
+    }
+
+    [Fact]
+    public void WithArazzoOptions_ActorExtension_WritesItToTheGlobal()
+    {
+        // Arrange
+        var options = new ScalarOptions();
+
+        // Act
+        options.WithArazzoOptions(arazzo => arazzo.ActorExtension = "x-actor");
+
+        // Assert
+        options.HeadContent.ShouldNotBeNull().ShouldContain(
+            $"window.{ScalarArazzoOptionsExtensions.GlobalVariableName} = {{\"actorExtension\":\"x-actor\"}};");
     }
 
     [Fact]

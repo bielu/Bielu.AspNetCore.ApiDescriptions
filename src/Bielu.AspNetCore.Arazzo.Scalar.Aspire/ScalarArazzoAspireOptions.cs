@@ -37,4 +37,12 @@ public sealed class ScalarArazzoAspireOptions
     /// workflows, steps and actions.
     /// </summary>
     public string? LabelExtension { get; set; }
+
+    /// <summary>
+    /// The Sequence view: the specification extension (such as <c>x-actor</c>) on a step or a workflow naming who
+    /// makes the step's call: a source description's name (its lane) or anyone else's (a lane of their own). Arazzo
+    /// has no such field, since its runner makes every call; when unset, or on steps that do not name one, the call
+    /// starts from the client running the workflow. Must start with <c>x-</c>.
+    /// </summary>
+    public string? ActorExtension { get; set; }
 }

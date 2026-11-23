@@ -244,7 +244,9 @@ const stepPages = computed(() => {
 
 /** Sequence view: who the workflow talks to, and in which order. */
 const sequence = computed(() =>
-  buildSequence(props.document, workflow.value, props.documents),
+  buildSequence(props.document, workflow.value, props.documents, {
+    actorExtension: props.arazzoOptions?.actorExtension,
+  }),
 )
 
 /** stepId → section id, for the sequence diagram's step names. */

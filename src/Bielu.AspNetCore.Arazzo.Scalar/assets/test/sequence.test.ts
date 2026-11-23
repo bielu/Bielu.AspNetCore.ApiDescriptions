@@ -5,6 +5,7 @@ import ArazzoSequenceDiagram from '../src/components/ArazzoSequenceDiagram.vue'
 import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
 import { successPath } from '../src/helpers/execution-order'
 import { toWorkflowViews, traverseArazzoDocument } from '../src/helpers/navigation'
+import { pluginOptionsFromModuleUrl, resolvePluginOptions } from '../src/helpers/plugin-options'
 import { buildSequence, CLIENT_ID, runOrder } from '../src/helpers/sequence'
 import { resetWorkflowView } from '../src/helpers/view-mode'
 import type { ArazzoDocument, ArazzoStep, ArazzoWorkflow as Workflow } from '../src/types'
@@ -511,5 +512,167 @@ describe('notes', () => {
 
     // Assert
     expect(sequence.messages[0]).toMatchObject({ stage: 'pay', note: 'matched on orderId from inputs' })
+  })
+})
+
+describe('actors', () => {
+  const options = { actorExtension: 'x-actor' }
+  const services: ArazzoDocument = {
+    arazzo: '1.1.0',
+    sourceDescriptions: [
+      { name: 'orders', url: '/openapi.json', type: 'openapi' },
+      { name: 'payments', url: '/payments.json', type: 'openapi' },
+      { name: 'events', url: '/asyncapi.json', type: 'asyncapi' },
+    ],
+    workflows: [],
+  }
+  const checkout = {
+    workflowId: 'checkout',
+    steps: [
+      { stepId: 'create', operationId: '$sourceDescriptions.orders.createOrder', successCriteria: [{ condition: '$statusCode == 201' }] },
+      { stepId: 'authorize', operationId: '$sourceDescriptions.payments.authorize', 'x-actor': 'orders' },
+      { stepId: 'authorized', channelPath: '{$sourceDescriptions.events.url}#/channels/paymentCompleted', action: 'receive', 'x-actor': 'orders' },
+      { stepId: 'announce', channelPath: '{$sourceDescriptions.events.url}#/channels/orderPlaced', action: 'send', 'x-actor': 'orders' },
+      { stepId: 'audit', operationId: '$sourceDescriptions.orders.createOrder', 'x-actor': 'orders' },
+      { stepId: 'pick', operationId: '$sourceDescriptions.orders.createOrder', 'x-actor': ' warehouse ' },
+      { stepId: 'blank', operationId: '$sourceDescriptions.orders.createOrder', 'x-actor': '  ' },
+    ],
+  } as unknown as Workflow
+
+  it('starts each step from the lane its actor names, and sends what comes back there', () => {
+    // Act
+    const sequence = buildSequence({ ...services, workflows: [checkout] }, checkout, documents, options)
+
+    // Assert
+    expect(sequence.messages.map(({ stepId, from, to, kind }) => [stepId, kind, from, to])).toEqual([
+      ['create', 'request', CLIENT_ID, 'source:orders'],
+      ['create', 'response', 'source:orders', CLIENT_ID],
+      ['authorize', 'request', 'source:orders', 'source:payments'],
+      ['authorize', 'response', 'source:payments', 'source:orders'],
+      ['authorized', 'receive', 'source:events', 'source:orders'],
+      ['announce', 'send', 'source:orders', 'source:events'],
+      // An actor that is also the step's target calls itself.
+      ['audit', 'request', 'source:orders', 'source:orders'],
+      ['audit', 'response', 'source:orders', 'source:orders'],
+      // An actor that is no source description gets a lane of its own; a blank one is the client.
+      ['pick', 'request', 'actor:warehouse', 'source:orders'],
+      ['pick', 'response', 'source:orders', 'actor:warehouse'],
+      ['blank', 'request', CLIENT_ID, 'source:orders'],
+      ['blank', 'response', 'source:orders', CLIENT_ID],
+    ])
+    expect(sequence.participants.map(({ id, label }) => [id, label])).toEqual([
+      [CLIENT_ID, 'Client'],
+      ['source:orders', 'orders'],
+      ['source:payments', 'payments'],
+      ['source:events', 'events'],
+      ['actor:warehouse', 'warehouse'],
+    ])
+  })
+
+  it('ignores the extension unless the option names it', () => {
+    // Act
+    const sequence = buildSequence({ ...services, workflows: [checkout] }, checkout, documents)
+
+    // Assert
+    expect(sequence.messages.filter((message) => message.kind === 'request').every((message) => message.from === CLIENT_ID)).toBe(true)
+  })
+
+  it('takes a workflow\'s actor for its steps, and a stage\'s from the step invoking it, the step\'s own first', () => {
+    // Arrange
+    const pay = {
+      workflowId: 'takePayment',
+      steps: [
+        { stepId: 'authorize', operationId: '$sourceDescriptions.payments.authorize' },
+        { stepId: 'notify', operationId: '$sourceDescriptions.orders.createOrder', 'x-actor': 'payments' },
+      ],
+    }
+    const owned = { workflowId: 'confirm', 'x-actor': 'payments', steps: [{ stepId: 'capture', operationId: '$sourceDescriptions.orders.createOrder' }] }
+    const outer = {
+      workflowId: 'outer',
+      steps: [
+        { stepId: 'payment', workflowId: 'takePayment', 'x-actor': 'orders' },
+        { stepId: 'confirmation', workflowId: 'confirm', 'x-actor': 'orders' },
+      ],
+    }
+    const owner = { ...services, workflows: [outer, pay, owned] } as unknown as ArazzoDocument
+
+    // Act
+    const requests = buildSequence(owner, outer as unknown as Workflow, documents, options).messages.filter((message) => message.kind === 'request')
+
+    // Assert
+    expect(requests.map(({ stepId, from }) => [stepId, from])).toEqual([
+      ['authorize', 'source:orders'],
+      ['notify', 'source:payments'],
+      ['capture', 'source:payments'],
+    ])
+  })
+
+  it('leaves the client out when every step names an actor, and starts a workflow call from the actor', () => {
+    // Arrange
+    const workflow = {
+      workflowId: 'w',
+      'x-actor': 'orders',
+      steps: [
+        { stepId: 'authorize', operationId: '$sourceDescriptions.payments.authorize' },
+        { stepId: 'elsewhere', workflowId: '$sourceDescriptions.other.flow' },
+      ],
+    } as unknown as Workflow
+
+    // Act
+    const sequence = buildSequence({ ...services, workflows: [workflow] }, workflow, documents, options)
+
+    // Assert
+    expect(sequence.participants.map((participant) => participant.id)).toEqual(['source:orders', 'source:payments', 'workflow:$sourceDescriptions.other.flow'])
+    expect(sequence.messages.at(-1)).toMatchObject({ kind: 'invoke', from: 'source:orders' })
+  })
+
+  it('draws a lane calling itself as a loop', () => {
+    // Arrange
+    const sequence = {
+      participants: [{ id: 'a', label: 'a' }],
+      messages: [{ stepId: 's', from: 'a', to: 'a', label: 'GET /self', kind: 'request' as const }],
+      stages: [],
+    }
+
+    // Act
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence, stepSectionIds: {} } })
+
+    // Assert
+    expect(wrapper.find('path.ba-sequence-self').attributes('d')).toMatch(/^M\d+,\d+ h\d+ v14 h-\d+$/)
+    expect(wrapper.find('line.ba-sequence-line').exists()).toBe(false)
+    expect(wrapper.find('.ba-sequence-label').attributes('text-anchor')).toBe('start')
+    wrapper.unmount()
+  })
+})
+
+describe('the actor option', () => {
+  afterEach(() => {
+    localStorage.clear()
+    resetWorkflowView()
+  })
+
+  it('is read from every input path, and only as a specification extension', () => {
+    // Act / Assert
+    expect(resolvePluginOptions({ actorExtension: 'x-actor' })).toEqual({ actorExtension: 'x-actor' })
+    expect(resolvePluginOptions(undefined, { actorExtension: 'actor' })).toEqual({})
+    expect(pluginOptionsFromModuleUrl('https://cdn.test/p.mjs?actorExtension=x-actor')).toEqual({ actorExtension: 'x-actor' })
+  })
+
+  it('reaches the Sequence view of a workflow', async () => {
+    // Arrange
+    const owned: ArazzoDocument = {
+      ...document,
+      workflows: [{ workflowId: 'w', steps: [{ stepId: 'create', operationId: 'createOrder', 'x-actor': 'storefront' } as ArazzoStep] }],
+    }
+    const [view] = toWorkflowViews(owned, traverseArazzoDocument({ documentId: 'doc', document: owned as unknown as Record<string, unknown> }))
+    const wrapper = mount(ArazzoWorkflow, { props: { view: view!, document: owned, documents, arazzoOptions: { actorExtension: 'x-actor' } } })
+
+    // Act
+    await wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === 'Sequence')!.trigger('click')
+    await flushPromises()
+
+    // Assert
+    expect(wrapper.findAll('.ba-overview .ba-sequence-participant > text:first-of-type').map((text) => text.text())).toEqual(['storefront', 'orders'])
+    wrapper.unmount()
   })
 })

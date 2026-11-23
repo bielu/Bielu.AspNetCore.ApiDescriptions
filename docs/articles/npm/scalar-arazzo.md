@@ -219,6 +219,7 @@ See [Pages view](../arazzo/scalar.md#pages-view) for the full rules and a screen
 | `pagesExtension` | The document extension holding the page registry. |
 | `pageExtension` | The step and action extension naming a page. |
 | `labelExtension` | The workflow, step and action extension holding a plain-language label. |
+| `actorExtension` | The step and workflow extension naming who makes a step's call in the Sequence view: a source description's name, or anyone else's. The client when unset. |
 
 Each value must be a specification extension name: `x-` followed by a name. Anything else is ignored. The
 options can be passed in three ways, and the first one present wins:

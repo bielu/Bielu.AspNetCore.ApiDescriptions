@@ -6,7 +6,7 @@ import { statusCodesIn } from './openapi-exchange'
 import { findDocumentByUrl, resolveStepTarget, resolveWorkflow, sourceNameOf } from './resolve-target'
 import { targetSpec, type SpecFamily } from './target-spec'
 
-/** A lane of the sequence: the client running the workflow, or a service or broker it talks to. */
+/** A lane of the sequence: the client running the workflow, a service or broker it talks to, or an actor. */
 export type SequenceParticipant = {
   id: string
   label: string
@@ -43,6 +43,12 @@ export type SequenceStage = {
   label: string
   /** How the invoking step's failures end. */
   note?: string
+}
+
+/** How the sequence is drawn: the plugin's options it reads. */
+export type SequenceOptions = {
+  /** The specification extension (such as `x-actor`) naming who makes a step's call; the client when unset. */
+  actorExtension?: string
 }
 
 export type Sequence = {
@@ -91,13 +97,48 @@ const failureNote = (actions: ArazzoFailureAction[]): string | undefined => {
  * that is not loaded, is a call into that workflow's lane. Only the steps a successful run reaches are drawn, in
  * the order they run (an unconditional `end` stops it, a `goto` jumps); failure paths are noted under the step's
  * arrows rather than drawn, so the main path reads straight down.
+ *
+ * Arazzo has no field for who makes a step's call: its runner makes them all, so every arrow starts at the client.
+ * With `actorExtension` (such as `x-actor`), a step, or the workflow it belongs to, can name who does instead:
+ * a source description (its lane), or anyone else (a lane of their own). The step's request, message or workflow
+ * call then starts from that lane, and its response or delivered message goes back to it. A stage's steps take
+ * the actor of the step invoking the workflow, when neither they nor their workflow name one. The client's lane
+ * is left out when no step is the client's.
  */
-export const buildSequence = (document: ArazzoDocument, workflow: ArazzoWorkflow | undefined, documents: Record<string, unknown>): Sequence => {
+export const buildSequence = (
+  document: ArazzoDocument,
+  workflow: ArazzoWorkflow | undefined,
+  documents: Record<string, unknown>,
+  options: SequenceOptions = {},
+): Sequence => {
   const participants: SequenceParticipant[] = [{ id: CLIENT_ID, label: 'Client' }]
   const messages: SequenceMessage[] = []
   const stages: SequenceStage[] = []
   if (!workflow?.steps?.length) {
     return { participants, messages, stages }
+  }
+
+  /** The actor an object names with the actor extension, if it names one. */
+  const actorOf = (of: object): string | undefined => {
+    const value = options.actorExtension ? (of as Record<string, unknown>)[options.actorExtension] : undefined
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined
+  }
+
+  /** The lane of an actor: its source description's when it names one of `owner`'s, its own otherwise. */
+  const actorLane = (owner: ArazzoDocument, actor: string | undefined): string => {
+    if (!actor) {
+      return CLIENT_ID
+    }
+    const source = owner.sourceDescriptions?.find((candidate) => candidate.name === actor)
+    if (source) {
+      const spec = source.type === 'asyncapi' || source.type === 'arazzo' ? source.type : 'openapi'
+      return lane(owner, source.name, spec, actor)
+    }
+    const id = `actor:${actor}`
+    if (!participants.some((participant) => participant.id === id)) {
+      participants.push({ id, label: actor })
+    }
+    return id
   }
 
   /** The lane for a source description of `owner`, added the first time a step talks to it. */
@@ -115,8 +156,12 @@ export const buildSequence = (document: ArazzoDocument, workflow: ArazzoWorkflow
     return id
   }
 
-  /** Adds a step's messages; `stage` is the invoking step's id when the step is one of an invoked workflow's. */
-  const draw = (owner: ArazzoDocument, current: ArazzoWorkflow, step: ArazzoStep, stage: string | undefined): void => {
+  /**
+   * Adds a step's messages; `stage` is the invoking step's id when the step is one of an invoked workflow's, and
+   * `inherited` the actor of that step.
+   */
+  const draw = (owner: ArazzoDocument, current: ArazzoWorkflow, step: ArazzoStep, stage: string | undefined, inherited?: string): void => {
+    const actor = actorOf(step) ?? actorOf(current) ?? inherited
     const target = resolveStepTarget(owner, step, documents)
     const spec = targetSpec(owner, step, target, documents)
     const failures = failureNote(reachableActions(effectiveFailureActions(owner, current, step)))
@@ -131,44 +176,52 @@ export const buildSequence = (document: ArazzoDocument, workflow: ArazzoWorkflow
           ...(failures ? { note: failures } : {}),
         })
         for (const nested of successPath(invoked.document, invoked.workflow)) {
-          draw(invoked.document, invoked.workflow, nested, step.stepId)
+          draw(invoked.document, invoked.workflow, nested, step.stepId, actor)
         }
         return
       }
+      const from = actorLane(owner, actor)
       const to = `workflow:${step.workflowId}`
       if (!participants.some((participant) => participant.id === to)) {
         participants.push({ id: to, label: `workflow ${step.workflowId.replace(/^\$sourceDescriptions\./, '')}`, spec: 'arazzo', detail: 'Arazzo' })
       }
-      push({ stepId: step.stepId, from: CLIENT_ID, to, label: 'runs the workflow', kind: 'invoke', ...(failures ? { note: failures } : {}) })
+      push({ stepId: step.stepId, from, to, label: 'runs the workflow', kind: 'invoke', ...(failures ? { note: failures } : {}) })
       return
     }
     const reference = step.operationPath ?? step.channelPath ?? step.operationId ?? step.stepId
     const sourceName = (target && target.kind !== 'workflow' ? target.sourceName : undefined) ?? spec?.sourceName ?? sourceNameOf(reference)
     if (target?.kind === 'channel' || spec?.family === 'asyncapi') {
-      const to = lane(owner, sourceName, 'asyncapi', reference)
-      const channel = (target?.kind === 'channel' ? target.channelName : undefined) ?? reference.split('/').pop() ?? reference
       const action = step.action ?? (target?.kind === 'channel' ? target.operation?.action : undefined)
+      // Lanes are added in the order a message passes them: the sender's before the broker's, and the broker's
+      // before the lane it delivers to.
+      const sender = action === 'receive' ? undefined : actorLane(owner, actor)
+      const broker = lane(owner, sourceName, 'asyncapi', reference)
+      const self = sender ?? actorLane(owner, actor)
+      const channel = (target?.kind === 'channel' ? target.channelName : undefined) ?? reference.split('/').pop() ?? reference
       const waits = [step.timeout !== undefined ? `waits up to ${formatDuration(step.timeout)}` : '', step.correlationId ? `matched on ${readable(step.correlationId)}` : '']
         .filter(Boolean)
         .join(', ')
       const note = [waits, failures].filter(Boolean).join('; ') || undefined
       push(
         action === 'receive'
-          ? { stepId: step.stepId, from: to, to: CLIENT_ID, label: channel, kind: 'receive', ...(note ? { note } : {}) }
-          : { stepId: step.stepId, from: CLIENT_ID, to, label: channel, kind: 'send', ...(note ? { note } : {}) },
+          ? { stepId: step.stepId, from: broker, to: self, label: channel, kind: 'receive', ...(note ? { note } : {}) }
+          : { stepId: step.stepId, from: self, to: broker, label: channel, kind: 'send', ...(note ? { note } : {}) },
       )
       return
     }
+    const from = actorLane(owner, actor)
     const to = lane(owner, sourceName, spec?.family ?? 'openapi', reference)
     const request =
       target?.kind === 'operation' && target.method && target.path ? `${target.method.toUpperCase()} ${target.path}` : (step.operationId ?? reference)
-    push({ stepId: step.stepId, from: CLIENT_ID, to, label: request, kind: 'request' })
+    push({ stepId: step.stepId, from, to, label: request, kind: 'request' })
     const expected = statusCodesIn(step.successCriteria)[0]
-    push({ stepId: step.stepId, from: to, to: CLIENT_ID, label: expected ?? 'response', kind: 'response', ...(failures ? { note: failures } : {}) })
+    push({ stepId: step.stepId, from: to, to: from, label: expected ?? 'response', kind: 'response', ...(failures ? { note: failures } : {}) })
   }
 
   for (const step of successPath(document, workflow)) {
     draw(document, workflow, step, undefined)
   }
-  return { participants, messages, stages }
+  // Every step names an actor: nobody calls from the client's lane, so it is not drawn.
+  const clientUsed = messages.some((message) => message.from === CLIENT_ID || message.to === CLIENT_ID)
+  return { participants: clientUsed ? participants : participants.slice(1), messages, stages }
 }
