@@ -64,30 +64,37 @@ const laneX = computed(
 const sameStep = (a: SequenceMessage, b: SequenceMessage | undefined) =>
   !!b && a.stepId === b.stepId && a.stage === b.stage
 
-/** A frame a message is drawn in: a stage's band, or a `par` fragment; `branch` is the part it is in. */
+/**
+ * A frame a message is drawn in: a stage's band, or a `par` or `alt` fragment; `branch` is the part it is in
+ * (a `par`'s branch, an `alt`'s operand), and `guard` the operand's condition.
+ */
 type Frame = {
   key: string
-  kind: 'stage' | 'par'
+  kind: 'stage' | 'par' | 'alt'
   branch: string
   stage?: SequenceStage
+  guard?: string
 }
 
 /** A frame as laid out: the rows it spans, how deep it is nested, and where its branches are divided. */
 type Fragment = {
   key: string
-  kind: 'stage' | 'par'
+  kind: 'stage' | 'par' | 'alt'
   stage?: SequenceStage
   /** A stage's number, in run order. */
   number?: number
+  /** An `alt`'s first operand's condition, beside its tag. */
+  guard?: string
   top: number
   bottom: number
   depth: number
-  separators: number[]
+  /** The dashed lines between branches or operands, each with the condition of the operand under it. */
+  separators: { y: number; guard?: string }[]
 }
 
 /**
  * The frames a message is in, outermost first: the `par` its top-level step is a branch of, the stage it is in,
- * and the `par` its step is a branch of inside that stage.
+ * the `par` its step is a branch of inside that stage, and the `alt` of the ways its step can end.
  */
 const framesOf = (message: SequenceMessage): Frame[] => {
   const { stages, parallels } = props.sequence
@@ -122,6 +129,15 @@ const framesOf = (message: SequenceMessage): Frame[] => {
       key: `par:${inner.id}`,
       kind: 'par',
       branch: message.stepId,
+    })
+  }
+  // Innermost: the ways the message's step can end.
+  if (message.operand) {
+    frames.push({
+      key: `alt:${message.operand.alt}`,
+      kind: 'alt',
+      branch: String(message.operand.index),
+      guard: message.operand.guard,
     })
   }
   return frames
@@ -164,10 +180,14 @@ const layout = computed(() => {
     for (let depth = 0; depth < kept; depth++) {
       const entry = open[depth]!
       if (entry.branch !== frames[depth]!.branch) {
-        // A new branch of a `par`: a dashed line across it, between the branches.
+        // A new branch of a `par` or operand of an `alt`: a dashed line across it, with the operand's condition.
         entry.branch = frames[depth]!.branch
-        y += 10
-        entry.fragment.separators.push(y - 31)
+        const guard = frames[depth]!.guard
+        y += guard ? 18 : 10
+        entry.fragment.separators.push({
+          y: y - (guard ? 39 : 31),
+          ...(guard ? { guard } : {}),
+        })
       }
     }
     for (let depth = kept; depth < frames.length; depth++) {
@@ -176,6 +196,7 @@ const layout = computed(() => {
         key: frame.key,
         kind: frame.kind,
         ...(frame.stage ? { stage: frame.stage, number: ++stageNumber } : {}),
+        ...(frame.guard ? { guard: frame.guard } : {}),
         top: y - 18,
         bottom: 0,
         depth,
@@ -211,8 +232,9 @@ const fragments = computed(() =>
 const bands = computed(() =>
   fragments.value.filter((fragment) => fragment.kind === 'stage'),
 )
-const pars = computed(() =>
-  fragments.value.filter((fragment) => fragment.kind === 'par'),
+/** The `par` and `alt` fragments. */
+const combined = computed(() =>
+  fragments.value.filter((fragment) => fragment.kind !== 'stage'),
 )
 
 /** Roughly how wide a self-call's text is drawn: 11px code for the label, 10px sans for the note. */
@@ -360,36 +382,64 @@ const isClient = (id: string) => id === CLIENT_ID
         </text>
       </g>
 
-      <!-- Steps that run at the same time: a `par` frame, its branches divided by dashed lines. -->
+      <!--
+        UML combined fragments: a `par` frames steps that run at the same time, its branches divided by dashed
+        lines; an `alt` frames the ways a step can end, each operand under its condition.
+      -->
       <g
-        v-for="par in pars"
-        :key="par.key"
-        class="ba-sequence-par">
-        <title>Run at the same time</title>
+        v-for="fragment in combined"
+        :key="fragment.key"
+        class="ba-sequence-fragment"
+        :class="`ba-sequence-${fragment.kind}`">
+        <title>
+          {{
+            fragment.kind === 'par'
+              ? 'Run at the same time'
+              : 'The ways the step can end'
+          }}
+        </title>
         <rect
-          :height="par.bottom - par.top"
+          :height="fragment.bottom - fragment.top"
           rx="4"
-          :width="width - 2 * inset(par)"
-          :x="inset(par)"
-          :y="par.top" />
+          :width="width - 2 * inset(fragment)"
+          :x="inset(fragment)"
+          :y="fragment.top" />
         <path
-          class="ba-sequence-par-tag"
-          :d="`M${inset(par)},${par.top} h30 v10 l-6,6 h-24 z`" />
+          class="ba-sequence-fragment-tag"
+          :d="`M${inset(fragment)},${fragment.top} h30 v10 l-6,6 h-24 z`" />
         <text
-          class="ba-sequence-par-label"
+          class="ba-sequence-fragment-label"
           dominant-baseline="central"
-          :x="inset(par) + 5"
-          :y="par.top + 8">
-          par
+          :x="inset(fragment) + 5"
+          :y="fragment.top + 8">
+          {{ fragment.kind }}
         </text>
-        <line
-          v-for="separator in par.separators"
-          :key="separator"
-          class="ba-sequence-par-separator"
-          :x1="inset(par)"
-          :x2="width - inset(par)"
-          :y1="separator"
-          :y2="separator" />
+        <text
+          v-if="fragment.guard"
+          class="ba-sequence-guard"
+          dominant-baseline="central"
+          :x="inset(fragment) + 36"
+          :y="fragment.top + 8">
+          [{{ cut(fragment.guard, 60) }}]
+        </text>
+        <g
+          v-for="separator in fragment.separators"
+          :key="separator.y">
+          <line
+            class="ba-sequence-fragment-separator"
+            :x1="inset(fragment)"
+            :x2="width - inset(fragment)"
+            :y1="separator.y"
+            :y2="separator.y" />
+          <text
+            v-if="separator.guard"
+            class="ba-sequence-guard"
+            dominant-baseline="central"
+            :x="inset(fragment) + 6"
+            :y="separator.y + 9">
+            [{{ cut(separator.guard, 60) }}]
+          </text>
+        </g>
       </g>
 
       <g

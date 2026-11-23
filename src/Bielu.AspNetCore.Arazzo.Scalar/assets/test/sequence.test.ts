@@ -208,14 +208,24 @@ describe('buildSequence', () => {
     ])
     expect(sequence.messages).toEqual([
       { stepId: 'create', from: CLIENT_ID, to: 'source:orders', label: 'POST /orders', kind: 'request' },
-      { stepId: 'create', from: 'source:orders', to: CLIENT_ID, label: '201', kind: 'response', note: 'on 400: rejected (end)' },
+      // create can end two ways: an alt with the 201 first, then the 400 its failure action handles.
+      { stepId: 'create', from: 'source:orders', to: CLIENT_ID, label: '201', kind: 'response', operand: { alt: '/create', index: 0, guard: '201' } },
+      {
+        stepId: 'create',
+        from: 'source:orders',
+        to: CLIENT_ID,
+        label: '400',
+        kind: 'response',
+        note: 'rejected: end',
+        operand: { alt: '/create', index: 1, guard: '400' },
+      },
       { stepId: 'announce', from: CLIENT_ID, to: 'source:events', label: 'orderPlaced', kind: 'send' },
       { stepId: 'paid', from: 'source:events', to: CLIENT_ID, label: 'paymentCompleted', kind: 'receive', note: 'waits up to 1 min, matched on orderId from create' },
       { stepId: 'track', from: CLIENT_ID, to: 'workflow:trackOrder', label: 'runs the workflow', kind: 'invoke' },
     ])
   })
 
-  it('labels the response "response" when the criteria name no status, and notes at most three failure paths', () => {
+  it('draws every way a step can end as an operand of its alt, under the condition leading there', () => {
     // Arrange
     const workflow: Workflow = {
       workflowId: 'w',
@@ -227,17 +237,31 @@ describe('buildSequence', () => {
             { name: 'a', type: 'end', criteria: [{ condition: '$statusCode == 400' }] },
             { name: 'b', type: 'goto', stepId: 'create', criteria: [{ condition: '$response.body#/retry == true' }] },
             { name: 'c', type: 'goto', workflowId: 'other', criteria: [{ condition: '$statusCode == 409' }] },
+            { name: 'e', type: 'retry', retryAfter: 2, retryLimit: 3, criteria: [{ condition: '$statusCode == 503' }] },
             { name: 'd', type: 'end' },
+          ],
+          onSuccess: [
+            { name: 'cached', type: 'goto', stepId: 'create', criteria: [{ condition: '$statusCode == 304' }] },
+            { name: 'done', type: 'end' },
           ],
         },
       ],
     }
 
     // Act
-    const [, response] = buildSequence(document, workflow, documents).messages
+    const [, ...ends] = buildSequence(document, workflow, documents).messages
 
-    // Assert
-    expect(response).toMatchObject({ label: 'response', note: 'on 400: a (end); if: b (→ create); on 409: c (→ other); …' })
+    // Assert: the success path ("response": no status in the criteria), then the conditional success action, then
+    // each failure action; a failure with no status comes back as an error.
+    expect(ends.map(({ label, note, operand }) => [operand?.index, operand?.guard, label, note])).toEqual([
+      [0, 'success', 'response', undefined],
+      [1, '304', '304', 'cached: → create'],
+      [2, '400', '400', 'a: end'],
+      [3, 'if $response.body#/retry == true', 'error', 'b: → create'],
+      [4, '409', '409', 'c: → other'],
+      [5, '503', '503', 'e: retry after 2 s × 3'],
+      [6, 'otherwise', 'error', 'd: end'],
+    ])
   })
 
   it('still draws steps whose documents are not loaded, under their source', () => {
@@ -283,7 +307,7 @@ describe('the sequence diagram', () => {
 
     // Assert
     expect(wrapper.findAll('.ba-sequence-participant')).toHaveLength(4)
-    expect(wrapper.findAll('.ba-sequence-message')).toHaveLength(5)
+    expect(wrapper.findAll('.ba-sequence-message')).toHaveLength(6)
     expect(wrapper.findAll('.ba-sequence-step text').map((step) => step.text())).toEqual(['create', 'announce', 'paid', 'track'])
     expect(wrapper.find('.ba-sequence-response .ba-sequence-line').classes()).toContain('ba-sequence-dashed')
     expect(wrapper.find('.ba-sequence-receive .ba-sequence-note').text()).toBe('waits up to 1 min, matched on orderId from create')
@@ -896,7 +920,7 @@ describe('steps that run at the same time', () => {
     // Bands are drawn outermost first; find each by its title.
     const band = (title: string) => frame(wrapper.findAll('.ba-sequence-stage').find((stage) => stage.find('.ba-sequence-stage-title').text().endsWith(title))!.find('rect'))
     const [stock, payment, confirm] = ['Reserve the stock', 'Take the payment', 'Confirm the order'].map(band)
-    expect(wrapper.findAll('.ba-sequence-par-label').map((label) => label.text())).toEqual(['par', 'par'])
+    expect(wrapper.findAll('.ba-sequence-par .ba-sequence-fragment-label').map((label) => label.text())).toEqual(['par', 'par'])
     // The two parallel stages sit inside the outer par, inset from it; the inner par sits inside `confirm`.
     expect(stock!.x).toBeGreaterThan(outer!.x)
     expect([stock, payment].every((band) => band!.top > outer!.top && band!.bottom < outer!.bottom)).toBe(true)
@@ -905,12 +929,55 @@ describe('steps that run at the same time', () => {
     expect(inner!.x).toBeGreaterThan(confirm!.x)
     expect(inner!.top > confirm!.top && inner!.bottom < confirm!.bottom).toBe(true)
     // One dashed line between the two branches of each par, between their rows.
-    const separators = wrapper.findAll('.ba-sequence-par-separator').map((line) => Number(line.attributes('y1')))
+    const separators = wrapper.findAll('.ba-sequence-par .ba-sequence-fragment-separator').map((line) => Number(line.attributes('y1')))
     expect(separators).toHaveLength(2)
     expect(separators[0]).toBeGreaterThan(stock!.bottom)
     expect(separators[0]).toBeLessThan(payment!.top)
     // The diagram is tall enough for every frame.
     expect(Number(wrapper.find('svg').attributes('viewBox')!.split(' ')[3])).toBeGreaterThan(Math.max(outer!.bottom, confirm!.bottom))
+    wrapper.unmount()
+  })
+})
+
+describe('the ways a step can end', () => {
+  it('frames a step\'s responses in an alt, each operand under its condition, and leaves the request outside', () => {
+    // Arrange
+    const workflow: Workflow = {
+      workflowId: 'w',
+      steps: [
+        {
+          stepId: 'create',
+          operationId: 'createOrder',
+          successCriteria: [{ condition: '$statusCode == 201' }],
+          onFailure: [
+            { name: 'rejected', type: 'end', criteria: [{ condition: '$statusCode == 400' }] },
+            { name: 'conflict', type: 'goto', stepId: 'create', criteria: [{ condition: '$statusCode == 409' }] },
+          ],
+        },
+        { stepId: 'announce', operationId: 'publishOrderPlaced' },
+      ],
+    }
+
+    // Act
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence: buildSequence(document, workflow, documents), stepSectionIds: {} } })
+
+    // Assert
+    const alt = wrapper.find('.ba-sequence-alt')
+    expect(alt.find('.ba-sequence-fragment-label').text()).toBe('alt')
+    expect(alt.findAll('.ba-sequence-guard').map((guard) => guard.text())).toEqual(['[201]', '[400]', '[409]'])
+    expect(alt.findAll('.ba-sequence-fragment-separator')).toHaveLength(2)
+    const box = alt.find('rect')
+    const [top, bottom] = [Number(box.attributes('y')), Number(box.attributes('y')) + Number(box.attributes('height'))]
+    const rows = wrapper.findAll('.ba-sequence-line').map((line) => Number(line.attributes('y1')))
+    // The request, then the three responses inside the alt, then the next step below it.
+    expect(rows[0]).toBeLessThan(top)
+    expect(rows.slice(1, 4).every((y) => y > top && y < bottom)).toBe(true)
+    expect(rows[4]).toBeGreaterThan(bottom)
+    // Each condition sits between its dashed line and its response.
+    const separators = alt.findAll('.ba-sequence-fragment-separator').map((line) => Number(line.attributes('y1')))
+    expect(separators[0]).toBeGreaterThan(rows[1]!)
+    expect(separators[0]).toBeLessThan(rows[2]!)
+    expect(wrapper.findAll('.ba-sequence-step text').map((step) => step.text())).toEqual(['create', 'announce'])
     wrapper.unmount()
   })
 })

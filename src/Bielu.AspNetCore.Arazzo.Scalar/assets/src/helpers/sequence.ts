@@ -1,5 +1,5 @@
-import type { ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoWorkflow } from '../types'
-import { effectiveFailureActions, reachableActions } from './actions'
+import type { ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoSuccessAction, ArazzoWorkflow } from '../types'
+import { effectiveFailureActions, effectiveSuccessActions, isUnconditional, reachableActions } from './actions'
 import { stepsBefore, successPath, usesDependsOn } from './execution-order'
 import { formatDuration } from './format'
 import { statusCodesIn } from './openapi-exchange'
@@ -30,6 +30,21 @@ export type SequenceMessage = {
   note?: string
   /** The id of the stage the message belongs to, when its step is one of an invoked workflow's. */
   stage?: string
+  /**
+   * The operand of an `alt` fragment the message is in: a step with more than one way on draws how it ends
+   * each way (the success path first), under the condition (`guard`) that leads there.
+   */
+  operand?: SequenceOperand
+}
+
+/** One way a step can end, as an operand of its `alt` fragment. */
+export type SequenceOperand = {
+  /** The fragment: one per step, so the stage and step ids. */
+  alt: string
+  /** 0 for the success path, then the actions in the order the step lists them (success first, then failure). */
+  index: number
+  /** The condition, as UML writes it without the brackets: `201`, `if $statusCode == 404`, `otherwise`. */
+  guard: string
 }
 
 /**
@@ -141,6 +156,27 @@ const readable = (expression: string): string => {
   return input ? `${input[1]} from inputs` : expression
 }
 
+/** Where an action leads: `end`, `→ step`, `→ workflow`, or how a retry waits. */
+const actionWhere = (action: ArazzoSuccessAction | ArazzoFailureAction): string => {
+  if (action.type === 'retry') {
+    const retry = action as ArazzoFailureAction
+    return ['retry', retry.retryAfter !== undefined ? `after ${retry.retryAfter} s` : '', retry.retryLimit !== undefined ? `× ${retry.retryLimit}` : '']
+      .filter(Boolean)
+      .join(' ')
+  }
+  return action.stepId ? `→ ${action.stepId}` : action.workflowId ? `→ ${action.workflowId}` : action.type
+}
+
+/** The condition an action applies under: its status codes, else its first condition, else `otherwise`. */
+const actionGuard = (action: ArazzoSuccessAction | ArazzoFailureAction): string => {
+  const codes = statusCodesIn(action.criteria)
+  if (codes.length) {
+    return codes.join(' / ')
+  }
+  const condition = action.criteria?.[0]?.condition
+  return condition ? `if ${condition.length > 48 ? `${condition.slice(0, 47)}…` : condition}` : 'otherwise'
+}
+
 /** "on 400: rejected (end)", for the failure paths a step can take, kept short. */
 const failureNote = (actions: ArazzoFailureAction[]): string | undefined => {
   const notes = actions.slice(0, 3).map((action) => {
@@ -250,6 +286,34 @@ export const buildSequence = (
     const spec = targetSpec(owner, step, target, documents)
     const failures = failureNote(reachableActions(effectiveFailureActions(owner, current, step)))
     const push = (message: SequenceMessage) => messages.push(stage ? { ...message, stage } : message)
+    // The other ways the step can end: its conditional success actions, then its failure actions.
+    const outcomes = [
+      ...reachableActions(effectiveSuccessActions(owner, current, step))
+        .filter((action) => !isUnconditional(action))
+        .map((action) => ({ action, failure: false })),
+      ...reachableActions(effectiveFailureActions(owner, current, step)).map((action) => ({ action, failure: true })),
+    ]
+    /**
+     * Adds how the step ends: `main` alone, or with more than one way on an `alt` fragment, the success path first
+     * and then each action, as `variant` draws it, noting where it leads.
+     */
+    const ends = (
+      main: SequenceMessage,
+      guard: string,
+      variant: (action: ArazzoSuccessAction | ArazzoFailureAction, failure: boolean) => SequenceMessage,
+    ) => {
+      if (!outcomes.length) {
+        push(main)
+        return
+      }
+      const alt = `${stage ?? ''}/${step.stepId}`
+      push({ ...main, operand: { alt, index: 0, guard } })
+      outcomes.forEach(({ action, failure }, index) => {
+        const drawn = variant(action, failure)
+        const note = `${action.name}: ${actionWhere(action)}`
+        push({ ...drawn, note: drawn.note ? `${drawn.note}; ${note}` : note, operand: { alt, index: index + 1, guard: actionGuard(action) } })
+      })
+    }
     if (step.workflowId) {
       const invoked = stage ? undefined : resolveWorkflow(owner, step.workflowId, documents)
       if (invoked?.workflow.steps?.length) {
@@ -267,7 +331,8 @@ export const buildSequence = (
       if (!participants.some((participant) => participant.id === to)) {
         participants.push({ id: to, label: `workflow ${step.workflowId.replace(/^\$sourceDescriptions\./, '')}`, spec: 'arazzo', detail: 'Arazzo' })
       }
-      push({ stepId: step.stepId, from, to, label: 'runs the workflow', kind: 'invoke', ...(failures ? { note: failures } : {}) })
+      const call: SequenceMessage = { stepId: step.stepId, from, to, label: 'runs the workflow', kind: 'invoke' }
+      ends(call, 'success', () => call)
       return
     }
     const reference = step.operationPath ?? step.channelPath ?? step.operationId ?? step.stepId
@@ -283,12 +348,12 @@ export const buildSequence = (
       const waits = [step.timeout !== undefined ? `waits up to ${formatDuration(step.timeout)}` : '', step.correlationId ? `matched on ${readable(step.correlationId)}` : '']
         .filter(Boolean)
         .join(', ')
-      const note = [waits, failures].filter(Boolean).join('; ') || undefined
-      push(
+      const message: SequenceMessage =
         action === 'receive'
-          ? { stepId: step.stepId, from: broker, to: self, label: channel, kind: 'receive', ...(note ? { note } : {}) }
-          : { stepId: step.stepId, from: self, to: broker, label: channel, kind: 'send', ...(note ? { note } : {}) },
-      )
+          ? { stepId: step.stepId, from: broker, to: self, label: channel, kind: 'receive' }
+          : { stepId: step.stepId, from: self, to: broker, label: channel, kind: 'send' }
+      // How long it waits, and what it is matched on, belongs to the message on every path; noted once, on the first.
+      ends(waits ? { ...message, note: waits } : message, 'success', () => message)
       return
     }
     const from = by()
@@ -297,7 +362,15 @@ export const buildSequence = (
       target?.kind === 'operation' && target.method && target.path ? `${target.method.toUpperCase()} ${target.path}` : (step.operationId ?? reference)
     push({ stepId: step.stepId, from, to, label: request, kind: 'request' })
     const expected = statusCodesIn(step.successCriteria)[0]
-    push({ stepId: step.stepId, from: to, to: from, label: expected ?? 'response', kind: 'response', ...(failures ? { note: failures } : {}) })
+    // The request is the same on every path; the response differs, so only the response is in the `alt`.
+    ends({ stepId: step.stepId, from: to, to: from, label: expected ?? 'response', kind: 'response' }, expected ?? 'success', (action, failure) => ({
+      stepId: step.stepId,
+      from: to,
+      to: from,
+      // A failure without a status code still comes back, as an error; a success action without one, as expected.
+      label: statusCodesIn(action.criteria)[0] ?? (failure ? 'error' : (expected ?? 'response')),
+      kind: 'response',
+    }))
   }
 
   drawAll(document, workflow, undefined)

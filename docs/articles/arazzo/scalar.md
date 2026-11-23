@@ -191,9 +191,12 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     an AsyncAPI step publishes to, or is delivered from, its source's lane, noting how long it waits and what
     it's matched on. A step that invokes a workflow is a stage: that workflow's own messages, drawn in place on a
     band numbered in run order and titled with its summary, so a workflow composed of others reads as its stages
-    (one level deep; a workflow that isn't loaded is a call into its lane). Failure paths are
-    noted under the step's arrows ("on 400: rejected (end)") rather than drawn, so the main path reads straight
-    down. Each step's name on the left opens the step.
+    (one level deep; a workflow that isn't loaded is a call into its lane). A step that can end
+    more than one way is framed in a UML `alt` fragment: the success path first (`[201]` and its response),
+    then each conditional success action and each failure action under its condition (`[400]`, `[if …]`,
+    `[otherwise]`), with the response or message it ends on and where it leads ("rejected: end", "retry after
+    2 s × 3"). The request is drawn once, above the `alt`, since every way starts with it. Each step's name on the
+    left opens the step.
 
     Steps that run at the same time are framed in a UML `par` fragment, a dashed line between each step's
     messages: consecutive steps, in a workflow that uses `dependsOn`, none of which waits on another (by
