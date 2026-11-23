@@ -184,10 +184,12 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
 
   - **Sequence.** The **Sequence** view draws who the workflow talks to, in the order its steps run (by
     `dependsOn` when the workflow uses it): a lane for the client running it, one per source description it
-    talks to (named after the source, with its spec and document title), and one per workflow it invokes. An
+    talks to (named after the source, with its spec and document title), and one per workflow it calls that isn't drawn as a stage. An
     OpenAPI step is a request (`POST /orders`) and the response its success criteria expect (`201`, dashed);
     an AsyncAPI step publishes to, or is delivered from, its source's lane, noting how long it waits and what
-    it's matched on; a step that invokes a workflow is a call into that workflow's lane. Failure paths are
+    it's matched on. A step that invokes a workflow is a stage: that workflow's own messages, drawn in place on a
+    band numbered in run order and titled with its summary, so a workflow composed of others reads as its stages
+    (one level deep; a workflow that isn't loaded is a call into its lane). Failure paths are
     noted under the step's arrows ("on 400: rejected (end)") rather than drawn, so the main path reads straight
     down. Each step's name on the left opens the step.
 

@@ -5,6 +5,7 @@ import {
   CLIENT_ID,
   type Sequence,
   type SequenceMessage,
+  type SequenceStage,
 } from '../helpers/sequence'
 
 /**
@@ -32,6 +33,8 @@ const LANE = 210
 const HEADER = 44
 const ROW = 36
 const NOTE = 16
+/** A stage's title row, above its first message. */
+const BAND = 26
 const MAX_LABEL = 28
 /** The smallest the diagram is drawn at (11px labels at about 9px); narrower than that, it scrolls instead. */
 const MIN_SCALE = 0.85
@@ -51,43 +54,81 @@ const laneX = computed(
     ),
 )
 
-/** Each message with its row: the first message of a step carries the step's name. */
-const rows = computed(() => {
+/** Whether two messages are of one step: the same id, in the same stage (a stage's step ids are its workflow's). */
+const sameStep = (a: SequenceMessage, b: SequenceMessage | undefined) =>
+  !!b && a.stepId === b.stepId && a.stage === b.stage
+
+type Band = {
+  stage: SequenceStage
+  number: number
+  top: number
+  bottom: number
+}
+
+/**
+ * Each message with its row (the first message of a step carries the step's name), and each stage with the
+ * rows it spans: a title row, numbered in run order, then its workflow's messages.
+ */
+const layout = computed(() => {
+  const { messages, stages } = props.sequence
+  const bands: Band[] = []
   let y = HEADER + 24
-  return props.sequence.messages.map((message, index) => {
-    const first =
-      index === 0 ||
-      props.sequence.messages[index - 1]!.stepId !== message.stepId
+  const rows = messages.map((message, index) => {
+    const previous = messages[index - 1]
+    const next = messages[index + 1]
+    const stage = message.stage
+      ? stages.find((candidate) => candidate.id === message.stage)
+      : undefined
+    if (stage && message.stage !== previous?.stage) {
+      bands.push({ stage, number: bands.length + 1, top: y - 18, bottom: 0 })
+      y += BAND
+    }
     const row = {
       message,
       y,
-      first,
+      first: !sameStep(message, previous),
       x1: laneX.value.get(message.from) ?? GUTTER,
       x2: laneX.value.get(message.to) ?? GUTTER,
     }
+    const bottom = y + (message.note ? NOTE : 0)
     y +=
       ROW +
       (message.note ? NOTE : 0) +
-      (index + 1 < props.sequence.messages.length &&
-      props.sequence.messages[index + 1]!.stepId !== message.stepId
-        ? 8
-        : 0)
+      (next && !sameStep(message, next) ? 8 : 0)
+    if (stage && next?.stage !== message.stage) {
+      bands[bands.length - 1]!.bottom = bottom + 12
+      y += 8
+    }
     return row
   })
+  return { rows, bands }
 })
+
+const rows = computed(() => layout.value.rows)
+const bands = computed(() => layout.value.bands)
 
 const width = computed(() => GUTTER + props.sequence.participants.length * LANE)
 const height = computed(() => {
   const last = rows.value[rows.value.length - 1]
-  return last ? last.y + (last.message.note ? NOTE : 0) + 24 : HEADER + 24
+  const band = bands.value[bands.value.length - 1]
+  return Math.max(
+    last ? last.y + (last.message.note ? NOTE : 0) + 24 : HEADER + 24,
+    band ? band.bottom + 12 : 0,
+  )
 })
+
+/**
+ * The section a step's name opens. A stage's steps are listed inside the step that invokes their workflow, so
+ * theirs is that step's section (their own ids can repeat this workflow's).
+ */
+const sectionOf = (message: SequenceMessage): string | undefined =>
+  props.stepSectionIds[message.stage ?? message.stepId]
 
 /** A response or a delivered message is drawn dashed, as in UML: what comes back, rather than what is sent. */
 const dashed = (message: SequenceMessage): boolean =>
   message.kind === 'response'
 
-const open = (event: Event, stepId: string) => {
-  const section = props.stepSectionIds[stepId]
+const open = (event: Event, stepId: string, section: string | undefined) => {
   if (section) {
     const from = event.currentTarget as Element
     emit('navigate', stepId)
@@ -97,10 +138,14 @@ const open = (event: Event, stepId: string) => {
   }
 }
 
-const onKeydown = (event: KeyboardEvent, stepId: string) => {
+const onKeydown = (
+  event: KeyboardEvent,
+  stepId: string,
+  section: string | undefined,
+) => {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
-    open(event, stepId)
+    open(event, stepId, section)
   }
 }
 
@@ -134,6 +179,51 @@ const isClient = (id: string) => id === CLIENT_ID
             d="M0,0 L8,4 L0,8 z" />
         </marker>
       </defs>
+
+      <!-- Behind the lifelines and messages: each stage's band, titled with its workflow. -->
+      <g
+        v-for="band in bands"
+        :key="band.stage.id"
+        class="ba-sequence-stage">
+        <title>
+          {{ band.number }} · {{ band.stage.label }} (workflow
+          {{ band.stage.workflowId }}){{
+            band.stage.note ? ` — ${band.stage.note}` : ''
+          }}
+        </title>
+        <rect
+          :height="band.bottom - band.top"
+          rx="6"
+          :width="width - 8"
+          x="4"
+          :y="band.top" />
+        <g
+          :aria-label="`Go to step ${band.stage.id}`"
+          class="ba-sequence-stage-title"
+          :class="{ 'ba-diagram-link': !!stepSectionIds[band.stage.id] }"
+          role="link"
+          tabindex="0"
+          @click="open($event, band.stage.id, stepSectionIds[band.stage.id])"
+          @keydown="
+            onKeydown($event, band.stage.id, stepSectionIds[band.stage.id])
+          ">
+          <text
+            dominant-baseline="central"
+            x="12"
+            :y="band.top + 13">
+            {{ band.number }} · {{ cut(band.stage.label, 60) }}
+          </text>
+        </g>
+        <text
+          v-if="band.stage.note"
+          class="ba-sequence-note"
+          dominant-baseline="central"
+          text-anchor="end"
+          :x="width - 14"
+          :y="band.top + 13">
+          {{ cut(band.stage.note, 60) }}
+        </text>
+      </g>
 
       <g
         v-for="participant in sequence.participants"
@@ -192,11 +282,13 @@ const isClient = (id: string) => id === CLIENT_ID
           v-if="row.first"
           :aria-label="`Go to step ${row.message.stepId}`"
           class="ba-sequence-step"
-          :class="{ 'ba-diagram-link': !!stepSectionIds[row.message.stepId] }"
+          :class="{ 'ba-diagram-link': !!sectionOf(row.message) }"
           role="link"
           tabindex="0"
-          @click="open($event, row.message.stepId)"
-          @keydown="onKeydown($event, row.message.stepId)">
+          @click="open($event, row.message.stepId, sectionOf(row.message))"
+          @keydown="
+            onKeydown($event, row.message.stepId, sectionOf(row.message))
+          ">
           <title>Go to step {{ row.message.stepId }}</title>
           <text
             dominant-baseline="central"

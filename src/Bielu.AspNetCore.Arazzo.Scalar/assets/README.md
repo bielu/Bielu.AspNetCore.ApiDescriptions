@@ -61,7 +61,7 @@ Technical | Pages views) and troubleshooting.
   `$sourceDescriptions.<name>.<workflowId>`, of another Arazzo document loaded on the page. Distinct `end` failure actions get end nodes of their own.
 - An example input for each workflow, made from its inputs schema, to copy.
 - A Sequence view: the client, each service or broker it talks to, and the requests, responses and
-  messages between them in run order.
+  messages between them in run order, with each workflow a step invokes drawn in place as a numbered stage.
 - A Data flow view of the overview: which inputs and outputs each step reads, and from where.
 - Export of the overview as SVG or PNG, or as Mermaid source to paste into Markdown.
 - Collapsible steps and a filter for workflows and steps. The overview can be used from the

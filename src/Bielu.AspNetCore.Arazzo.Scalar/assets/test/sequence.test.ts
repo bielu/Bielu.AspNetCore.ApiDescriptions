@@ -53,7 +53,8 @@ const document: ArazzoDocument = {
     { name: 'orders', url: '/openapi.json', type: 'openapi' },
     { name: 'events', url: '/asyncapi.json', type: 'asyncapi' },
   ],
-  workflows: [placeOrder, { workflowId: 'trackOrder', steps: [{ stepId: 'status' }] }],
+  // trackOrder has no steps of its own here, so the step invoking it is a call into its lane rather than a stage.
+  workflows: [placeOrder, { workflowId: 'trackOrder' }],
 }
 
 beforeEach(() => {
@@ -249,7 +250,7 @@ describe('buildSequence', () => {
 
   it('has only the client for a workflow without steps', () => {
     // Act / Assert
-    expect(buildSequence(document, { workflowId: 'empty' }, documents)).toEqual({ participants: [{ id: CLIENT_ID, label: 'Client' }], messages: [] })
+    expect(buildSequence(document, { workflowId: 'empty' }, documents)).toEqual({ participants: [{ id: CLIENT_ID, label: 'Client' }], messages: [], stages: [] })
   })
 })
 
@@ -342,5 +343,173 @@ describe('the sequence diagram', () => {
     expect(wrapper.find('.ba-overview .ba-diagram').exists()).toBe(false)
     expect(wrapper.find('.ba-overview .ba-export').exists()).toBe(false)
     expect(wrapper.find('.ba-overview .ba-diagram-legend').exists()).toBe(false)
+  })
+})
+
+describe('stages', () => {
+  const pay: Workflow = {
+    workflowId: 'takePayment',
+    summary: 'Take the payment',
+    steps: [
+      { stepId: 'create', operationId: 'createOrder', successCriteria: [{ condition: '$statusCode == 201' }] },
+      { stepId: 'paid', channelPath: '{$sourceDescriptions.events.url}#/channels/paymentCompleted', action: 'receive' },
+      { stepId: 'deeper', workflowId: 'audit' },
+    ],
+  }
+  const checkout: Workflow = {
+    workflowId: 'checkout',
+    steps: [
+      { stepId: 'payment', workflowId: 'takePayment', onFailure: [{ name: 'declined', type: 'end', criteria: [{ condition: '$statusCode == 402' }] }] },
+      { stepId: 'track', workflowId: 'noSummary' },
+      { stepId: 'empty', workflowId: 'nothing' },
+    ],
+  }
+  const staged: ArazzoDocument = {
+    ...document,
+    workflows: [
+      checkout,
+      pay,
+      { workflowId: 'audit', steps: [{ stepId: 'log', operationId: 'createOrder' }] },
+      { workflowId: 'noSummary', steps: [{ stepId: 'create', operationId: 'createOrder' }] },
+      { workflowId: 'nothing' },
+    ],
+  }
+
+  let wrapper: VueWrapper | undefined
+
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+  })
+
+  it('draws an invoked workflow as a stage of its own steps, one level deep', () => {
+    // Act
+    const sequence = buildSequence(staged, checkout, documents)
+
+    // Assert
+    expect(sequence.stages).toEqual([
+      { id: 'payment', workflowId: 'takePayment', label: 'Take the payment', note: 'on 402: declined (end)' },
+      { id: 'track', workflowId: 'noSummary', label: 'noSummary' },
+    ])
+    expect(sequence.messages.map(({ stepId, kind, stage }) => [stepId, kind, stage])).toEqual([
+      ['create', 'request', 'payment'],
+      ['create', 'response', 'payment'],
+      ['paid', 'receive', 'payment'],
+      // A workflow the stage invokes in turn is a call into its lane, not a stage inside the stage.
+      ['deeper', 'invoke', 'payment'],
+      ['create', 'request', 'track'],
+      ['create', 'response', 'track'],
+      // A workflow without steps is a call into its lane, as before.
+      ['empty', 'invoke', undefined],
+    ])
+    expect(sequence.participants.map((participant) => participant.id)).toEqual([
+      CLIENT_ID,
+      'source:orders',
+      'source:events',
+      'workflow:audit',
+      'workflow:nothing',
+    ])
+  })
+
+  it('draws only the steps a successful run of the invoked workflow reaches', () => {
+    // Arrange
+    const short: ArazzoDocument = {
+      arazzo: '1.1.0',
+      workflows: [
+        { workflowId: 'outer', steps: [{ stepId: 'inner', workflowId: 'inner' }] },
+        {
+          workflowId: 'inner',
+          steps: [
+            { stepId: 'first', operationId: 'a', onSuccess: [{ name: 'done', type: 'end' }] },
+            { stepId: 'never', operationId: 'b' },
+          ],
+        },
+      ],
+    }
+
+    // Act
+    const sequence = buildSequence(short, short.workflows![0], {})
+
+    // Assert
+    expect([...new Set(sequence.messages.map((message) => message.stepId))]).toEqual(['first'])
+  })
+
+  it('bands each stage, numbered in run order, and opens the invoking step from the stage and its steps', async () => {
+    // Arrange
+    const host = globalThis.document.createElement('div')
+    host.innerHTML = '<section id="doc/step/payment"></section><section id="doc/step/create"></section>'
+    globalThis.document.body.appendChild(host)
+    const payment = host.querySelector<HTMLElement>('[id="doc/step/payment"]')!
+    const create = host.querySelector<HTMLElement>('[id="doc/step/create"]')!
+    payment.scrollIntoView = vi.fn()
+    create.scrollIntoView = vi.fn()
+    // `create` is also a step id of this workflow: a stage's step must not open it.
+    wrapper = mount(ArazzoSequenceDiagram, {
+      attachTo: globalThis.document.body,
+      props: { sequence: buildSequence(staged, checkout, documents), stepSectionIds: { payment: 'doc/step/payment', create: 'doc/step/create' } },
+    })
+
+    // Act
+    await wrapper.find('.ba-sequence-step').trigger('click')
+    await flushPromises()
+
+    // Assert
+    const titles = wrapper.findAll('.ba-sequence-stage-title text').map((title) => title.text())
+    expect(titles).toEqual(['1 · Take the payment', '2 · noSummary'])
+    expect(wrapper.find('.ba-sequence-stage .ba-sequence-note').text()).toBe('on 402: declined (end)')
+    expect(wrapper.findAll('.ba-sequence-step text').map((step) => step.text())).toEqual(['create', 'paid', 'deeper', 'create', 'empty'])
+    expect(payment.scrollIntoView).toHaveBeenCalled()
+    expect(create.scrollIntoView).not.toHaveBeenCalled()
+    // The second stage's steps have no section to open: their invoking step `track` has none here.
+    expect(wrapper.findAll('.ba-sequence-step')[3]!.classes()).not.toContain('ba-diagram-link')
+    // Each band encloses its rows, and the diagram is tall enough for the last one.
+    const [first, second] = wrapper.findAll('.ba-sequence-stage > rect').map((rect) => ({
+      top: Number(rect.attributes('y')),
+      bottom: Number(rect.attributes('y')) + Number(rect.attributes('height')),
+    }))
+    const rows = wrapper.findAll('.ba-sequence-line').map((line) => Number(line.attributes('y1')))
+    expect(rows.slice(0, 4).every((y) => y > first!.top && y < first!.bottom)).toBe(true)
+    expect(rows.slice(4, 6).every((y) => y > second!.top && y < second!.bottom)).toBe(true)
+    expect(rows[6]).toBeGreaterThan(second!.bottom)
+    expect(Number(wrapper.find('svg').attributes('viewBox')!.split(' ')[3])).toBeGreaterThan(rows[6]!)
+    host.remove()
+  })
+
+  it('opens the invoking step from a stage title with the keyboard', async () => {
+    // Arrange
+    const host = globalThis.document.createElement('div')
+    host.innerHTML = '<section id="doc/step/payment"></section>'
+    globalThis.document.body.appendChild(host)
+    const payment = host.querySelector('section')!
+    payment.scrollIntoView = vi.fn()
+    wrapper = mount(ArazzoSequenceDiagram, {
+      attachTo: globalThis.document.body,
+      props: { sequence: buildSequence(staged, checkout, documents), stepSectionIds: { payment: 'doc/step/payment' } },
+    })
+
+    // Act
+    await wrapper.find('.ba-sequence-stage-title').trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    // Assert
+    expect(payment.scrollIntoView).toHaveBeenCalled()
+    host.remove()
+  })
+})
+
+describe('notes', () => {
+  it('reads an input a stage\'s step is matched on as coming from the inputs', () => {
+    // Arrange
+    const outer: Workflow = { workflowId: 'outer', steps: [{ stepId: 'pay', workflowId: 'inner' }] }
+    const inner: Workflow = {
+      workflowId: 'inner',
+      steps: [{ stepId: 'paid', channelPath: '{$sourceDescriptions.events.url}#/channels/paymentCompleted', action: 'receive', correlationId: '$inputs.orderId' }],
+    }
+
+    // Act
+    const sequence = buildSequence({ ...document, workflows: [outer, inner] }, outer, documents)
+
+    // Assert
+    expect(sequence.messages[0]).toMatchObject({ stage: 'pay', note: 'matched on orderId from inputs' })
   })
 })
