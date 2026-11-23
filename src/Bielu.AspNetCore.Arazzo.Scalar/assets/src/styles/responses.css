@@ -115,6 +115,21 @@
   stroke: color-mix(in srgb, var(--scalar-color-accent) 35%, transparent);
   @apply stroke-1;
 }
+/* Steps that run at the same time: a UML `par` frame, its tag in the corner and its branches divided by dashes. */
+.bielu-arazzo .ba-sequence-par rect {
+  @apply fill-none stroke-c-3 stroke-1;
+}
+.bielu-arazzo .ba-sequence-par-tag {
+  @apply fill-b-2 stroke-c-3 stroke-1;
+}
+.bielu-arazzo .ba-sequence-par-label {
+  @apply fill-c-2 font-code;
+  font-size: 10px;
+}
+.bielu-arazzo .ba-sequence-par-separator {
+  @apply stroke-c-3 stroke-1;
+  stroke-dasharray: 4 3;
+}
 .bielu-arazzo .ba-sequence-stage-title text {
   @apply fill-c-2 font-sans font-medium;
   font-size: 11px;

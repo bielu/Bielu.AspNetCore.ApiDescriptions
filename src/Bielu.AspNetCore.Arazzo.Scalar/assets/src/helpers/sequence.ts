@@ -1,6 +1,6 @@
 import type { ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoWorkflow } from '../types'
 import { effectiveFailureActions, reachableActions } from './actions'
-import { successPath } from './execution-order'
+import { stepsBefore, successPath, usesDependsOn } from './execution-order'
 import { formatDuration } from './format'
 import { statusCodesIn } from './openapi-exchange'
 import { findDocumentByUrl, resolveStepTarget, resolveWorkflow, sourceNameOf } from './resolve-target'
@@ -83,10 +83,44 @@ export const actorRegistry = (document: ArazzoDocument, extension: string | unde
   return registry
 }
 
+/**
+ * Steps that run at the same time, drawn as a `par` fragment with a branch per step: consecutive steps (in run
+ * order) of a workflow that uses `dependsOn`, none of which waits on another.
+ */
+export type SequenceParallel = {
+  id: string
+  /** The stage the steps are in (the step invoking their workflow), or none for the workflow's own steps. */
+  scope?: string
+  /** The steps, in run order; one may be a stage (its id is the stage's). */
+  steps: string[]
+}
+
 export type Sequence = {
   participants: SequenceParticipant[]
   messages: SequenceMessage[]
   stages: SequenceStage[]
+  parallels: SequenceParallel[]
+}
+
+/**
+ * Groups a workflow's steps, in the order they run, into runs of steps that run at the same time: a step joins the
+ * group before it when it waits on none of its steps. Without `dependsOn` a workflow runs one step at a time.
+ */
+export const parallelGroups = (document: ArazzoDocument, workflow: ArazzoWorkflow, steps: ArazzoStep[]): ArazzoStep[][] => {
+  if (!usesDependsOn(workflow.steps ?? [])) {
+    return steps.map((step) => [step])
+  }
+  const groups: ArazzoStep[][] = []
+  for (const step of steps) {
+    const last = groups[groups.length - 1]
+    const before = stepsBefore(document, workflow, step)
+    if (last && last.every((other) => !before.has(other.stepId))) {
+      last.push(step)
+    } else {
+      groups.push([step])
+    }
+  }
+  return groups
 }
 
 /** The lane of the client running the workflow. */
@@ -150,8 +184,21 @@ export const buildSequence = (
   ]
   const messages: SequenceMessage[] = []
   const stages: SequenceStage[] = []
+  const parallels: SequenceParallel[] = []
   if (!workflow?.steps?.length) {
-    return { participants, messages, stages }
+    return { participants, messages, stages, parallels }
+  }
+
+  /** Draws a workflow's steps in the order they run, noting the ones that run at the same time. */
+  const drawAll = (owner: ArazzoDocument, current: ArazzoWorkflow, stage: string | undefined, inherited?: () => string): void => {
+    for (const group of parallelGroups(owner, current, successPath(owner, current))) {
+      if (group.length > 1) {
+        parallels.push({ id: `${stage ?? ''}/${group[0]!.stepId}`, ...(stage ? { scope: stage } : {}), steps: group.map((step) => step.stepId) })
+      }
+      for (const step of group) {
+        draw(owner, current, step, stage, inherited)
+      }
+    }
   }
 
   /** The actor an object names with the actor extension, if it names one. */
@@ -212,9 +259,7 @@ export const buildSequence = (
           label: invoked.workflow.summary ?? invoked.workflow.workflowId,
           ...(failures ? { note: failures } : {}),
         })
-        for (const nested of successPath(invoked.document, invoked.workflow)) {
-          draw(invoked.document, invoked.workflow, nested, step.stepId, by)
-        }
+        drawAll(invoked.document, invoked.workflow, step.stepId, by)
         return
       }
       const from = by()
@@ -255,9 +300,7 @@ export const buildSequence = (
     push({ stepId: step.stepId, from: to, to: from, label: expected ?? 'response', kind: 'response', ...(failures ? { note: failures } : {}) })
   }
 
-  for (const step of successPath(document, workflow)) {
-    draw(document, workflow, step, undefined)
-  }
+  drawAll(document, workflow, undefined)
   // Every step names an actor: nobody calls from the client's lane, so it is not drawn.
   const clientUsed = messages.some((message) => message.from === CLIENT_ID || message.to === CLIENT_ID)
   // The registry titles the lanes it lists (a source's lane is listed by the source's name), and puts them first,
@@ -282,5 +325,5 @@ export const buildSequence = (
     })
     .sort((a, b) => rank(a.participant.id) - rank(b.participant.id) || a.index - b.index)
     .map(({ participant }) => participant)
-  return { participants: lanes, messages, stages }
+  return { participants: lanes, messages, stages, parallels }
 }

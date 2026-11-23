@@ -6,7 +6,7 @@ import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
 import { successPath } from '../src/helpers/execution-order'
 import { toWorkflowViews, traverseArazzoDocument } from '../src/helpers/navigation'
 import { pluginOptionsFromModuleUrl, resolvePluginOptions } from '../src/helpers/plugin-options'
-import { actorRegistry, buildSequence, CLIENT_ID, runOrder } from '../src/helpers/sequence'
+import { actorRegistry, buildSequence, CLIENT_ID, parallelGroups, runOrder } from '../src/helpers/sequence'
 import { resetWorkflowView } from '../src/helpers/view-mode'
 import type { ArazzoDocument, ArazzoStep, ArazzoWorkflow as Workflow } from '../src/types'
 
@@ -251,7 +251,7 @@ describe('buildSequence', () => {
 
   it('has only the client for a workflow without steps', () => {
     // Act / Assert
-    expect(buildSequence(document, { workflowId: 'empty' }, documents)).toEqual({ participants: [{ id: CLIENT_ID, label: 'Client' }], messages: [], stages: [] })
+    expect(buildSequence(document, { workflowId: 'empty' }, documents)).toEqual({ participants: [{ id: CLIENT_ID, label: 'Client' }], messages: [], stages: [], parallels: [] })
   })
 })
 
@@ -294,7 +294,7 @@ describe('the sequence diagram', () => {
   it('keeps five lanes readable on a phone, scrolling sideways rather than shrinking the labels', () => {
     // Arrange
     const participants = [{ id: CLIENT_ID, label: 'Client' }, ...['a', 'b', 'c', 'd'].map((id) => ({ id, label: id }))]
-    const sequence = { participants, messages: [{ stepId: 's', from: CLIENT_ID, to: 'd', label: 'GET /x', kind: 'request' as const }] }
+    const sequence = { participants, messages: [{ stepId: 's', from: CLIENT_ID, to: 'd', label: 'GET /x', kind: 'request' as const }], stages: [], parallels: [] }
 
     // Act
     wrapper = mount(ArazzoSequenceDiagram, { props: { sequence, stepSectionIds: {} } })
@@ -632,6 +632,7 @@ describe('actors', () => {
       participants: [{ id: 'a', label: 'a' }],
       messages: [{ stepId: 's', from: 'a', to: 'a', label: 'GET /self', kind: 'request' as const }],
       stages: [],
+      parallels: [],
     }
 
     // Act
@@ -805,6 +806,7 @@ describe('review fixes', () => {
       participants: [{ id: CLIENT_ID, label: 'Client' }, { id: 'a', label: 'a' }],
       messages: [{ stepId: 's', from: 'a', to: 'a', label, kind: 'request' as const, note: 'retry after 2 s × 3, then give up and end the run' }],
       stages: [],
+      parallels: [],
     }
 
     // Act
@@ -815,6 +817,100 @@ describe('review fixes', () => {
     const start = Number(wrapper.find('.ba-sequence-label').attributes('x'))
     expect(width).toBeGreaterThan(120 + 2 * 210)
     expect(width).toBeGreaterThan(start + label.length * 6.5)
+    wrapper.unmount()
+  })
+})
+
+describe('steps that run at the same time', () => {
+  // `create` first; `stock` and `payment` (two stages) both wait only on it; `confirm` waits on both. Inside
+  // `confirmOrder`, `capture` and `commit` are independent and `announce` waits on both.
+  const checkout: Workflow = {
+    workflowId: 'checkout',
+    steps: [
+      { stepId: 'create', operationId: 'createOrder' },
+      { stepId: 'stock', workflowId: 'reserveStock', dependsOn: ['create'] },
+      { stepId: 'payment', workflowId: 'takePayment', dependsOn: ['create'] },
+      { stepId: 'confirm', workflowId: 'confirmOrder', dependsOn: ['stock', 'payment'] },
+    ],
+  }
+  const owner: ArazzoDocument = {
+    ...document,
+    workflows: [
+      checkout,
+      { workflowId: 'reserveStock', summary: 'Reserve the stock', steps: [{ stepId: 'reserve', operationId: 'createOrder' }] },
+      { workflowId: 'takePayment', summary: 'Take the payment', steps: [{ stepId: 'authorize', operationId: 'createOrder' }] },
+      {
+        workflowId: 'confirmOrder',
+        summary: 'Confirm the order',
+        steps: [
+          { stepId: 'capture', operationId: 'createOrder' },
+          { stepId: 'commit', operationId: 'createOrder' },
+          { stepId: 'announce', operationId: 'publishOrderPlaced', dependsOn: ['capture', 'commit'] },
+        ],
+      },
+    ],
+  }
+
+  it('groups consecutive steps none of which waits on another, only when the workflow uses dependsOn', () => {
+    // Arrange
+    const ids = (groups: ArazzoStep[][]) => groups.map((group) => group.map((step) => step.stepId))
+    const sequential: Workflow = { workflowId: 's', steps: [{ stepId: 'a' }, { stepId: 'b' }] }
+    const reading: Workflow = {
+      workflowId: 'r',
+      steps: [
+        { stepId: 'a', dependsOn: [] },
+        { stepId: 'b', dependsOn: ['a'] },
+        // Waits on `b` by reading its output, without listing it.
+        { stepId: 'c', dependsOn: ['a'], parameters: [{ name: 'x', value: '$steps.b.outputs.x' }] },
+      ],
+    }
+
+    // Act / Assert
+    expect(ids(parallelGroups(owner, checkout, checkout.steps!))).toEqual([['create'], ['stock', 'payment'], ['confirm']])
+    expect(ids(parallelGroups(owner, sequential, sequential.steps!))).toEqual([['a'], ['b']])
+    expect(ids(parallelGroups(owner, reading, reading.steps!))).toEqual([['a'], ['b'], ['c']])
+  })
+
+  it('notes the parallel steps of the workflow and of each stage', () => {
+    // Act
+    const sequence = buildSequence(owner, checkout, documents)
+
+    // Assert
+    expect(sequence.parallels).toEqual([
+      { id: '/stock', steps: ['stock', 'payment'] },
+      { id: 'confirm/capture', scope: 'confirm', steps: ['capture', 'commit'] },
+    ])
+  })
+
+  it('frames them in a par with a dashed line between branches, nesting stages and pars inside each other', () => {
+    // Act
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence: buildSequence(owner, checkout, documents), stepSectionIds: {} } })
+
+    // Assert
+    const frame = (element: DOMWrapper<Element>) => ({
+      x: Number(element.attributes('x')),
+      top: Number(element.attributes('y')),
+      bottom: Number(element.attributes('y')) + Number(element.attributes('height')),
+    })
+    const [outer, inner] = wrapper.findAll('.ba-sequence-par > rect').map(frame)
+    // Bands are drawn outermost first; find each by its title.
+    const band = (title: string) => frame(wrapper.findAll('.ba-sequence-stage').find((stage) => stage.find('.ba-sequence-stage-title').text().endsWith(title))!.find('rect'))
+    const [stock, payment, confirm] = ['Reserve the stock', 'Take the payment', 'Confirm the order'].map(band)
+    expect(wrapper.findAll('.ba-sequence-par-label').map((label) => label.text())).toEqual(['par', 'par'])
+    // The two parallel stages sit inside the outer par, inset from it; the inner par sits inside `confirm`.
+    expect(stock!.x).toBeGreaterThan(outer!.x)
+    expect([stock, payment].every((band) => band!.top > outer!.top && band!.bottom < outer!.bottom)).toBe(true)
+    expect(confirm!.x).toBe(outer!.x)
+    expect(confirm!.top).toBeGreaterThan(outer!.bottom)
+    expect(inner!.x).toBeGreaterThan(confirm!.x)
+    expect(inner!.top > confirm!.top && inner!.bottom < confirm!.bottom).toBe(true)
+    // One dashed line between the two branches of each par, between their rows.
+    const separators = wrapper.findAll('.ba-sequence-par-separator').map((line) => Number(line.attributes('y1')))
+    expect(separators).toHaveLength(2)
+    expect(separators[0]).toBeGreaterThan(stock!.bottom)
+    expect(separators[0]).toBeLessThan(payment!.top)
+    // The diagram is tall enough for every frame.
+    expect(Number(wrapper.find('svg').attributes('viewBox')!.split(' ')[3])).toBeGreaterThan(Math.max(outer!.bottom, confirm!.bottom))
     wrapper.unmount()
   })
 })

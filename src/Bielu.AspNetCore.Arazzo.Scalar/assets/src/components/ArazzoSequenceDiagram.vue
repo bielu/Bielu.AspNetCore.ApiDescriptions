@@ -35,6 +35,10 @@ const ROW = 36
 const NOTE = 16
 /** A stage's title row, above its first message. */
 const BAND = 26
+/** A `par` fragment's tag row, above its first message. */
+const PAR_HEAD = 20
+/** How far a frame inside another is inset from it, on each side. */
+const INSET = 8
 /** How far a lane's call to itself loops out to the right. */
 const SELF = 28
 const MAX_LABEL = 28
@@ -60,30 +64,126 @@ const laneX = computed(
 const sameStep = (a: SequenceMessage, b: SequenceMessage | undefined) =>
   !!b && a.stepId === b.stepId && a.stage === b.stage
 
-type Band = {
-  stage: SequenceStage
-  number: number
+/** A frame a message is drawn in: a stage's band, or a `par` fragment; `branch` is the part it is in. */
+type Frame = {
+  key: string
+  kind: 'stage' | 'par'
+  branch: string
+  stage?: SequenceStage
+}
+
+/** A frame as laid out: the rows it spans, how deep it is nested, and where its branches are divided. */
+type Fragment = {
+  key: string
+  kind: 'stage' | 'par'
+  stage?: SequenceStage
+  /** A stage's number, in run order. */
+  number?: number
   top: number
   bottom: number
+  depth: number
+  separators: number[]
 }
 
 /**
- * Each message with its row (the first message of a step carries the step's name), and each stage with the
- * rows it spans: a title row, numbered in run order, then its workflow's messages.
+ * The frames a message is in, outermost first: the `par` its top-level step is a branch of, the stage it is in,
+ * and the `par` its step is a branch of inside that stage.
+ */
+const framesOf = (message: SequenceMessage): Frame[] => {
+  const { stages, parallels } = props.sequence
+  const own = message.stage ?? message.stepId
+  const frames: Frame[] = []
+  const outer = parallels.find(
+    (parallel) => !parallel.scope && parallel.steps.includes(own),
+  )
+  if (outer) {
+    frames.push({ key: `par:${outer.id}`, kind: 'par', branch: own })
+  }
+  const stage = message.stage
+    ? stages.find((candidate) => candidate.id === message.stage)
+    : undefined
+  if (stage) {
+    frames.push({
+      key: `stage:${stage.id}`,
+      kind: 'stage',
+      branch: stage.id,
+      stage,
+    })
+  }
+  const inner = message.stage
+    ? parallels.find(
+        (parallel) =>
+          parallel.scope === message.stage &&
+          parallel.steps.includes(message.stepId),
+      )
+    : undefined
+  if (inner) {
+    frames.push({
+      key: `par:${inner.id}`,
+      kind: 'par',
+      branch: message.stepId,
+    })
+  }
+  return frames
+}
+
+/**
+ * Each message with its row (the first message of a step carries the step's name), and each frame with the rows
+ * it spans: a stage has a title row, numbered in run order, and a `par` a row for its tag, with a dashed line
+ * between its branches. Frames inside frames are inset, so every edge shows.
  */
 const layout = computed(() => {
-  const { messages, stages } = props.sequence
-  const bands: Band[] = []
+  const { messages } = props.sequence
+  const fragments: Fragment[] = []
+  const open: { fragment: Fragment; branch: string }[] = []
+  let stageNumber = 0
   let y = HEADER + 24
+  let lastBottom = y
+  /** Closes the innermost open frames down to `depth`, each a little below the one inside it. */
+  const close = (depth: number) => {
+    let below = 12
+    while (open.length > depth) {
+      open.pop()!.fragment.bottom = lastBottom + below
+      below += 8
+      y += 8
+    }
+  }
   const rows = messages.map((message, index) => {
     const previous = messages[index - 1]
     const next = messages[index + 1]
-    const stage = message.stage
-      ? stages.find((candidate) => candidate.id === message.stage)
-      : undefined
-    if (stage && message.stage !== previous?.stage) {
-      bands.push({ stage, number: bands.length + 1, top: y - 18, bottom: 0 })
-      y += BAND
+    const frames = framesOf(message)
+    let kept = 0
+    while (
+      kept < open.length &&
+      kept < frames.length &&
+      open[kept]!.fragment.key === frames[kept]!.key
+    ) {
+      kept++
+    }
+    close(kept)
+    for (let depth = 0; depth < kept; depth++) {
+      const entry = open[depth]!
+      if (entry.branch !== frames[depth]!.branch) {
+        // A new branch of a `par`: a dashed line across it, between the branches.
+        entry.branch = frames[depth]!.branch
+        y += 10
+        entry.fragment.separators.push(y - 31)
+      }
+    }
+    for (let depth = kept; depth < frames.length; depth++) {
+      const frame = frames[depth]!
+      const fragment: Fragment = {
+        key: frame.key,
+        kind: frame.kind,
+        ...(frame.stage ? { stage: frame.stage, number: ++stageNumber } : {}),
+        top: y - 18,
+        bottom: 0,
+        depth,
+        separators: [],
+      }
+      fragments.push(fragment)
+      open.push({ fragment, branch: frame.branch })
+      y += frame.kind === 'stage' ? BAND : PAR_HEAD
     }
     const row = {
       message,
@@ -92,22 +192,28 @@ const layout = computed(() => {
       x1: laneX.value.get(message.from) ?? GUTTER,
       x2: laneX.value.get(message.to) ?? GUTTER,
     }
-    const bottom = y + (message.note ? NOTE : 0)
+    lastBottom = y + (message.note ? NOTE : 0)
     y +=
       ROW +
       (message.note ? NOTE : 0) +
       (next && !sameStep(message, next) ? 8 : 0)
-    if (stage && next?.stage !== message.stage) {
-      bands[bands.length - 1]!.bottom = bottom + 12
-      y += 8
-    }
     return row
   })
-  return { rows, bands }
+  close(0)
+  return { rows, fragments }
 })
 
 const rows = computed(() => layout.value.rows)
-const bands = computed(() => layout.value.bands)
+/** Outermost first, so a frame inside another is drawn over it. */
+const fragments = computed(() =>
+  [...layout.value.fragments].sort((a, b) => a.depth - b.depth),
+)
+const bands = computed(() =>
+  fragments.value.filter((fragment) => fragment.kind === 'stage'),
+)
+const pars = computed(() =>
+  fragments.value.filter((fragment) => fragment.kind === 'par'),
+)
 
 /** Roughly how wide a self-call's text is drawn: 11px code for the label, 10px sans for the note. */
 const LABEL_CHAR = 6.7
@@ -137,12 +243,14 @@ const width = computed(() =>
 )
 const height = computed(() => {
   const last = rows.value[rows.value.length - 1]
-  const band = bands.value[bands.value.length - 1]
   return Math.max(
     last ? last.y + (last.message.note ? NOTE : 0) + 24 : HEADER + 24,
-    band ? band.bottom + 12 : 0,
+    ...fragments.value.map((fragment) => fragment.bottom + 12),
   )
 })
+
+/** Where a frame's left edge is, inset by how deep it is nested. */
+const inset = (fragment: Fragment) => 4 + fragment.depth * INSET
 
 /**
  * The section a step's name opens. A stage's steps are listed inside the step that invokes their workflow, so
@@ -210,46 +318,78 @@ const isClient = (id: string) => id === CLIENT_ID
       <!-- Behind the lifelines and messages: each stage's band, titled with its workflow. -->
       <g
         v-for="band in bands"
-        :key="band.stage.id"
+        :key="band.key"
         class="ba-sequence-stage">
         <title>
-          {{ band.number }} · {{ band.stage.label }} (workflow
-          {{ band.stage.workflowId }}){{
-            band.stage.note ? ` — ${band.stage.note}` : ''
+          {{ band.number }} · {{ band.stage!.label }} (workflow
+          {{ band.stage!.workflowId }}){{
+            band.stage!.note ? ` — ${band.stage!.note}` : ''
           }}
         </title>
         <rect
           :height="band.bottom - band.top"
           rx="6"
-          :width="width - 8"
-          x="4"
+          :width="width - 2 * inset(band)"
+          :x="inset(band)"
           :y="band.top" />
         <g
-          :aria-label="`Go to step ${band.stage.id}`"
+          :aria-label="`Go to step ${band.stage!.id}`"
           class="ba-sequence-stage-title"
-          :class="{ 'ba-diagram-link': !!stepSectionIds[band.stage.id] }"
+          :class="{ 'ba-diagram-link': !!stepSectionIds[band.stage!.id] }"
           role="link"
           tabindex="0"
-          @click="open($event, band.stage.id, stepSectionIds[band.stage.id])"
+          @click="open($event, band.stage!.id, stepSectionIds[band.stage!.id])"
           @keydown="
-            onKeydown($event, band.stage.id, stepSectionIds[band.stage.id])
+            onKeydown($event, band.stage!.id, stepSectionIds[band.stage!.id])
           ">
           <text
             dominant-baseline="central"
-            x="12"
+            :x="inset(band) + 8"
             :y="band.top + 13">
-            {{ band.number }} · {{ cut(band.stage.label, 60) }}
+            {{ band.number }} · {{ cut(band.stage!.label, 60) }}
           </text>
         </g>
         <text
-          v-if="band.stage.note"
+          v-if="band.stage!.note"
           class="ba-sequence-note"
           dominant-baseline="central"
           text-anchor="end"
-          :x="width - 14"
+          :x="width - inset(band) - 10"
           :y="band.top + 13">
-          {{ cut(band.stage.note, 60) }}
+          {{ cut(band.stage!.note, 60) }}
         </text>
+      </g>
+
+      <!-- Steps that run at the same time: a `par` frame, its branches divided by dashed lines. -->
+      <g
+        v-for="par in pars"
+        :key="par.key"
+        class="ba-sequence-par">
+        <title>Run at the same time</title>
+        <rect
+          :height="par.bottom - par.top"
+          rx="4"
+          :width="width - 2 * inset(par)"
+          :x="inset(par)"
+          :y="par.top" />
+        <path
+          class="ba-sequence-par-tag"
+          :d="`M${inset(par)},${par.top} h30 v10 l-6,6 h-24 z`" />
+        <text
+          class="ba-sequence-par-label"
+          dominant-baseline="central"
+          :x="inset(par) + 5"
+          :y="par.top + 8">
+          par
+        </text>
+        <line
+          v-for="separator in par.separators"
+          :key="separator"
+          class="ba-sequence-par-separator"
+          :x1="inset(par)"
+          :x2="width - inset(par)"
+          :y1="separator"
+          :y2="separator" />
       </g>
 
       <g
