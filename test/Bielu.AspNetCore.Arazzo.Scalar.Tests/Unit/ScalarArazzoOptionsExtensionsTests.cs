@@ -125,6 +125,7 @@ public class ScalarArazzoOptionsExtensionsTests
     [InlineData("label", "x-")]
     [InlineData("actor", "x-")]
     [InlineData("actor", "actor")]
+    [InlineData("actors", "x-")]
     public void WithArazzoOptions_BarePrefixOrNonExtension_Throws(string option, string value)
     {
         // Act / Assert
@@ -144,6 +145,9 @@ public class ScalarArazzoOptionsExtensionsTests
                 case "actor":
                     arazzo.ActorExtension = value;
                     break;
+                case "actors":
+                    arazzo.ActorsExtension = value;
+                    break;
                 default:
                     arazzo.LabelExtension = value;
                     break;
@@ -153,17 +157,21 @@ public class ScalarArazzoOptionsExtensionsTests
     }
 
     [Fact]
-    public void WithArazzoOptions_ActorExtension_WritesItToTheGlobal()
+    public void WithArazzoOptions_ActorOptions_WriteThemToTheGlobal()
     {
         // Arrange
         var options = new ScalarOptions();
 
         // Act
-        options.WithArazzoOptions(arazzo => arazzo.ActorExtension = "x-actor");
+        options.WithArazzoOptions(arazzo =>
+        {
+            arazzo.ActorExtension = "x-actor";
+            arazzo.ActorsExtension = "x-actors";
+        });
 
         // Assert
         options.HeadContent.ShouldNotBeNull().ShouldContain(
-            $"window.{ScalarArazzoOptionsExtensions.GlobalVariableName} = {{\"actorExtension\":\"x-actor\"}};");
+            $"window.{ScalarArazzoOptionsExtensions.GlobalVariableName} = {{\"actorExtension\":\"x-actor\",\"actorsExtension\":\"x-actors\"}};");
     }
 
     [Fact]

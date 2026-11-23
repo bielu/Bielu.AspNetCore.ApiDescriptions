@@ -234,7 +234,9 @@ const isClient = (id: string) => id === CLIENT_ID
         :class="{ 'ba-sequence-client': isClient(participant.id) }">
         <title>
           {{
-            [participant.label, participant.detail].filter(Boolean).join(' — ')
+            [participant.label, participant.detail, participant.description]
+              .filter(Boolean)
+              .join(' — ')
           }}
         </title>
         <line

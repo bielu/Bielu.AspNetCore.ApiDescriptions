@@ -108,6 +108,7 @@ public static class ScalarArazzoAspireExtensions
             (nameof(ScalarArazzoAspireOptions.PageExtension), arazzo.PageExtension),
             (nameof(ScalarArazzoAspireOptions.LabelExtension), arazzo.LabelExtension),
             (nameof(ScalarArazzoAspireOptions.ActorExtension), arazzo.ActorExtension),
+            (nameof(ScalarArazzoAspireOptions.ActorsExtension), arazzo.ActorsExtension),
         })
         {
             if (value is null)

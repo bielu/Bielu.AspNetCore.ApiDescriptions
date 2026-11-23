@@ -246,6 +246,7 @@ const stepPages = computed(() => {
 const sequence = computed(() =>
   buildSequence(props.document, workflow.value, props.documents, {
     actorExtension: props.arazzoOptions?.actorExtension,
+    actorsExtension: props.arazzoOptions?.actorsExtension,
   }),
 )
 

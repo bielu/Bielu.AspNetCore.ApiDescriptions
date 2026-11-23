@@ -14,6 +14,8 @@ export type SequenceParticipant = {
   spec?: SpecFamily
   /** A second line: the spec and the loaded document's title ("OpenAPI · Orders API"). */
   detail?: string
+  /** What the actor registry says about the lane, for its tooltip. */
+  description?: string
 }
 
 /** One arrow of the sequence, in the order the steps run. */
@@ -49,6 +51,36 @@ export type SequenceStage = {
 export type SequenceOptions = {
   /** The specification extension (such as `x-actor`) naming who makes a step's call; the client when unset. */
   actorExtension?: string
+  /**
+   * The document-level extension (such as `x-actors`) holding the actor registry: actor name →
+   * `{ title, description, client }`. It titles lanes, puts the lanes it lists first in its order, and names the
+   * client (`client: true`), whose lane the steps without an actor are on.
+   */
+  actorsExtension?: string
+}
+
+/** What the actor registry says about one actor. */
+export type SequenceActor = { title?: string; description?: string; client?: boolean }
+
+const text = (value: unknown): string | undefined => (typeof value === 'string' && value.trim() ? value.trim() : undefined)
+
+/** The actor registry of a document, in its order; entries that are not objects are left out. */
+export const actorRegistry = (document: ArazzoDocument, extension: string | undefined): Map<string, SequenceActor> => {
+  const value = extension ? (document as Record<string, unknown>)[extension] : undefined
+  const registry = new Map<string, SequenceActor>()
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const [name, entry] of Object.entries(value as Record<string, unknown>)) {
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        const { title, description, client } = entry as Record<string, unknown>
+        registry.set(name, {
+          ...(text(title) ? { title: text(title) } : {}),
+          ...(text(description) ? { description: text(description) } : {}),
+          ...(client === true ? { client: true } : {}),
+        })
+      }
+    }
+  }
+  return registry
 }
 
 export type Sequence = {
@@ -111,7 +143,11 @@ export const buildSequence = (
   documents: Record<string, unknown>,
   options: SequenceOptions = {},
 ): Sequence => {
-  const participants: SequenceParticipant[] = [{ id: CLIENT_ID, label: 'Client' }]
+  const registry = actorRegistry(document, options.actorsExtension)
+  const [clientName, client] = [...registry].find(([, entry]) => entry.client) ?? []
+  const participants: SequenceParticipant[] = [
+    { id: CLIENT_ID, label: client?.title ?? clientName ?? 'Client', ...(client?.description ? { description: client.description } : {}) },
+  ]
   const messages: SequenceMessage[] = []
   const stages: SequenceStage[] = []
   if (!workflow?.steps?.length) {
@@ -119,14 +155,11 @@ export const buildSequence = (
   }
 
   /** The actor an object names with the actor extension, if it names one. */
-  const actorOf = (of: object): string | undefined => {
-    const value = options.actorExtension ? (of as Record<string, unknown>)[options.actorExtension] : undefined
-    return typeof value === 'string' && value.trim() ? value.trim() : undefined
-  }
+  const actorOf = (of: object): string | undefined => (options.actorExtension ? text((of as Record<string, unknown>)[options.actorExtension]) : undefined)
 
   /** The lane of an actor: its source description's when it names one of `owner`'s, its own otherwise. */
   const actorLane = (owner: ArazzoDocument, actor: string | undefined): string => {
-    if (!actor) {
+    if (!actor || actor === clientName) {
       return CLIENT_ID
     }
     const source = owner.sourceDescriptions?.find((candidate) => candidate.name === actor)
@@ -223,5 +256,27 @@ export const buildSequence = (
   }
   // Every step names an actor: nobody calls from the client's lane, so it is not drawn.
   const clientUsed = messages.some((message) => message.from === CLIENT_ID || message.to === CLIENT_ID)
-  return { participants: clientUsed ? participants : participants.slice(1), messages, stages }
+  // The registry titles the lanes it lists (a source's lane is listed by the source's name), and puts them first,
+  // in its order; the client stays leftmost, and the other lanes keep the order they were first used in.
+  const names = [...registry.keys()]
+  const nameOf = (id: string) => /^(?:source|actor):(.*)$/.exec(id)?.[1]
+  const rank = (id: string) => {
+    const index = id === CLIENT_ID ? -1 : names.indexOf(nameOf(id) ?? '')
+    return index < 0 && id !== CLIENT_ID ? names.length : index
+  }
+  const lanes = (clientUsed ? participants : participants.slice(1))
+    .map((participant, index) => {
+      const entry = participant.id === CLIENT_ID ? undefined : registry.get(nameOf(participant.id) ?? '')
+      return {
+        index,
+        participant: {
+          ...participant,
+          ...(entry?.title ? { label: entry.title } : {}),
+          ...(entry?.description ? { description: entry.description } : {}),
+        },
+      }
+    })
+    .sort((a, b) => rank(a.participant.id) - rank(b.participant.id) || a.index - b.index)
+    .map(({ participant }) => participant)
+  return { participants: lanes, messages, stages }
 }

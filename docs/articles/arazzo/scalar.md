@@ -67,6 +67,7 @@ app.MapScalarApiReference(options => options
 | `PageExtension` | none | Pages view: the extension naming the page of a step (the user is on it) or of an action (they land on it). May be the same key as `EndLabelExtension`. |
 | `LabelExtension` | none | Pages view: the extension holding a plain-language label on workflows, steps and actions. |
 | `ActorExtension` | none | [Sequence view](#actors): the extension on a step or a workflow naming who makes the step's call, in place of the client. |
+| `ActorsExtension` | none | Sequence view: a document-level extension holding the actor registry (lane titles, their order, and which actor is the client). |
 | `AssetsPath` | `/bielu/scalar/arazzo` | Where `MapScalarArazzoAssets` serves the script. |
 
 The options are written to the page as `window.__BIELU_SCALAR_ARAZZO__`, which the plugin reads when it
@@ -203,6 +204,20 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     the actor of the step invoking their workflow unless they, or their workflow, name one. The client's lane is
     left out when no step is the client's. The extension only changes the drawing: a runner still makes every
     call itself.
+
+    With `ActorsExtension` (such as `x-actors`), the document can also hold an actor registry: actor name →
+    `{ "title", "description", "client" }`. A lane it lists (a source description's lane by the source's name)
+    is titled after it, with the description in its tooltip, and comes first, in the registry's order. The entry
+    with `"client": true` names the client: its title replaces "Client", and the steps without an actor, or
+    naming it, are on its lane.
+
+    ```json
+    "x-actors": {
+      "storefront": { "title": "Storefront", "client": true },
+      "orders": { "title": "Orders service" },
+      "payments": { "title": "Payment gateway", "description": "Authorizes and captures card payments." }
+    }
+    ```
 
     ![The placeOrder workflow in the Sequence view: Client, orders and events lanes, the POST /orders request and its 201, the messages sent and received with their timeouts and correlation](../../images/arazzo/scalar-sequence.jpg)
 
@@ -433,7 +448,7 @@ next to its OpenAPI and AsyncAPI documents. The app itself doesn't need `Bielu.A
 for this: the container renders the documents.
 
 To set the [options](#options) (`EndLabelExtension`, the Pages view's `PagesExtension`,
-`PageExtension` and `LabelExtension`, and the Sequence view's `ActorExtension`), call `WithArazzoOptions` instead of `WithArazzo`:
+`PageExtension` and `LabelExtension`, and the Sequence view's `ActorExtension` and `ActorsExtension`), call `WithArazzoOptions` instead of `WithArazzo`:
 
 ```csharp
 builder.AddScalarApiReference()

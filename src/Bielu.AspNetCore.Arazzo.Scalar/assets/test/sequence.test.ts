@@ -6,7 +6,7 @@ import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
 import { successPath } from '../src/helpers/execution-order'
 import { toWorkflowViews, traverseArazzoDocument } from '../src/helpers/navigation'
 import { pluginOptionsFromModuleUrl, resolvePluginOptions } from '../src/helpers/plugin-options'
-import { buildSequence, CLIENT_ID, runOrder } from '../src/helpers/sequence'
+import { actorRegistry, buildSequence, CLIENT_ID, runOrder } from '../src/helpers/sequence'
 import { resetWorkflowView } from '../src/helpers/view-mode'
 import type { ArazzoDocument, ArazzoStep, ArazzoWorkflow as Workflow } from '../src/types'
 
@@ -674,5 +674,86 @@ describe('the actor option', () => {
     // Assert
     expect(wrapper.findAll('.ba-overview .ba-sequence-participant > text:first-of-type').map((text) => text.text())).toEqual(['storefront', 'orders'])
     wrapper.unmount()
+  })
+})
+
+describe('the actor registry', () => {
+  const options = { actorExtension: 'x-actor', actorsExtension: 'x-actors' }
+  const workflow = {
+    workflowId: 'w',
+    steps: [
+      { stepId: 'create', operationId: 'createOrder' },
+      { stepId: 'pick', operationId: 'createOrder', 'x-actor': 'warehouse' },
+      { stepId: 'announce', channelPath: '{$sourceDescriptions.events.url}#/channels/orderPlaced', action: 'send', 'x-actor': 'orders' },
+      { stepId: 'again', operationId: 'createOrder', 'x-actor': 'storefront' },
+    ],
+  } as unknown as Workflow
+  const registered = (actors: unknown): ArazzoDocument => ({ ...document, workflows: [workflow], 'x-actors': actors }) as ArazzoDocument
+
+  it('titles the lanes it lists, puts them first in its order, and names the client', () => {
+    // Arrange
+    const owner = registered({
+      events: { title: 'Message broker' },
+      orders: { title: 'Orders service', description: 'Takes and tracks orders.' },
+      storefront: { title: 'Storefront', description: 'The shop the customer uses.', client: true },
+      unused: { title: 'Never drawn' },
+    })
+
+    // Act
+    const sequence = buildSequence(owner, workflow, documents, options)
+
+    // Assert: the client first, then the listed lanes in the registry's order, then the rest as first used.
+    expect(sequence.participants.map(({ id, label, description }) => [id, label, description])).toEqual([
+      [CLIENT_ID, 'Storefront', 'The shop the customer uses.'],
+      ['source:events', 'Message broker', undefined],
+      ['source:orders', 'Orders service', 'Takes and tracks orders.'],
+      ['actor:warehouse', 'warehouse', undefined],
+    ])
+    // A step whose actor is the client is on the client's lane.
+    expect(sequence.messages.find((message) => message.stepId === 'again')).toMatchObject({ from: CLIENT_ID })
+  })
+
+  it('keeps the client called Client when no entry is the client, and its name when the entry has no title', () => {
+    // Act
+    const unnamed = buildSequence(registered({ orders: { title: 'Orders service' } }), workflow, documents, options)
+    const named = buildSequence(registered({ shop: { client: true } }), workflow, documents, options)
+
+    // Assert
+    expect(unnamed.participants[0]).toEqual({ id: CLIENT_ID, label: 'Client' })
+    expect(named.participants[0]).toEqual({ id: CLIENT_ID, label: 'shop' })
+  })
+
+  it('reads only well-formed entries, and nothing without the option', () => {
+    // Arrange
+    const owner = registered({ a: { title: ' A ', description: 3, client: 'yes' }, b: 'not an entry', c: [], d: { title: '  ' } })
+
+    // Act / Assert
+    expect([...actorRegistry(owner, 'x-actors')]).toEqual([
+      ['a', { title: 'A' }],
+      ['d', {}],
+    ])
+    expect(actorRegistry(owner, undefined).size).toBe(0)
+    expect(actorRegistry(registered(['a']), 'x-actors').size).toBe(0)
+    expect(buildSequence(registered({ orders: { title: 'Orders service' } }), workflow, documents, { actorExtension: 'x-actor' }).participants.map((participant) => participant.label)).toContain('orders')
+  })
+
+  it('titles the client of a workflow without steps, and shows a lane\'s description in its tooltip', () => {
+    // Arrange
+    const owner = registered({ shop: { title: 'Shop', description: 'Where customers buy.', client: true } })
+
+    // Act
+    const empty = buildSequence(owner, { workflowId: 'empty' }, documents, options)
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence: buildSequence(owner, workflow, documents, options), stepSectionIds: {} } })
+
+    // Assert
+    expect(empty.participants).toEqual([{ id: CLIENT_ID, label: 'Shop', description: 'Where customers buy.' }])
+    expect(wrapper.find('.ba-sequence-participant title').text()).toBe('Shop — Where customers buy.')
+    wrapper.unmount()
+  })
+
+  it('is an option of the plugin', () => {
+    // Act / Assert
+    expect(resolvePluginOptions({ actorsExtension: 'x-actors' })).toEqual({ actorsExtension: 'x-actors' })
+    expect(pluginOptionsFromModuleUrl('https://cdn.test/p.mjs?actorsExtension=x-actors')).toEqual({ actorsExtension: 'x-actors' })
   })
 })

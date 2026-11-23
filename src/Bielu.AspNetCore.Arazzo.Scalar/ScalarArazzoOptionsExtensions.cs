@@ -90,6 +90,7 @@ public static class ScalarArazzoOptionsExtensions
             ("pageExtension", arazzo.PageExtension),
             ("labelExtension", arazzo.LabelExtension),
             ("actorExtension", arazzo.ActorExtension),
+            ("actorsExtension", arazzo.ActorsExtension),
         })
         {
             if (value is null)

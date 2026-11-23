@@ -21,10 +21,15 @@ export type ArazzoPluginOptions = {
    * description's name, or anyone else's); the client running the workflow when unset.
    */
   actorExtension?: string
+  /**
+   * The Sequence view: a document extension holding the actor registry, actor name → `{ title, description,
+   * client }`: lane titles and order, and which actor is the client running the workflow.
+   */
+  actorsExtension?: string
 }
 
 /** The options; each must name a specification extension: `x-` followed by a name. */
-const OPTION_KEYS = ['endLabelExtension', 'pagesExtension', 'pageExtension', 'labelExtension', 'actorExtension'] as const
+const OPTION_KEYS = ['endLabelExtension', 'pagesExtension', 'pageExtension', 'labelExtension', 'actorExtension', 'actorsExtension'] as const
 
 /** The rule .NET (`WithArazzoOptions`) and the Aspire helper apply too, so every input path accepts the same names. */
 const isSpecificationExtension = (value: unknown): value is string => typeof value === 'string' && value.startsWith('x-') && value.length > 2

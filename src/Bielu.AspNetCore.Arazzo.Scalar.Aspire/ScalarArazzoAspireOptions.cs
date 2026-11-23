@@ -45,4 +45,12 @@ public sealed class ScalarArazzoAspireOptions
     /// starts from the client running the workflow. Must start with <c>x-</c>.
     /// </summary>
     public string? ActorExtension { get; set; }
+
+    /// <summary>
+    /// The Sequence view: a document-level specification extension (such as <c>x-actors</c>) holding the actor
+    /// registry, a map of actor name to <c>{ "title", "description", "client" }</c>. It titles the lanes it lists
+    /// (a source description's lane by the source's name) and puts them first, in its order; the entry with
+    /// <c>"client": true</c> names the client, whose lane the steps without an actor are on. Must start with <c>x-</c>.
+    /// </summary>
+    public string? ActorsExtension { get; set; }
 }
