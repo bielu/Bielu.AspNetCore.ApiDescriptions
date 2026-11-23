@@ -56,10 +56,17 @@ export const CLIENT_ID = '::client'
 
 export { runOrder } from './execution-order'
 
-/** `$steps.create.outputs.orderId` reads as "orderId from create"; anything else as written. */
+/**
+ * `$steps.create.outputs.orderId` reads as "orderId from create", and `$inputs.orderId` (as a stage's steps read
+ * what the step invoking their workflow passes) as "orderId from inputs"; anything else as written.
+ */
 const readable = (expression: string): string => {
-  const match = /^\$steps\.([^.]+)\.outputs\.([^#]+)/.exec(expression)
-  return match ? `${match[2]} from ${match[1]}` : expression
+  const step = /^\$steps\.([^.]+)\.outputs\.([^#]+)/.exec(expression)
+  if (step) {
+    return `${step[2]} from ${step[1]}`
+  }
+  const input = /^\$inputs\.([^#]+)/.exec(expression)
+  return input ? `${input[1]} from inputs` : expression
 }
 
 /** "on 400: rejected (end)", for the failure paths a step can take, kept short. */

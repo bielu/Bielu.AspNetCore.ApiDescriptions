@@ -496,3 +496,20 @@ describe('stages', () => {
     host.remove()
   })
 })
+
+describe('notes', () => {
+  it('reads an input a stage\'s step is matched on as coming from the inputs', () => {
+    // Arrange
+    const outer: Workflow = { workflowId: 'outer', steps: [{ stepId: 'pay', workflowId: 'inner' }] }
+    const inner: Workflow = {
+      workflowId: 'inner',
+      steps: [{ stepId: 'paid', channelPath: '{$sourceDescriptions.events.url}#/channels/paymentCompleted', action: 'receive', correlationId: '$inputs.orderId' }],
+    }
+
+    // Act
+    const sequence = buildSequence({ ...document, workflows: [outer, inner] }, outer, documents)
+
+    // Assert
+    expect(sequence.messages[0]).toMatchObject({ stage: 'pay', note: 'matched on orderId from inputs' })
+  })
+})
