@@ -62,6 +62,8 @@ internal static class Checkout
             ["inventory"] = new JsonObject { ["title"] = "Inventory service" },
             ["payments"] = new JsonObject { ["title"] = "Payment gateway", ["description"] = "Authorizes and captures card payments." },
             ["events"] = new JsonObject { ["title"] = "Message broker" },
+            ["updates"] = new JsonObject { ["title"] = "Order updates", ["description"] = "The SignalR hub the storefront's pages listen on." },
+            ["email"] = new JsonObject { ["title"] = "Email service" },
         });
 
         // Stage 1. The orders service makes every call of the three stages: the workflow says so once.

@@ -16,6 +16,8 @@
     <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi\Bielu.AspNetCore.AsyncApi.csproj" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.Arazzo\Bielu.AspNetCore.Arazzo.csproj" />
     <ProjectReference Include="..\..\Bielu.AspNetCore.Arazzo.Scalar\Bielu.AspNetCore.Arazzo.Scalar.csproj" />
+    <!-- The SignalR protocol bindings of the order updates hub's AsyncAPI document (AsyncOrder.cs). -->
+    <ProjectReference Include="..\..\Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR\Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR.csproj" />
   </ItemGroup>
 
 </Project>
