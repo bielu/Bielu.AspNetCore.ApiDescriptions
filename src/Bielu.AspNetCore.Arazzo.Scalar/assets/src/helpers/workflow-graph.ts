@@ -849,6 +849,156 @@ const orderSlots = (
   return slots
 }
 
+/** An arrow between two boxes, by their ids. */
+type Link = readonly [string, string]
+
+/**
+ * How many pairs of arrows cross between the rows: two arrows between the same two rows cross when their ends are
+ * in opposite orders. Arrows sharing a box don't cross.
+ */
+const countCrossings = (rows: string[][], links: readonly Link[]): number => {
+  const place = new Map<string, { row: number; at: number }>()
+  rows.forEach((row, index) => row.forEach((id, at) => place.set(id, { row: index, at })))
+  const spans: { rows: string; from: number; to: number }[] = []
+  for (const [v, w] of links) {
+    const a = place.get(v)
+    const b = place.get(w)
+    if (a && b && a.row !== b.row) {
+      const [upper, lower] = a.row < b.row ? [a, b] : [b, a]
+      spans.push({ rows: `${upper.row}:${lower.row}`, from: upper.at, to: lower.at })
+    }
+  }
+  let count = 0
+  for (let i = 0; i < spans.length; i++) {
+    for (let j = i + 1; j < spans.length; j++) {
+      const [a, b] = [spans[i]!, spans[j]!]
+      if (a.rows === b.rows && (a.from - b.from) * (a.to - b.to) < 0) {
+        count++
+      }
+    }
+  }
+  return count
+}
+
+/** The orders of a row, the given one first, then the rest in lexicographic order of positions. */
+const permutations = (row: string[]): string[][] => {
+  if (row.length <= 1) {
+    return [row]
+  }
+  return row.flatMap((id, index) => permutations([...row.slice(0, index), ...row.slice(index + 1)]).map((rest) => [id, ...rest]))
+}
+
+/** Beyond this many combinations of row orders, the search gives way to the heuristic. */
+const EXHAUSTIVE_LIMIT = 20_000
+
+/**
+ * Reorders rows of boxes (top to bottom, each left to right) so fewer arrows cross. The given order wins every
+ * tie, so a diagram whose arrows already don't cross is left as it is, and the result is the same in every render.
+ *
+ * Overviews are small, so when the rows have few enough orders between them every combination is tried, and the
+ * first with the fewest crossings is taken (a crossing between two rows can need boxes of both to move, which no
+ * one-row-at-a-time method finds). Bigger diagrams get barycenter sweeps, down then up, each followed by swapping
+ * neighbours while that removes a crossing; their result is used only when it crosses strictly fewer arrows.
+ */
+export const uncross = (rows: string[][], links: readonly Link[]): string[][] => {
+  const given = rows.map((row) => [...row])
+  const fewestGiven = countCrossings(given, links)
+  if (fewestGiven === 0) {
+    return given
+  }
+  const factorial = (n: number): number => (n <= 1 ? 1 : n * factorial(n - 1))
+  const combinations = given.reduce((product, row) => product * factorial(row.length), 1)
+  return combinations <= EXHAUSTIVE_LIMIT ? exhaustive(given, links, fewestGiven) : sweeps(given, links, fewestGiven)
+}
+
+const exhaustive = (given: string[][], links: readonly Link[], fewestGiven: number): string[][] => {
+  const choices = given.map(permutations)
+  let best = given
+  let fewest = fewestGiven
+  const current = given.map((row) => row)
+  const visit = (index: number): void => {
+    if (fewest === 0) {
+      return
+    }
+    if (index === choices.length) {
+      const count = countCrossings(current, links)
+      if (count < fewest) {
+        fewest = count
+        best = current.map((row) => [...row])
+      }
+      return
+    }
+    for (const choice of choices[index]!) {
+      current[index] = choice
+      visit(index + 1)
+    }
+    current[index] = given[index]!
+  }
+  visit(0)
+  return best
+}
+
+const sweeps = (given: string[][], links: readonly Link[], fewestGiven: number): string[][] => {
+  const neighbours = new Map<string, string[]>()
+  for (const [v, w] of links) {
+    neighbours.set(v, [...(neighbours.get(v) ?? []), w])
+    neighbours.set(w, [...(neighbours.get(w) ?? []), v])
+  }
+  let best = given
+  let fewest = fewestGiven
+  const current = given.map((row) => [...row])
+  /** Sorts a row by the mean position of each box's neighbours in the row beside it; a box with none stays put. */
+  const sweep = (index: number, beside: string[]) => {
+    const position = new Map(beside.map((id, at) => [id, at]))
+    const row = current[index]!
+    const weight = new Map(
+      row.map((id, at) => {
+        const linked = (neighbours.get(id) ?? []).flatMap((other) => (position.has(other) ? [position.get(other)!] : []))
+        return [id, linked.length ? linked.reduce((sum, value) => sum + value, 0) / linked.length : (at * beside.length) / row.length]
+      }),
+    )
+    current[index] = row
+      .map((id, at) => ({ id, at }))
+      .sort((a, b) => weight.get(a.id)! - weight.get(b.id)! || a.at - b.at)
+      .map(({ id }) => id)
+  }
+  /** Swaps neighbouring boxes while that removes a crossing. */
+  const transpose = () => {
+    for (let improved = true; improved; ) {
+      improved = false
+      for (const row of current) {
+        for (let at = 0; at + 1 < row.length; at++) {
+          const before = countCrossings(current, links)
+          ;[row[at], row[at + 1]] = [row[at + 1]!, row[at]!]
+          if (countCrossings(current, links) < before) {
+            improved = true
+          } else {
+            ;[row[at], row[at + 1]] = [row[at + 1]!, row[at]!]
+          }
+        }
+      }
+    }
+  }
+  for (let pass = 0; pass < 8 && fewest > 0; pass++) {
+    if (pass % 2 === 0) {
+      for (let index = 1; index < current.length; index++) {
+        sweep(index, current[index - 1]!)
+      }
+    } else {
+      for (let index = current.length - 2; index >= 0; index--) {
+        sweep(index, current[index + 1]!)
+      }
+    }
+    transpose()
+    const count = countCrossings(current, links)
+    if (count < fewest) {
+      fewest = count
+      best = current.map((row) => [...row])
+    }
+  }
+  return best
+}
+
 const shift = (point: Point, dx: number, dy: number): Point => ({ x: point.x + dx, y: point.y + dy })
 
 /**
@@ -1000,6 +1150,17 @@ export const layoutWorkflowGraph = (logical: WorkflowGraph): WorkflowLayout => {
             rows.set(rank, [...(rows.get(rank) ?? []), id])
           }
         }
+        // Where that order makes arrows cross, reorder the boxes (not dagre's stand-ins for long arrows and labels)
+        // so the fewest cross: each row's boxes trade their numbers, and the stand-ins follow their arrow's ends.
+        const boxRows = [...rows.entries()]
+          .sort(([a], [b]) => a - b)
+          .map(([, row]) => row.filter((id) => slots.has(id)).sort((a, b) => slots.get(a)! - slots.get(b)!))
+          .filter((row) => row.length)
+        const numbers = boxRows.map((row) => row.map((id) => slots.get(id)!))
+        uncross(
+          boxRows,
+          layout.edges().map(({ v, w }) => [v, w] as const),
+        ).forEach((row, index) => row.forEach((id, at) => slots.set(id, numbers[index]![at]!)))
         for (const row of rows.values()) {
           row
             .sort((a, b) => slotOf(a, internal.node(a) as never) - slotOf(b, internal.node(b) as never))
