@@ -109,7 +109,19 @@
   @apply fill-c-2 font-code;
   font-size: 11px;
 }
+/* A stage: an invoked workflow's messages, on a band like a page's in the Pages view. */
+.bielu-arazzo .ba-sequence-stage rect {
+  fill: color-mix(in srgb, var(--scalar-color-accent) 5%, transparent);
+  stroke: color-mix(in srgb, var(--scalar-color-accent) 35%, transparent);
+  @apply stroke-1;
+}
+.bielu-arazzo .ba-sequence-stage-title text {
+  @apply fill-c-2 font-sans font-medium;
+  font-size: 11px;
+}
 .bielu-arazzo .ba-sequence-step.ba-diagram-link:hover text,
-.bielu-arazzo .ba-sequence-step:focus-visible text {
+.bielu-arazzo .ba-sequence-step:focus-visible text,
+.bielu-arazzo .ba-sequence-stage-title.ba-diagram-link:hover text,
+.bielu-arazzo .ba-sequence-stage-title:focus-visible text {
   @apply fill-c-accent underline;
 }
