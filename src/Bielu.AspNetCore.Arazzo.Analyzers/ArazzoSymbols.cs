@@ -26,6 +26,15 @@ internal static class ArazzoSymbols
         invocation.TargetMethod.Name == "AddArazzo"
         && invocation.TargetMethod.ContainingNamespace?.ToDisplayString() == ExtensionsNamespace;
 
+    /// <summary>
+    /// The lowercased name of the document an <c>AddArazzo</c> call configures: <c>v1</c> when it passes none, or
+    /// <see langword="null"/> when the name isn't a compile-time constant.
+    /// </summary>
+    public static string? DocumentName(IInvocationOperation addArazzo) =>
+        Argument(addArazzo, "documentName") is null
+            ? DefaultDocumentName
+            : ConstantString(addArazzo, "documentName")?.ToLowerInvariant();
+
     /// <summary>The argument bound to <paramref name="parameterName"/>, or <see langword="null"/>.</summary>
     public static IArgumentOperation? Argument(IInvocationOperation invocation, string parameterName)
     {

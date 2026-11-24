@@ -25,8 +25,26 @@ public partial class ArazzoAnalyzerTests
             public void Shipped() { }
         }
 
+        // Not marked [AsyncApi], so runtime discovery skips it.
         [Bielu.AspNetCore.AsyncApi.Attributes.Channel("audit")]
         internal sealed class AuditEvents { }
+
+        [Bielu.AspNetCore.AsyncApi.Attributes.AsyncApi]
+        [Bielu.AspNetCore.AsyncApi.Attributes.Channel("tracking")]
+        internal class TrackingEventsBase { }
+
+        internal sealed class TrackingEvents : TrackingEventsBase { }
+
+        [Bielu.AspNetCore.AsyncApi.Attributes.AsyncApi("V2")]
+        internal sealed class InvoiceEvents
+        {
+            [Bielu.AspNetCore.AsyncApi.Attributes.Channel("invoices")]
+            public void Invoices() { }
+
+            // Runtime discovery only reads public methods.
+            [Bielu.AspNetCore.AsyncApi.Attributes.Channel("drafts")]
+            internal void Drafts() { }
+        }
         """;
 
     private static string ChannelStep(string channel, string extra = "", string source = "events") => $$"""
@@ -48,14 +66,14 @@ public partial class ArazzoAnalyzerTests
         diagnostic.Severity.ShouldBe(DiagnosticSeverity.Warning);
         Text(diagnostic).ShouldBe("\"payments\"");
         diagnostic.GetMessage().ShouldBe(
-            "No [Channel] declares the channel 'payments' of source 'events'; if a runtime mapping such as Wolverine " +
-            "routing or a document transformer creates it, pass dynamic: true");
+            "No [Channel] of the AsyncAPI document 'v1' declares the channel 'payments' of source 'events'; if a " +
+            "runtime mapping such as Wolverine routing or a document transformer creates it, pass dynamic: true");
     }
 
     [Theory]
     [InlineData("orders")]
-    [InlineData("audit")]
     [InlineData("ordersidshipped")]
+    [InlineData("tracking")]
     public async Task BARAZZO009_DeclaredChannelKey_NoWarning(string channel)
     {
         // Act
@@ -197,6 +215,105 @@ public partial class ArazzoAnalyzerTests
     }
 
     [Theory]
+    [InlineData("audit")]
+    [InlineData("invoices")]
+    [InlineData("drafts")]
+    public async Task BARAZZO009_ChannelRuntimeDiscoveryLeavesOutOfTheDocument_ReportsWarning(string channel)
+    {
+        // Act - audit's type isn't [AsyncApi], invoices belongs to document v2, drafts is on an internal method.
+        var diagnostics = await GetDiagnosticsAsync(ChannelStep(channel));
+
+        // Assert
+        diagnostics.Where(d => d.Id == "BARAZZO009").ShouldHaveSingleItem();
+    }
+
+    [Theory]
+    [InlineData("invoices", false)]
+    [InlineData("orders", false)]
+    [InlineData("drafts", true)]
+    public async Task BARAZZO009_SourceBoundToAnotherAsyncApiDocument_ChecksThatDocument(string channel, bool reported)
+    {
+        // Arrange - [AsyncApi("V2")] matches the document name case-insensitively; OrderEvents is in every document.
+        var source = $$"""
+
+            new ServiceCollection().AddArazzo(o => o
+                .AddAsyncApiSource("billing", "v2")
+                .AddWorkflow("w", w => w.Step("s", s => s.Channel("billing", "{{channel}}", ArazzoStepAction.Send))));
+            """ + ChannelsSource;
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        var diagnostic = diagnostics.SingleOrDefault(d => d.Id == "BARAZZO009");
+        (diagnostic is not null).ShouldBe(reported);
+        diagnostic?.GetMessage().ShouldStartWith("No [Channel] of the AsyncAPI document 'v2' declares the channel 'drafts'");
+    }
+
+    [Fact]
+    public async Task BARAZZO009_SourceNameSelfWiredInAnotherArazzoDocument_OnlyChecksThatDocument()
+    {
+        // Arrange - "events" is this app's AsyncAPI document in v1, and a partner's in partners.
+        var source = """
+
+            new ServiceCollection()
+                .AddArazzo(o => o
+                    .AddAsyncApiSource("events", "v1")
+                    .AddWorkflow("local", w => w.Step("s", s => s.Channel("events", "refunds", ArazzoStepAction.Send))))
+                .AddArazzo("partners", o => o
+                    .AddSourceDescription("events", "https://partner.example.com/asyncapi.json", ArazzoSourceDescriptionType.AsyncApi)
+                    .AddWorkflow("remote", w => w.Step("s", s => s.Channel("events", "partnerOnly", ArazzoStepAction.Send))));
+            """ + ChannelsSource;
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        Text(diagnostics.Single(d => d.Id == "BARAZZO009")).ShouldBe("\"refunds\"");
+    }
+
+    [Fact]
+    public async Task BARAZZO009_SourceRegisteredOutsideAddArazzo_NoWarning()
+    {
+        // Arrange - the helper's source could belong to any Arazzo document, so the step's binding is unknown.
+        var source = """
+
+            new ServiceCollection().AddArazzo(o => o
+                .AddWorkflow("w", w => w.Step("s", s => s.Channel("events", "refunds", ArazzoStepAction.Send))));
+
+            internal static class Sources
+            {
+                public static ArazzoOptions AddEvents(ArazzoOptions options) => options.AddAsyncApiSource("events", "v1");
+            }
+            """ + ChannelsSource;
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        diagnostics.Where(d => d.Id == "BARAZZO009").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BARAZZO009_AsyncApiDocumentNameNotConstant_NoWarning()
+    {
+        // Arrange
+        var source = """
+
+            var name = System.Environment.GetEnvironmentVariable("DOC") ?? "v1";
+            new ServiceCollection().AddArazzo(o => o
+                .AddAsyncApiSource("events", name)
+                .AddWorkflow("w", w => w.Step("s", s => s.Channel("events", "refunds", ArazzoStepAction.Send))));
+            """ + ChannelsSource;
+
+        // Act
+        var diagnostics = await GetDiagnosticsAsync(source);
+
+        // Assert
+        diagnostics.Where(d => d.Id == "BARAZZO009").ShouldBeEmpty();
+    }
+
+    [Theory]
     [InlineData("orders", "orders")]
     [InlineData("orders/{id}", "ordersid")]
     [InlineData("a.b-c_d ef!", "a.b-c_def")]
@@ -210,6 +327,7 @@ public partial class ArazzoAnalyzerTests
         var source = $$"""
             namespace Contracts
             {
+                [Bielu.AspNetCore.AsyncApi.Attributes.AsyncApi]
                 internal sealed class Events
                 {
                     [Bielu.AspNetCore.AsyncApi.Attributes.Channel("{{channel}}")]

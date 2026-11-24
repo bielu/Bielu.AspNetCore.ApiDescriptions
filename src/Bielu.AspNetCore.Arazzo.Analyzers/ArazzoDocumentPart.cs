@@ -47,10 +47,7 @@ internal sealed class ArazzoDocumentPart
 
     public static ArazzoDocumentPart From(IInvocationOperation addArazzo)
     {
-        var documentName = ArazzoSymbols.Argument(addArazzo, "documentName") is null
-            ? ArazzoSymbols.DefaultDocumentName
-            : ArazzoSymbols.ConstantString(addArazzo, "documentName")?.ToLowerInvariant();
-        var part = new ArazzoDocumentPart(documentName);
+        var part = new ArazzoDocumentPart(ArazzoSymbols.DocumentName(addArazzo));
 
         if (ArazzoSymbols.Argument(addArazzo, "configureOptions") is null)
         {
