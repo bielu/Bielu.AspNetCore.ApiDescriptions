@@ -17,14 +17,24 @@
 #       net10.0 in a job that installs only the .NET 10 SDK, which proves that .NET 10 consumers do not need
 #       the newer SDK this repository builds with, and for net11.0 with only the .NET 11 SDK.
 #
+#   consume-wolverine <feed-dir> <tfm> <wolverinefx-version>...
+#       Runs the Wolverine integration's test suite for <tfm> against the packed integration from <feed-dir>,
+#       once per WolverineFx version, each from a fresh copy outside the repository with its own package
+#       folder. Checks that each run resolved the packed integration and the requested WolverineFx, so the
+#       one package built against the minimum WolverineFx is proven on every major it claims.
+#
 # Usage: scripts/verify-packages.sh pack <feed-dir>
 #        scripts/verify-packages.sh consume <feed-dir> <tfm>
+#        scripts/verify-packages.sh consume-wolverine <feed-dir> <tfm> <wolverinefx-version>...
 set -euo pipefail
 
 FRAMEWORKS="net10.0 net11.0"
 VERSION="99.0.0-ci"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# The WolverineFx version the Wolverine integration builds against by default, so the minimum its package
+# declares.
+MIN_WOLVERINE="$(sed -n 's/.*<WolverineFxVersion[^>]*>\([^<]*\)<.*/\1/p' "$repo_root/Directory.Packages.props")"
 
 pack() {
   local feed
@@ -35,8 +45,8 @@ pack() {
   dotnet pack src/Bielu.AspNetCore.AsyncApi.slnx -c Release -nologo -v q -o "$feed" -p:VersionPrefix=99.0.0 -p:VersionSuffix=ci
 
   echo "==> Inspecting the packages"
-  python3 - "$feed" "$VERSION" $FRAMEWORKS <<'PY'
-import re, sys, zipfile, pathlib
+  MIN_WOLVERINE="$MIN_WOLVERINE" python3 - "$feed" "$VERSION" $FRAMEWORKS <<'PY'
+import os, re, sys, zipfile, pathlib
 import xml.etree.ElementTree as ET
 
 feed, version, frameworks = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3:]
@@ -75,6 +85,15 @@ for package in sorted(feed.glob(f'*.{version}.nupkg')):
             errors.append(f'{name}: the source generator is missing from analyzers/dotnet/cs/')
         if not any(e.startswith('buildTransitive/') for e in entries):
             errors.append(f'{name}: buildTransitive/ assets are missing')
+    if name == 'Bielu.AspNetCore.AsyncApi.Wolverine':
+        # One package serves every WolverineFx major it supports, so each framework must ask for the
+        # minimum only: a bare NuGet version means "this or newer".
+        minimum = os.environ['MIN_WOLVERINE']
+        for tfm in sorted(expected):
+            wolverine = [d.get('version') for d in groups.get(tfm, ET.Element('none')).iterfind('n:dependency', ns)
+                         if d.get('id') == 'WolverineFx']
+            if wolverine != [minimum]:
+                errors.append(f'{name}: {tfm} depends on WolverineFx {wolverine}, expected [{minimum!r}]')
 
 if checked == 0:
     errors.append(f'no packages with lib/ or tools/ assets found in {feed}')
@@ -85,33 +104,30 @@ sys.exit(1 if errors else 0)
 PY
 }
 
-consume() {
-  local feed tfm work
-  # Native path for NuGet.config: Git Bash on Windows reports /c/... or /tmp/..., which NuGet cannot open.
-  # `pwd -W` gives C:/... there and does not exist elsewhere.
-  feed="$(cd "$1" && (pwd -W 2>/dev/null || pwd))"
-  tfm="$2"
-  work="$(mktemp -d)"
-  # shellcheck disable=SC2064 # expand now: $work is local
-  trap "rm -rf '$work'" EXIT
+# Native path for NuGet.config: Git Bash on Windows reports /c/... or /tmp/..., which NuGet cannot open.
+# `pwd -W` gives C:/... there and does not exist elsewhere.
+native_path() {
+  (cd "$1" && (pwd -W 2>/dev/null || pwd))
+}
 
-  # CONSUMER_SDK pins the consumer's SDK (e.g. 10.0.100) through its own global.json, to check locally
-  # what CI checks with a job that installs nothing newer.
+# Makes <dir> a place to restore from <feed> outside the repository: Bielu.* from the feed only, the rest
+# from nuget.org. CONSUMER_SDK pins its SDK (e.g. 10.0.100) through a global.json of its own, to check
+# locally what CI checks with a job that installs nothing newer.
+prepare_consumer_dir() {
+  local dir="$1" feed="$2"
   if [ -n "${CONSUMER_SDK:-}" ]; then
-    printf '{ "sdk": { "version": "%s", "rollForward": "latestFeature" } }\n' "$CONSUMER_SDK" > "$work/global.json"
+    printf '{ "sdk": { "version": "%s", "rollForward": "latestFeature" } }\n' "$CONSUMER_SDK" > "$dir/global.json"
   fi
-
-  echo "==> Consuming the packages from $feed as a $tfm app (SDK $(cd "$work" && dotnet --version))"
-  cat > "$work/NuGet.config" <<XML
+  cat > "$dir/NuGet.config" <<XML
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
     <clear />
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
-    <add key="local" value="$feed" />
+    <add key="packed" value="$feed" />
   </packageSources>
   <packageSourceMapping>
-    <packageSource key="local">
+    <packageSource key="packed">
       <package pattern="Bielu.*" />
     </packageSource>
     <packageSource key="nuget.org">
@@ -120,6 +136,18 @@ consume() {
   </packageSourceMapping>
 </configuration>
 XML
+}
+
+consume() {
+  local feed tfm work
+  feed="$(native_path "$1")"
+  tfm="$2"
+  work="$(mktemp -d)"
+  # shellcheck disable=SC2064 # expand now: $work is local
+  trap "rm -rf '$work'" EXIT
+
+  prepare_consumer_dir "$work" "$feed"
+  echo "==> Consuming the packages from $feed as a $tfm app (SDK $(cd "$work" && dotnet --version))"
   cat > "$work/Consumer.csproj" <<XML
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
@@ -183,8 +211,55 @@ CS
   echo "    $tfm consumer serves its document"
 }
 
+consume_wolverine() {
+  local feed tfm wolverine work project assets
+  feed="$(native_path "$1")"
+  tfm="$2"
+  shift 2
+  project="test/Bielu.AspNetCore.AsyncApi.Wolverine.Tests"
+
+  for wolverine in "$@"; do
+    work="$(mktemp -d)"
+    # shellcheck disable=SC2064 # expand now: $work is local
+    trap "rm -rf '$work'" EXIT
+
+    # A copy of the test project with the props it imports, outside the repository so the SDK is the job's
+    # own, and with a package folder of its own so nothing restored for another version is reused.
+    cp "$repo_root/Directory.Build.props" "$repo_root/Directory.Packages.props" "$repo_root/coverlet.runsettings" "$work/"
+    mkdir -p "$work/test"
+    cp -r "$repo_root/$project" "$work/test/"
+    rm -rf "$work/$project/bin" "$work/$project/obj" "$work/$project/TestResults"
+    prepare_consumer_dir "$work" "$feed"
+
+    cd "$work"
+    echo "==> Testing the packed Wolverine integration on $tfm with WolverineFx $wolverine (SDK $(dotnet --version))"
+    local properties=(
+      "-p:TargetFrameworks=$tfm"
+      "-p:WolverineFxVersion=$wolverine"
+      "-p:BieluWolverinePackageVersion=$VERSION"
+      "-p:RestorePackagesPath=$(native_path "$work")/packages"
+    )
+    dotnet restore "$project" -nologo -v q "${properties[@]}"
+
+    assets="$work/$project/obj/project.assets.json"
+    for expected in "Bielu.AspNetCore.AsyncApi.Wolverine/$VERSION" "WolverineFx/$wolverine"; do
+      if ! grep -q "\"$expected\": {" "$assets"; then
+        echo "::error::The $tfm Wolverine tests did not resolve $expected" >&2
+        exit 1
+      fi
+    done
+
+    dotnet test "$project" -c Release -nologo --no-restore "${properties[@]}"
+    cd "$repo_root"
+    rm -rf "$work"
+  done
+}
+
 case "${1:-}" in
   pack) [ $# -eq 2 ] || { echo "usage: $0 pack <feed-dir>" >&2; exit 2; }; pack "$2" ;;
   consume) [ $# -eq 3 ] || { echo "usage: $0 consume <feed-dir> <tfm>" >&2; exit 2; }; consume "$2" "$3" ;;
-  *) echo "usage: $0 pack <feed-dir> | consume <feed-dir> <tfm>" >&2; exit 2 ;;
+  consume-wolverine)
+    [ $# -ge 4 ] || { echo "usage: $0 consume-wolverine <feed-dir> <tfm> <wolverinefx-version>..." >&2; exit 2; }
+    consume_wolverine "$2" "$3" "${@:4}" ;;
+  *) echo "usage: $0 pack <feed-dir> | consume <feed-dir> <tfm> | consume-wolverine <feed-dir> <tfm> <wolverinefx-version>..." >&2; exit 2 ;;
 esac

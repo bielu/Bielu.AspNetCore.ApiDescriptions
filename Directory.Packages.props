@@ -2,6 +2,9 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+    <!-- The WolverineFx version to build and test against. The default is the minimum the Wolverine integration
+         supports and the one its package depends on; CI overrides it to run the packed integration on newer majors. -->
+    <WolverineFxVersion Condition="'$(WolverineFxVersion)' == ''">6.41.0</WolverineFxVersion>
   </PropertyGroup>
   <ItemGroup>
     <!-- ByteBard AsyncAPI -->
@@ -12,10 +15,12 @@
     <PackageVersion Include="ModelContextProtocol" Version="2.3.0" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.3.0" />
     <!-- Wolverine (Bielu.AspNetCore.AsyncApi.Wolverine) -->
-    <PackageVersion Include="WolverineFx" Version="6.41.0" />
-    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.41.0" />
-    <PackageVersion Include="WolverineFx.SignalR" Version="6.41.0" />
-    <PackageVersion Include="WolverineFx.Kafka" Version="6.41.0" />
+    <PackageVersion Include="WolverineFx" Version="$(WolverineFxVersion)" />
+    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="$(WolverineFxVersion)" />
+    <PackageVersion Include="WolverineFx.SignalR" Version="$(WolverineFxVersion)" />
+    <PackageVersion Include="WolverineFx.Kafka" Version="$(WolverineFxVersion)" />
+    <!-- Set by scripts/verify-packages.sh consume-wolverine: the Wolverine tests then use the packed integration. -->
+    <PackageVersion Include="Bielu.AspNetCore.AsyncApi.Wolverine" Version="$(BieluWolverinePackageVersion)" Condition="'$(BieluWolverinePackageVersion)' != ''" />
     <!-- Arazzo spec library -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="JsonPath.Net" Version="3.0.2" />

@@ -102,15 +102,18 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
             }
         }
 
+        var describesReplies = !document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0);
+        var chains = describesReplies ? ChainsByMessageType(runtime) : null;
+
         foreach (var endpoint in runtime.Options.Transports.AllEndpoints()
                      .Where(e => e is { IsListener: true, MessageType: not null } && options.IsIncluded(e.Uri))
                      .OrderBy(e => e.Uri.ToString(), StringComparer.Ordinal))
         {
             var operation = await builder.AddOperationAsync(AsyncApiAction.Receive, endpoint.Uri, endpoint.MessageType!, cancellationToken);
-            if (operation is not null && !document.IsAsyncApiVersion(AsyncApiVersion.AsyncApi2_0))
+            if (operation is not null && chains is not null)
             {
                 await builder.AddReplyAsync(operation.Value.Id, operation.Value.Operation,
-                    ReplyTypes(runtime, endpoint.MessageType!), cancellationToken);
+                    ReplyTypes(runtime, HandlingChains(chains, endpoint)), cancellationToken);
             }
         }
 
@@ -121,7 +124,35 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
     }
 
     /// <summary>
-    /// The message types the handlers of <paramref name="messageType"/> return that are documented as its
+    /// Every handler chain of the running app, by the message type it handles. <see cref="HandlerGraph.AllChains"/>
+    /// is read rather than <c>ChainFor(Type)</c> because a message type can have several chains: Wolverine 6
+    /// nests handlers bound to an endpoint ("sticky" handlers) under the message type's chain, and Wolverine 7
+    /// gives each handler type a chain of its own, where <c>ChainFor(Type)</c> throws.
+    /// </summary>
+    private static Dictionary<Type, HandlerChain[]> ChainsByMessageType(IWolverineRuntime runtime) =>
+        (runtime as WolverineRuntime)?.Handlers.AllChains()
+            .GroupBy(chain => chain.MessageType)
+            .ToDictionary(group => group.Key, group => group.ToArray())
+        ?? [];
+
+    /// <summary>
+    /// The chains that handle what <paramref name="endpoint"/> receives, the way Wolverine picks them: those
+    /// bound to the endpoint, otherwise those bound to no endpoint. A listener whose handlers are all bound to
+    /// other endpoints only relays its messages to them, so it has no handler of its own and no reply.
+    /// </summary>
+    private static IEnumerable<HandlerChain> HandlingChains(Dictionary<Type, HandlerChain[]> chains, Endpoint endpoint)
+    {
+        if (!chains.TryGetValue(endpoint.MessageType!, out var candidates))
+        {
+            return [];
+        }
+
+        var bound = candidates.Where(chain => chain.Endpoints.Contains(endpoint)).ToArray();
+        return bound.Length > 0 ? bound : candidates.Where(chain => chain.Endpoints.Count == 0);
+    }
+
+    /// <summary>
+    /// The message types the handlers in <paramref name="chains"/> return that are documented as their
     /// reply. Wolverine's own types (side effects, <c>OutgoingMessages</c>, ...) and open-ended ones such as
     /// <see cref="object"/> are left out, since they do not describe a payload.
     /// </summary>
@@ -132,16 +163,14 @@ internal sealed class WolverineDocumentTransformer(WolverineAsyncApiOptions opti
     /// so it is always documented; a routed one is ambiguous and needs
     /// <see cref="WolverineAsyncApiOptions.IncludeReplies"/>.
     /// </remarks>
-    private List<Type> ReplyTypes(IWolverineRuntime runtime, Type messageType) =>
-        (runtime as WolverineRuntime)?.Handlers.ChainFor(messageType) is not { } chain
-            ? []
-            : ReturnedMessageTypes(chain)
-                .Where(t => t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
-                            && t != typeof(object)
-                            && t.Assembly != typeof(IWolverineRuntime).Assembly
-                            && (options.RepliesIncluded || !runtime.RoutingFor(t).Routes.Any()))
-                .Distinct()
-                .OrderBy(t => t.FullName, StringComparer.Ordinal)
+    private List<Type> ReplyTypes(IWolverineRuntime runtime, IEnumerable<HandlerChain> chains) =>
+        chains.SelectMany(ReturnedMessageTypes)
+            .Where(t => t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
+                        && t != typeof(object)
+                        && t.Assembly != typeof(IWolverineRuntime).Assembly
+                        && (options.RepliesIncluded || !runtime.RoutingFor(t).Routes.Any()))
+            .Distinct()
+            .OrderBy(t => t.FullName, StringComparer.Ordinal)
                 .ToList();
 
     /// <summary>
