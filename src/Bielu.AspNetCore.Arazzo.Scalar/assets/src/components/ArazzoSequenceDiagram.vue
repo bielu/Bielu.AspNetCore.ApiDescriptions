@@ -35,6 +35,8 @@ const ROW = 36
 const NOTE = 16
 /** A stage's title row, above its first message. */
 const BAND = 26
+/** How far a lane's call to itself loops out to the right. */
+const SELF = 28
 const MAX_LABEL = 28
 /** The smallest the diagram is drawn at (11px labels at about 9px); narrower than that, it scrolls instead. */
 const MIN_SCALE = 0.85
@@ -107,7 +109,32 @@ const layout = computed(() => {
 const rows = computed(() => layout.value.rows)
 const bands = computed(() => layout.value.bands)
 
-const width = computed(() => GUTTER + props.sequence.participants.length * LANE)
+/** Roughly how wide a self-call's text is drawn: 11px code for the label, 10px sans for the note. */
+const LABEL_CHAR = 6.7
+const NOTE_CHAR = 5.6
+
+/**
+ * Wide enough for every lane, and for the text beside a lane's call to itself, which starts right of its loop
+ * and so can run past the rightmost lane's edge.
+ */
+const width = computed(() =>
+  Math.max(
+    GUTTER + props.sequence.participants.length * LANE,
+    ...rows.value
+      .filter((row) => row.x1 === row.x2)
+      .map(
+        (row) =>
+          row.x1 +
+          SELF +
+          10 +
+          Math.max(
+            cut(row.message.label, 36).length * LABEL_CHAR,
+            row.message.note ? cut(row.message.note, 60).length * NOTE_CHAR : 0,
+          ) +
+          12,
+      ),
+  ),
+)
 const height = computed(() => {
   const last = rows.value[rows.value.length - 1]
   const band = bands.value[bands.value.length - 1]
@@ -232,7 +259,9 @@ const isClient = (id: string) => id === CLIENT_ID
         :class="{ 'ba-sequence-client': isClient(participant.id) }">
         <title>
           {{
-            [participant.label, participant.detail].filter(Boolean).join(' — ')
+            [participant.label, participant.detail, participant.description]
+              .filter(Boolean)
+              .join(' — ')
           }}
         </title>
         <line
@@ -301,7 +330,16 @@ const isClient = (id: string) => id === CLIENT_ID
           {{ row.message.label
           }}{{ row.message.note ? ` — ${row.message.note}` : '' }}
         </title>
+        <!-- A lane calling itself (an actor that is also the step's target): a loop out to the right and back. -->
+        <path
+          v-if="row.x1 === row.x2"
+          class="ba-sequence-line ba-sequence-self"
+          :class="{ 'ba-sequence-dashed': dashed(row.message) }"
+          :d="`M${row.x1 + 4},${row.y - 7} h${SELF} v14 h-${SELF - 4}`"
+          fill="none"
+          :marker-end="`url(#${markerId})`" />
         <line
+          v-else
           class="ba-sequence-line"
           :class="{ 'ba-sequence-dashed': dashed(row.message) }"
           :marker-end="`url(#${markerId})`"
@@ -311,17 +349,17 @@ const isClient = (id: string) => id === CLIENT_ID
           :y2="row.y" />
         <text
           class="ba-sequence-label"
-          text-anchor="middle"
-          :x="(row.x1 + row.x2) / 2"
-          :y="row.y - 6">
+          :text-anchor="row.x1 === row.x2 ? 'start' : 'middle'"
+          :x="row.x1 === row.x2 ? row.x1 + SELF + 10 : (row.x1 + row.x2) / 2"
+          :y="row.x1 === row.x2 ? row.y + 4 : row.y - 6">
           {{ cut(row.message.label, 36) }}
         </text>
         <text
           v-if="row.message.note"
           class="ba-sequence-note"
-          text-anchor="middle"
-          :x="(row.x1 + row.x2) / 2"
-          :y="row.y + 13">
+          :text-anchor="row.x1 === row.x2 ? 'start' : 'middle'"
+          :x="row.x1 === row.x2 ? row.x1 + SELF + 10 : (row.x1 + row.x2) / 2"
+          :y="row.y + (row.x1 === row.x2 ? 17 : 13)">
           {{ cut(row.message.note, 60) }}
         </text>
       </g>

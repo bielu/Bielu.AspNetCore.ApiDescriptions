@@ -100,6 +100,8 @@ public class ScalarArazzoAspireExtensionsTests
             arazzo.PagesExtension = "x-shop pages";
             arazzo.PageExtension = "x-page";
             arazzo.LabelExtension = "x-label&text";
+            arazzo.ActorExtension = "x-actor";
+            arazzo.ActorsExtension = "x-actors";
         }));
 
         // Assert
@@ -110,6 +112,8 @@ public class ScalarArazzoAspireExtensionsTests
         query["pagesExtension"].ShouldBe("x-shop pages");
         query["pageExtension"].ShouldBe("x-page");
         query["labelExtension"].ShouldBe("x-label&text");
+        query["actorExtension"].ShouldBe("x-actor");
+        query["actorsExtension"].ShouldBe("x-actors");
     }
 
     [Fact]
@@ -132,6 +136,9 @@ public class ScalarArazzoAspireExtensionsTests
     [InlineData("pages", "x-")]
     [InlineData("page", "page")]
     [InlineData("label", "x-")]
+    [InlineData("actor", "x-")]
+    [InlineData("actor", "actor")]
+    [InlineData("actors", "x-")]
     public async Task WithArazzoOptions_BarePrefixOrNonExtension_Throws(string option, string value)
     {
         // Arrange
@@ -151,6 +158,12 @@ public class ScalarArazzoAspireExtensionsTests
                     break;
                 case "page":
                     arazzo.PageExtension = value;
+                    break;
+                case "actor":
+                    arazzo.ActorExtension = value;
+                    break;
+                case "actors":
+                    arazzo.ActorsExtension = value;
                     break;
                 default:
                     arazzo.LabelExtension = value;

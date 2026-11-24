@@ -5,7 +5,8 @@ import ArazzoSequenceDiagram from '../src/components/ArazzoSequenceDiagram.vue'
 import ArazzoWorkflow from '../src/components/ArazzoWorkflow.vue'
 import { successPath } from '../src/helpers/execution-order'
 import { toWorkflowViews, traverseArazzoDocument } from '../src/helpers/navigation'
-import { buildSequence, CLIENT_ID, runOrder } from '../src/helpers/sequence'
+import { pluginOptionsFromModuleUrl, resolvePluginOptions } from '../src/helpers/plugin-options'
+import { actorRegistry, buildSequence, CLIENT_ID, runOrder } from '../src/helpers/sequence'
 import { resetWorkflowView } from '../src/helpers/view-mode'
 import type { ArazzoDocument, ArazzoStep, ArazzoWorkflow as Workflow } from '../src/types'
 
@@ -511,5 +512,309 @@ describe('notes', () => {
 
     // Assert
     expect(sequence.messages[0]).toMatchObject({ stage: 'pay', note: 'matched on orderId from inputs' })
+  })
+})
+
+describe('actors', () => {
+  const options = { actorExtension: 'x-actor' }
+  const services: ArazzoDocument = {
+    arazzo: '1.1.0',
+    sourceDescriptions: [
+      { name: 'orders', url: '/openapi.json', type: 'openapi' },
+      { name: 'payments', url: '/payments.json', type: 'openapi' },
+      { name: 'events', url: '/asyncapi.json', type: 'asyncapi' },
+    ],
+    workflows: [],
+  }
+  const checkout = {
+    workflowId: 'checkout',
+    steps: [
+      { stepId: 'create', operationId: '$sourceDescriptions.orders.createOrder', successCriteria: [{ condition: '$statusCode == 201' }] },
+      { stepId: 'authorize', operationId: '$sourceDescriptions.payments.authorize', 'x-actor': 'orders' },
+      { stepId: 'authorized', channelPath: '{$sourceDescriptions.events.url}#/channels/paymentCompleted', action: 'receive', 'x-actor': 'orders' },
+      { stepId: 'announce', channelPath: '{$sourceDescriptions.events.url}#/channels/orderPlaced', action: 'send', 'x-actor': 'orders' },
+      { stepId: 'audit', operationId: '$sourceDescriptions.orders.createOrder', 'x-actor': 'orders' },
+      { stepId: 'pick', operationId: '$sourceDescriptions.orders.createOrder', 'x-actor': ' warehouse ' },
+      { stepId: 'blank', operationId: '$sourceDescriptions.orders.createOrder', 'x-actor': '  ' },
+    ],
+  } as unknown as Workflow
+
+  it('starts each step from the lane its actor names, and sends what comes back there', () => {
+    // Act
+    const sequence = buildSequence({ ...services, workflows: [checkout] }, checkout, documents, options)
+
+    // Assert
+    expect(sequence.messages.map(({ stepId, from, to, kind }) => [stepId, kind, from, to])).toEqual([
+      ['create', 'request', CLIENT_ID, 'source:orders'],
+      ['create', 'response', 'source:orders', CLIENT_ID],
+      ['authorize', 'request', 'source:orders', 'source:payments'],
+      ['authorize', 'response', 'source:payments', 'source:orders'],
+      ['authorized', 'receive', 'source:events', 'source:orders'],
+      ['announce', 'send', 'source:orders', 'source:events'],
+      // An actor that is also the step's target calls itself.
+      ['audit', 'request', 'source:orders', 'source:orders'],
+      ['audit', 'response', 'source:orders', 'source:orders'],
+      // An actor that is no source description gets a lane of its own; a blank one is the client.
+      ['pick', 'request', 'actor:warehouse', 'source:orders'],
+      ['pick', 'response', 'source:orders', 'actor:warehouse'],
+      ['blank', 'request', CLIENT_ID, 'source:orders'],
+      ['blank', 'response', 'source:orders', CLIENT_ID],
+    ])
+    expect(sequence.participants.map(({ id, label }) => [id, label])).toEqual([
+      [CLIENT_ID, 'Client'],
+      ['source:orders', 'orders'],
+      ['source:payments', 'payments'],
+      ['source:events', 'events'],
+      ['actor:warehouse', 'warehouse'],
+    ])
+  })
+
+  it('ignores the extension unless the option names it', () => {
+    // Act
+    const sequence = buildSequence({ ...services, workflows: [checkout] }, checkout, documents)
+
+    // Assert
+    expect(sequence.messages.filter((message) => message.kind === 'request').every((message) => message.from === CLIENT_ID)).toBe(true)
+  })
+
+  it('takes a workflow\'s actor for its steps, and a stage\'s from the step invoking it, the step\'s own first', () => {
+    // Arrange
+    const pay = {
+      workflowId: 'takePayment',
+      steps: [
+        { stepId: 'authorize', operationId: '$sourceDescriptions.payments.authorize' },
+        { stepId: 'notify', operationId: '$sourceDescriptions.orders.createOrder', 'x-actor': 'payments' },
+      ],
+    }
+    const owned = { workflowId: 'confirm', 'x-actor': 'payments', steps: [{ stepId: 'capture', operationId: '$sourceDescriptions.orders.createOrder' }] }
+    const outer = {
+      workflowId: 'outer',
+      steps: [
+        { stepId: 'payment', workflowId: 'takePayment', 'x-actor': 'orders' },
+        { stepId: 'confirmation', workflowId: 'confirm', 'x-actor': 'orders' },
+      ],
+    }
+    const owner = { ...services, workflows: [outer, pay, owned] } as unknown as ArazzoDocument
+
+    // Act
+    const requests = buildSequence(owner, outer as unknown as Workflow, documents, options).messages.filter((message) => message.kind === 'request')
+
+    // Assert
+    expect(requests.map(({ stepId, from }) => [stepId, from])).toEqual([
+      ['authorize', 'source:orders'],
+      ['notify', 'source:payments'],
+      ['capture', 'source:payments'],
+    ])
+  })
+
+  it('leaves the client out when every step names an actor, and starts a workflow call from the actor', () => {
+    // Arrange
+    const workflow = {
+      workflowId: 'w',
+      'x-actor': 'orders',
+      steps: [
+        { stepId: 'authorize', operationId: '$sourceDescriptions.payments.authorize' },
+        { stepId: 'elsewhere', workflowId: '$sourceDescriptions.other.flow' },
+      ],
+    } as unknown as Workflow
+
+    // Act
+    const sequence = buildSequence({ ...services, workflows: [workflow] }, workflow, documents, options)
+
+    // Assert
+    expect(sequence.participants.map((participant) => participant.id)).toEqual(['source:orders', 'source:payments', 'workflow:$sourceDescriptions.other.flow'])
+    expect(sequence.messages.at(-1)).toMatchObject({ kind: 'invoke', from: 'source:orders' })
+  })
+
+  it('draws a lane calling itself as a loop', () => {
+    // Arrange
+    const sequence = {
+      participants: [{ id: 'a', label: 'a' }],
+      messages: [{ stepId: 's', from: 'a', to: 'a', label: 'GET /self', kind: 'request' as const }],
+      stages: [],
+    }
+
+    // Act
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence, stepSectionIds: {} } })
+
+    // Assert
+    expect(wrapper.find('path.ba-sequence-self').attributes('d')).toMatch(/^M\d+,\d+ h\d+ v14 h-\d+$/)
+    expect(wrapper.find('line.ba-sequence-line').exists()).toBe(false)
+    expect(wrapper.find('.ba-sequence-label').attributes('text-anchor')).toBe('start')
+    wrapper.unmount()
+  })
+})
+
+describe('the actor option', () => {
+  afterEach(() => {
+    localStorage.clear()
+    resetWorkflowView()
+  })
+
+  it('is read from every input path, and only as a specification extension', () => {
+    // Act / Assert
+    expect(resolvePluginOptions({ actorExtension: 'x-actor' })).toEqual({ actorExtension: 'x-actor' })
+    expect(resolvePluginOptions(undefined, { actorExtension: 'actor' })).toEqual({})
+    expect(pluginOptionsFromModuleUrl('https://cdn.test/p.mjs?actorExtension=x-actor')).toEqual({ actorExtension: 'x-actor' })
+  })
+
+  it('reaches the Sequence view of a workflow', async () => {
+    // Arrange
+    const owned: ArazzoDocument = {
+      ...document,
+      workflows: [{ workflowId: 'w', steps: [{ stepId: 'create', operationId: 'createOrder', 'x-actor': 'storefront' } as ArazzoStep] }],
+    }
+    const [view] = toWorkflowViews(owned, traverseArazzoDocument({ documentId: 'doc', document: owned as unknown as Record<string, unknown> }))
+    const wrapper = mount(ArazzoWorkflow, { props: { view: view!, document: owned, documents, arazzoOptions: { actorExtension: 'x-actor' } } })
+
+    // Act
+    await wrapper.findAll('.ba-overview .ba-view-tabs button').find((button) => button.text() === 'Sequence')!.trigger('click')
+    await flushPromises()
+
+    // Assert
+    expect(wrapper.findAll('.ba-overview .ba-sequence-participant > text:first-of-type').map((text) => text.text())).toEqual(['storefront', 'orders'])
+    wrapper.unmount()
+  })
+})
+
+describe('the actor registry', () => {
+  const options = { actorExtension: 'x-actor', actorsExtension: 'x-actors' }
+  const workflow = {
+    workflowId: 'w',
+    steps: [
+      { stepId: 'create', operationId: 'createOrder' },
+      { stepId: 'pick', operationId: 'createOrder', 'x-actor': 'warehouse' },
+      { stepId: 'announce', channelPath: '{$sourceDescriptions.events.url}#/channels/orderPlaced', action: 'send', 'x-actor': 'orders' },
+      { stepId: 'again', operationId: 'createOrder', 'x-actor': 'storefront' },
+    ],
+  } as unknown as Workflow
+  const registered = (actors: unknown): ArazzoDocument => ({ ...document, workflows: [workflow], 'x-actors': actors }) as ArazzoDocument
+
+  it('titles the lanes it lists, puts them first in its order, and names the client', () => {
+    // Arrange
+    const owner = registered({
+      events: { title: 'Message broker' },
+      orders: { title: 'Orders service', description: 'Takes and tracks orders.' },
+      storefront: { title: 'Storefront', description: 'The shop the customer uses.', client: true },
+      unused: { title: 'Never drawn' },
+    })
+
+    // Act
+    const sequence = buildSequence(owner, workflow, documents, options)
+
+    // Assert: the client first, then the listed lanes in the registry's order, then the rest as first used.
+    expect(sequence.participants.map(({ id, label, description }) => [id, label, description])).toEqual([
+      [CLIENT_ID, 'Storefront', 'The shop the customer uses.'],
+      ['source:events', 'Message broker', undefined],
+      ['source:orders', 'Orders service', 'Takes and tracks orders.'],
+      ['actor:warehouse', 'warehouse', undefined],
+    ])
+    // A step whose actor is the client is on the client's lane.
+    expect(sequence.messages.find((message) => message.stepId === 'again')).toMatchObject({ from: CLIENT_ID })
+  })
+
+  it('keeps the client called Client when no entry is the client, and its name when the entry has no title', () => {
+    // Act
+    const unnamed = buildSequence(registered({ orders: { title: 'Orders service' } }), workflow, documents, options)
+    const named = buildSequence(registered({ shop: { client: true } }), workflow, documents, options)
+
+    // Assert
+    expect(unnamed.participants[0]).toEqual({ id: CLIENT_ID, label: 'Client' })
+    expect(named.participants[0]).toEqual({ id: CLIENT_ID, label: 'shop' })
+  })
+
+  it('reads only well-formed entries, and nothing without the option', () => {
+    // Arrange
+    const owner = registered({ a: { title: ' A ', description: 3, client: 'yes' }, b: 'not an entry', c: [], d: { title: '  ' } })
+
+    // Act / Assert
+    expect([...actorRegistry(owner, 'x-actors')]).toEqual([
+      ['a', { title: 'A' }],
+      ['d', {}],
+    ])
+    expect(actorRegistry(owner, undefined).size).toBe(0)
+    expect(actorRegistry(registered(['a']), 'x-actors').size).toBe(0)
+    expect(buildSequence(registered({ orders: { title: 'Orders service' } }), workflow, documents, { actorExtension: 'x-actor' }).participants.map((participant) => participant.label)).toContain('orders')
+  })
+
+  it('titles the client of a workflow without steps, and shows a lane\'s description in its tooltip', () => {
+    // Arrange
+    const owner = registered({ shop: { title: 'Shop', description: 'Where customers buy.', client: true } })
+
+    // Act
+    const empty = buildSequence(owner, { workflowId: 'empty' }, documents, options)
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence: buildSequence(owner, workflow, documents, options), stepSectionIds: {} } })
+
+    // Assert
+    expect(empty.participants).toEqual([{ id: CLIENT_ID, label: 'Shop', description: 'Where customers buy.' }])
+    expect(wrapper.find('.ba-sequence-participant title').text()).toBe('Shop — Where customers buy.')
+    wrapper.unmount()
+  })
+
+  it('is an option of the plugin', () => {
+    // Act / Assert
+    expect(resolvePluginOptions({ actorsExtension: 'x-actors' })).toEqual({ actorsExtension: 'x-actors' })
+    expect(pluginOptionsFromModuleUrl('https://cdn.test/p.mjs?actorsExtension=x-actors')).toEqual({ actorsExtension: 'x-actors' })
+  })
+})
+
+describe('review fixes', () => {
+  it('keeps an inherited actor on the invoking step\'s lane when the stage is another document\'s workflow', () => {
+    // Arrange: the invoked workflow lives in another Arazzo document, which has no source called `orders`.
+    const other = {
+      arazzo: '1.1.0',
+      'x-scalar-original-source-url': '/other.arazzo.json',
+      sourceDescriptions: [{ name: 'api', url: '/openapi.json', type: 'openapi' }],
+      workflows: [
+        {
+          workflowId: 'inner',
+          steps: [
+            { stepId: 'inherits', operationId: 'createOrder' },
+            { stepId: 'names', operationId: 'createOrder', 'x-actor': 'warehouse' },
+          ],
+        },
+      ],
+    }
+    const outer = { workflowId: 'outer', steps: [{ stepId: 'run', workflowId: '$sourceDescriptions.other.inner', 'x-actor': 'orders' }] } as unknown as Workflow
+    const owner: ArazzoDocument = {
+      arazzo: '1.1.0',
+      sourceDescriptions: [
+        { name: 'orders', url: '/openapi.json', type: 'openapi' },
+        { name: 'other', url: '/other.arazzo.json', type: 'arazzo' },
+      ],
+      workflows: [outer],
+    }
+
+    // Act
+    const sequence = buildSequence(owner, outer, { orders: ordersApi, other }, { actorExtension: 'x-actor' })
+
+    // Assert: the inherited actor is the parent's `orders` lane, not a lane of its own; a named one is resolved in
+    // the other document.
+    const requests = sequence.messages.filter((message) => message.kind === 'request')
+    expect(requests.map(({ stepId, from }) => [stepId, from])).toEqual([
+      ['inherits', 'source:orders'],
+      ['names', 'actor:warehouse'],
+    ])
+    expect(sequence.participants.some((participant) => participant.id === 'actor:orders')).toBe(false)
+  })
+
+  it('widens the diagram for a long call to itself on the rightmost lane, so its text is not cut off', () => {
+    // Arrange
+    const label = 'GET /orders/{orderId}/payment-status'
+    const sequence = {
+      participants: [{ id: CLIENT_ID, label: 'Client' }, { id: 'a', label: 'a' }],
+      messages: [{ stepId: 's', from: 'a', to: 'a', label, kind: 'request' as const, note: 'retry after 2 s × 3, then give up and end the run' }],
+      stages: [],
+    }
+
+    // Act
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence, stepSectionIds: {} } })
+
+    // Assert: the viewBox reaches past where the note's text ends, beyond the lanes' own width.
+    const width = Number(wrapper.find('svg').attributes('viewBox')!.split(' ')[2])
+    const start = Number(wrapper.find('.ba-sequence-label').attributes('x'))
+    expect(width).toBeGreaterThan(120 + 2 * 210)
+    expect(width).toBeGreaterThan(start + label.length * 6.5)
+    wrapper.unmount()
   })
 })
