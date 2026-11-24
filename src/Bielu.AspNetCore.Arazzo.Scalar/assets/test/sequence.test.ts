@@ -1138,4 +1138,94 @@ describe('the ways a step can end', () => {
     expect(wrapper.findAll('.ba-sequence-step text').map((step) => step.text())).toEqual(['create', 'announce'])
     wrapper.unmount()
   })
+
+  it('guards an action that checks more than its status code with every condition it checks', () => {
+    // Arrange: a conflict is retried only when the body says it may be; otherwise the run ends.
+    const workflow: Workflow = {
+      workflowId: 'w',
+      steps: [
+        {
+          stepId: 'create',
+          operationId: 'createOrder',
+          successCriteria: [{ condition: '$statusCode == 201' }],
+          onFailure: [
+            {
+              name: 'retryable',
+              type: 'retry',
+              retryAfter: 1,
+              criteria: [{ condition: '$statusCode == 409' }, { condition: '$response.body#/retryable == true' }],
+            },
+            {
+              name: 'conflict',
+              type: 'end',
+              criteria: [{ condition: '$statusCode == 409 && $response.body#/retryable == false' }],
+            },
+            { name: 'rejected', type: 'end', criteria: [{ condition: '$statusCode == 400' }] },
+          ],
+        },
+      ],
+    }
+
+    // Act
+    const sequence = buildSequence(document, workflow, documents)
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence, stepSectionIds: {} } })
+
+    // Assert: only the plain status check is labeled by its code; both conflicts show the body condition.
+    expect(wrapper.findAll('.ba-sequence-guard').map((guard) => guard.text())).toEqual([
+      '[201]',
+      '[if $statusCode == 409 && $response.body#/retryable == true]',
+      '[if $statusCode == 409 && $response.body#/retryable == false]',
+      '[400]',
+    ])
+    // The responses are still the 409s they come back as.
+    expect(sequence.messages.filter((message) => message.kind === 'response').map((message) => message.label)).toEqual(['201', '409', '409', '400'])
+    wrapper.unmount()
+  })
+
+  it('notes a failure that checks more than its status code as conditional', () => {
+    // Arrange
+    const workflow: Workflow = {
+      workflowId: 'w',
+      steps: [
+        {
+          stepId: 'pay',
+          workflowId: 'nothing',
+          onFailure: [
+            { name: 'retryable', type: 'retry', criteria: [{ condition: '$statusCode == 409' }, { condition: '$response.body#/retryable == true' }] },
+            { name: 'declined', type: 'end', criteria: [{ condition: '$statusCode == 402' }] },
+          ],
+        },
+      ],
+    }
+    const staged: ArazzoDocument = { ...document, workflows: [workflow, { workflowId: 'nothing', steps: [{ stepId: 'log', operationId: 'createOrder' }] }] }
+
+    // Act
+    const sequence = buildSequence(staged, workflow, documents)
+
+    // Assert
+    expect(sequence.stages[0]!.note).toBe('if: retryable (retry); on 402: declined (end)')
+  })
+
+  it('shows a guard cut to fit the diagram in full on hover', () => {
+    // Arrange
+    const condition = "$response.body#/order/payment/status == 'declined' && $response.body#/order/retryable == true"
+    const sequence = {
+      participants: [{ id: CLIENT_ID, label: 'Client' }, { id: 'a', label: 'a' }],
+      messages: [
+        { stepId: 's', from: CLIENT_ID, to: 'a', label: 'x', kind: 'send' as const, operand: { alt: '/s', index: 0, guard: 'success' } },
+        { stepId: 's', from: CLIENT_ID, to: 'a', label: 'x', kind: 'send' as const, operand: { alt: '/s', index: 1, guard: `if ${condition}` } },
+      ],
+      stages: [],
+      parallels: [],
+    }
+
+    // Act
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence, stepSectionIds: {} } })
+
+    // Assert
+    const [short, long] = wrapper.findAll('.ba-sequence-guard')
+    expect(short!.find('title').exists()).toBe(false)
+    expect(long!.find('title').text()).toBe(`if ${condition}`)
+    wrapper.unmount()
+  })
 })
