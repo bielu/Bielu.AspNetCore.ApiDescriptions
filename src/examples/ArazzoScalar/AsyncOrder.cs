@@ -7,6 +7,8 @@ using Bielu.AspNetCore.AsyncApi.Extensions;
 using Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR;
 using ByteBard.AsyncAPI.Models;
 using ByteBard.AsyncAPI.Models.Interfaces;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.SignalR;
 
 /// <summary>
@@ -38,13 +40,23 @@ internal static class AsyncOrder
         {
             options.WithInfo("Order updates", "1.0.0")
                 .WithDescription("Pushed to the browser over SignalR when an order's status changes.");
-            options.AddServer("signalr", "localhost:5000", SignalRProtocol.ProtocolName, pathName: null, server =>
+            // The launch profile's address; replaced below by wherever the app really runs.
+            options.AddServer(ServerName, DefaultAuthority, SignalRProtocol.ProtocolName, pathName: null, server =>
             {
                 server.Description = "The storefront's SignalR endpoint";
                 server.Bindings = new AsyncApiBindings<IServerBinding>
                 {
                     new SignalRServerBinding { Transports = { SignalRProtocol.Transports.WebSockets }, Protocols = { SignalRProtocol.HubProtocols.Json } },
                 };
+            });
+            options.AddDocumentTransformer((document, context, _) =>
+            {
+                if (document.Servers.TryGetValue(ServerName, out var server))
+                {
+                    server.Host = Authority(context.ApplicationServices);
+                }
+
+                return Task.CompletedTask;
             });
             // Only the hub: the app's other [AsyncApi] channels belong to the events document.
             options.AddIncludedChannel("orderUpdates");
@@ -56,6 +68,34 @@ internal static class AsyncOrder
             });
         });
         return services;
+    }
+
+    /// <summary>The <c>updates</c> document's server: the storefront, where the hub is.</summary>
+    private const string ServerName = "signalr";
+
+    /// <summary>Where the launch profile (Properties/launchSettings.json) serves the app.</summary>
+    internal const string DefaultAuthority = "localhost:5290";
+
+    /// <summary>
+    /// The host and port the hub is reached at: the <c>PublicUrl</c> setting when the app sits behind a proxy, else the
+    /// address the server listens on (the launch profile's, or a <c>--urls</c> or <c>ASPNETCORE_URLS</c> override),
+    /// else the configured <c>urls</c> when the document is generated without a server, as at build time.
+    /// </summary>
+    internal static string Authority(IServiceProvider services)
+    {
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var url = configuration["PublicUrl"]
+            ?? services.GetService<IServer>()?.Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault()
+            ?? configuration["urls"]?.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+        // A wildcard host (http://+:80, http://*:80, 0.0.0.0, [::]) listens everywhere; a browser on this machine
+        // reaches it as localhost.
+        url = url?.Replace("://+", "://localhost", StringComparison.Ordinal).Replace("://*", "://localhost", StringComparison.Ordinal);
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return DefaultAuthority;
+        }
+
+        return uri.Host is "0.0.0.0" or "[::]" ? $"localhost:{uri.Port}" : uri.Authority;
     }
 
     /// <summary>Adds the hub and the email service as sources, and the asynchronous order workflow.</summary>
