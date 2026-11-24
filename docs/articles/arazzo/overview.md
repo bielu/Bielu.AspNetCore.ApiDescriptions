@@ -382,7 +382,14 @@ branches, or something other than `AddArazzo` configures `ArazzoOptions` (for ex
 `Configure<ArazzoOptions>`). Several `AddArazzo` calls with the same document name are merged, as they are
 at runtime.
 
-BARAZZO009 compares a step's channel with the document key the AsyncAPI generator gives each `[Channel]`: its
+BARAZZO009 resolves a step's source name in the Arazzo document the step belongs to, so a name that one
+document self-wires and another points at a partner's URL is only checked where it is self-wired. It then
+checks the channel against the AsyncAPI document that source is bound to, using the channels runtime discovery
+puts there: a `[Channel]` on a type marked `[AsyncApi]` for that document (or for every document), or on one of
+the type's public methods. A `[Channel]` on an unmarked type, or on an `[AsyncApi("v2")]` type when the source
+is bound to `v1`, doesn't count.
+
+It compares the step's channel with the document key the AsyncAPI generator gives each `[Channel]`: its
 name without the characters outside `[A-Za-z0-9._-]`. So `[Channel("orders/{id}")]` is keyed `ordersid`, and a
 step that uses the declared name is reported with the key to use. A channel added at runtime is invisible to
 the analyzer, whether Wolverine's message routing or a document transformer adds it. Mark the step with
@@ -395,7 +402,8 @@ options.AddWorkflow("checkout", wf => wf
 
 The rule also stays quiet when the project calls `AddWolverine()`, when it declares no `[Channel]` at all, and
 when a referenced assembly uses the AsyncAPI attributes but none of its channels can be read from metadata
-(they are on non-public members).
+(they are on non-public members). It skips a step whose AsyncAPI document it can't tell: the Arazzo or AsyncAPI
+document name isn't a constant, or the step or its `AddAsyncApiSource` is written outside an `AddArazzo` lambda.
 
 > ⚠️ **Security note:** `Bielu.AspNetCore.Arazzo` only *serves* and *validates* workflow documents — it
 > does not execute them. Any future execution engine is intended to be CLI/test-only by design, and would
