@@ -3,7 +3,7 @@ import { effectiveFailureActions, effectiveSuccessActions, isUnconditional, reac
 import { stepsBefore, successPath, usesDependsOn } from './execution-order'
 import { formatDuration } from './format'
 import { statusCodesIn } from './openapi-exchange'
-import { findDocumentByUrl, resolveStepTarget, resolveWorkflow, sourceNameOf } from './resolve-target'
+import { findDocumentByUrl, resolveStepTarget, resolveWorkflow, sourceNameOf, sourceUrl } from './resolve-target'
 import { targetSpec, type SpecFamily } from './target-spec'
 
 /** A lane of the sequence: the client running the workflow, a service or broker it talks to, or an actor. */
@@ -257,9 +257,25 @@ export const buildSequence = (
     return id
   }
 
+  /**
+   * The lane id of a source description of `owner`. A source name only means something in its own document: an
+   * invoked workflow's document may use the same name for another service. So `source:<name>` is the workflow's
+   * own document's source, and one of another document's sources shares it only when both point at the same URL;
+   * otherwise the URL is part of its id.
+   */
+  const sourceLaneId = (owner: ArazzoDocument, sourceName: string): string => {
+    const source = owner.sourceDescriptions?.find((candidate) => candidate.name === sourceName)
+    if (owner === document || !source) {
+      return `source:${sourceName}`
+    }
+    const url = sourceUrl(owner, source) ?? source.url
+    const own = document.sourceDescriptions?.find((candidate) => candidate.name === sourceName)
+    return own && (sourceUrl(document, own) ?? own.url) === url ? `source:${sourceName}` : `source:${sourceName}@${url}`
+  }
+
   /** The lane for a source description of `owner`, added the first time a step talks to it. */
   const lane = (owner: ArazzoDocument, sourceName: string | undefined, spec: SpecFamily | undefined, fallback: string): string => {
-    const id = sourceName ? `source:${sourceName}` : `target:${fallback}`
+    const id = sourceName ? sourceLaneId(owner, sourceName) : `target:${fallback}`
     if (!participants.some((participant) => participant.id === id)) {
       const source = owner.sourceDescriptions?.find((candidate) => candidate.name === sourceName)
       const loaded = source ? (findDocumentByUrl(owner, documents, source)?.document as { info?: { title?: unknown } } | undefined) : undefined
