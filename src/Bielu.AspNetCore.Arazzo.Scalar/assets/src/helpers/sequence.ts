@@ -324,6 +324,13 @@ export const buildSequence = (
           ...(failures ? { note: failures } : {}),
         })
         drawAll(invoked.document, invoked.workflow, step.stepId, by)
+        // The ways the invoking step can end are its own, not its workflow's steps': drawn on the stage's boundary,
+        // as the workflow returning to the caller, so they read the same whether or not the workflow is expanded.
+        if (outcomes.length) {
+          const caller = by()
+          const returned: SequenceMessage = { stepId: step.stepId, from: caller, to: caller, label: 'workflow returns', kind: 'response' }
+          ends(returned, 'success', () => returned)
+        }
         return
       }
       const from = by()

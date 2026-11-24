@@ -422,6 +422,9 @@ describe('stages', () => {
       ['paid', 'receive', 'payment'],
       // A workflow the stage invokes in turn is a call into its lane, not a stage inside the stage.
       ['deeper', 'invoke', 'payment'],
+      // How the invoking step ends: on the stage's boundary, the success path and then `declined`.
+      ['payment', 'response', undefined],
+      ['payment', 'response', undefined],
       ['create', 'request', 'track'],
       ['create', 'response', 'track'],
       // A workflow without steps is a call into its lane, as before.
@@ -434,6 +437,64 @@ describe('stages', () => {
       'workflow:audit',
       'workflow:nothing',
     ])
+  })
+
+  it('keeps the invoking step\'s own outcomes whether or not its workflow\'s document is loaded', () => {
+    // Arrange: `settle` lives in another document; `alreadyPaid` is the caller's conditional success action.
+    const billing = {
+      arazzo: '1.1.0',
+      'x-scalar-original-source-url': '/billing.arazzo.json',
+      sourceDescriptions: [{ name: 'orders', url: '/openapi.json', type: 'openapi' }],
+      workflows: [{ workflowId: 'settle', steps: [{ stepId: 'charge', operationId: 'createOrder' }] }],
+    }
+    const caller: Workflow = {
+      workflowId: 'checkout',
+      steps: [
+        {
+          stepId: 'pay',
+          workflowId: '$sourceDescriptions.billing.settle',
+          onSuccess: [{ name: 'alreadyPaid', type: 'end', criteria: [{ condition: '$outputs.alreadyPaid == true' }] }],
+        },
+      ],
+    }
+    const owner: ArazzoDocument = {
+      arazzo: '1.1.0',
+      sourceDescriptions: [{ name: 'billing', url: '/billing.arazzo.json', type: 'arazzo' }],
+      workflows: [caller],
+    }
+    const outcomes = (sequence: ReturnType<typeof buildSequence>) =>
+      sequence.messages.filter((message) => message.stepId === 'pay').map(({ operand, note }) => [operand?.guard, note])
+
+    // Act
+    const pending = buildSequence(owner, caller, {})
+    const loaded = buildSequence(owner, caller, { ordersApi, billing })
+
+    // Assert: before the document loads, the call into the workflow's lane carries the alt; after, the stage's
+    // boundary does, with the same operands.
+    expect(pending.stages).toEqual([])
+    expect(loaded.stages.map((stage) => stage.id)).toEqual(['pay'])
+    const expected = [
+      ['success', undefined],
+      ['if $outputs.alreadyPaid == true', 'alreadyPaid: end'],
+    ]
+    expect(outcomes(pending)).toEqual(expected)
+    expect(outcomes(loaded)).toEqual(expected)
+    expect(loaded.messages.map(({ stepId, stage }) => [stepId, stage])).toEqual([
+      ['charge', 'pay'],
+      ['charge', 'pay'],
+      ['pay', undefined],
+      ['pay', undefined],
+    ])
+
+    // Act: the expanded stage as drawn.
+    wrapper = mount(ArazzoSequenceDiagram, { props: { sequence: loaded, stepSectionIds: {} } })
+
+    // Assert: the alt is below the stage's band, and shows the caller's action.
+    const band = wrapper.find('.ba-sequence-stage rect')
+    const alt = wrapper.find('.ba-sequence-alt')
+    expect(alt.findAll('.ba-sequence-guard').map((guard) => guard.text())).toEqual(['[success]', '[if $outputs.alreadyPaid == true]'])
+    expect(Number(alt.find('rect').attributes('y'))).toBeGreaterThan(Number(band.attributes('y')) + Number(band.attributes('height')))
+    expect(wrapper.text()).toContain('alreadyPaid: end')
   })
 
   it('draws only the steps a successful run of the invoked workflow reaches', () => {
@@ -482,21 +543,27 @@ describe('stages', () => {
     const titles = wrapper.findAll('.ba-sequence-stage-title text').map((title) => title.text())
     expect(titles).toEqual(['1 · Take the payment', '2 · noSummary'])
     expect(wrapper.find('.ba-sequence-stage .ba-sequence-note').text()).toBe('on 402: declined (end)')
-    expect(wrapper.findAll('.ba-sequence-step text').map((step) => step.text())).toEqual(['create', 'paid', 'deeper', 'create', 'empty'])
+    // `payment` again below its stage: how the invoking step ends.
+    expect(wrapper.findAll('.ba-sequence-step text').map((step) => step.text())).toEqual(['create', 'paid', 'deeper', 'payment', 'create', 'empty'])
     expect(payment.scrollIntoView).toHaveBeenCalled()
     expect(create.scrollIntoView).not.toHaveBeenCalled()
     // The second stage's steps have no section to open: their invoking step `track` has none here.
-    expect(wrapper.findAll('.ba-sequence-step')[3]!.classes()).not.toContain('ba-diagram-link')
+    expect(wrapper.findAll('.ba-sequence-step')[4]!.classes()).not.toContain('ba-diagram-link')
     // Each band encloses its rows, and the diagram is tall enough for the last one.
     const [first, second] = wrapper.findAll('.ba-sequence-stage > rect').map((rect) => ({
       top: Number(rect.attributes('y')),
       bottom: Number(rect.attributes('y')) + Number(rect.attributes('height')),
     }))
-    const rows = wrapper.findAll('.ba-sequence-line').map((line) => Number(line.attributes('y1')))
+    // A lane's call to itself is a path starting 7px above its row.
+    const rows = wrapper
+      .findAll('.ba-sequence-line')
+      .map((line) => Number(line.attributes('y1') ?? Number(/^M[\d.]+,([\d.]+)/.exec(line.attributes('d')!)![1]) + 7))
     expect(rows.slice(0, 4).every((y) => y > first!.top && y < first!.bottom)).toBe(true)
-    expect(rows.slice(4, 6).every((y) => y > second!.top && y < second!.bottom)).toBe(true)
-    expect(rows[6]).toBeGreaterThan(second!.bottom)
-    expect(Number(wrapper.find('svg').attributes('viewBox')!.split(' ')[3])).toBeGreaterThan(rows[6]!)
+    // The invoking step's outcomes are between the bands, in neither.
+    expect(rows.slice(4, 6).every((y) => y > first!.bottom && y < second!.top)).toBe(true)
+    expect(rows.slice(6, 8).every((y) => y > second!.top && y < second!.bottom)).toBe(true)
+    expect(rows[8]).toBeGreaterThan(second!.bottom)
+    expect(Number(wrapper.find('svg').attributes('viewBox')!.split(' ')[3])).toBeGreaterThan(rows[8]!)
     host.remove()
   })
 
