@@ -8,10 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="3.2.0" />
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Attributes" Version="3.2.0" />
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR" Version="3.2.0" />
-    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Scalar.SignalR" Version="3.2.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi" Version="3.3.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Attributes" Version="3.3.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Extensions.Protocols.SignalR" Version="3.3.0" />
+    <PackageReference Include="Bielu.AspNetCore.AsyncApi.Scalar.SignalR" Version="3.3.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="3.0.1" />
   </ItemGroup>
 

@@ -141,3 +141,4 @@ Bielu.AspNetCore.Arazzo.Services.ArazzoOptions.AddSelfWiredSource(string! source
 Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider
 Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider.GetDocumentAsync(string! documentName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<object?>
 Bielu.AspNetCore.Arazzo.SourceResolvers.IArazzoSourceDocumentProvider.SourceType.get -> string!
+Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Channel(string! sourceName, string! channelName, Bielu.Arazzo.Models.ArazzoStepAction action, bool dynamic) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!
