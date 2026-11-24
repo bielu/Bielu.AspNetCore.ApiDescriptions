@@ -109,7 +109,32 @@ const layout = computed(() => {
 const rows = computed(() => layout.value.rows)
 const bands = computed(() => layout.value.bands)
 
-const width = computed(() => GUTTER + props.sequence.participants.length * LANE)
+/** Roughly how wide a self-call's text is drawn: 11px code for the label, 10px sans for the note. */
+const LABEL_CHAR = 6.7
+const NOTE_CHAR = 5.6
+
+/**
+ * Wide enough for every lane, and for the text beside a lane's call to itself, which starts right of its loop
+ * and so can run past the rightmost lane's edge.
+ */
+const width = computed(() =>
+  Math.max(
+    GUTTER + props.sequence.participants.length * LANE,
+    ...rows.value
+      .filter((row) => row.x1 === row.x2)
+      .map(
+        (row) =>
+          row.x1 +
+          SELF +
+          10 +
+          Math.max(
+            cut(row.message.label, 36).length * LABEL_CHAR,
+            row.message.note ? cut(row.message.note, 60).length * NOTE_CHAR : 0,
+          ) +
+          12,
+      ),
+  ),
+)
 const height = computed(() => {
   const last = rows.value[rows.value.length - 1]
   const band = bands.value[bands.value.length - 1]

@@ -191,10 +191,14 @@ export const buildSequence = (
 
   /**
    * Adds a step's messages; `stage` is the invoking step's id when the step is one of an invoked workflow's, and
-   * `inherited` the actor of that step.
+   * `inherited` gives the lane of that step's actor. An actor the step or its workflow names is looked up in the
+   * step's own document; an inherited one keeps the invoking step's lane, even when the invoked workflow is in
+   * another document that has no source by that name.
    */
-  const draw = (owner: ArazzoDocument, current: ArazzoWorkflow, step: ArazzoStep, stage: string | undefined, inherited?: string): void => {
-    const actor = actorOf(step) ?? actorOf(current) ?? inherited
+  const draw = (owner: ArazzoDocument, current: ArazzoWorkflow, step: ArazzoStep, stage: string | undefined, inherited?: () => string): void => {
+    const named = actorOf(step) ?? actorOf(current)
+    /** The lane the step's calls start from, added when first needed so lanes keep the order they are used in. */
+    const by = (): string => (named ? actorLane(owner, named) : inherited ? inherited() : CLIENT_ID)
     const target = resolveStepTarget(owner, step, documents)
     const spec = targetSpec(owner, step, target, documents)
     const failures = failureNote(reachableActions(effectiveFailureActions(owner, current, step)))
@@ -209,11 +213,11 @@ export const buildSequence = (
           ...(failures ? { note: failures } : {}),
         })
         for (const nested of successPath(invoked.document, invoked.workflow)) {
-          draw(invoked.document, invoked.workflow, nested, step.stepId, actor)
+          draw(invoked.document, invoked.workflow, nested, step.stepId, by)
         }
         return
       }
-      const from = actorLane(owner, actor)
+      const from = by()
       const to = `workflow:${step.workflowId}`
       if (!participants.some((participant) => participant.id === to)) {
         participants.push({ id: to, label: `workflow ${step.workflowId.replace(/^\$sourceDescriptions\./, '')}`, spec: 'arazzo', detail: 'Arazzo' })
@@ -227,9 +231,9 @@ export const buildSequence = (
       const action = step.action ?? (target?.kind === 'channel' ? target.operation?.action : undefined)
       // Lanes are added in the order a message passes them: the sender's before the broker's, and the broker's
       // before the lane it delivers to.
-      const sender = action === 'receive' ? undefined : actorLane(owner, actor)
+      const sender = action === 'receive' ? undefined : by()
       const broker = lane(owner, sourceName, 'asyncapi', reference)
-      const self = sender ?? actorLane(owner, actor)
+      const self = sender ?? by()
       const channel = (target?.kind === 'channel' ? target.channelName : undefined) ?? reference.split('/').pop() ?? reference
       const waits = [step.timeout !== undefined ? `waits up to ${formatDuration(step.timeout)}` : '', step.correlationId ? `matched on ${readable(step.correlationId)}` : '']
         .filter(Boolean)
@@ -242,7 +246,7 @@ export const buildSequence = (
       )
       return
     }
-    const from = actorLane(owner, actor)
+    const from = by()
     const to = lane(owner, sourceName, spec?.family ?? 'openapi', reference)
     const request =
       target?.kind === 'operation' && target.method && target.path ? `${target.method.toUpperCase()} ${target.path}` : (step.operationId ?? reference)

@@ -757,3 +757,64 @@ describe('the actor registry', () => {
     expect(pluginOptionsFromModuleUrl('https://cdn.test/p.mjs?actorsExtension=x-actors')).toEqual({ actorsExtension: 'x-actors' })
   })
 })
+
+describe('review fixes', () => {
+  it('keeps an inherited actor on the invoking step\'s lane when the stage is another document\'s workflow', () => {
+    // Arrange: the invoked workflow lives in another Arazzo document, which has no source called `orders`.
+    const other = {
+      arazzo: '1.1.0',
+      'x-scalar-original-source-url': '/other.arazzo.json',
+      sourceDescriptions: [{ name: 'api', url: '/openapi.json', type: 'openapi' }],
+      workflows: [
+        {
+          workflowId: 'inner',
+          steps: [
+            { stepId: 'inherits', operationId: 'createOrder' },
+            { stepId: 'names', operationId: 'createOrder', 'x-actor': 'warehouse' },
+          ],
+        },
+      ],
+    }
+    const outer = { workflowId: 'outer', steps: [{ stepId: 'run', workflowId: '$sourceDescriptions.other.inner', 'x-actor': 'orders' }] } as unknown as Workflow
+    const owner: ArazzoDocument = {
+      arazzo: '1.1.0',
+      sourceDescriptions: [
+        { name: 'orders', url: '/openapi.json', type: 'openapi' },
+        { name: 'other', url: '/other.arazzo.json', type: 'arazzo' },
+      ],
+      workflows: [outer],
+    }
+
+    // Act
+    const sequence = buildSequence(owner, outer, { orders: ordersApi, other }, { actorExtension: 'x-actor' })
+
+    // Assert: the inherited actor is the parent's `orders` lane, not a lane of its own; a named one is resolved in
+    // the other document.
+    const requests = sequence.messages.filter((message) => message.kind === 'request')
+    expect(requests.map(({ stepId, from }) => [stepId, from])).toEqual([
+      ['inherits', 'source:orders'],
+      ['names', 'actor:warehouse'],
+    ])
+    expect(sequence.participants.some((participant) => participant.id === 'actor:orders')).toBe(false)
+  })
+
+  it('widens the diagram for a long call to itself on the rightmost lane, so its text is not cut off', () => {
+    // Arrange
+    const label = 'GET /orders/{orderId}/payment-status'
+    const sequence = {
+      participants: [{ id: CLIENT_ID, label: 'Client' }, { id: 'a', label: 'a' }],
+      messages: [{ stepId: 's', from: 'a', to: 'a', label, kind: 'request' as const, note: 'retry after 2 s × 3, then give up and end the run' }],
+      stages: [],
+    }
+
+    // Act
+    const wrapper = mount(ArazzoSequenceDiagram, { props: { sequence, stepSectionIds: {} } })
+
+    // Assert: the viewBox reaches past where the note's text ends, beyond the lanes' own width.
+    const width = Number(wrapper.find('svg').attributes('viewBox')!.split(' ')[2])
+    const start = Number(wrapper.find('.ba-sequence-label').attributes('x'))
+    expect(width).toBeGreaterThan(120 + 2 * 210)
+    expect(width).toBeGreaterThan(start + label.length * 6.5)
+    wrapper.unmount()
+  })
+})
