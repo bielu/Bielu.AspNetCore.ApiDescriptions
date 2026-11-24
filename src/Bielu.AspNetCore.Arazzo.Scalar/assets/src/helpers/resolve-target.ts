@@ -109,6 +109,17 @@ const pageUrl = (): string | undefined => (typeof location === 'undefined' ? und
 type LoadedDocument = { name: string; document: AnyRecord; sourceName: string }
 
 /**
+ * The absolute URL a source description of `arazzo` points at, resolved against Arazzo's base URI: the document's
+ * `$self` when it has one (itself resolved against where the document was retrieved from), else the retrieval URL.
+ * Two documents' sources point at the same document when their URLs are equal, whatever the sources are called.
+ */
+export const sourceUrl = (arazzo: ArazzoDocument, source: ArazzoSourceDescription): string | undefined => {
+  const page = pageUrl()
+  const retrieved = absoluteUrl(arazzo['x-scalar-original-source-url'], page) ?? page
+  return absoluteUrl(source.url, absoluteUrl(arazzo.$self, retrieved) ?? retrieved)
+}
+
+/**
  * Finds the loaded workspace document a `sourceDescriptions[].url` refers to. Both sides are
  * resolved to absolute URLs first: our generator writes app-relative URLs (`/asyncapi/v1.json`),
  * while Scalar records each source the way it was configured.
@@ -119,10 +130,7 @@ export const findDocumentByUrl = (
   source: ArazzoSourceDescription,
 ): LoadedDocument | undefined => {
   const page = pageUrl()
-  // Arazzo's base URI: the document's `$self` when it has one (itself resolved against where the document was
-  // retrieved from), else the retrieval URL.
-  const retrieved = absoluteUrl(arazzo['x-scalar-original-source-url'], page) ?? page
-  const wanted = absoluteUrl(source.url, absoluteUrl(arazzo.$self, retrieved) ?? retrieved)
+  const wanted = sourceUrl(arazzo, source)
   if (!wanted) {
     return undefined
   }

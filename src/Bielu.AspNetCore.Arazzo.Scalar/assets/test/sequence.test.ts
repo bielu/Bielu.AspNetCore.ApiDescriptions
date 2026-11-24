@@ -823,6 +823,97 @@ describe('review fixes', () => {
     expect(sequence.participants.some((participant) => participant.id === 'actor:orders')).toBe(false)
   })
 
+  it('keeps two documents\' services apart when both call their source by the same name', () => {
+    // Arrange: the parent's `api` is the shop, the invoked workflow's document calls the billing service `api`.
+    const shop = {
+      openapi: '3.1.0',
+      info: { title: 'Shop' },
+      'x-scalar-original-source-url': '/shop.json',
+      paths: { '/order': { get: { operationId: 'getOrder' } } },
+    }
+    const billing = {
+      openapi: '3.1.0',
+      info: { title: 'Billing' },
+      'x-scalar-original-source-url': '/billing.json',
+      paths: { '/charge': { get: { operationId: 'charge' } } },
+    }
+    const payments = {
+      arazzo: '1.1.0',
+      'x-scalar-original-source-url': '/payments.arazzo.json',
+      sourceDescriptions: [{ name: 'api', url: '/billing.json', type: 'openapi' }],
+      workflows: [{ workflowId: 'pay', steps: [{ stepId: 'charge', operationPath: '{$sourceDescriptions.api.url}#/paths/~1charge/get' }] }],
+    }
+    const checkout = {
+      workflowId: 'checkout',
+      steps: [
+        { stepId: 'order', operationPath: '{$sourceDescriptions.api.url}#/paths/~1order/get' },
+        { stepId: 'pay', workflowId: '$sourceDescriptions.payments.pay', 'x-actor': 'cashier' },
+      ],
+    } as unknown as Workflow
+    const owner = {
+      arazzo: '1.1.0',
+      'x-actors': { api: { title: 'Shop' } },
+      sourceDescriptions: [
+        { name: 'api', url: '/shop.json', type: 'openapi' },
+        { name: 'payments', url: '/payments.arazzo.json', type: 'arazzo' },
+      ],
+      workflows: [checkout],
+    } as unknown as ArazzoDocument
+
+    // Act
+    const sequence = buildSequence(owner, checkout, { shop, billing, payments }, { actorExtension: 'x-actor', actorsExtension: 'x-actors' })
+
+    // Assert: each request is on its own service's lane, and only the parent's is titled by the registry.
+    const lanes = Object.fromEntries(sequence.participants.map((participant) => [participant.id, participant]))
+    const arrows = sequence.messages.map(({ stepId, kind, from, to, label }) => [stepId, kind, lanes[from]!.label, lanes[to]!.label, label])
+    expect(arrows).toEqual([
+      ['order', 'request', 'Client', 'Shop', 'GET /order'],
+      ['order', 'response', 'Shop', 'Client', 'response'],
+      ['charge', 'request', 'cashier', 'api', 'GET /charge'],
+      ['charge', 'response', 'api', 'cashier', 'response'],
+    ])
+    const billingLane = sequence.participants.find((participant) => participant.detail === 'OpenAPI · Billing')
+    expect(billingLane?.id).not.toBe('source:api')
+    expect(sequence.participants.find((participant) => participant.id === 'source:api')?.detail).toBe('OpenAPI · Shop')
+  })
+
+  it('shares a lane when another document\'s source of the same name points at the same service', () => {
+    // Arrange: both documents call the shop `api`.
+    const shop = {
+      openapi: '3.1.0',
+      info: { title: 'Shop' },
+      'x-scalar-original-source-url': '/shop.json',
+      paths: { '/order': { get: { operationId: 'getOrder' } } },
+    }
+    const other = {
+      arazzo: '1.1.0',
+      'x-scalar-original-source-url': '/other.arazzo.json',
+      sourceDescriptions: [{ name: 'api', url: '/shop.json', type: 'openapi' }],
+      workflows: [{ workflowId: 'inner', steps: [{ stepId: 'again', operationPath: '{$sourceDescriptions.api.url}#/paths/~1order/get' }] }],
+    }
+    const outer = {
+      workflowId: 'outer',
+      steps: [
+        { stepId: 'first', operationPath: '{$sourceDescriptions.api.url}#/paths/~1order/get' },
+        { stepId: 'run', workflowId: '$sourceDescriptions.other.inner' },
+      ],
+    } as unknown as Workflow
+    const owner: ArazzoDocument = {
+      arazzo: '1.1.0',
+      sourceDescriptions: [
+        { name: 'api', url: '/shop.json', type: 'openapi' },
+        { name: 'other', url: '/other.arazzo.json', type: 'arazzo' },
+      ],
+      workflows: [outer],
+    }
+
+    // Act
+    const sequence = buildSequence(owner, outer, { shop, other })
+
+    // Assert
+    expect(sequence.participants.map((participant) => participant.id)).toEqual([CLIENT_ID, 'source:api'])
+  })
+
   it('widens the diagram for a long call to itself on the rightmost lane, so its text is not cut off', () => {
     // Arrange
     const label = 'GET /orders/{orderId}/payment-status'
