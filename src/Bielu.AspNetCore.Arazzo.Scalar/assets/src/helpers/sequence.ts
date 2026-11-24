@@ -1,4 +1,4 @@
-import type { ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoSuccessAction, ArazzoWorkflow } from '../types'
+import type { ArazzoCriterion, ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoSuccessAction, ArazzoWorkflow } from '../types'
 import { effectiveFailureActions, effectiveSuccessActions, isUnconditional, reachableActions } from './actions'
 import { stepsBefore, successPath, usesDependsOn } from './execution-order'
 import { formatDuration } from './format'
@@ -167,21 +167,41 @@ const actionWhere = (action: ArazzoSuccessAction | ArazzoFailureAction): string 
   return action.stepId ? `→ ${action.stepId}` : action.workflowId ? `→ ${action.workflowId}` : action.type
 }
 
-/** The condition an action applies under: its status codes, else its first condition, else `otherwise`. */
-const actionGuard = (action: ArazzoSuccessAction | ArazzoFailureAction): string => {
-  const codes = statusCodesIn(action.criteria)
-  if (codes.length) {
-    return codes.join(' / ')
+/** A condition that is `$statusCode == 409` (or `409 == $statusCode`) and nothing else. */
+const STATUS_ONLY = /^\s*(?:\$statusCode\s*===?\s*\d{3}|\d{3}\s*===?\s*\$statusCode)\s*$/
+
+/**
+ * The status code an action applies on, when that is all its criteria check: a single simple
+ * `$statusCode == 409`. Every criterion must hold, so with another one (`$response.body#/retryable == true`), or a
+ * condition that also checks something else, a status code alone would claim more responses than qualify.
+ */
+const statusOnly = (criteria: ArazzoCriterion[] | undefined): string | undefined => {
+  if (criteria?.length !== 1) {
+    return undefined
   }
-  const condition = action.criteria?.[0]?.condition
-  return condition ? `if ${condition.length > 48 ? `${condition.slice(0, 47)}…` : condition}` : 'otherwise'
+  const [criterion] = criteria
+  const type = (typeof criterion!.type === 'object' ? criterion!.type.type : criterion!.type) ?? 'simple'
+  return type === 'simple' && typeof criterion!.condition === 'string' && STATUS_ONLY.test(criterion!.condition) ? statusCodesIn(criteria)[0] : undefined
+}
+
+/**
+ * The condition an action applies under: its status code when that is all it checks, else every condition it
+ * checks (all must hold), else `otherwise`.
+ */
+const actionGuard = (action: ArazzoSuccessAction | ArazzoFailureAction): string => {
+  const code = statusOnly(action.criteria)
+  if (code) {
+    return code
+  }
+  const conditions = (action.criteria ?? []).map((criterion) => criterion.condition).filter((condition) => typeof condition === 'string' && condition.trim())
+  return conditions.length ? `if ${conditions.join(' && ')}` : 'otherwise'
 }
 
 /** "on 400: rejected (end)", for the failure paths a step can take, kept short. */
 const failureNote = (actions: ArazzoFailureAction[]): string | undefined => {
   const notes = actions.slice(0, 3).map((action) => {
-    const codes = statusCodesIn(action.criteria)
-    const when = codes.length ? `on ${codes.join('/')}` : action.criteria?.length ? 'if' : 'otherwise'
+    const code = statusOnly(action.criteria)
+    const when = code ? `on ${code}` : action.criteria?.length ? 'if' : 'otherwise'
     const where = action.stepId ? `→ ${action.stepId}` : action.workflowId ? `→ ${action.workflowId}` : action.type
     return `${when}: ${action.name} (${where})`
   })

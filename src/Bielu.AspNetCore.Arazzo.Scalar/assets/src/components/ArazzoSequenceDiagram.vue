@@ -421,6 +421,7 @@ const isClient = (id: string) => id === CLIENT_ID
           :x="inset(fragment) + 36"
           :y="fragment.top + 8">
           [{{ cut(fragment.guard, 60) }}]
+          <title v-if="fragment.guard.length > 60">{{ fragment.guard }}</title>
         </text>
         <g
           v-for="separator in fragment.separators"
@@ -438,6 +439,9 @@ const isClient = (id: string) => id === CLIENT_ID
             :x="inset(fragment) + 6"
             :y="separator.y + 9">
             [{{ cut(separator.guard, 60) }}]
+            <title v-if="separator.guard.length > 60">
+              {{ separator.guard }}
+            </title>
           </text>
         </g>
       </g>
