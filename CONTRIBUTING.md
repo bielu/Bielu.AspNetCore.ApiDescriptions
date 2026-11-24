@@ -126,6 +126,9 @@ dotnet test ./test/Bielu.AspNetCore.AsyncApi.Cli.Tests/Bielu.AspNetCore.AsyncApi
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
+Pull requests must keep total line coverage at or above **85%**; CI fails the build below that. `mise run coverage` runs the
+suite and prints the merged summary CI checks, with an HTML report in `artifacts/coverage/report/`.
+
 ## Public API
 
 The core, `Attributes` and `Wolverine` projects track their public surface with

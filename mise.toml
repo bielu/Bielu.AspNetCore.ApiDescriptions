@@ -20,6 +20,15 @@ run = "dotnet build src/Bielu.AspNetCore.AsyncApi.slnx"
 description = "Run all tests (collects coverage via coverlet.runsettings)"
 run = "dotnet test src/Bielu.AspNetCore.AsyncApi.slnx"
 
+[tasks.coverage]
+description = "Run all tests and print the merged line/branch coverage that CI gates on (85% line minimum)"
+run = [
+  "node -e \"require('fs').rmSync('artifacts/coverage', { recursive: true, force: true })\"",
+  "dotnet test src/Bielu.AspNetCore.AsyncApi.slnx --results-directory artifacts/coverage/results",
+  "dnx dotnet-reportgenerator-globaltool --yes -- -reports:artifacts/coverage/results/**/coverage.cobertura*.xml -targetdir:artifacts/coverage/report \"-reporttypes:HtmlInline;TextSummary\" -verbosity:Warning",
+  "node -e \"process.stdout.write(require('fs').readFileSync('artifacts/coverage/report/Summary.txt','utf8'))\"",
+]
+
 [tasks.format]
 description = "Apply formatting"
 run = ["dotnet format src/Bielu.AspNetCore.AsyncApi.slnx", "npm run format:vue"]

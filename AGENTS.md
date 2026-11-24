@@ -126,7 +126,9 @@ Hold new and changed code to these principles — they are the bar for review:
 
 ## Code coverage
 
-Target **70%+ line coverage** for code you add or change. Coverage is collected with `coverlet.collector`:
+Total line coverage must stay at or above **85%**, and code you add or change should be covered at least that well. CI enforces the total: the PR build merges every test project's report with ReportGenerator and fails below 85% (`minimum-line-coverage` in [`buildAndPublishPackage.yml`](./.github/workflows/buildAndPublishPackage.yml)). The minimum only moves up: raise it when the total has comfortably passed the next step, and never lower it to land a change; add tests instead, or mark genuinely untestable code (process entry points, hosting glue) `[ExcludeFromCodeCoverage]` with a comment saying why.
+
+To see the number CI will see, run `mise run coverage`: it runs the suite and prints the merged summary (HTML report in `artifacts/coverage/report/`). Coverage is collected with `coverlet.collector`:
 
 ```bash
 dotnet test --collect:"XPlat Code Coverage"
