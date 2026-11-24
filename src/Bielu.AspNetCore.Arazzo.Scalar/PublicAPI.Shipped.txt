@@ -19,3 +19,7 @@ Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.PagesExtension.get -> string?
 Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.PagesExtension.set -> void
 Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.ScalarArazzoOptions() -> void
 static Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptionsExtensions.WithArazzoOptions(this Scalar.AspNetCore.ScalarOptions! options, System.Action<Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions!>! configure) -> Scalar.AspNetCore.ScalarOptions!
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.ActorExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.ActorExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.ActorsExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.ScalarArazzoOptions.ActorsExtension.set -> void

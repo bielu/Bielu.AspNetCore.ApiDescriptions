@@ -1,2 +1,1 @@
 ﻿#nullable enable
-Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder.Channel(string! sourceName, string! channelName, Bielu.Arazzo.Models.ArazzoStepAction action, bool dynamic) -> Bielu.AspNetCore.Arazzo.Services.ArazzoStepBuilder!

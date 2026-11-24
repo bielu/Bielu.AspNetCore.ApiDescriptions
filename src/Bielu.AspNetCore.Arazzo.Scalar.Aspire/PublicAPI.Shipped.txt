@@ -15,5 +15,9 @@ Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.ScalarArazzoAspi
 const Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.DefaultArazzoRoutePattern = "/arazzo/{documentName}.json" -> string!
 static Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.AddArazzoDocument<TOptions>(this TOptions! options, string! documentName = "v1", string? title = null, string! routePattern = "/arazzo/{documentName}.json", bool isDefault = false) -> TOptions!
 static Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.WithArazzoOptions(this Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>! builder, System.Action<Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions!>! configure) -> Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>!
-const Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.DefaultPluginUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-arazzo@1.2.0/dist/scalar-plugin.mjs" -> string!
-static Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.WithArazzo(this Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>! builder, string! pluginUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-arazzo@1.2.0/dist/scalar-plugin.mjs") -> Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>!
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.ActorExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.ActorExtension.set -> void
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.ActorsExtension.get -> string?
+Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireOptions.ActorsExtension.set -> void
+const Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.DefaultPluginUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-arazzo@1.3.0/dist/scalar-plugin.mjs" -> string!
+static Bielu.AspNetCore.Arazzo.Scalar.Aspire.ScalarArazzoAspireExtensions.WithArazzo(this Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>! builder, string! pluginUrl = "https://cdn.jsdelivr.net/npm/@bielu/scalar-arazzo@1.3.0/dist/scalar-plugin.mjs") -> Aspire.Hosting.ApplicationModel.IResourceBuilder<Scalar.Aspire.ScalarResource!>!
