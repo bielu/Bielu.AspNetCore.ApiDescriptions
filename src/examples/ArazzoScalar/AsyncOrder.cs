@@ -104,15 +104,14 @@ internal static class AsyncOrder
                 .WithExtension(Checkout.Actor, "orders")
                 .WithCorrelationId("$steps.submit.outputs.orderId")
                 .WithTimeout(30_000)
-                .SuccessCriteria(
-                    "$[?@.status == 'Reserved']",
-                    "$message.payload",
-                    new ArazzoSelectorType { Type = "jsonpath", Version = "rfc9535" })
+                // A comparison through a JSON Pointer: the payload is one object, which a JSONPath filter
+                // ($[?@.status == ...]) would look inside of rather than test, so it would never match.
+                .SuccessCriteria("$message.payload#/status == 'Reserved'")
                 .OnFailure(new ArazzoFailureAction
                 {
                     Name = "outOfStock",
                     Type = "end",
-                    Criteria = [new ArazzoCriterion { Condition = "$message.payload.status == 'OutOfStock'" }],
+                    Criteria = [new ArazzoCriterion { Condition = "$message.payload#/status == 'OutOfStock'" }],
                 })
                 .DependsOn("stockChecked"))
             .Step("notify", step => step

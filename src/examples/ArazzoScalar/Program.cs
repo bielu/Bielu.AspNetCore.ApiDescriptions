@@ -109,18 +109,17 @@ builder.Services.AddArazzo(options =>
             .WithExtension(ShopPages.Label, "Wait for the payment")
             .WithCorrelationId("$steps.create.outputs.orderId")
             .WithTimeout(60_000)
-            .SuccessCriteria(
-                "$[?@.status == 'Succeeded']",
-                "$message.payload",
-                new ArazzoSelectorType { Type = "jsonpath", Version = "rfc9535" })
+            // The payload is one object: a JSON Pointer comparison tests it, where a JSONPath filter would look
+            // inside it and never match.
+            .SuccessCriteria("$message.payload#/status == 'Succeeded'")
             .OnFailure(new ArazzoFailureAction
             {
                 Name = "declined",
                 Type = "end",
-                Criteria = [new ArazzoCriterion { Condition = "$message.payload.status == 'Declined'" }],
+                Criteria = [new ArazzoCriterion { Condition = "$message.payload#/status == 'Declined'" }],
                 Extensions = new Dictionary<string, JsonNode?> { [ShopPages.Page] = "paymentDeclined", [ShopPages.Label] = "Card declined" },
             })
-            .Output("paymentId", "$message.payload.paymentId")
+            .Output("paymentId", "$message.payload#/paymentId")
             .DependsOn("requestPayment"))
         .Step("stockReserved", step => step
             .Channel("events", "inventoryReserved", ArazzoStepAction.Receive)
@@ -129,7 +128,7 @@ builder.Services.AddArazzo(options =>
             .WithExtension(ShopPages.Label, "Reserve the stock")
             .WithCorrelationId("$steps.create.outputs.orderId")
             .WithTimeout(120_000)
-            .Output("reservationExpiresAt", "$message.payload.expiresAt")
+            .Output("reservationExpiresAt", "$message.payload#/expiresAt")
             .DependsOn("paymentCompleted"))
         // Workflow outputs: what trackOrder reads back as $workflows.placeOrder.outputs.*.
         .Output("orderId", "$steps.create.outputs.orderId")

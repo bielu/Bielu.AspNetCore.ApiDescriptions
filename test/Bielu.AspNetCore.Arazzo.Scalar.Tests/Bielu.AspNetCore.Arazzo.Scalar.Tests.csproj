@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Microsoft.Playwright" />
@@ -24,6 +25,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bielu.AspNetCore.Arazzo.Scalar\Bielu.AspNetCore.Arazzo.Scalar.csproj" />
+  </ItemGroup>
+
+  <!-- The ArazzoScalar example, whose workflows' criteria are checked against the messages its services send. It
+       builds for one framework only, and its generated OpenAPI code binds to that framework's Microsoft.OpenApi, so
+       it is referenced, and tested, on that framework alone. -->
+  <ItemGroup Condition="'$(TargetFramework)' == '$(BieluExampleTargetFramework)'">
+    <ProjectReference Include="..\..\src\examples\ArazzoScalar\ArazzoScalar.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(BieluExampleTargetFramework)'">
+    <Compile Remove="Integration\ArazzoScalarExampleCriteriaTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

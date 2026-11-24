@@ -106,15 +106,12 @@ internal static class Checkout
                 .WithDescription("Wait for the payment gateway's answer.")
                 .WithCorrelationId("$inputs.orderId")
                 .WithTimeout(60_000)
-                .SuccessCriteria(
-                    "$[?@.status == 'Succeeded']",
-                    "$message.payload",
-                    new ArazzoSelectorType { Type = "jsonpath", Version = "rfc9535" })
+                .SuccessCriteria("$message.payload#/status == 'Succeeded'")
                 .OnFailure(new ArazzoFailureAction
                 {
                     Name = "declined",
                     Type = "end",
-                    Criteria = [new ArazzoCriterion { Condition = "$message.payload.status == 'Declined'" }],
+                    Criteria = [new ArazzoCriterion { Condition = "$message.payload#/status == 'Declined'" }],
                 })
                 .DependsOn("authorize"))
             .Output("paymentId", "$steps.authorize.outputs.paymentId"));
