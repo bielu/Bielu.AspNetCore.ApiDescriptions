@@ -239,7 +239,11 @@ app.MapScalarApiReference(options => options
 // document, so the payments, inventory and email documents would list them too, and a bare operationId in a
 // workflow could resolve to any of them.
 app.MapPost("/orders", (OrderRequest request) =>
-        Results.Created($"/orders/{Guid.NewGuid()}", new Order(Guid.NewGuid(), request.Sku, request.Quantity, request.Quantity * 9.99m)))
+    {
+        // One id per order, in both the Location header and the body.
+        var id = Guid.NewGuid();
+        return Results.Created($"/orders/{id}", new Order(id, request.Sku, request.Quantity, request.Quantity * 9.99m));
+    })
     .WithGroupName("v1")
     .WithName("createOrder")
     // The responses the workflows check for, so the Arazzo view can show them next to each step.

@@ -185,8 +185,12 @@ internal static class Checkout
     public static IEndpointRouteBuilder MapCheckoutServices(this IEndpointRouteBuilder app)
     {
         var payments = app.MapGroup("/payments").WithGroupName("payments");
+        // One id per payment, in both the Location header and the body, so a workflow can follow either.
         payments.MapPost("/", (PaymentRequest request) =>
-                Results.Accepted($"/payments/{Guid.NewGuid()}", new Payment(Guid.NewGuid(), request.OrderId, "Authorizing")))
+            {
+                var id = Guid.NewGuid();
+                return Results.Accepted($"/payments/{id}", new Payment(id, request.OrderId, "Authorizing"));
+            })
             .WithName("authorizePayment")
             .Produces<Payment>(StatusCodes.Status202Accepted);
         payments.MapPost("/{id:guid}/capture", (Guid id) => Results.Ok(new Payment(id, Guid.Empty, "Captured")))
@@ -195,7 +199,10 @@ internal static class Checkout
 
         var inventory = app.MapGroup("/reservations").WithGroupName("inventory");
         inventory.MapPost("/", (ReservationRequest request) =>
-                Results.Created($"/reservations/{Guid.NewGuid()}", new Reservation(Guid.NewGuid(), request.OrderId, "Held")))
+            {
+                var id = Guid.NewGuid();
+                return Results.Created($"/reservations/{id}", new Reservation(id, request.OrderId, "Held"));
+            })
             .WithName("createReservation")
             .Produces<Reservation>(StatusCodes.Status201Created);
         inventory.MapPost("/{id:guid}/commit", (Guid id) => Results.Ok(new Reservation(id, Guid.Empty, "Committed")))
