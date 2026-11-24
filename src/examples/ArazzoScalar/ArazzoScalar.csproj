@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Its tests evaluate the workflows' criteria against the messages, which are internal records. -->
+    <InternalsVisibleTo Include="Bielu.AspNetCore.Arazzo.Scalar.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>

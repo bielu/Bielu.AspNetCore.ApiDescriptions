@@ -109,18 +109,17 @@ builder.Services.AddArazzo(options =>
             .WithExtension(ShopPages.Label, "Wait for the payment")
             .WithCorrelationId("$steps.create.outputs.orderId")
             .WithTimeout(60_000)
-            .SuccessCriteria(
-                "$[?@.status == 'Succeeded']",
-                "$message.payload",
-                new ArazzoSelectorType { Type = "jsonpath", Version = "rfc9535" })
+            // The payload is one object: a JSON Pointer comparison tests it, where a JSONPath filter would look
+            // inside it and never match.
+            .SuccessCriteria("$message.payload#/status == 'Succeeded'")
             .OnFailure(new ArazzoFailureAction
             {
                 Name = "declined",
                 Type = "end",
-                Criteria = [new ArazzoCriterion { Condition = "$message.payload.status == 'Declined'" }],
+                Criteria = [new ArazzoCriterion { Condition = "$message.payload#/status == 'Declined'" }],
                 Extensions = new Dictionary<string, JsonNode?> { [ShopPages.Page] = "paymentDeclined", [ShopPages.Label] = "Card declined" },
             })
-            .Output("paymentId", "$message.payload.paymentId")
+            .Output("paymentId", "$message.payload#/paymentId")
             .DependsOn("requestPayment"))
         .Step("stockReserved", step => step
             .Channel("events", "inventoryReserved", ArazzoStepAction.Receive)
@@ -129,7 +128,7 @@ builder.Services.AddArazzo(options =>
             .WithExtension(ShopPages.Label, "Reserve the stock")
             .WithCorrelationId("$steps.create.outputs.orderId")
             .WithTimeout(120_000)
-            .Output("reservationExpiresAt", "$message.payload.expiresAt")
+            .Output("reservationExpiresAt", "$message.payload#/expiresAt")
             .DependsOn("paymentCompleted"))
         // Workflow outputs: what trackOrder reads back as $workflows.placeOrder.outputs.*.
         .Output("orderId", "$steps.create.outputs.orderId")
@@ -236,14 +235,23 @@ app.MapScalarApiReference(options => options
         arazzo.ActorsExtension = Checkout.Actors;
     }));
 
+// The orders service's operations, in its own document only: an endpoint without a group name is in every OpenAPI
+// document, so the payments, inventory and email documents would list them too, and a bare operationId in a
+// workflow could resolve to any of them.
 app.MapPost("/orders", (OrderRequest request) =>
-        Results.Created($"/orders/{Guid.NewGuid()}", new Order(Guid.NewGuid(), request.Sku, request.Quantity, request.Quantity * 9.99m)))
+    {
+        // One id per order, in both the Location header and the body.
+        var id = Guid.NewGuid();
+        return Results.Created($"/orders/{id}", new Order(id, request.Sku, request.Quantity, request.Quantity * 9.99m));
+    })
+    .WithGroupName("v1")
     .WithName("createOrder")
     // The responses the workflows check for, so the Arazzo view can show them next to each step.
     .Produces<Order>(StatusCodes.Status201Created)
     .ProducesProblem(StatusCodes.Status400BadRequest);
 
 app.MapGet("/orders/{id:guid}", (Guid id) => Results.Ok(new Order(id, "SKU-1", 1, 9.99m)))
+    .WithGroupName("v1")
     .WithName("getOrder")
     .Produces<Order>()
     .Produces(StatusCodes.Status404NotFound)
