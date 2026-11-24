@@ -195,6 +195,11 @@ placeOrder workflow it invokes; the `cancelled` action's `goto` to placeOrder is
     noted under the step's arrows ("on 400: rejected (end)") rather than drawn, so the main path reads straight
     down. Each step's name on the left opens the step.
 
+    Steps that run at the same time are framed in a UML `par` fragment, a dashed line between each step's
+    messages: consecutive steps, in a workflow that uses `dependsOn`, none of which waits on another (by
+    `dependsOn` or by reading its outputs). Two stages can be branches of one `par`, and a stage's own steps
+    can run at the same time inside its band.
+
     <a id="actors"></a>**Actors.** Arazzo has no field for who makes a step's call, since the workflow's runner
     makes them all, so every arrow starts at the client. To draw calls services make to each other (the orders
     service asking the payment gateway to authorize a payment), set `ActorExtension` (such as `x-actor`) and
