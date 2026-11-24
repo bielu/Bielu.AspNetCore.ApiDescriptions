@@ -12,6 +12,10 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+// The payment gateway and the inventory service of the checkout workflow (Checkout.cs).
+builder.Services.AddCheckoutServices();
+// The SignalR hub and the email service of the asynchronous order workflow (AsyncOrder.cs).
+builder.Services.AddAsyncOrderServices();
 builder.Services.AddAsyncApi();
 
 // The workflows mix HTTP operations (OpenAPI) and messages (AsyncAPI) of this app. The Scalar plugin
@@ -26,6 +30,10 @@ builder.Services.AddArazzo(options =>
     });
     options.AddOpenApiSource("orders", "v1");
     options.AddAsyncApiSource("events", "v1");
+    // A checkout across the orders service, the payment gateway and the inventory service, in three stages.
+    options.AddCheckoutWorkflows();
+    // An order accepted with 202 and settled later: stock checked in the background, the browser told over SignalR.
+    options.AddAsyncOrderWorkflow();
 
     // The shop's pages, for the "Pages" view of the workflow overview: steps say which page the customer is on
     // (x-page), actions which page they land on, and workflows, steps and actions carry plain-language labels
@@ -209,7 +217,11 @@ app.UseStaticFiles();
 
 app.MapScalarApiReference(options => options
     .AddDocument("v1", "Orders")
+    .AddDocument("payments", "Payment gateway")
+    .AddDocument("inventory", "Inventory")
+    .AddDocument("email", "Email service")
     .AddAsyncApiDocument("v1", "Events")
+    .AddAsyncApiDocument("updates", "Order updates")
     .AddArazzoDocument("v1", "Workflows")
     .AddDocument("field-reference", "Arazzo field reference", "/fixtures/field-reference.arazzo.json")
     .WithArazzoOptions(arazzo =>
@@ -218,6 +230,10 @@ app.MapScalarApiReference(options => options
         arazzo.PagesExtension = ShopPages.Pages;
         arazzo.PageExtension = ShopPages.Page;
         arazzo.LabelExtension = ShopPages.Label;
+        // The Sequence view: who makes a step's call, when it's a service rather than the client.
+        arazzo.ActorExtension = Checkout.Actor;
+        // ...and who is who: lane titles, their order, and the storefront as the client.
+        arazzo.ActorsExtension = Checkout.Actors;
     }));
 
 app.MapPost("/orders", (OrderRequest request) =>
@@ -232,6 +248,9 @@ app.MapGet("/orders/{id:guid}", (Guid id) => Results.Ok(new Order(id, "SKU-1", 1
     .Produces<Order>()
     .Produces(StatusCodes.Status404NotFound)
     .Produces(StatusCodes.Status410Gone);
+
+app.MapCheckoutServices();
+app.MapAsyncOrder();
 
 app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 
