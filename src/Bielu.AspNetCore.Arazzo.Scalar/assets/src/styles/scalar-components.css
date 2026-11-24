@@ -19,6 +19,7 @@
 @source "../../node_modules/@scalar/blocks/dist/shared/Badge*.js";
 @source "../../../../../node_modules/@scalar/blocks/dist/shared/Badge*.js";
 @source "../components/ArazzoStep.vue";
+@source "../components/ArazzoViewSwitch.vue";
 @source "../components/ArazzoWorkflow.vue";
 
 .bielu-arazzo,

@@ -61,11 +61,12 @@ afterEach(() => {
 describe('ArazzoViewSwitch', () => {
   it('offers each view as a tab of a tab list, selected and focusable for the one shown', () => {
     // Act
-    const wrapper = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', view: 'data' } })
+    const wrapper = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', placement: 'overview', view: 'data' } })
 
     // Assert
     const tabs = wrapper.findAll('button')
-    expect(wrapper.attributes()).toMatchObject({ role: 'tablist', 'aria-label': 'Overview view', class: 'ba-view-tabs' })
+    expect(wrapper.attributes()).toMatchObject({ role: 'tablist', 'aria-label': 'Overview view' })
+    expect(wrapper.classes()).toContain('ba-view-tabs')
     expect(tabs.map((tab) => tab.text())).toEqual(['Technical', 'Data flow', 'Sequence', 'Pages'])
     expect(tabs.map((tab) => tab.attributes('role'))).toEqual(['tab', 'tab', 'tab', 'tab'])
     expect(tabs.map((tab) => tab.attributes('aria-selected'))).toEqual(['false', 'true', 'false', 'false'])
@@ -75,7 +76,7 @@ describe('ArazzoViewSwitch', () => {
 
   it('ties every tab to the panel it controls', () => {
     // Act
-    const wrapper = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', view: 'data' } })
+    const wrapper = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', placement: 'overview', view: 'data' } })
 
     // Assert
     const tabs = wrapper.findAll('button')
@@ -95,7 +96,7 @@ describe('ArazzoViewSwitch', () => {
     const onSelect = vi.fn()
     const wrapper = mount(ArazzoViewSwitch, {
       attachTo: globalThis.document.body,
-      props: { views, panelId: 'panel', view: views[from]!.value, onSelect },
+      props: { views, panelId: 'panel', placement: 'overview', view: views[from]!.value, onSelect },
     })
     mounted.push(wrapper)
 
@@ -110,7 +111,7 @@ describe('ArazzoViewSwitch', () => {
   it('leaves other keys to the browser', async () => {
     // Arrange
     const onSelect = vi.fn()
-    const wrapper = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', view: 'data', onSelect } })
+    const wrapper = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', placement: 'overview', view: 'data', onSelect } })
 
     // Act
     await wrapper.findAll('button')[1]!.trigger('keydown', { key: 'ArrowDown' })
@@ -122,7 +123,7 @@ describe('ArazzoViewSwitch', () => {
   it('says which view was chosen', async () => {
     // Arrange
     const onSelect = vi.fn()
-    const wrapper = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', view: 'technical', onSelect } })
+    const wrapper = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', placement: 'overview', view: 'technical', onSelect } })
 
     // Act
     await wrapper.findAll('button')[2]!.trigger('click')
@@ -131,14 +132,18 @@ describe('ArazzoViewSwitch', () => {
     expect(onSelect.mock.calls).toEqual([['sequence']])
   })
 
-  it('shares the width equally only when asked to fill it', () => {
+  it("shares the overview's width under a line of its own, and keeps its own width, a size larger, in the dialog", () => {
     // Act
-    const filled = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', view: 'data', fill: true } })
-    const plain = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', view: 'data' } })
+    const overview = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', placement: 'overview', view: 'data' } })
+    const dialog = mount(ArazzoViewSwitch, { props: { views, panelId: 'panel', placement: 'dialog', view: 'data' } })
 
     // Assert
-    expect(filled.classes()).toContain('ba-view-tabs-fill')
-    expect(plain.classes()).not.toContain('ba-view-tabs-fill')
+    expect(overview.classes()).toEqual(expect.arrayContaining(['ba-view-tabs-fill', 'w-full', 'border-b']))
+    expect(overview.find('button').classes()).toEqual(expect.arrayContaining(['flex-1', 'text-(length:--scalar-mini,12px)']))
+    expect(dialog.classes()).not.toContain('ba-view-tabs-fill')
+    expect(dialog.classes()).not.toContain('border-b')
+    expect(dialog.find('button').classes()).not.toContain('flex-1')
+    expect(dialog.find('button').classes()).toContain('text-(length:--scalar-small,13px)')
   })
 })
 

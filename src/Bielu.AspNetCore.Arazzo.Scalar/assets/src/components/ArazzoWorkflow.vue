@@ -632,8 +632,8 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
           </div>
           <ArazzoViewSwitch
             class="ba-overview-tabs mb-2"
-            fill
             :panelId="inlinePanelId"
+            placement="overview"
             :view="overviewView"
             :views="views"
             @select="setWorkflowView" />
@@ -729,6 +729,7 @@ const closeFlowOnBackdrop = (event: MouseEvent) => {
           class="ba-dialog-tab-bar mb-2 flex items-end justify-between gap-4 border-b border-b-border">
           <ArazzoViewSwitch
             :panelId="dialogPanelId"
+            placement="dialog"
             :view="overviewView"
             :views="views"
             @select="setWorkflowView" />
