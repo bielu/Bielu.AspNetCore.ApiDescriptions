@@ -150,6 +150,8 @@ internal static class AsyncOrder
                 });
                 return Results.Accepted($"/orders/{id}", new SubmittedOrder(id, submission.Sku, submission.Quantity, OrderStatus.Pending));
             })
+            // In the orders service's document only (Program.cs says why).
+            .WithGroupName("v1")
             .WithName("submitOrder")
             .Produces<SubmittedOrder>(StatusCodes.Status202Accepted)
             .ProducesProblem(StatusCodes.Status400BadRequest);
