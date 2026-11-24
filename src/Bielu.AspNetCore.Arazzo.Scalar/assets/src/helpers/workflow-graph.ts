@@ -962,25 +962,52 @@ const sweeps = (given: string[][], links: readonly Link[], fewestGiven: number):
       .sort((a, b) => weight.get(a.id)! - weight.get(b.id)! || a.at - b.at)
       .map(({ id }) => id)
   }
-  /** Swaps neighbouring boxes while that removes a crossing. */
+  /**
+   * Swaps neighbouring boxes while that removes a crossing. Swapping two boxes of a row only changes whether an
+   * arrow of one crosses an arrow of the other, so only those pairs are scored, not every arrow in the diagram.
+   */
   const transpose = () => {
+    const place = new Map<string, { row: number; at: number }>()
+    current.forEach((row, index) => row.forEach((id, at) => place.set(id, { row: index, at })))
+    /** How many crossings swapping `left` with the box right of it adds: negative when it removes some. */
+    const swapDelta = (left: string, right: string): number => {
+      const row = place.get(left)!.row
+      let delta = 0
+      for (const x of neighbours.get(left) ?? []) {
+        const a = place.get(x)
+        if (!a || a.row === row) {
+          continue
+        }
+        for (const y of neighbours.get(right) ?? []) {
+          const b = place.get(y)
+          // Arrows into the same other row cross when their ends there are in the opposite order to their boxes:
+          // `left`'s arrow ends right of `right`'s before the swap, left of it after. A shared end never crosses.
+          if (b && b.row === a.row) {
+            delta += Math.sign(b.at - a.at)
+          }
+        }
+      }
+      return delta
+    }
     for (let improved = true; improved; ) {
       improved = false
       for (const row of current) {
         for (let at = 0; at + 1 < row.length; at++) {
-          const before = countCrossings(current, links)
-          ;[row[at], row[at + 1]] = [row[at + 1]!, row[at]!]
-          if (countCrossings(current, links) < before) {
-            improved = true
-          } else {
+          if (swapDelta(row[at]!, row[at + 1]!) < 0) {
             ;[row[at], row[at + 1]] = [row[at + 1]!, row[at]!]
+            place.get(row[at]!)!.at = at
+            place.get(row[at + 1]!)!.at = at + 1
+            improved = true
           }
         }
       }
     }
   }
+  const same = (a: string[][], b: string[][]) => a.every((row, index) => row.every((id, at) => b[index]![at] === id))
+  let cycleStart = current
   for (let pass = 0; pass < 8 && fewest > 0; pass++) {
     if (pass % 2 === 0) {
+      cycleStart = current.map((row) => [...row])
       for (let index = 1; index < current.length; index++) {
         sweep(index, current[index - 1]!)
       }
@@ -994,6 +1021,11 @@ const sweeps = (given: string[][], links: readonly Link[], fewestGiven: number):
     if (count < fewest) {
       fewest = count
       best = current.map((row) => [...row])
+    }
+    // A pass depends only on the order it starts from, so once a sweep down and back up ends where it started,
+    // every later pass would repeat it: stop instead of running out the passes.
+    if (pass % 2 === 1 && same(current, cycleStart)) {
+      break
     }
   }
   return best
