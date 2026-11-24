@@ -57,5 +57,3 @@ public sealed class ArazzoFailureAction : IArazzoSerializable, IArazzoExtensible
         writer.WriteEndObject();
     }
 }
-
-/// <summary>Failure action type values defined by the Arazzo specification.</summary>

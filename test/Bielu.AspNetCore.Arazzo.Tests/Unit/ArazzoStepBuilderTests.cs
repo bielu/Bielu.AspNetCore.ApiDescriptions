@@ -33,6 +33,31 @@ public class ArazzoStepBuilderTests
         step.ChannelPath.ShouldBeNull();
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Channel_WithDynamic_BuildsTheSameStep(bool dynamic)
+    {
+        // Arrange / Act
+        var options = BuildOptionsWithStep(s => s.Channel("events", "orders/placed", ArazzoStepAction.Send, dynamic));
+
+        // Assert
+        var step = options.Workflows[0].Steps[0];
+        step.ChannelPath.ShouldBe("{$sourceDescriptions.events.url}#/channels/orders~1placed");
+        step.Action.ShouldBe(ArazzoStepAction.Send);
+    }
+
+    [Fact]
+    public void Channel_WithDynamic_ValidatesArguments()
+    {
+        BuildOptionsWithStep(s =>
+        {
+            Should.Throw<ArgumentException>(() => s.Channel("events", "", ArazzoStepAction.Send, dynamic: true));
+            Should.Throw<ArgumentException>(() => s.Channel("bad.name", "orders", ArazzoStepAction.Send, dynamic: true));
+            s.Channel("events", "orders", ArazzoStepAction.Send, dynamic: true);
+        });
+    }
+
     [Fact]
     public void Channel_ThenOperationPath_ThrowsAndKeepsOriginalTarget()
     {

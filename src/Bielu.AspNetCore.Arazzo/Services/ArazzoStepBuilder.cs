@@ -49,7 +49,7 @@ public sealed class ArazzoStepBuilder
     /// <summary>
     /// Targets an operation by its <c>operationId</c>, searched for across every source description registered
     /// on the workflow's document at startup-validation time (the spec does not require the id to be
-    /// source-qualified). Mutually exclusive with <see cref="OperationPath"/>, <see cref="Channel"/>, and <see cref="Workflow"/>.
+    /// source-qualified). Mutually exclusive with <see cref="OperationPath"/>, <see cref="Channel(string, string, ArazzoStepAction)"/>, and <see cref="Workflow(string)"/>.
     /// </summary>
     public ArazzoStepBuilder Operation(string operationId)
     {
@@ -62,7 +62,7 @@ public sealed class ArazzoStepBuilder
     /// <summary>
     /// Targets an OpenAPI operation at <paramref name="path"/>/<paramref name="httpMethod"/> in the source
     /// description named <paramref name="sourceName"/>. Mutually exclusive with <see cref="Operation"/>,
-    /// <see cref="Channel"/>, and <see cref="Workflow"/>.
+    /// <see cref="Channel(string, string, ArazzoStepAction)"/>, and <see cref="Workflow(string)"/>.
     /// </summary>
     public ArazzoStepBuilder OperationPath(string sourceName, string path, string httpMethod)
     {
@@ -79,7 +79,7 @@ public sealed class ArazzoStepBuilder
     /// Targets an AsyncAPI channel named <paramref name="channelName"/> in the source description named
     /// <paramref name="sourceName"/>, with an explicit send/receive <paramref name="action"/>
     /// (see <see cref="ArazzoStepAction"/>). Mutually exclusive with <see cref="Operation"/>,
-    /// <see cref="OperationPath"/>, and <see cref="Workflow"/>.
+    /// <see cref="OperationPath"/>, and <see cref="Workflow(string)"/>.
     /// </summary>
     public ArazzoStepBuilder Channel(string sourceName, string channelName, ArazzoStepAction action)
     {
@@ -92,6 +92,28 @@ public sealed class ArazzoStepBuilder
         return this;
     }
 
+    /// <summary>
+    /// Targets an AsyncAPI channel, as <see cref="Channel(string, string, ArazzoStepAction)"/> does, and says
+    /// whether the channel is created at runtime rather than declared with a <c>[Channel]</c> attribute.
+    /// </summary>
+    /// <param name="sourceName">The AsyncAPI source description.</param>
+    /// <param name="channelName">The channel's key in the AsyncAPI document.</param>
+    /// <param name="action">Whether the step sends to or receives from the channel.</param>
+    /// <param name="dynamic">
+    /// <see langword="true"/> when a runtime mapping, such as Wolverine's message routing or a document transformer,
+    /// adds the channel to the document. Analyzer BARAZZO009 can only see <c>[Channel]</c> attributes, so it skips a
+    /// dynamic channel instead of reporting it as unknown. The generated step is the same either way, and startup
+    /// validation still checks the channel against the live document.
+    /// </param>
+    /// <example>
+    /// <code>
+    /// options.AddWorkflow("checkout", wf => wf
+    ///     .Step("publish", s => s.Channel("events", "orders", ArazzoStepAction.Send, dynamic: true)));
+    /// </code>
+    /// </example>
+    public ArazzoStepBuilder Channel(string sourceName, string channelName, ArazzoStepAction action, bool dynamic) =>
+        Channel(sourceName, channelName, action);
+
     /// <summary>Links this step's channel action to a <c>correlationId</c> defined in the AsyncAPI document. Only applicable when the step's action is "receive".</summary>
     public ArazzoStepBuilder WithCorrelationId(string correlationId)
     {
@@ -100,7 +122,7 @@ public sealed class ArazzoStepBuilder
         return this;
     }
 
-    /// <summary>Targets another workflow by id. Mutually exclusive with <see cref="Operation"/>, <see cref="OperationPath"/>, and <see cref="Channel"/>.</summary>
+    /// <summary>Targets another workflow by id. Mutually exclusive with <see cref="Operation"/>, <see cref="OperationPath"/>, and <see cref="Channel(string, string, ArazzoStepAction)"/>.</summary>
     public ArazzoStepBuilder Workflow(string workflowId)
     {
         ArazzoIdentifier.Validate(workflowId, nameof(workflowId));
@@ -112,7 +134,7 @@ public sealed class ArazzoStepBuilder
     /// <summary>
     /// Targets a workflow of another Arazzo document, the source description named <paramref name="sourceName"/>
     /// (of type <c>arazzo</c>), as <c>$sourceDescriptions.{sourceName}.{workflowId}</c>. Mutually exclusive with
-    /// <see cref="Operation"/>, <see cref="OperationPath"/>, and <see cref="Channel"/>.
+    /// <see cref="Operation"/>, <see cref="OperationPath"/>, and <see cref="Channel(string, string, ArazzoStepAction)"/>.
     /// </summary>
     /// <param name="sourceName">The source description of the other Arazzo document.</param>
     /// <param name="workflowId">The workflow's id in that document.</param>
@@ -145,7 +167,7 @@ public sealed class ArazzoStepBuilder
     /// <summary>
     /// Targets the workflow identified by the marker type <typeparamref name="TWorkflow"/> (see
     /// <see cref="ArazzoId"/>). Mutually exclusive with <see cref="Operation"/>,
-    /// <see cref="OperationPath"/>, and <see cref="Channel"/>.
+    /// <see cref="OperationPath"/>, and <see cref="Channel(string, string, ArazzoStepAction)"/>.
     /// </summary>
     /// <typeparam name="TWorkflow">The marker type naming the workflow this step targets.</typeparam>
     public ArazzoStepBuilder Workflow<TWorkflow>() => Workflow(ArazzoId.FromType<TWorkflow>());
@@ -173,7 +195,7 @@ public sealed class ArazzoStepBuilder
     /// <summary>
     /// Sets the step's request body payload from a literal JSON value. Calling it again, or another
     /// <c>Payload*</c> method, replaces the payload and content type; replacements added with
-    /// <see cref="Replacement"/> are kept, whichever is called first.
+    /// <see cref="Replacement(string, ArazzoValue, ArazzoSelectorType?)"/> are kept, whichever is called first.
     /// </summary>
     public ArazzoStepBuilder Payload(JsonNode payload, string? contentType = null)
     {
@@ -184,7 +206,7 @@ public sealed class ArazzoStepBuilder
 
     /// <summary>
     /// Sets the step's request body payload to a runtime expression, e.g. <c>$inputs.body</c>. Replacements
-    /// added with <see cref="Replacement"/> are kept, whichever is called first.
+    /// added with <see cref="Replacement(string, ArazzoValue, ArazzoSelectorType?)"/> are kept, whichever is called first.
     /// </summary>
     public ArazzoStepBuilder PayloadExpression(string expression, string? contentType = null)
     {
@@ -195,7 +217,7 @@ public sealed class ArazzoStepBuilder
 
     /// <summary>
     /// Sets the step's request body payload to the data a Selector Object picks out (Arazzo 1.1), e.g. the
-    /// <c>$.order</c> part of an earlier step's response. Replacements added with <see cref="Replacement"/>
+    /// <c>$.order</c> part of an earlier step's response. Replacements added with <see cref="Replacement(string, ArazzoValue, ArazzoSelectorType?)"/>
     /// are kept, whichever is called first.
     /// </summary>
     /// <example>
