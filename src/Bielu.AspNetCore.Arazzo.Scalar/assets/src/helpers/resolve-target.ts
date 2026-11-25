@@ -135,11 +135,21 @@ export const findDocumentByUrl = (
     return undefined
   }
   for (const [name, document] of Object.entries(documents)) {
-    if (isRecord(document) && absoluteUrl(document['x-scalar-original-source-url'], page) === wanted) {
+    if (isRecord(document) && documentUrls(document, page).includes(wanted)) {
       return { name, document, sourceName: source.name }
     }
   }
   return undefined
+}
+
+/**
+ * The absolute URLs a loaded document answers to: where Scalar loaded it from, and its own `$self` (OpenAPI 3.2's
+ * canonical URI, resolved against the former). A document Scalar fetched through a proxy or service discovery
+ * still matches a source that names its public URL, when the document says that URL is its `$self`.
+ */
+const documentUrls = (document: AnyRecord, page: string | undefined): (string | undefined)[] => {
+  const retrieved = absoluteUrl(document['x-scalar-original-source-url'], page)
+  return [retrieved, absoluteUrl(document.$self, retrieved ?? page)]
 }
 
 export const isOpenApi = (document: AnyRecord): boolean => typeof document.openapi === 'string' || typeof document.swagger === 'string'
