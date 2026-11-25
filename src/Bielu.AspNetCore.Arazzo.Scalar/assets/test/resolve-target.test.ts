@@ -232,6 +232,46 @@ describe('resolveStepTarget', () => {
     expect(target).toMatchObject({ kind: 'operation', identifier: 'getPet', documentName: undefined })
   })
 
+  it('resolves a source loaded from another URL by the document\'s $self', () => {
+    // Arrange: Scalar loaded the document through service discovery, while the source names its public URL
+    const authApi = {
+      openapi: '3.2.0',
+      $self: 'https://login.test/openapi/v1.json',
+      'x-scalar-original-source-url': 'https://authservice/openapi/v1.json',
+      paths: { '/connect/token': { post: { operationId: 'token' } } },
+    }
+    const withAuth: ArazzoDocument = {
+      ...arazzo,
+      sourceDescriptions: [{ name: 'auth', url: 'https://login.test/openapi/v1.json', type: 'openapi' }],
+    }
+
+    // Act
+    const target = resolveStepTarget(withAuth, { stepId: 's', operationId: 'token' }, { auth: authApi })
+
+    // Assert
+    expect(target).toMatchObject({ kind: 'operation', identifier: 'token', documentName: 'auth', sourceName: 'auth' })
+  })
+
+  it('resolves a relative $self against where the document was loaded from', () => {
+    // Arrange
+    const authApi = {
+      openapi: '3.2.0',
+      $self: '/openapi/v1.json',
+      'x-scalar-original-source-url': 'https://login.test/docs/openapi.json',
+      paths: { '/connect/token': { post: { operationId: 'token' } } },
+    }
+    const withAuth: ArazzoDocument = {
+      ...arazzo,
+      sourceDescriptions: [{ name: 'auth', url: 'https://login.test/openapi/v1.json', type: 'openapi' }],
+    }
+
+    // Act
+    const target = resolveStepTarget(withAuth, { stepId: 's', operationId: 'token' }, { auth: authApi })
+
+    // Assert
+    expect(target).toMatchObject({ documentName: 'auth' })
+  })
+
   it('returns undefined for a step without a target', () => {
     // Arrange / Act / Assert
     expect(resolveStepTarget(arazzo, { stepId: 's' }, documents)).toBeUndefined()
