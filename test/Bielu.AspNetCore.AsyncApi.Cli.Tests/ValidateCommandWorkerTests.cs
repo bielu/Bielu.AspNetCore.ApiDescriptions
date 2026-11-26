@@ -100,4 +100,40 @@ public class ValidateCommandWorkerTests : IAsyncLifetime
         // Should find both valid and invalid, returning 1 due to invalid.
         result.ShouldBe(1);
     }
+
+    [Fact]
+    public void Process_GlobMatchingNothing_ReturnsOne()
+    {
+        // Arrange
+        var context = new ValidateCommandContext();
+        context.Files.Add(Path.Combine(_tempDir, "*.yaml"));
+        var errors = new List<string>();
+        var worker = new ValidateCommandWorker(context, _ => { }, _ => { }, errors.Add);
+
+        // Act
+        var result = worker.Process();
+
+        // Assert
+        result.ShouldBe(1);
+        errors.ShouldHaveSingleItem().ShouldBe("No files found to validate.");
+    }
+
+    [Fact]
+    public void Process_MissingFile_ReportsItAndValidatesTheRest()
+    {
+        // Arrange
+        var missing = Path.Combine(_tempDir, "missing.json");
+        var context = new ValidateCommandContext();
+        context.Files.Add(missing);
+        context.Files.Add(_validDocPath);
+        var errors = new List<string>();
+        var worker = new ValidateCommandWorker(context, _ => { }, _ => { }, errors.Add);
+
+        // Act
+        var result = worker.Process();
+
+        // Assert
+        result.ShouldBe(1);
+        errors.ShouldContain($"File not found: {missing}");
+    }
 }
