@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Bielu.Cli.Shared.Tests;
 
+[Collection(ConsoleCollection.Name)]
 public class DiffReportWriterTests
 {
     [Fact]

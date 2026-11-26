@@ -133,4 +133,36 @@ public class DiffCommandWorkerTests : IAsyncLifetime
         // No changes at all, so --fail-on-breaking has nothing to trip on.
         result.ShouldBe(0);
     }
+
+    [Fact]
+    public void Process_WithMissingHeadFile_ReturnsOne()
+    {
+        // Arrange
+        var context = new DiffCommandContext
+        {
+            BasePath = _basePath,
+            HeadPath = Path.Combine(_tempDir, "missing.json"),
+        };
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Process_WithUnparseableDocument_ReturnsOne()
+    {
+        // Arrange
+        var broken = Path.Combine(_tempDir, "broken.json");
+        File.WriteAllText(broken, "{ not an arazzo document");
+        var context = new DiffCommandContext { BasePath = _basePath, HeadPath = broken };
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
+    }
 }

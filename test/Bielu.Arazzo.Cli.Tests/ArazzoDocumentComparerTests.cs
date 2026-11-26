@@ -99,4 +99,58 @@ public class ArazzoDocumentComparerTests
         // Assert
         changes.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void Compare_SourceDescriptionChanges_ReportsEach()
+    {
+        // Arrange
+        var @base = BuildDocument([Workflow("wf", Step("a", "op1"))]);
+        @base.SourceDescriptions.Add(new ArazzoSourceDescription { Name = "events", Url = "https://example.com/asyncapi.json", Type = ArazzoSourceDescriptionType.AsyncApi });
+        @base.SourceDescriptions.Add(new ArazzoSourceDescription { Name = "legacy", Url = "https://example.com/legacy.json" });
+        var head = BuildDocument([Workflow("wf", Step("a", "op1"))]);
+        head.SourceDescriptions[0].Url = "https://example.com/v2/openapi.json";
+        head.SourceDescriptions.Add(new ArazzoSourceDescription { Name = "events", Url = "https://example.com/asyncapi.json", Type = ArazzoSourceDescriptionType.Arazzo });
+        head.SourceDescriptions.Add(new ArazzoSourceDescription { Name = "payments", Url = "https://example.com/payments.json" });
+
+        // Act
+        var changes = new ArazzoDocumentComparer().Compare(@base, head).ToList();
+
+        // Assert
+        changes.ShouldContain(c => c.Path == "sourceDescriptions/api/url" && c.Severity == ChangeSeverity.Breaking);
+        changes.ShouldContain(c => c.Path == "sourceDescriptions/events/type" && c.Severity == ChangeSeverity.Breaking);
+        changes.ShouldContain(c => c.Path == "sourceDescriptions/legacy" && c.Severity == ChangeSeverity.Breaking);
+        changes.ShouldContain(c => c.Path == "sourceDescriptions/payments" && c.Severity == ChangeSeverity.NonBreaking);
+    }
+
+    [Fact]
+    public void Compare_AddedWorkflow_IsNonBreaking()
+    {
+        // Arrange
+        var @base = BuildDocument([Workflow("wf", Step("a", "op1"))]);
+        var head = BuildDocument([Workflow("wf", Step("a", "op1")), Workflow("refund", Step("r", "op9"))]);
+
+        // Act
+        var changes = new ArazzoDocumentComparer().Compare(@base, head).ToList();
+
+        // Assert
+        changes.ShouldHaveSingleItem().ShouldSatisfyAllConditions(
+            c => c.Path.ShouldBe("workflows/refund"),
+            c => c.Severity.ShouldBe(ChangeSeverity.NonBreaking));
+    }
+
+    [Fact]
+    public void Compare_StepActionChanged_IsBreaking()
+    {
+        // Arrange
+        var @base = BuildDocument([Workflow("wf", new ArazzoStep { StepId = "a", OperationId = "op1", Action = ArazzoStepAction.Send })]);
+        var head = BuildDocument([Workflow("wf", new ArazzoStep { StepId = "a", OperationId = "op1", Action = ArazzoStepAction.Receive })]);
+
+        // Act
+        var changes = new ArazzoDocumentComparer().Compare(@base, head).ToList();
+
+        // Assert
+        changes.ShouldHaveSingleItem().ShouldSatisfyAllConditions(
+            c => c.Path.ShouldBe("workflows/wf/steps/a/action"),
+            c => c.Severity.ShouldBe(ChangeSeverity.Breaking));
+    }
 }

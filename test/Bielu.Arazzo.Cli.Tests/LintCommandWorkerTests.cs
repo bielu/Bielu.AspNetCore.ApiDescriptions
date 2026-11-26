@@ -119,4 +119,49 @@ public class LintCommandWorkerTests : IAsyncLifetime
         // Clean means no findings at all, so promoting warnings to errors changes nothing.
         result.ShouldBe(0);
     }
+
+    [Fact]
+    public void Process_GlobMatchingNothing_ReturnsOne()
+    {
+        // Arrange
+        var context = new LintCommandContext();
+        context.Files.Add(Path.Combine(_tempDir, "*.yaml"));
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Process_MissingFile_ReturnsOne()
+    {
+        // Arrange
+        var context = new LintCommandContext();
+        context.Files.Add(_cleanDocPath);
+        context.Files.Add(Path.Combine(_tempDir, "missing.json"));
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Process_UnparseableDocument_ReturnsOne()
+    {
+        // Arrange
+        var broken = Path.Combine(_tempDir, "broken.json");
+        File.WriteAllText(broken, "{ not an arazzo document");
+        var context = new LintCommandContext { Format = "json" };
+        context.Files.Add(broken);
+
+        // Act
+        var result = Run(context);
+
+        // Assert
+        result.ShouldBe(1);
+    }
 }
