@@ -17,7 +17,8 @@ dotnet asyncapi likec4 \
   --source notifications=docs/notifications.asyncapi.yaml \
   --output architecture/asyncapi.c4
 
-npx likec4 start architecture
+npx likec4 start architecture                       # browse it
+npx likec4 export png -o docs/architecture architecture   # or render every view
 ```
 
 Or call the generator yourself; it is framework-free:
@@ -63,6 +64,13 @@ The model has three kinds of view:
 | `asyncapiChannels` | every service and channel, with the sends and receives |
 | `asyncapiServices` | the services alone, joined by their flows |
 | `asyncapi<Service>` (one per service) | the service and the channels it sends to and receives from |
+
+The `asyncapiChannels` view of a three-service shop, and its `asyncapiServices` view: sends are solid, deliveries
+dashed, flows dotted.
+
+![The asyncapiChannels view: Orders API sends OrderCreated to the orders.created channel, which delivers it to Inventory API; Inventory API sends InventoryReserved and StockLevelChanged to their channels, which deliver them to Orders API and Notifications](../images/likec4/asyncapi-channels.jpg)
+
+![The asyncapiServices view: Orders API sends OrderCreated to Inventory API, which sends InventoryReserved back and StockLevelChanged to Notifications](../images/likec4/asyncapi-services.jpg)
 
 ### Element ids
 
