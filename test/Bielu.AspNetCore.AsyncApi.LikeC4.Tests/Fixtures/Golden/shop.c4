@@ -16,6 +16,7 @@ specification {
   }
   relationship asyncapiSend {
     notation 'sends to a channel'
+    line solid
   }
   relationship asyncapiReceive {
     notation 'delivers from a channel'

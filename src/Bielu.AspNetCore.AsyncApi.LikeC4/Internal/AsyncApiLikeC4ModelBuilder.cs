@@ -30,7 +30,7 @@ internal static class AsyncApiLikeC4ModelBuilder
         var model = new LikeC4Model();
         model.ElementKinds.Add(new LikeC4ElementKind(ServiceKind, "AsyncAPI service", "rectangle"));
         model.ElementKinds.Add(new LikeC4ElementKind(ChannelKind, "AsyncAPI channel", "queue"));
-        model.RelationshipKinds.Add(new LikeC4RelationshipKind(SendKind, "sends to a channel"));
+        model.RelationshipKinds.Add(new LikeC4RelationshipKind(SendKind, "sends to a channel", "solid"));
         model.RelationshipKinds.Add(new LikeC4RelationshipKind(ReceiveKind, "delivers from a channel", "dashed"));
         model.RelationshipKinds.Add(new LikeC4RelationshipKind(FlowKind, "messages between services", "dotted"));
         model.Tags.Add(Tag);

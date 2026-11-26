@@ -25,7 +25,7 @@ internal sealed record LikeC4ElementKind(string Name, string Notation, string? S
 /// <summary>A relationship kind of the specification.</summary>
 /// <param name="Name">The kind's name.</param>
 /// <param name="Notation">How the legend describes it.</param>
-/// <param name="Line">Its line style (<c>dashed</c>, <c>dotted</c>), or <see langword="null"/> for a solid line.</param>
+/// <param name="Line">Its line style (<c>solid</c>, <c>dashed</c>, <c>dotted</c>), or <see langword="null"/> for LikeC4's default, dashed.</param>
 internal sealed record LikeC4RelationshipKind(string Name, string Notation, string? Line = null);
 
 /// <summary>A link of an element.</summary>
