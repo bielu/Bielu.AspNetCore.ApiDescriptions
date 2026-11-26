@@ -87,7 +87,7 @@ jobs:
       generate-schema: false
       # Total line coverage across every test project, merged by ReportGenerator. Raise it when the
       # suite gets past the next step; never lower it to land a change. See "Code coverage" in AGENTS.md.
-      minimum-line-coverage: 88
+      minimum-line-coverage: 89
       working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
       artifact-name: npm-scalar-signalr
 
