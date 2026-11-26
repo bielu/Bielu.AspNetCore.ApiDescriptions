@@ -45,6 +45,10 @@ var model = AsyncApiLikeC4Generator.Generate(
 Documents may be AsyncAPI 2.x or 3.x and Arazzo 1.0.x or 1.1.x, JSON or YAML. Describe the generated elements further in a `.c4` file of your
 own with `extend <id> { … }`, so the generated one can be written again on every build.
 
+`LikeC4ModelChecker.Check(model, sources)` checks a model written by hand, exported with `likec4 export json`,
+against the documents: relationships with no operation behind them, and operations it does not draw. Its elements
+stand for documents and channels through the same metadata (`asyncapi 'orders'`, `asyncapiChannel 'orders.created'`).
+
 ## Documentation
 
 - [LikeC4 architecture models](https://apidescriptions.bielu.pl/articles/likec4.html)

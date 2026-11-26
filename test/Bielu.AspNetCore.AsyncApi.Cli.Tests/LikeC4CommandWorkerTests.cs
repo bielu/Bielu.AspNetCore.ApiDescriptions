@@ -262,7 +262,7 @@ public sealed class LikeC4CommandWorkerTests : IDisposable
     public void NameOf_TrimsDocumentSuffixes(string location, string name)
     {
         // Act & Assert
-        LikeC4CommandWorker.NameOf(location).ShouldBe(name);
+        LikeC4DocumentLoader.NameOf(location).ShouldBe(name);
     }
 
     [Fact]

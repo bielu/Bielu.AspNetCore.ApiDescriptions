@@ -171,10 +171,7 @@ internal static class AsyncApiLikeC4ModelBuilder
                          && operation.Channel == channel
                          && operation.ServiceId != sender))
             {
-                var messages = send.Messages.Count == 0 ? receive.Messages
-                    : receive.Messages.Count == 0 ? send.Messages
-                    : send.Messages.Intersect(receive.Messages, StringComparer.Ordinal).ToList();
-                if (messages.Count == 0 && send.Messages.Count > 0 && receive.Messages.Count > 0)
+                if (FlowMessages(send.Messages, receive.Messages) is not { } messages)
                 {
                     continue;
                 }
@@ -205,6 +202,21 @@ internal static class AsyncApiLikeC4ModelBuilder
                 Metadata = metadata,
             };
         }
+    }
+
+    /// <summary>
+    /// The messages that flow from a sender to a receiver of a channel: the ones both name, or what one names when the
+    /// other names none. <see langword="null"/> when both name messages but none in common, so they do not meet.
+    /// </summary>
+    internal static IReadOnlyList<string>? FlowMessages(IReadOnlyList<string> sent, IReadOnlyList<string> received)
+    {
+        if (sent.Count == 0 || received.Count == 0)
+        {
+            return sent.Count == 0 ? received : sent;
+        }
+
+        var common = sent.Intersect(received, StringComparer.Ordinal).ToList();
+        return common.Count > 0 ? common : null;
     }
 
     private static void AddViews(

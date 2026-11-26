@@ -10,6 +10,7 @@ using Bielu.Cli.Shared;
 // Usage: dotnet asyncapi getdocument --assembly <name> --assembly-path <path> --output <dir> --project <name> [--document <name>] [--file-list <path>] [--file-name <name>]
 // Usage: dotnet asyncapi merge --source <uri> [--source <uri> ...] --output <path> [--prefix <prefix> ...] [--title <title>] [--version <version>]
 // Usage: dotnet asyncapi likec4 --source [name=]<path|url> [--source ...] [--arazzo [name=]<path|url> ...] [--link <name>=<url> ...] --output <path>
+// Usage: dotnet asyncapi likec4 check --model <likec4.json> --source [name=]<path|url> [--source ...] [--strict] [--format <text|json>]
 
 var logger = new ConsoleCliLogger();
 
@@ -351,6 +352,11 @@ int RunDiff(string[] diffArgs)
 
 int RunLikeC4(string[] likeC4Args)
 {
+    if (likeC4Args.Length > 1 && likeC4Args[1] == "check")
+    {
+        return RunLikeC4Check(likeC4Args);
+    }
+
     var likeC4Context = new LikeC4CommandContext();
 
     for (var i = 1; i < likeC4Args.Length; i++)
@@ -416,6 +422,69 @@ int RunLikeC4(string[] likeC4Args)
     return likeC4Worker.Process();
 }
 
+int RunLikeC4Check(string[] checkArgs)
+{
+    var checkContext = new LikeC4CheckCommandContext();
+
+    for (var i = 2; i < checkArgs.Length; i++)
+    {
+        switch (checkArgs[i])
+        {
+            case "--model":
+                if (!CliArgumentReader.TryReadValue(checkArgs, ref i, "--model", logger, out var model))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                checkContext.ModelPath = model;
+                break;
+            case "--source":
+                if (!CliArgumentReader.TryReadValue(checkArgs, ref i, "--source", logger, out var source))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                checkContext.Sources.Add(source);
+                break;
+            case "--strict":
+                checkContext.Strict = true;
+                break;
+            case "--format":
+                if (!CliArgumentReader.TryReadValue(checkArgs, ref i, "--format", logger, out var format))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                checkContext.Format = format;
+                break;
+            default:
+                logger.Error($"Unknown argument for likec4 check: {checkArgs[i]}");
+                PrintUsage();
+                return CliExitCode.Failure;
+        }
+    }
+
+    if (string.IsNullOrEmpty(checkContext.ModelPath))
+    {
+        logger.Error("--model is required for likec4 check.");
+        return CliExitCode.Failure;
+    }
+
+    if (checkContext.Sources.Count == 0)
+    {
+        logger.Error("At least one --source is required for likec4 check.");
+        return CliExitCode.Failure;
+    }
+
+    var checkWorker = new LikeC4CheckCommandWorker(
+        checkContext,
+        writeInfo: logger.Info,
+        writeWarning: logger.Warning,
+        writeError: logger.Error);
+
+    return checkWorker.Process();
+}
+
 static void PrintUsage()
 {
     Console.WriteLine("Bielu.AspNetCore.AsyncApi CLI - Generate, merge, validate, and diagram AsyncAPI documents");
@@ -428,6 +497,7 @@ static void PrintUsage()
     Console.WriteLine("  validate       Validate AsyncAPI documents");
     Console.WriteLine("  diff           Compare two AsyncAPI documents for changes");
     Console.WriteLine("  likec4         Generate a LikeC4 architecture model from AsyncAPI documents");
+    Console.WriteLine("  likec4 check   Check a LikeC4 model against the AsyncAPI documents it describes");
     Console.WriteLine();
     Console.WriteLine("getdocument options:");
     Console.WriteLine("  --assembly <name>        The assembly name to load (required)");
@@ -461,6 +531,12 @@ static void PrintUsage()
     Console.WriteLine("  --arazzo [name=]<path|url> An Arazzo document whose workflows become dynamic views (repeatable)");
     Console.WriteLine("  --link <name>=<url>      Where readers find a document (default: its URL, or its path from the model)");
     Console.WriteLine("  --output <path>          The .c4 file to write (required)");
+    Console.WriteLine();
+    Console.WriteLine("likec4 check options (check a LikeC4 model against the AsyncAPI documents it describes):");
+    Console.WriteLine("  --model <path|url>       The model, as 'likec4 export json' writes it (required)");
+    Console.WriteLine("  --source [name=]<path|url> An AsyncAPI document, named as the model's asyncapi metadata names it (required, repeatable)");
+    Console.WriteLine("  --strict                 Treat warnings (documents no element stands for) as errors");
+    Console.WriteLine("  --format <text|json>     Output format (default: text)");
     Console.WriteLine();
     Console.WriteLine("  -h, --help               Show this help message");
 }
