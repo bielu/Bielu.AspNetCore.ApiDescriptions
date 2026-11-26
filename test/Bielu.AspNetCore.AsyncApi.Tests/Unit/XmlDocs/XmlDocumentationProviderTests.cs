@@ -278,6 +278,42 @@ public class XmlDocumentationProviderTests
         }
     }
 
+    [Fact]
+    public void GetDocumentation_ConstructedGenericTypeAndItsProperty_FindsTheDefinitionsDocs()
+    {
+        // Arrange
+        // The compiler documents Envelope<T> once, as GenericSample`1; a payload is always a constructed type.
+        var filePath = Path.GetTempFileName();
+        File.WriteAllText(filePath, """
+            <doc>
+                <members>
+                    <member name="T:Bielu.AspNetCore.AsyncApi.Tests.Unit.XmlDocs.GenericSample`1">
+                        <summary>An envelope.</summary>
+                    </member>
+                    <member name="P:Bielu.AspNetCore.AsyncApi.Tests.Unit.XmlDocs.GenericSample`1.Value">
+                        <summary>The wrapped value.</summary>
+                    </member>
+                </members>
+            </doc>
+            """);
+
+        try
+        {
+            // Act
+            _provider.Load(filePath);
+            var type = _provider.GetDocumentation(typeof(GenericSample<int>));
+            var property = _provider.GetDocumentation(typeof(GenericSample<int>).GetProperty(nameof(GenericSample<int>.Value))!);
+
+            // Assert
+            type.ShouldNotBeNull().Summary.ShouldBe("An envelope.");
+            property.ShouldNotBeNull().Summary.ShouldBe("The wrapped value.");
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
     private static string WriteSampleTypeDocs(string memberXml)
     {
         var filePath = Path.GetTempFileName();

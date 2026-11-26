@@ -3,29 +3,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 using ByteBard.AsyncAPI.Models;
-using ByteBard.AsyncAPI.Models.Interfaces;
 
 namespace Bielu.AspNetCore.AsyncApi.Extensions;
 
 internal static class AsyncApiJsonSchemaExtensions
 {
-    private static readonly AsyncApiJsonSchema _nullSchema = new() { Type = SchemaType.Null };
-
-    public static IAsyncApiSchema CreateOneOfNullableWrapper(this AsyncApiJsonSchema originalSchema)
-    {
-        return new AsyncApiJsonSchema
-        {
-            OneOf =
-            [
-                _nullSchema,
-                originalSchema
-            ]
-        };
-    }
-
-    public static bool IsComponentizedSchema(this AsyncApiJsonSchema schema)
-        => schema.IsComponentizedSchema(out _);
-
     // The schema is unused while the lookup below stays disabled; it remains the receiver so callers do not change.
 #pragma warning disable IDE0060 // Remove unused parameter
     public static bool IsComponentizedSchema(this AsyncApiJsonSchema schema, [NotNullWhen(true)] out string? schemaId)

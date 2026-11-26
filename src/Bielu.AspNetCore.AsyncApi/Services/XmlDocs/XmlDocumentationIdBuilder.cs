@@ -7,6 +7,17 @@ internal static class XmlDocumentationIdBuilder
 {
     public static string? CreateIdForMember(MemberInfo memberInfo)
     {
+        // The compiler documents a generic type once, under its definition (T:Ns.Envelope`1, with `0 for its type
+        // parameter in member signatures), so a constructed type or one of its members is looked up by its definition.
+        if (memberInfo is Type { IsConstructedGenericType: true } constructedType)
+        {
+            memberInfo = constructedType.GetGenericTypeDefinition();
+        }
+        else if (memberInfo.DeclaringType is { IsConstructedGenericType: true } declaringType)
+        {
+            memberInfo = declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(memberInfo);
+        }
+
         return memberInfo switch
         {
             Type type => CreateIdForType(type),
@@ -96,12 +107,6 @@ internal static class XmlDocumentationIdBuilder
 
     private static void AppendFullTypeName(StringBuilder builder, Type type)
     {
-        if (type.IsGenericParameter)
-        {
-            builder.Append(type.GenericParameterPosition);
-            return;
-        }
-
         if (type.DeclaringType != null)
         {
             AppendFullTypeName(builder, type.DeclaringType);
@@ -112,32 +117,9 @@ internal static class XmlDocumentationIdBuilder
             builder.Append(type.Namespace).Append('.');
         }
 
-        var name = type.Name;
-        if (type.IsGenericType && !type.IsGenericTypeDefinition)
-        {
-            var index = name.IndexOf('`');
-            if (index != -1) name = name.Substring(0, index);
-        }
-        builder.Append(name);
-
-        if (type.IsGenericType)
-        {
-            var genericArguments = type.GetGenericArguments();
-            if (type.IsGenericTypeDefinition)
-            {
-                builder.Append('`').Append(genericArguments.Length);
-            }
-            else
-            {
-                builder.Append('{');
-                for (var i = 0; i < genericArguments.Length; i++)
-                {
-                    if (i > 0) builder.Append(',');
-                    AppendParameterType(builder, genericArguments[i]);
-                }
-                builder.Append('}');
-            }
-        }
+        // A generic type's name already carries its own arity ("Envelope`1", and "Inner`1" for a generic type
+        // nested in another), which is exactly how the documentation id spells a type.
+        builder.Append(type.Name);
     }
 
     private static void AppendParameterType(StringBuilder builder, Type type)
@@ -160,11 +142,14 @@ internal static class XmlDocumentationIdBuilder
             AppendParameterType(builder, type.GetElementType()!);
             if (type.IsArray)
             {
+                // A multi-dimensional array lists a lower bound per dimension, as the compiler writes it:
+                // int[,] is System.Int32[0:,0:]. A one-dimensional array is plain [].
                 builder.Append('[');
                 var rank = type.GetArrayRank();
                 if (rank > 1)
                 {
-                    for (var i = 0; i < rank - 1; i++) builder.Append(',');
+                    builder.Append("0:");
+                    for (var i = 1; i < rank; i++) builder.Append(",0:");
                 }
                 builder.Append(']');
             }
