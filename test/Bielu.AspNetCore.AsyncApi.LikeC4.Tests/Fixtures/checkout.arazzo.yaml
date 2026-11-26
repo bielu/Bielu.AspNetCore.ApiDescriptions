@@ -1,0 +1,51 @@
+arazzo: 1.1.0
+info:
+  title: Checkout
+  version: 1.0.0
+x-actors:
+  shopper:
+    title: Shopper
+    description: Buys things in the web shop.
+    client: true
+  warehouse:
+    title: Warehouse staff
+sourceDescriptions:
+  - name: payments
+    url: https://payments.example.com/openapi.json
+    type: openapi
+  - name: orders
+    url: https://orders.example.com/asyncapi/v1.json
+    type: asyncapi
+  - name: inventory
+    url: ./inventory.asyncapi.json
+    type: asyncapi
+workflows:
+  - workflowId: placeOrder
+    summary: Place an order
+    description: The shopper pays, the order is announced, and stock is reserved for it.
+    steps:
+      - stepId: pay
+        description: Charges the shopper's card.
+        operationId: $sourceDescriptions.payments.createPayment
+      - stepId: announce
+        operationId: $sourceDescriptions.inventory.onOrderCreated
+      - stepId: awaitReservation
+        channelPath: '{$sourceDescriptions.inventory.url}#/channels/reserved'
+        action: receive
+        timeout: 5000
+      - stepId: restock
+        x-actor: warehouse
+        operationId: publishStockLevelChanged
+      - stepId: notify
+        workflowId: notifyShopper
+      - stepId: unknownSource
+        operationId: $sourceDescriptions.missing.something
+  - workflowId: notifyShopper
+    summary: Notify the shopper
+    x-actor: notifier
+    steps:
+      - stepId: sendReceipt
+        operationPath: '{$sourceDescriptions.payments.url}#/paths/~1receipts/post'
+      - stepId: confirm
+        x-actor: orders
+        operationId: $sourceDescriptions.payments.confirm

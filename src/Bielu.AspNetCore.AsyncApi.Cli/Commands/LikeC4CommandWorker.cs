@@ -5,12 +5,13 @@ using Bielu.Cli.Shared;
 namespace Bielu.AspNetCore.AsyncApi.Cli.Commands;
 
 /// <summary>
-/// Worker that writes the LikeC4 model of AsyncAPI documents (see <see cref="AsyncApiLikeC4Generator"/>).
+/// Worker that writes the LikeC4 model of AsyncAPI documents and the dynamic views of Arazzo workflows (see
+/// <see cref="AsyncApiLikeC4Generator"/>).
 /// </summary>
 internal sealed class LikeC4CommandWorker
 {
     private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-    private static readonly string[] DocumentSuffixes = [".json", ".yaml", ".yml", ".asyncapi"];
+    private static readonly string[] DocumentSuffixes = [".json", ".yaml", ".yml", ".asyncapi", ".arazzo"];
 
     private readonly LikeC4CommandContext _context;
     private readonly ICliLogger _logger;
@@ -47,7 +48,7 @@ internal sealed class LikeC4CommandWorker
         http.Timeout = TimeSpan.FromSeconds(30);
 
         var sources = new List<AsyncApiLikeC4Source>();
-        foreach (var (name, location) in ExpandSources())
+        foreach (var (name, location) in Expand(_context.Sources))
         {
             if (!TryRead(http, location, out var content))
             {
@@ -60,16 +61,30 @@ internal sealed class LikeC4CommandWorker
             });
         }
 
-        if (sources.Count == 0)
+        var workflows = new List<ArazzoLikeC4Source>();
+        foreach (var (name, location) in Expand(_context.Workflows))
         {
-            _logger.Error("No AsyncAPI documents found.");
+            if (!TryRead(http, location, out var content))
+            {
+                return CliExitCode.Failure;
+            }
+
+            workflows.Add(new ArazzoLikeC4Source(name, content)
+            {
+                Link = links.GetValueOrDefault(name) ?? DefaultLink(location, outputDirectory),
+            });
+        }
+
+        if (sources.Count == 0 && workflows.Count == 0)
+        {
+            _logger.Error("No AsyncAPI or Arazzo documents found.");
             return CliExitCode.Failure;
         }
 
         string model;
         try
         {
-            model = AsyncApiLikeC4Generator.Generate(sources);
+            model = AsyncApiLikeC4Generator.Generate(sources, workflows);
         }
         catch (Exception ex) when (ex is ArgumentException or FormatException)
         {
@@ -79,7 +94,7 @@ internal sealed class LikeC4CommandWorker
 
         Directory.CreateDirectory(outputDirectory);
         File.WriteAllText(_context.OutputPath, model, Utf8WithoutBom);
-        _logger.Info($"LikeC4 model of {sources.Count} AsyncAPI document(s) written to '{_context.OutputPath}'.");
+        _logger.Info($"LikeC4 model of {sources.Count} AsyncAPI and {workflows.Count} Arazzo document(s) written to '{_context.OutputPath}'.");
         return CliExitCode.Success;
     }
 
@@ -87,9 +102,9 @@ internal sealed class LikeC4CommandWorker
     /// The documents to read, as <c>(name, path or URL)</c>: a named source as given, an unnamed one named after its
     /// file, and an unnamed glob expanded into every file it matches.
     /// </summary>
-    private IEnumerable<(string Name, string Location)> ExpandSources()
+    private static IEnumerable<(string Name, string Location)> Expand(IEnumerable<string> sources)
     {
-        foreach (var source in _context.Sources)
+        foreach (var source in sources)
         {
             var separator = source.IndexOf('=', StringComparison.Ordinal);
             if (separator > 0 && !IsUrl(source[..separator]))

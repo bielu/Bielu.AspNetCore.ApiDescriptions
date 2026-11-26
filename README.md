@@ -119,7 +119,8 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 - ✅ **OpenAPI payloads** (`schemaFormat: application/vnd.oai.openapi;version=3.0.0`) converted from the generated JSON Schemas
 - ✅ **Overlays** applied in the generation pipeline, so the served and build-time documents are already transformed
 - ✅ **API catalog** (RFC 9727) at `/.well-known/api-catalog`, listing every AsyncAPI, OpenAPI and Arazzo document the app serves
-- ✅ **LikeC4 architecture models** of the services, channels and message flows the AsyncAPI documents describe
+- ✅ **LikeC4 architecture models** of the services, channels and message flows the AsyncAPI documents describe,
+  with a dynamic view per Arazzo workflow
 - ✅ **CNCF xRegistry** (read-only message and schema registry) served from the app's AsyncAPI documents
 - ✅ **MCP server** (experimental) that lets AI agents find the app's operations and read their complete contracts (servers, security, bindings, messages and schemas) from its AsyncAPI, OpenAPI and Arazzo documents
 - ✅ **Arazzo workflows** that reference the app's own AsyncAPI and OpenAPI documents, validated at startup

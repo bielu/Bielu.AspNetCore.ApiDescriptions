@@ -34,7 +34,15 @@ File.WriteAllText("architecture/asyncapi.c4", model);
 | `receive` operation | `channel -[asyncapiReceive]-> service` |
 | sender and receiver of the same messages | `sender -[asyncapiFlow]-> receiver` |
 
-Documents may be AsyncAPI 2.x or 3.x, JSON or YAML. Describe the generated elements further in a `.c4` file of your
+Arazzo documents add a dynamic view per workflow, drawn as a sequence on the same elements:
+
+```csharp
+var model = AsyncApiLikeC4Generator.Generate(
+    asyncApiSources,
+    [new ArazzoLikeC4Source("checkout", File.ReadAllText("checkout.arazzo.yaml"))]);
+```
+
+Documents may be AsyncAPI 2.x or 3.x and Arazzo 1.0.x or 1.1.x, JSON or YAML. Describe the generated elements further in a `.c4` file of your
 own with `extend <id> { … }`, so the generated one can be written again on every build.
 
 ## Documentation

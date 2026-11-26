@@ -9,7 +9,7 @@ using Bielu.Cli.Shared;
 // Parse command line arguments
 // Usage: dotnet asyncapi getdocument --assembly <name> --assembly-path <path> --output <dir> --project <name> [--document <name>] [--file-list <path>] [--file-name <name>]
 // Usage: dotnet asyncapi merge --source <uri> [--source <uri> ...] --output <path> [--prefix <prefix> ...] [--title <title>] [--version <version>]
-// Usage: dotnet asyncapi likec4 --source [name=]<path|url> [--source ...] [--link <name>=<url> ...] --output <path>
+// Usage: dotnet asyncapi likec4 --source [name=]<path|url> [--source ...] [--arazzo [name=]<path|url> ...] [--link <name>=<url> ...] --output <path>
 
 var logger = new ConsoleCliLogger();
 
@@ -365,6 +365,14 @@ int RunLikeC4(string[] likeC4Args)
 
                 likeC4Context.Sources.Add(source);
                 break;
+            case "--arazzo":
+                if (!CliArgumentReader.TryReadValue(likeC4Args, ref i, "--arazzo", logger, out var workflow))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                likeC4Context.Workflows.Add(workflow);
+                break;
             case "--link":
                 if (!CliArgumentReader.TryReadValue(likeC4Args, ref i, "--link", logger, out var link))
                 {
@@ -388,9 +396,9 @@ int RunLikeC4(string[] likeC4Args)
         }
     }
 
-    if (likeC4Context.Sources.Count == 0)
+    if (likeC4Context.Sources.Count == 0 && likeC4Context.Workflows.Count == 0)
     {
-        logger.Error("At least one --source is required for likec4.");
+        logger.Error("At least one --source or --arazzo is required for likec4.");
         return CliExitCode.Failure;
     }
 
@@ -449,8 +457,9 @@ static void PrintUsage()
     Console.WriteLine("  --format <text|json|markdown> Output format (default: text)");
     Console.WriteLine();
     Console.WriteLine("likec4 options:");
-    Console.WriteLine("  --source [name=]<path|url> An AsyncAPI document, one per service (required, repeatable; an unnamed path may be a glob)");
-    Console.WriteLine("  --link <name>=<url>      Where readers find a service's document (default: its URL, or its path from the model)");
+    Console.WriteLine("  --source [name=]<path|url> An AsyncAPI document, one per service (repeatable; an unnamed path may be a glob)");
+    Console.WriteLine("  --arazzo [name=]<path|url> An Arazzo document whose workflows become dynamic views (repeatable)");
+    Console.WriteLine("  --link <name>=<url>      Where readers find a document (default: its URL, or its path from the model)");
     Console.WriteLine("  --output <path>          The .c4 file to write (required)");
     Console.WriteLine();
     Console.WriteLine("  -h, --help               Show this help message");

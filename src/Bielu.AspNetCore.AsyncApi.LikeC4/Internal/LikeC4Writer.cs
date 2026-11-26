@@ -19,7 +19,7 @@ internal static class LikeC4Writer
         WriteSpecification(writer, model);
         writer.Blank();
         WriteModel(writer, model);
-        if (model.Views.Count > 0)
+        if (model.Views.Count > 0 || model.DynamicViews.Count > 0)
         {
             writer.Blank();
             WriteViews(writer, model);
@@ -132,6 +132,39 @@ internal static class LikeC4Writer
             writer.Line(1, "}");
         }
 
+        foreach (var view in model.DynamicViews)
+        {
+            if (!first)
+            {
+                writer.Blank();
+            }
+
+            first = false;
+            writer.Line(1, $"dynamic view {view.Id} {{");
+            writer.Line(2, $"title {Quote(view.Title)}");
+            WriteDescription(writer, view.Description);
+            writer.Line(2, "variant sequence");
+            foreach (var step in view.Steps)
+            {
+                if (step.Notes is null && step.NavigateTo is null)
+                {
+                    writer.Line(2, $"{step.Source} -> {step.Target} {Quote(step.Title)}");
+                    continue;
+                }
+
+                writer.Line(2, $"{step.Source} -> {step.Target} {Quote(step.Title)} {{");
+                WriteText(writer, 3, "notes", step.Notes);
+                if (step.NavigateTo is not null)
+                {
+                    writer.Line(3, $"navigateTo {step.NavigateTo}");
+                }
+
+                writer.Line(2, "}");
+            }
+
+            writer.Line(1, "}");
+        }
+
         writer.Line(0, "}");
     }
 
@@ -151,24 +184,27 @@ internal static class LikeC4Writer
         }
     }
 
+    private static void WriteDescription(Writer writer, string? description) => WriteText(writer, 2, "description", description);
+
     /// <summary>
-    /// Writes a description as a triple-quoted string, which LikeC4 renders as Markdown, the way AsyncAPI
-    /// descriptions are written. LikeC4 strips the indentation the lines share, so they are indented with the block.
+    /// Writes a description or notes as a triple-quoted string, which LikeC4 renders as Markdown, the way AsyncAPI
+    /// and Arazzo descriptions are written. LikeC4 strips the indentation the lines share, so they are indented with
+    /// the block.
     /// </summary>
-    private static void WriteDescription(Writer writer, string? description)
+    private static void WriteText(Writer writer, int depth, string property, string? text)
     {
-        if (description is null)
+        if (text is null)
         {
             return;
         }
 
-        writer.Line(2, "description '''");
-        foreach (var line in Normalize(description).Split('\n'))
+        writer.Line(depth, $"{property} '''");
+        foreach (var line in Normalize(text).Split('\n'))
         {
-            writer.Line(line.Length == 0 ? 0 : 3, Escape(line));
+            writer.Line(line.Length == 0 ? 0 : depth + 1, Escape(line));
         }
 
-        writer.Line(2, "'''");
+        writer.Line(depth, "'''");
     }
 
     private static void WriteMetadata(Writer writer, IReadOnlyList<KeyValuePair<string, string>> metadata)

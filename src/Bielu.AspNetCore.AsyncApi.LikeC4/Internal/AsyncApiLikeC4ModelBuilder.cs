@@ -25,9 +25,19 @@ internal static class AsyncApiLikeC4ModelBuilder
     /// <summary>The metadata key holding the key of the operation a send or receive comes from.</summary>
     internal const string OperationMetadataKey = "asyncapiOperation";
 
-    public static LikeC4Model Build(IReadOnlyList<(AsyncApiLikeC4Source Source, AsyncApiServiceDescription Service)> documents)
+    /// <summary>Adds the documents' elements, relationships and views to <paramref name="build"/>'s model.</summary>
+    /// <returns>Where each document's operations and channels ended up, for the workflows that use them.</returns>
+    public static AsyncApiModelIndex Build(
+        LikeC4Build build,
+        IReadOnlyList<(AsyncApiLikeC4Source Source, AsyncApiServiceDescription Service)> documents)
     {
-        var model = new LikeC4Model();
+        var index = new AsyncApiModelIndex();
+        if (documents.Count == 0)
+        {
+            return index;
+        }
+
+        var model = build.Model;
         model.ElementKinds.Add(new LikeC4ElementKind(ServiceKind, "AsyncAPI service", "rectangle"));
         model.ElementKinds.Add(new LikeC4ElementKind(ChannelKind, "AsyncAPI channel", "queue"));
         model.RelationshipKinds.Add(new LikeC4RelationshipKind(SendKind, "sends to a channel", "solid"));
@@ -35,17 +45,19 @@ internal static class AsyncApiLikeC4ModelBuilder
         model.RelationshipKinds.Add(new LikeC4RelationshipKind(FlowKind, "messages between services", "dotted"));
         model.Tags.Add(Tag);
 
-        var ids = new LikeC4Identifiers();
+        var ids = build.ElementIds;
         var serviceIds = documents.Select(document => ids.Next(document.Source.Name, "service")).ToList();
         var channels = new Dictionary<string, ChannelElement>(StringComparer.Ordinal);
         var channelOrder = new List<ChannelElement>();
         var operations = new List<(string ServiceId, AsyncApiOperationDescription Operation, ChannelElement Channel)>();
+        var ownChannelsOf = new List<Dictionary<string, ChannelElement>>();
 
         for (var i = 0; i < documents.Count; i++)
         {
             var (source, service) = documents[i];
             model.Elements.Add(ServiceElement(serviceIds[i], source, service));
             var ownChannels = new Dictionary<string, ChannelElement>(StringComparer.Ordinal);
+            ownChannelsOf.Add(ownChannels);
             foreach (var channel in service.Channels)
             {
                 // A channel with an unknown address is the document's own: nothing says another document means it.
@@ -82,8 +94,28 @@ internal static class AsyncApiLikeC4ModelBuilder
         }
 
         model.Relationships.AddRange(Flows(operations));
-        AddViews(model, documents, serviceIds);
-        return model;
+        AddViews(build, documents, serviceIds);
+
+        for (var i = 0; i < documents.Count; i++)
+        {
+            var (source, service) = documents[i];
+            var channelsByKey = ownChannelsOf[i].ToDictionary(
+                pair => pair.Key,
+                pair => new AsyncApiModelChannel(pair.Value.Id, service.Channels.First(channel => channel.Key == pair.Key).Messages),
+                StringComparer.Ordinal);
+            var operationsByKey = new Dictionary<string, AsyncApiModelOperation>(StringComparer.Ordinal);
+            foreach (var operation in service.Operations)
+            {
+                if (channelsByKey.TryGetValue(operation.ChannelKey, out var channel))
+                {
+                    operationsByKey.TryAdd(operation.Key, new AsyncApiModelOperation(operation.Action, channel.Id, operation.Messages));
+                }
+            }
+
+            index.Add(new AsyncApiModelService(source, serviceIds[i], channelsByKey, operationsByKey));
+        }
+
+        return index;
     }
 
     private static LikeC4Element ServiceElement(string id, AsyncApiLikeC4Source source, AsyncApiServiceDescription service)
@@ -174,13 +206,15 @@ internal static class AsyncApiLikeC4ModelBuilder
     }
 
     private static void AddViews(
-        LikeC4Model model,
+        LikeC4Build build,
         IReadOnlyList<(AsyncApiLikeC4Source Source, AsyncApiServiceDescription Service)> documents,
         IReadOnlyList<string> serviceIds)
     {
+        var model = build.Model;
+        var viewIds = build.ViewIds;
         var flows = $"* -> * where kind is {FlowKind}";
         model.Views.Add(new LikeC4View(
-            "asyncapiChannels",
+            viewIds.Next("asyncapiChannels", "view"),
             "AsyncAPI: services and channels",
             Of: null,
             [$"element.kind = {ServiceKind}", $"element.kind = {ChannelKind}"],
@@ -189,7 +223,7 @@ internal static class AsyncApiLikeC4ModelBuilder
             Description = "Every service, the channels it sends to, and the channels that deliver to it.",
         });
         model.Views.Add(new LikeC4View(
-            "asyncapiServices",
+            viewIds.Next("asyncapiServices", "view"),
             "AsyncAPI: service flows",
             Of: null,
             [$"element.kind = {ServiceKind}"],
@@ -198,9 +232,6 @@ internal static class AsyncApiLikeC4ModelBuilder
             Description = "The services, joined where one sends messages to a channel another receives from.",
         });
 
-        var viewIds = new LikeC4Identifiers();
-        viewIds.Next("asyncapiChannels", "view");
-        viewIds.Next("asyncapiServices", "view");
         for (var i = 0; i < documents.Count; i++)
         {
             var id = serviceIds[i];

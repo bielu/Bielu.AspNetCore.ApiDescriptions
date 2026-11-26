@@ -415,6 +415,12 @@ document name isn't a constant, or the step or its `AddAsyncApiSource` is writte
 `Bielu.Arazzo.Cli` provides `validate`, `lint`, and `diff` commands for Arazzo documents — see the
 [CLI Tool](cli.md) article for details.
 
+## Architecture diagrams: LikeC4
+
+`dotnet asyncapi likec4 --arazzo <document>` draws every workflow as a LikeC4 dynamic view, on the same
+elements as the services and channels of the AsyncAPI documents its steps use. See
+[LikeC4 architecture models](../likec4.md#arazzo-workflows-as-dynamic-views).
+
 ## What's next
 
 A workflow runtime — executing steps, evaluating criteria, and propagating outputs — is the natural next
