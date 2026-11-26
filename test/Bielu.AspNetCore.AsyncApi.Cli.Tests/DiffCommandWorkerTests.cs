@@ -98,4 +98,38 @@ public class DiffCommandWorkerTests : IAsyncLifetime
 
         result.ShouldBe(1);
     }
+
+    [Fact]
+    public void Process_MissingBaseFile_ReturnsOne()
+    {
+        // Arrange
+        var missing = Path.Combine(_tempDir, "missing.json");
+        var context = new DiffCommandContext { BasePath = missing, HeadPath = _headDocPath };
+        var errors = new List<string>();
+        var worker = new DiffCommandWorker(context, _ => { }, _ => { }, errors.Add);
+
+        // Act
+        var result = worker.Process();
+
+        // Assert
+        result.ShouldBe(1);
+        errors.ShouldHaveSingleItem().ShouldBe($"Base file not found: {missing}");
+    }
+
+    [Fact]
+    public void Process_MissingHeadFile_ReturnsOne()
+    {
+        // Arrange
+        var missing = Path.Combine(_tempDir, "missing.json");
+        var context = new DiffCommandContext { BasePath = _baseDocPath, HeadPath = missing };
+        var errors = new List<string>();
+        var worker = new DiffCommandWorker(context, _ => { }, _ => { }, errors.Add);
+
+        // Act
+        var result = worker.Process();
+
+        // Assert
+        result.ShouldBe(1);
+        errors.ShouldHaveSingleItem().ShouldBe($"Head file not found: {missing}");
+    }
 }
