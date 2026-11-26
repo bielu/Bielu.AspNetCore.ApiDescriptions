@@ -70,4 +70,18 @@ public class CliFileResolverTests : IDisposable
         result.Count.ShouldBe(2);
         result.ShouldContain(literal);
     }
+
+    [Fact]
+    public void ExpandFilePatterns_GlobWithoutDirectory_SearchesTheCurrentDirectory()
+    {
+        // Arrange
+        // The test host runs from the test project's output folder, which holds this assembly.
+        var pattern = "Bielu.Cli.Shared.Test?.dll";
+
+        // Act
+        var result = CliFileResolver.ExpandFilePatterns([pattern]);
+
+        // Assert
+        Path.GetFileName(result.ShouldHaveSingleItem()).ShouldBe("Bielu.Cli.Shared.Tests.dll");
+    }
 }

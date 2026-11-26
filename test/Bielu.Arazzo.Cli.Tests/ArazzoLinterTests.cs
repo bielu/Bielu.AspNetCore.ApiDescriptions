@@ -172,4 +172,68 @@ public class ArazzoLinterTests
         // Assert
         findings.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void Lint_NonPortableIdentifiers_ReportWarnings()
+    {
+        // Arrange
+        var document = BuildDocument(
+        [
+            new ArazzoWorkflow
+            {
+                WorkflowId = "place order",
+                Summary = "Places an order",
+                Steps = [new ArazzoStep { StepId = "step.one", Description = "d", OperationId = "op" }],
+            },
+        ]);
+
+        // Act
+        var findings = ArazzoLinter.Lint(document);
+
+        // Assert
+        findings.ShouldContain(f => f.IsWarning && f.Path == "/workflows/0" && f.Message.Contains("workflowId 'place order'"));
+        findings.ShouldContain(f => f.IsWarning && f.Path == "/workflows/0/steps/0" && f.Message.Contains("stepId 'step.one'"));
+    }
+
+    [Fact]
+    public void Lint_WorkflowDependsOnUnknownWorkflow_ReportsError()
+    {
+        // Arrange
+        var document = BuildDocument(
+        [
+            new ArazzoWorkflow
+            {
+                WorkflowId = "wf",
+                Summary = "s",
+                DependsOn = ["missing"],
+                Steps = [new ArazzoStep { StepId = "a", Description = "d", OperationId = "op" }],
+            },
+        ]);
+
+        // Act
+        var findings = ArazzoLinter.Lint(document);
+
+        // Assert
+        findings.ShouldContain(f => !f.IsWarning && f.Path == "/workflows/0/dependsOn" && f.Message.Contains("unknown workflowId 'missing'"));
+    }
+
+    [Fact]
+    public void Lint_CircularWorkflowDependsOn_ReportsCycle()
+    {
+        // Arrange
+        ArazzoWorkflow Workflow(string id, string dependsOn) => new()
+        {
+            WorkflowId = id,
+            Summary = "s",
+            DependsOn = [dependsOn],
+            Steps = [new ArazzoStep { StepId = "a", Description = "d", OperationId = "op" }],
+        };
+        var document = BuildDocument([Workflow("first", "second"), Workflow("second", "first")]);
+
+        // Act
+        var findings = ArazzoLinter.Lint(document);
+
+        // Assert
+        findings.ShouldContain(f => !f.IsWarning && f.Path == "/workflows" && f.Message.StartsWith("Circular dependsOn detected"));
+    }
 }

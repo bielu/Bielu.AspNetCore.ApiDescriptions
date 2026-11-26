@@ -260,4 +260,111 @@ public class ApplyCommandWorkerTests : IAsyncLifetime
         exitCode.ShouldBe(1);
         File.Exists(output).ShouldBeFalse("a failed run must not leave a half-transformed document behind");
     }
+
+    [Fact]
+    public void Process_UnparseableDocument_ReturnsOne()
+    {
+        // Arrange
+        var broken = Path.Combine(_tempDir, "broken.json");
+        File.WriteAllText(broken, """{ "channels": [""");
+        var output = Path.Combine(_tempDir, "out.json");
+
+        // Act
+        var exitCode = Run(Context(broken, output, _overlayPath));
+
+        // Assert
+        exitCode.ShouldBe(1);
+        File.Exists(output).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Process_YamlFlowMappingDocument_IsReadAsYaml()
+    {
+        // Arrange
+        // Starts with a brace after whitespace, so it looks like JSON, but only YAML can read it.
+        var flow = Path.Combine(_tempDir, "flow.yaml");
+        File.WriteAllText(flow, "  {asyncapi: 3.0.0, info: {title: Flow, version: 1.0.0}, channels: {internalDebug: {address: debug}}}");
+        var output = Path.Combine(_tempDir, "flow-out.json");
+
+        // Act
+        var exitCode = Run(Context(flow, output, _overlayPath));
+
+        // Assert
+        exitCode.ShouldBe(0);
+        var result = JsonNode.Parse(File.ReadAllText(output))!;
+        result["info"]!["title"]!.GetValue<string>().ShouldBe("Flow");
+        result["channels"]!.AsObject().ContainsKey("internalDebug").ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Process_EmptyDocument_ReturnsOne()
+    {
+        // Arrange
+        var empty = Path.Combine(_tempDir, "empty.yaml");
+        File.WriteAllText(empty, "   ");
+
+        // Act
+        var exitCode = Run(Context(empty, Path.Combine(_tempDir, "empty-out.json"), _overlayPath));
+
+        // Assert
+        exitCode.ShouldBe(1);
+    }
+
+    [Theory]
+    [InlineData("just some text")]
+    [InlineData("overlay: 1.1.0\nactions: []")]
+    public void Process_UnusableOverlay_ReturnsOneWithoutOutput(string overlayContent)
+    {
+        // Arrange
+        var overlay = Path.Combine(_tempDir, "bad.overlay.yaml");
+        File.WriteAllText(overlay, overlayContent);
+        var output = Path.Combine(_tempDir, "bad-out.json");
+
+        // Act
+        var exitCode = Run(Context(_asyncApiPath, output, overlay));
+
+        // Assert
+        exitCode.ShouldBe(1);
+        File.Exists(output).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Process_OutputPathIsADirectory_ReturnsOne()
+    {
+        // Arrange
+        var context = Context(_asyncApiPath, _tempDir, _overlayPath);
+        context.Format = "json";
+
+        // Act
+        var exitCode = Run(context);
+
+        // Assert
+        exitCode.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Process_WithoutOutputPath_WritesTheDocumentToStandardOutput()
+    {
+        // Arrange
+        var context = Context(_asyncApiPath, string.Empty, _overlayPath);
+        var original = Console.Out;
+        using var writer = new StringWriter();
+
+        // Act
+        int exitCode;
+        Console.SetOut(writer);
+        try
+        {
+            exitCode = Run(context);
+        }
+        finally
+        {
+            Console.SetOut(original);
+        }
+
+        // Assert
+        exitCode.ShouldBe(0);
+        var result = JsonNode.Parse(writer.ToString())!;
+        result["channels"]!.AsObject().ContainsKey("internalDebug").ShouldBeFalse();
+    }
 }
