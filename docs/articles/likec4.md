@@ -220,6 +220,18 @@ way LikeC4 does. It reports, as errors:
 | a missing relationship | a service sends to or receives from a channel the model has, with no relationship between them; or two services exchange messages through a channel the model leaves out, with no relationship between them |
 | metadata naming nothing | `asyncapi` naming a document that is not checked, or `asyncapiChannel` an address no document uses |
 
+A hand-written model of the shop, with what the check finds marked in red:
+
+![A hand-written model: Shop holds Inventory, Orders (with Orders API inside) and the orders database; Billing and payments.done are marked 1 and 2, the notifies relationship from Orders to Notifications 3, and a missing StockLevelChanged relationship from Inventory to Notifications 4](../images/likec4/check-findings.jpg)
+
+1. `Billing` stands for an AsyncAPI document that is not checked.
+2. `payments.done` stands for an address no document uses.
+3. `notifies`: Orders sends nothing that Notifications receives.
+4. Inventory sends `StockLevelChanged` to Notifications through `inventory.stock-changed`, a channel the model leaves
+   out, and the model has no relationship between them.
+
+`Orders API -> orders.created` counts as a relationship of `Orders`, and `Orders -> Orders database` is not checked.
+
 Either direction of a relationship counts, since C4 models draw both data flow (`orders -> topic`) and dependency
 (`inventory -> topic 'subscribes'`). Relationships with elements that stand for neither, such as databases, are not
 checked. A document no element stands for is a warning, which `--strict` makes an error.
