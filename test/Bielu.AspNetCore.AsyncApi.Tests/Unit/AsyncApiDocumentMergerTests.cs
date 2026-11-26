@@ -625,4 +625,174 @@ public class AsyncApiDocumentMergerTests
         // Assert
         merged.Asyncapi.ShouldBe("2.6.0");
     }
+
+    private static string ToJson(AsyncApiDocument document)
+    {
+        using var writer = new StringWriter();
+        document.SerializeV3(new ByteBard.AsyncAPI.Writers.AsyncApiJsonWriter(writer));
+        return writer.ToString();
+    }
+
+    [Fact]
+    public void MergeDocuments_SameBrokerUnderDifferentKeys_CollapsesItAndRewritesReferences()
+    {
+        // Arrange
+        var orders = AsyncApiDocumentMerger.ParseDocument("""
+            {
+              "asyncapi": "3.0.0",
+              "info": { "title": "Orders", "version": "1.0.0" },
+              "servers": { "kafka": { "host": "broker:9092", "protocol": "kafka" } },
+              "channels": { "placed": { "address": "orders.placed", "servers": [ { "$ref": "#/servers/kafka" } ] } }
+            }
+            """, "orders");
+        var billing = AsyncApiDocumentMerger.ParseDocument("""
+            {
+              "asyncapi": "3.0.0",
+              "info": { "title": "Billing", "version": "1.0.0" },
+              "servers": { "broker": { "host": "BROKER:9092", "protocol": "KAFKA" } },
+              "channels": { "charged": { "address": "billing.charged", "servers": [ { "$ref": "#/servers/broker" } ] } },
+              "operations": {
+                "onCharged": { "action": "receive", "channel": { "$ref": "#/channels/charged" } }
+              }
+            }
+            """, "billing");
+
+        // Act
+        var merged = AsyncApiDocumentMerger.MergeDocuments([(orders, null), (billing, "billing")]);
+
+        // Assert
+        merged.Servers.Keys.ShouldBe(["kafka"]);
+        merged.Channels.Keys.ShouldBe(["placed", "billing_charged"], ignoreOrder: true);
+        var json = ToJson(merged);
+        json.ShouldNotContain("#/servers/broker");
+        json.ShouldContain("#/channels/billing_charged");
+    }
+
+    [Fact]
+    public void MergeDocuments_DifferentBrokers_KeepsBothServers()
+    {
+        // Arrange
+        var first = CreateDocument("A", "1.0.0", servers: new Dictionary<string, AsyncApiServer>
+        {
+            ["kafka"] = new() { Host = "broker:9092", Protocol = "kafka", PathName = "/a" },
+        });
+        var second = CreateDocument("B", "1.0.0", servers: new Dictionary<string, AsyncApiServer>
+        {
+            ["kafka"] = new() { Host = "broker:9092", Protocol = "kafka", PathName = "/b" },
+        });
+
+        // Act
+        var merged = AsyncApiDocumentMerger.MergeDocuments([(first, null), (second, "b")]);
+
+        // Assert
+        merged.Servers.Keys.ShouldBe(["kafka", "b_kafka"], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void ParseDocument_DocumentWithErrors_StillReturnsWhatItCouldRead()
+    {
+        // Arrange
+        // The binding is unknown, which the reader reports as an error; the merger is best-effort and keeps the rest.
+        const string json = """
+            {
+              "asyncapi": "3.0.0",
+              "info": { "title": "Partial", "version": "1.0.0" },
+              "channels": { "events": { "address": "events", "bindings": { "carrier-pigeon": {} } } }
+            }
+            """;
+
+        // Act
+        var document = AsyncApiDocumentMerger.ParseDocument(json, "partial");
+
+        // Assert
+        document.Channels.ShouldContainKey("events");
+    }
+
+    [Fact]
+    public async Task MergeAsync_HttpSources_LoadsReachableOnesAndSkipsFailures()
+    {
+        // Arrange
+        var handler = new DocumentHandler();
+        using var httpClient = new HttpClient(handler);
+        var options = new AsyncApiMergeOptions()
+            .AddSource("https://orders.example.com/asyncapi.json")
+            .AddSource("https://gone.example.com/asyncapi.json");
+
+        // Act
+        var merged = await new AsyncApiDocumentMerger(httpClient).MergeAsync(options);
+
+        // Assert
+        merged.Channels.ShouldContainKey("placed");
+        handler.RequestedHosts.ShouldBe(["orders.example.com", "gone.example.com"]);
+    }
+
+    [Fact]
+    public async Task MergeAsync_Cancelled_ThrowsInsteadOfSkippingTheSource()
+    {
+        // Arrange
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, """{ "asyncapi": "3.0.0", "info": { "title": "A", "version": "1.0.0" } }""");
+            var options = new AsyncApiMergeOptions().AddSource(tempFile);
+            using var httpClient = new HttpClient();
+            using var cancellation = new CancellationTokenSource();
+            await cancellation.CancelAsync();
+
+            // Act & Assert
+            await Should.ThrowAsync<OperationCanceledException>(
+                () => new AsyncApiDocumentMerger(httpClient).MergeAsync(options, cancellation.Token));
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void MergeDocuments_DocumentWithoutSections_IsMergedWithoutThem()
+    {
+        // Arrange
+        var full = CreateDocument("Full", "1.0.0", channels: new Dictionary<string, AsyncApiChannel>
+        {
+            ["events"] = new() { Address = "events" },
+        });
+        var empty = CreateDocument("Empty", "1.0.0");
+        empty.Servers = null!;
+        empty.Channels = null!;
+        empty.Operations = null!;
+        empty.Components = null!;
+
+        // Act
+        var merged = AsyncApiDocumentMerger.MergeDocuments([(full, null), (empty, "e")]);
+
+        // Assert
+        merged.Channels.Keys.ShouldBe(["events"]);
+        merged.Servers.ShouldBeEmpty();
+    }
+
+    private sealed class DocumentHandler : HttpMessageHandler
+    {
+        public List<string> RequestedHosts { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestedHosts.Add(request.RequestUri!.Host);
+            if (request.RequestUri.Host != "orders.example.com")
+            {
+                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.NotFound));
+            }
+
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    {
+                      "asyncapi": "3.0.0",
+                      "info": { "title": "Orders", "version": "1.0.0" },
+                      "channels": { "placed": { "address": "orders.placed" } }
+                    }
+                    """),
+            });
+        }
+    }
 }
