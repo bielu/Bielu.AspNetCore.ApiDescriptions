@@ -66,6 +66,7 @@ model {
 
 views {
   view index {
-    include *
+    title 'Shop (hand-written)'
+    include *, shop.*, shop.orders.*
   }
 }
