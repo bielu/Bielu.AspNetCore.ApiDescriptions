@@ -1,0 +1,50 @@
+{
+  "asyncapi": "3.0.0",
+  "info": { "title": "Inventory API", "version": "2.0.0" },
+  "servers": {
+    "kafka": { "host": "kafka:9092", "protocol": "kafka" }
+  },
+  "channels": {
+    "orders": {
+      "address": "orders.created",
+      "messages": {
+        "orderCreated": { "$ref": "#/components/messages/OrderCreated" }
+      }
+    },
+    "reserved": {
+      "address": "inventory.reserved",
+      "messages": {
+        "inventoryReserved": { "$ref": "#/components/messages/InventoryReserved" }
+      }
+    },
+    "stock": {
+      "address": "inventory.stock-changed",
+      "messages": {
+        "stockLevelChanged": { "$ref": "#/components/messages/StockLevelChanged" }
+      }
+    }
+  },
+  "operations": {
+    "onOrderCreated": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/orders" },
+      "messages": [ { "$ref": "#/channels/orders/messages/orderCreated" } ]
+    },
+    "publishInventoryReserved": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/reserved" }
+    },
+    "publishStockLevelChanged": {
+      "action": "send",
+      "title": "Stock level changed",
+      "channel": { "$ref": "#/channels/stock" }
+    }
+  },
+  "components": {
+    "messages": {
+      "OrderCreated": { "name": "OrderCreated", "payload": { "type": "object" } },
+      "InventoryReserved": { "name": "InventoryReserved", "payload": { "type": "object" } },
+      "StockLevelChanged": { "name": "StockLevelChanged", "payload": { "type": "object" } }
+    }
+  }
+}

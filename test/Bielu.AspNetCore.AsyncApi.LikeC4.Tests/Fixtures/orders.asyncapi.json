@@ -1,0 +1,46 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Orders API",
+    "version": "1.2.0",
+    "description": "Takes orders and tells the rest of the shop about them.\n\nSee the [order lifecycle](https://example.com/orders) for the states an order goes through."
+  },
+  "servers": {
+    "kafka": { "host": "kafka:9092", "protocol": "kafka" }
+  },
+  "channels": {
+    "orderCreated": {
+      "address": "orders.created",
+      "title": "Orders created",
+      "description": "An order was placed.",
+      "servers": [ { "$ref": "#/servers/kafka" } ],
+      "messages": {
+        "orderCreated": { "$ref": "#/components/messages/OrderCreated" }
+      }
+    },
+    "inventoryReserved": {
+      "address": "inventory.reserved",
+      "messages": {
+        "inventoryReserved": { "$ref": "#/components/messages/InventoryReserved" }
+      }
+    }
+  },
+  "operations": {
+    "publishOrderCreated": {
+      "action": "send",
+      "summary": "Announces a new order.",
+      "channel": { "$ref": "#/channels/orderCreated" },
+      "messages": [ { "$ref": "#/channels/orderCreated/messages/orderCreated" } ]
+    },
+    "onInventoryReserved": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/inventoryReserved" }
+    }
+  },
+  "components": {
+    "messages": {
+      "OrderCreated": { "name": "OrderCreated", "payload": { "type": "object" } },
+      "InventoryReserved": { "name": "InventoryReserved", "payload": { "type": "object" } }
+    }
+  }
+}

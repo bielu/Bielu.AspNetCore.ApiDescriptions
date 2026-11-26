@@ -9,6 +9,7 @@ using Bielu.Cli.Shared;
 // Parse command line arguments
 // Usage: dotnet asyncapi getdocument --assembly <name> --assembly-path <path> --output <dir> --project <name> [--document <name>] [--file-list <path>] [--file-name <name>]
 // Usage: dotnet asyncapi merge --source <uri> [--source <uri> ...] --output <path> [--prefix <prefix> ...] [--title <title>] [--version <version>]
+// Usage: dotnet asyncapi likec4 --source [name=]<path|url> [--source ...] [--link <name>=<url> ...] --output <path>
 
 var logger = new ConsoleCliLogger();
 
@@ -31,6 +32,11 @@ if (args[0] == "validate")
 if (args[0] == "diff")
 {
     return RunDiff(args);
+}
+
+if (args[0] == "likec4")
+{
+    return RunLikeC4(args);
 }
 
 if (args[0] != "getdocument")
@@ -343,9 +349,68 @@ int RunDiff(string[] diffArgs)
     return diffWorker.Process();
 }
 
+int RunLikeC4(string[] likeC4Args)
+{
+    var likeC4Context = new LikeC4CommandContext();
+
+    for (var i = 1; i < likeC4Args.Length; i++)
+    {
+        switch (likeC4Args[i])
+        {
+            case "--source":
+                if (!CliArgumentReader.TryReadValue(likeC4Args, ref i, "--source", logger, out var source))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                likeC4Context.Sources.Add(source);
+                break;
+            case "--link":
+                if (!CliArgumentReader.TryReadValue(likeC4Args, ref i, "--link", logger, out var link))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                likeC4Context.Links.Add(link);
+                break;
+            case "--output":
+                if (!CliArgumentReader.TryReadValue(likeC4Args, ref i, "--output", logger, out var output))
+                {
+                    return CliExitCode.Failure;
+                }
+
+                likeC4Context.OutputPath = output;
+                break;
+            default:
+                logger.Error($"Unknown argument for likec4: {likeC4Args[i]}");
+                PrintUsage();
+                return CliExitCode.Failure;
+        }
+    }
+
+    if (likeC4Context.Sources.Count == 0)
+    {
+        logger.Error("At least one --source is required for likec4.");
+        return CliExitCode.Failure;
+    }
+
+    if (string.IsNullOrEmpty(likeC4Context.OutputPath))
+    {
+        logger.Error("--output is required for likec4.");
+        return CliExitCode.Failure;
+    }
+
+    var likeC4Worker = new LikeC4CommandWorker(
+        likeC4Context,
+        writeInfo: logger.Info,
+        writeError: logger.Error);
+
+    return likeC4Worker.Process();
+}
+
 static void PrintUsage()
 {
-    Console.WriteLine("Bielu.AspNetCore.AsyncApi CLI - Generate, merge, and validate AsyncAPI documents");
+    Console.WriteLine("Bielu.AspNetCore.AsyncApi CLI - Generate, merge, validate, and diagram AsyncAPI documents");
     Console.WriteLine();
     Console.WriteLine("Usage: dotnet asyncapi <command> [options]");
     Console.WriteLine();
@@ -354,6 +419,7 @@ static void PrintUsage()
     Console.WriteLine("  merge          Merge multiple AsyncAPI documents into one");
     Console.WriteLine("  validate       Validate AsyncAPI documents");
     Console.WriteLine("  diff           Compare two AsyncAPI documents for changes");
+    Console.WriteLine("  likec4         Generate a LikeC4 architecture model from AsyncAPI documents");
     Console.WriteLine();
     Console.WriteLine("getdocument options:");
     Console.WriteLine("  --assembly <name>        The assembly name to load (required)");
@@ -381,6 +447,11 @@ static void PrintUsage()
     Console.WriteLine("  --head <path>            Path to the head (new) AsyncAPI document (required)");
     Console.WriteLine("  --fail-on-breaking       Exit with code 1 if breaking changes are detected");
     Console.WriteLine("  --format <text|json|markdown> Output format (default: text)");
+    Console.WriteLine();
+    Console.WriteLine("likec4 options:");
+    Console.WriteLine("  --source [name=]<path|url> An AsyncAPI document, one per service (required, repeatable; a path may be a glob)");
+    Console.WriteLine("  --link <name>=<url>      Where readers find a service's document (default: its URL, or its path from the model)");
+    Console.WriteLine("  --output <path>          The .c4 file to write (required)");
     Console.WriteLine();
     Console.WriteLine("  -h, --help               Show this help message");
 }

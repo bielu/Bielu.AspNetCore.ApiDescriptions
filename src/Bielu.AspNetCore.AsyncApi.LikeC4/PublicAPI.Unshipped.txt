@@ -1,0 +1,9 @@
+﻿#nullable enable
+Bielu.AspNetCore.AsyncApi.LikeC4.AsyncApiLikeC4Generator
+Bielu.AspNetCore.AsyncApi.LikeC4.AsyncApiLikeC4Source
+Bielu.AspNetCore.AsyncApi.LikeC4.AsyncApiLikeC4Source.AsyncApiLikeC4Source(string! name, string! document) -> void
+Bielu.AspNetCore.AsyncApi.LikeC4.AsyncApiLikeC4Source.Document.get -> string!
+Bielu.AspNetCore.AsyncApi.LikeC4.AsyncApiLikeC4Source.Link.get -> string?
+Bielu.AspNetCore.AsyncApi.LikeC4.AsyncApiLikeC4Source.Link.init -> void
+Bielu.AspNetCore.AsyncApi.LikeC4.AsyncApiLikeC4Source.Name.get -> string!
+static Bielu.AspNetCore.AsyncApi.LikeC4.AsyncApiLikeC4Generator.Generate(System.Collections.Generic.IEnumerable<Bielu.AspNetCore.AsyncApi.LikeC4.AsyncApiLikeC4Source!>! sources) -> string!

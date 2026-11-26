@@ -44,6 +44,8 @@
   href: openapi-schema.md
 - name: Protobuf Payloads
   href: protobuf.md
+- name: LikeC4 Models
+  href: likec4.md
 - name: xRegistry
   href: xregistry.md
 - name: MCP Server (experimental)
