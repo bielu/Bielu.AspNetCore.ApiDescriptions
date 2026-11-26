@@ -1,0 +1,89 @@
+/* The drawn views: elements, relationships and their labels, and a sequence view's lanes. */
+.bielu-likec4 .bl-diagram {
+  font-family: var(--scalar-font, sans-serif);
+}
+.bielu-likec4 .bl-node-body,
+.bielu-likec4 .bl-node-detail {
+  stroke-width: 1.5;
+}
+.bielu-likec4 .bl-container > .bl-node-body {
+  stroke-width: 1;
+}
+.bielu-likec4 .bl-diagram text {
+  fill: var(--scalar-color-1);
+}
+.bielu-likec4 .bl-node-title,
+.bielu-likec4 .bl-edge-title {
+  font-weight: 600;
+}
+.bielu-likec4 .bl-node-title {
+  font-size: 17px;
+}
+.bielu-likec4 .bl-container .bl-node-title {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  fill: var(--scalar-color-2);
+}
+.bielu-likec4 .bl-diagram .bl-node-technology,
+.bielu-likec4 .bl-diagram .bl-edge-technology {
+  font-size: 12px;
+  fill: var(--scalar-color-2);
+}
+.bielu-likec4 .bl-diagram .bl-node-description {
+  font-size: 13px;
+  fill: var(--scalar-color-2);
+}
+.bielu-likec4 .bl-edge-title {
+  font-size: 13px;
+}
+.bielu-likec4 .bl-edge-line {
+  stroke-width: 1.5;
+}
+.bielu-likec4 .bl-edge-arrow {
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.bielu-likec4 .bl-edge-label-backdrop {
+  fill: var(--scalar-background-1, #fff);
+  opacity: 0.85;
+}
+.bielu-likec4 .bl-lifeline {
+  stroke: var(--scalar-border-color, #ddd);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+.bielu-likec4 .bl-activation {
+  fill: var(--scalar-background-2, #f5f5f5);
+  stroke: var(--scalar-color-3, #999);
+}
+.bielu-likec4 .bl-frame > rect {
+  fill: none;
+  stroke: var(--scalar-border-color, #ddd);
+  stroke-dasharray: 6 4;
+}
+.bielu-likec4 .bl-frame > text {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--scalar-color-2);
+}
+.bielu-likec4 .bl-link {
+  cursor: pointer;
+}
+.bielu-likec4 .bl-link:hover .bl-node-body,
+.bielu-likec4 .bl-link:focus-visible .bl-node-body {
+  stroke-width: 3;
+}
+.bielu-likec4 .bl-link:hover .bl-edge-title,
+.bielu-likec4 .bl-link:focus-visible .bl-edge-title {
+  fill: var(--scalar-color-accent);
+  text-decoration: underline;
+}
+.bielu-likec4 .bl-diagram :focus {
+  outline: none;
+}
+.bielu-likec4 .bl-diagram :focus-visible {
+  outline: 2px solid var(--scalar-color-accent);
+}
+.bielu-likec4 .bl-sequence .bl-edge-title {
+  font-size: 16px;
+}

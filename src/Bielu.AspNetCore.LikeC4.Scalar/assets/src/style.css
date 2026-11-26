@@ -1,0 +1,12 @@
+/*
+ * The LikeC4 view's styles, compiled by Tailwind on Scalar's theme (see @bielu/scalar-core's
+ * tailwind.css), so they can use Scalar's utilities through @apply.
+ *
+ * Unscoped but prefixed: the element renders in the light DOM (shadowRoot: false) so Scalar's design
+ * tokens apply, and only the root component's styles are injected, so the child components' styles
+ * live here too. Every rule sits under `.bielu-likec4`, so nothing leaks into Scalar's page.
+ */
+@import "@bielu/scalar-core/tailwind.css";
+
+@import "./styles/document.css";
+@import "./styles/diagram.css";

@@ -1,0 +1,117 @@
+/* The root element, the model's header, each view's section and a dynamic view's step list. */
+.bielu-likec4 {
+  @apply block text-c-1 font-sans;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 48px 60px 96px;
+  font-size: var(--scalar-paragraph, 16px);
+  line-height: 1.5;
+}
+@media (max-width: 1000px) {
+  .bielu-likec4 {
+    padding: 24px 16px 64px;
+  }
+}
+.bielu-likec4 code {
+  @apply font-code;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-likec4 a {
+  @apply text-c-accent break-all;
+}
+.bielu-likec4 .bl-kicker,
+.bielu-likec4 .bl-view-kicker {
+  font-size: var(--scalar-mini, 12px);
+  @apply font-medium text-c-2;
+}
+.bielu-likec4 .bl-title {
+  margin: 4px 0 8px;
+  font-size: var(--scalar-heading-1, 32px);
+  @apply font-bold;
+}
+.bielu-likec4 .bl-muted {
+  @apply text-c-3;
+  font-size: var(--scalar-small, 13px);
+}
+.bielu-likec4 .bl-note,
+.bielu-likec4 .bl-render-error {
+  @apply rounded-lg border border-border p-3 text-c-2;
+}
+.bielu-likec4 .bl-render-error {
+  border-color: var(--scalar-color-red, #ef4444);
+}
+.bielu-likec4 .bl-markdown {
+  @apply text-c-2;
+}
+.bielu-likec4 .bl-markdown :first-child {
+  @apply mt-0;
+}
+.bielu-likec4 .bl-markdown :last-child {
+  @apply mb-0;
+}
+.bielu-likec4 .bl-view {
+  @apply mt-12 pt-8 border-t border-t-border;
+  scroll-margin-top: var(--refs-viewport-offset, 0px);
+}
+.bielu-likec4 .bl-view-title {
+  margin: 4px 0 8px;
+  font-size: var(--scalar-heading-2, 24px);
+  @apply font-bold;
+}
+.bielu-likec4 .bl-links {
+  @apply flex flex-wrap gap-3 p-0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+.bielu-likec4 .bl-canvas-toolbar {
+  @apply flex justify-end mt-4 mb-2;
+}
+.bielu-likec4 .bl-button,
+.bielu-likec4 .bl-link-button {
+  @apply rounded-lg border border-border text-c-2 bg-b-1 cursor-pointer;
+  font: inherit;
+  font-size: var(--scalar-mini, 12px);
+  padding: 2px 10px;
+}
+.bielu-likec4 .bl-button:hover,
+.bielu-likec4 .bl-link-button:hover {
+  @apply bg-b-2 text-c-1;
+}
+.bielu-likec4 .bl-link-button {
+  @apply mt-1 text-c-accent;
+}
+.bielu-likec4 .bl-canvas {
+  @apply rounded-lg border border-border bg-b-1 overflow-auto;
+}
+.bielu-likec4 .bl-canvas > svg {
+  @apply block;
+}
+/* Fitted: never wider than the page, never stretched past the natural size. */
+.bielu-likec4 .bl-canvas-fitted > svg {
+  width: 100%;
+  max-width: var(--bl-natural-width);
+  /* A view much wider than the page would shrink past reading: below 70 % it scrolls instead. */
+  min-width: calc(var(--bl-natural-width) * 0.7);
+  height: auto;
+  margin: 0 auto;
+}
+.bielu-likec4 .bl-steps {
+  @apply p-0 mt-4 mb-0;
+  list-style: none;
+}
+.bielu-likec4 .bl-steps > li {
+  @apply flex gap-3 py-2 border-b border-b-border;
+}
+.bielu-likec4 .bl-step-number {
+  @apply flex-none rounded-full bg-b-2 text-c-2 font-medium text-center;
+  min-width: 24px;
+  height: 24px;
+  line-height: 24px;
+  font-size: var(--scalar-mini, 12px);
+}
+.bielu-likec4 .bl-step-body {
+  @apply min-w-0;
+}
+.bielu-likec4 .bl-step-title {
+  @apply font-medium;
+}

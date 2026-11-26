@@ -19,7 +19,8 @@ permissions:
 # The npm packages live at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets (@bielu/scalar-signalr),
 # src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets (@bielu/scalar-grpc) and
 # src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets (@bielu/scalar-broker) and
-# src/Bielu.AspNetCore.Arazzo.Scalar/assets (@bielu/scalar-arazzo); the changeset workspace
+# src/Bielu.AspNetCore.Arazzo.Scalar/assets (@bielu/scalar-arazzo) and
+# src/Bielu.AspNetCore.LikeC4.Scalar/assets (@bielu/scalar-likec4); the changeset workspace
 # root is the repository root (package.json + .changeset). The reusable templates take a single npm
 # working-directory, so each package after the first gets its own npm-only job next to each combined
 # job, chained so the publishes stay serialised.
@@ -132,6 +133,20 @@ jobs:
       build-nuget: false
       working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
       artifact-name: npm-scalar-arazzo
+
+  # Pull request: build the fifth npm package (@bielu/scalar-likec4), the LikeC4 document type.
+  ciLikeC4Npm:
+    needs: pr-changes
+    if: github.event_name == 'pull_request' && needs.pr-changes.outputs.skip != 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
+    with:
+      suffix: "pr"
+      build-nuget: false
+      working-directory: src/Bielu.AspNetCore.LikeC4.Scalar/assets
+      artifact-name: npm-scalar-likec4
 
   # Pull request: require a changeset so the version bump + changelog are recorded.
   # Pull request: the Scalar plugins' Vue components are formatted with Scalar's own Prettier setup
@@ -436,6 +451,20 @@ jobs:
       working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
       artifact-name: npm-scalar-arazzo
 
+  # Version PR merged: publish the fifth npm package (@bielu/scalar-likec4), chained after the
+  # Arazzo job so the npm publishes stay serialised.
+  releaseStableLikeC4Npm:
+    needs: [version, releaseStableArazzoNpm]
+    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.LikeC4.Scalar/assets
+      artifact-name: npm-scalar-likec4
+
   # Record-keeping: tag + GitHub Release for the shared NuGet version, when not already present.
   # Release notes are the version's section of CHANGELOG.md (written by the changeset adapter in
   # the Version Packages PR); versions with a prerelease suffix are marked as GitHub prereleases.
@@ -622,6 +651,25 @@ jobs:
       working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
       artifact-name: npm-scalar-arazzo
 
+  # In-flight prereleases for the fifth npm package (@bielu/scalar-likec4), chained after the Arazzo
+  # job. The same `always()` caveat applies, so the dependencies that matter are re-asserted by hand.
+  releaseBetaLikeC4Npm:
+    needs: [version, betaVersions, releaseBetaArazzoNpm]
+    if: >-
+      always() && !cancelled()
+      && needs.betaVersions.result == 'success' && needs.releaseBetaArazzoNpm.result == 'success'
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-likec4'] }}
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.LikeC4.Scalar/assets
+      artifact-name: npm-scalar-likec4
+
   # Record-keeping for interim betas: surface each published beta build as a GitHub prerelease,
   # using the exact `-beta.<stamp>` version that was packed (release.yml's nuget-version output,
   # which echoes the betaVersions override) and the pending — not yet versioned — changesets as the
@@ -713,3 +761,14 @@ jobs:
     with:
       publish-nuget: false
       working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
+
+  # Manual GitHub Release: the fifth npm package (@bielu/scalar-likec4).
+  releaseLikeC4Npm:
+    if: github.event_name == 'release'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      publish-nuget: false
+      working-directory: src/Bielu.AspNetCore.LikeC4.Scalar/assets
