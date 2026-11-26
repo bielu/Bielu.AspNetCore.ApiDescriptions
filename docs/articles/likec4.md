@@ -131,7 +131,10 @@ workflows:
 ```
 
 A workflow's view is `arazzo<WorkflowId>` (`arazzoPlaceOrder`), titled by its `summary`; a step's `description`
-becomes its notes.
+becomes its notes. LikeC4's browser shows these views as sequence diagrams; `likec4 export png --seq` renders them
+that way too:
+
+![The arazzoPlaceOrder view as a sequence: the shopper calls createPayment on payments, sends OrderCreated to orders.created, gets InventoryReserved delivered from inventory.reserved, StockLevelChanged is delivered to the warehouse staff, and the shopper runs Notify the shopper](../images/likec4/arazzo-place-order.jpg)
 
 ## Keeping your own descriptions
 
