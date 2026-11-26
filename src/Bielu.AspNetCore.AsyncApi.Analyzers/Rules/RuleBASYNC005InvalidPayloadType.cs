@@ -63,11 +63,11 @@ internal static class RuleBASYNC005InvalidPayloadType
 
     private static void CheckType(SymbolAnalysisContext context, ITypeSymbol type, AttributeData ad)
     {
-        if (type.SpecialType == SpecialType.System_Void ||
+        // IntPtr and UIntPtr are matched by special type, not by name: since C# 11 they are the same types as nint
+        // and nuint, so ToDisplayString() spells them "nint"/"nuint" and a "System.IntPtr" comparison never matched.
+        if (type.SpecialType is SpecialType.System_Void or SpecialType.System_IntPtr or SpecialType.System_UIntPtr ||
             type.TypeKind == TypeKind.Pointer ||
-            type.TypeKind == TypeKind.FunctionPointer ||
-            type.ToDisplayString() == "System.IntPtr" ||
-            type.ToDisplayString() == "System.UIntPtr")
+            type.TypeKind == TypeKind.FunctionPointer)
         {
             var location = ad.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? context.Symbol.Locations[0];
             context.ReportDiagnostic(Diagnostic.Create(Descriptor, location, type.ToDisplayString()));
