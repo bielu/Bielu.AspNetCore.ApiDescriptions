@@ -201,7 +201,10 @@ internal static partial class ArazzoLikeC4ViewBuilder
         {
             var (source, document) = documents[d];
             if (string.Equals(source.Name, sourceName, StringComparison.OrdinalIgnoreCase)
-                || (url is not null && (string.Equals(document.Self, url, StringComparison.Ordinal) || string.Equals(source.Link, url, StringComparison.Ordinal))))
+                || (url is not null
+                    && (string.Equals(document.Self, url, StringComparison.Ordinal)
+                        || string.Equals(BaseUri(source, document), url, StringComparison.Ordinal)
+                        || string.Equals(source.Link, url, StringComparison.Ordinal))))
             {
                 return (d, workflow);
             }
@@ -210,8 +213,15 @@ internal static partial class ArazzoLikeC4ViewBuilder
         return (null, workflow);
     }
 
-    /// <summary>The base URI a document's relative source description URLs resolve against: its <c>$self</c>, else where it is published.</summary>
-    private static string? BaseUri(ArazzoLikeC4Source source, ArazzoDocument document) => document.Self ?? source.Link;
+    /// <summary>
+    /// The base URI a document's relative source description URLs resolve against: its <c>$self</c>, which, when it
+    /// is itself relative, resolves against where the document is published (<see cref="ArazzoLikeC4Source.Link"/>);
+    /// else that link.
+    /// </summary>
+    internal static string? BaseUri(ArazzoLikeC4Source source, ArazzoDocument document) =>
+        document.Self is { } self
+            ? source.Link is { } link ? Resolve(link, self) : self
+            : source.Link;
 
     /// <summary>
     /// <paramref name="url"/> resolved against <paramref name="baseUri"/>, so two documents' <c>./api.json</c> are told

@@ -230,6 +230,46 @@ public class ArazzoLikeC4GeneratorTests
         model.ShouldContain("ordersCreated -> client 'delivers OrderCreated'");
     }
 
+    [Fact]
+    public void Generate_RelativeSelf_ResolvesAgainstTheLinkBeforeSourceUrls()
+    {
+        // Arrange
+        var service = new AsyncApiLikeC4Source("shop-orders", Orders) { Link = "https://example.com/v2/apis/orders.json" };
+        var workflow = Workflow(
+            "checkout",
+            """[ { "name": "orders", "url": "apis/orders.json", "type": "asyncapi" } ]""",
+            """[ { "stepId": "s", "operationId": "$sourceDescriptions.orders.publish" } ]""",
+            "\"$self\": \"v2/checkout.arazzo.json\",") is var source
+            ? new ArazzoLikeC4Source(source.Name, source.Document) { Link = "https://example.com/checkout.arazzo.json" }
+            : null!;
+
+        // Act
+        var model = AsyncApiLikeC4Generator.Generate([service], [workflow]);
+
+        // Assert
+        model.ShouldNotContain("arazzoSource '");
+        model.ShouldContain("ordersCreated -> client 'delivers OrderCreated'");
+    }
+
+    [Fact]
+    public void Generate_WorkflowFoundByRelativeSelf_IsOpenedFromTheStepInvokingIt()
+    {
+        // Arrange
+        var checkout = Workflow(
+            "checkout",
+            """[ { "name": "pay", "url": "https://example.com/flows/pay.arazzo.json", "type": "arazzo" } ]""",
+            """[ { "stepId": "a", "workflowId": "$sourceDescriptions.pay.charge" } ]""");
+        var payments = Workflow("payments", "[]", "[]", "\"$self\": \"flows/pay.arazzo.json\",", "charge") is var source
+            ? new ArazzoLikeC4Source(source.Name, source.Document) { Link = "https://example.com/index.arazzo.json" }
+            : null!;
+
+        // Act
+        var model = AsyncApiLikeC4Generator.Generate([], [checkout, payments]);
+
+        // Assert
+        model.ShouldContain("navigateTo arazzoCharge");
+    }
+
     [Theory]
     [InlineData(null, "./api.json", "./api.json")]
     [InlineData("flows/one.arazzo.json", "./api.json", "./api.json")]
