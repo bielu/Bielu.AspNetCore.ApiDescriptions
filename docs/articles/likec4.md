@@ -110,13 +110,16 @@ Each step is an arrow, in the order the workflow lists its steps:
 
 A source description is one of the AsyncAPI documents when its `name` is the document's name, or its `url` is the
 document's link (`--link`, or the URL it was read from). Any other source description becomes an `arazzoSource`
-element (one per URL), with its type (`OpenAPI`, `AsyncAPI`, `Arazzo`) as its technology. A step naming no source
+element (one per URL, a relative one resolved against the Arazzo document's `$self` or link), with its type
+(`OpenAPI`, `AsyncAPI`, `Arazzo`) as its technology. A bare `operationId` belongs to the AsyncAPI document that has
+the operation, else to the first source description that is not an Arazzo document. A step naming no source
 description that is in the document is left out.
 
 Arazzo has no field for who makes a step's call, so every arrow starts at the client (an `arazzoActor` element). As
 in the [Scalar Arazzo plugin's sequence view](arazzo/scalar.md), `x-actor` on a step or its workflow names someone
 else: a source description (its element), or anyone (an `arazzoActor` of their own). The document's `x-actors`
-registry titles and describes them, and its entry with `"client": true` names the client:
+registry titles and describes them, and its entry with `"client": true` names the client. Documents share an actor
+whose entries match; when two documents title or describe the same actor differently, each gets an element of its own:
 
 ```yaml
 x-actors:

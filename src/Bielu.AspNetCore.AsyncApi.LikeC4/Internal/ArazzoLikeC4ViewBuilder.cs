@@ -50,7 +50,7 @@ internal static partial class ArazzoLikeC4ViewBuilder
             }
         }
 
-        var lanes = new Lanes(build, index);
+        var lanes = new Lanes(build, index, documents);
         for (var d = 0; d < documents.Count; d++)
         {
             var document = documents[d].Document;
@@ -146,7 +146,8 @@ internal static partial class ArazzoLikeC4ViewBuilder
     /// The source description a step calls, and the operation or channel key it names: from
     /// <c>$sourceDescriptions.orders.placeOrder</c>, from <c>{$sourceDescriptions.orders.url}#/operations/placeOrder</c>
     /// (or <c>#/channels/…</c>, or an OpenAPI path), or, for a bare <c>operationId</c>, from the AsyncAPI service that
-    /// has the operation, else the document's first source description.
+    /// has the operation, else the document's first source description that is not an Arazzo document (a bare
+    /// <c>operationId</c> cannot name a workflow document's operation).
     /// </summary>
     private static (string? Source, string? Operation, string? Channel) Target(Lanes lanes, ArazzoDocument document, ArazzoStep step)
     {
@@ -159,7 +160,8 @@ internal static partial class ArazzoLikeC4ViewBuilder
 
             var owner = document.SourceDescriptions.FirstOrDefault(source =>
                 lanes.Source(document, source.Name)?.Service?.Operations.ContainsKey(operationId) == true);
-            return ((owner ?? document.SourceDescriptions.FirstOrDefault())?.Name, operationId, null);
+            owner ??= document.SourceDescriptions.FirstOrDefault(source => source.Type?.Value != "arazzo");
+            return (owner?.Name, operationId, null);
         }
 
         if ((step.ChannelPath ?? step.OperationPath) is { } path && PathReference().Match(path) is { Success: true } pathReference)
@@ -191,7 +193,10 @@ internal static partial class ArazzoLikeC4ViewBuilder
 
         var sourceName = reference.Groups[1].Value;
         var workflow = reference.Groups[2].Value;
-        var url = documents[documentIndex].Document.SourceDescriptions.FirstOrDefault(source => source.Name == sourceName)?.Url;
+        var (invoking, invokingDocument) = documents[documentIndex];
+        var url = invokingDocument.SourceDescriptions.FirstOrDefault(source => source.Name == sourceName)?.Url is { } relative
+            ? Resolve(BaseUri(invoking, invokingDocument), relative)
+            : null;
         for (var d = 0; d < documents.Count; d++)
         {
             var (source, document) = documents[d];
@@ -205,6 +210,27 @@ internal static partial class ArazzoLikeC4ViewBuilder
         return (null, workflow);
     }
 
+    /// <summary>The base URI a document's relative source description URLs resolve against: its <c>$self</c>, else where it is published.</summary>
+    private static string? BaseUri(ArazzoLikeC4Source source, ArazzoDocument document) => document.Self ?? source.Link;
+
+    /// <summary>
+    /// <paramref name="url"/> resolved against <paramref name="baseUri"/>, so two documents' <c>./api.json</c> are told
+    /// apart; unchanged when it is already absolute or there is no absolute base to resolve it against.
+    /// </summary>
+    internal static string Resolve(string? baseUri, string url)
+    {
+        if (baseUri is null
+            || Scheme().IsMatch(url)
+            || !Scheme().IsMatch(baseUri)
+            || !Uri.TryCreate(baseUri, UriKind.Absolute, out var absoluteBase)
+            || !Uri.TryCreate(absoluteBase, url, out var resolved))
+        {
+            return url;
+        }
+
+        return resolved.AbsoluteUri;
+    }
+
     private static string? Text(IDictionary<string, JsonNode?>? extensions, string name) =>
         extensions is not null && extensions.TryGetValue(name, out var value) ? AsyncApiDocumentReader.Text(value) : null;
 
@@ -216,15 +242,24 @@ internal static partial class ArazzoLikeC4ViewBuilder
     [GeneratedRegex(@"^\{\$sourceDescriptions\.([^.}]+)\.url\}#(.*)$")]
     private static partial Regex PathReference();
 
+    /// <summary>A URI scheme, such as <c>https:</c>: what makes a URL absolute rather than relative.</summary>
+    [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9+.\-]*:")]
+    private static partial Regex Scheme();
+
     /// <summary>A lane of a dynamic view: an element, and the AsyncAPI service behind it, if it is one.</summary>
     private sealed record Lane(string Id, AsyncApiModelService? Service);
 
     /// <summary>The elements the steps start from and reach, added to the model the first time a step needs one.</summary>
-    private sealed class Lanes(LikeC4Build build, AsyncApiModelIndex index)
+    private sealed class Lanes(
+        LikeC4Build build,
+        AsyncApiModelIndex index,
+        IReadOnlyList<(ArazzoLikeC4Source Source, ArazzoDocument Document)> documents)
     {
-        private readonly Dictionary<string, string> _actors = new(StringComparer.Ordinal);
+        private readonly Dictionary<(string Name, string? Title, string? Description), string> _actors = [];
         private readonly Dictionary<string, Lane> _sources = new(StringComparer.Ordinal);
         private readonly Dictionary<(ArazzoDocument, string), Lane?> _bySourceName = [];
+        private readonly Dictionary<ArazzoDocument, string?> _baseUris = documents.ToDictionary(
+            pair => pair.Document, pair => BaseUri(pair.Source, pair.Document));
 
         /// <summary>The lane of a source description of <paramref name="document"/>, or <see langword="null"/> if it has none of that name.</summary>
         public Lane? Source(ArazzoDocument document, string? name)
@@ -243,19 +278,23 @@ internal static partial class ArazzoLikeC4ViewBuilder
             Lane? lane = null;
             if (source is not null)
             {
-                lane = (index.FindByName(source.Name) ?? index.FindByLink(source.Url)) is { } service
+                var url = Resolve(_baseUris.GetValueOrDefault(document), source.Url);
+                lane = (index.FindByName(source.Name) ?? index.FindByLink(url) ?? index.FindByLink(source.Url)) is { } service
                     ? new Lane(service.Id, service)
-                    : SourceElement(source);
+                    : SourceElement(source, url);
             }
 
             _bySourceName[(document, name)] = lane;
             return lane;
         }
 
-        /// <summary>The element of a source description that is not one of the AsyncAPI documents, one per URL.</summary>
-        private Lane SourceElement(ArazzoSourceDescription source)
+        /// <summary>
+        /// The element of a source description that is not one of the AsyncAPI documents, one per URL once resolved
+        /// against its document's base URI (<paramref name="url"/>).
+        /// </summary>
+        private Lane SourceElement(ArazzoSourceDescription source, string url)
         {
-            if (_sources.TryGetValue(source.Url, out var lane))
+            if (_sources.TryGetValue(url, out var lane))
             {
                 return lane;
             }
@@ -272,11 +311,11 @@ internal static partial class ArazzoLikeC4ViewBuilder
                     _ => type,
                 },
                 Tags = [Tag],
-                Links = source.Url.Any(char.IsWhiteSpace) ? [] : [new LikeC4Link(source.Url, null)],
+                Links = url.Any(char.IsWhiteSpace) ? [] : [new LikeC4Link(url, null)],
                 Metadata = [new("arazzoSource", source.Name)],
             });
             lane = new Lane(id, null);
-            _sources[source.Url] = lane;
+            _sources[url] = lane;
             return lane;
         }
 
@@ -284,6 +323,11 @@ internal static partial class ArazzoLikeC4ViewBuilder
         /// The element a step starts from: a source description's when <paramref name="actor"/> names one, the client's
         /// when it names none (or the client), and the actor's own otherwise.
         /// </summary>
+        /// <remarks>
+        /// Documents share an actor's element when they title and describe it alike. Two documents whose
+        /// <c>x-actors</c> entries for the same name differ get an element each, so every workflow is drawn with its own
+        /// document's title and description.
+        /// </remarks>
         public string Actor(ArazzoDocument document, string? actor)
         {
             var registry = Registry(document);
@@ -294,12 +338,13 @@ internal static partial class ArazzoLikeC4ViewBuilder
             }
 
             var name = actor ?? client;
-            if (_actors.TryGetValue(name, out var id))
+            var entry = registry.GetValueOrDefault(name);
+            var key = (name, entry?.Title, entry?.Description);
+            if (_actors.TryGetValue(key, out var id))
             {
                 return id;
             }
 
-            var entry = registry.GetValueOrDefault(name);
             id = build.ElementIds.Next(name, "actor");
             build.Model.Elements.Add(new LikeC4Element(id, ActorKind, entry?.Title ?? (name == DefaultClient ? "Client" : name))
             {
@@ -307,7 +352,7 @@ internal static partial class ArazzoLikeC4ViewBuilder
                 Tags = [Tag],
                 Metadata = [new("arazzoActor", name)],
             });
-            _actors[name] = id;
+            _actors[key] = id;
             return id;
         }
 

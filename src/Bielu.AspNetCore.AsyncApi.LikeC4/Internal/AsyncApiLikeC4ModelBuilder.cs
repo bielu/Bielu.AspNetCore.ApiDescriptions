@@ -99,10 +99,12 @@ internal static class AsyncApiLikeC4ModelBuilder
         for (var i = 0; i < documents.Count; i++)
         {
             var (source, service) = documents[i];
-            var channelsByKey = ownChannelsOf[i].ToDictionary(
-                pair => pair.Key,
-                pair => new AsyncApiModelChannel(pair.Value.Id, service.Channels.First(channel => channel.Key == pair.Key).Messages),
-                StringComparer.Ordinal);
+            var channelsByKey = new Dictionary<string, AsyncApiModelChannel>(StringComparer.Ordinal);
+            foreach (var channel in service.Channels)
+            {
+                channelsByKey.TryAdd(channel.Key, new AsyncApiModelChannel(ownChannelsOf[i][channel.Key].Id, channel.Messages));
+            }
+
             var operationsByKey = new Dictionary<string, AsyncApiModelOperation>(StringComparer.Ordinal);
             foreach (var operation in service.Operations)
             {

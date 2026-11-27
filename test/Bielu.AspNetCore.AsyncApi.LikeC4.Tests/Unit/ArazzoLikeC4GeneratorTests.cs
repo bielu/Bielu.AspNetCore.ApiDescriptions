@@ -192,6 +192,96 @@ public class ArazzoLikeC4GeneratorTests
     }
 
     [Fact]
+    public void Generate_SameRelativeSourceUrlUnderDifferentBases_IsAnElementEach()
+    {
+        // Arrange
+        var sources = """[ { "name": "api", "url": "./api.json" } ]""";
+        var steps = """[ { "stepId": "a", "operationId": "pay" } ]""";
+        var one = Workflow("one", sources, steps, "\"$self\": \"https://one.example.com/flows/one.arazzo.json\",");
+        var two = Workflow("two", sources, steps, "\"$self\": \"https://two.example.com/flows/two.arazzo.json\",");
+        var three = Workflow("three", sources, steps, "\"$self\": \"https://one.example.com/flows/three.arazzo.json\",");
+
+        // Act
+        var model = AsyncApiLikeC4Generator.Generate([], [one, two, three]);
+
+        // Assert
+        model.Split("= arazzoSource").Length.ShouldBe(3);
+        model.ShouldContain("link https://one.example.com/flows/api.json");
+        model.ShouldContain("link https://two.example.com/flows/api.json");
+    }
+
+    [Fact]
+    public void Generate_RelativeSourceUrlResolvedAgainstLink_IsTheAsyncApiService()
+    {
+        // Arrange
+        var service = new AsyncApiLikeC4Source("shop-orders", Orders) { Link = "https://example.com/apis/orders.json" };
+        var workflow = Workflow(
+            "checkout",
+            """[ { "name": "orders", "url": "../apis/orders.json", "type": "asyncapi" } ]""",
+            """[ { "stepId": "s", "operationId": "$sourceDescriptions.orders.publish" } ]""") is var source
+            ? new ArazzoLikeC4Source(source.Name, source.Document) { Link = "https://example.com/flows/checkout.arazzo.json" }
+            : null!;
+
+        // Act
+        var model = AsyncApiLikeC4Generator.Generate([service], [workflow]);
+
+        // Assert
+        model.ShouldNotContain("arazzoSource '");
+        model.ShouldContain("ordersCreated -> client 'delivers OrderCreated'");
+    }
+
+    [Theory]
+    [InlineData(null, "./api.json", "./api.json")]
+    [InlineData("flows/one.arazzo.json", "./api.json", "./api.json")]
+    [InlineData("https://example.com/flows/one.arazzo.json", "https://other.example.com/api.json", "https://other.example.com/api.json")]
+    [InlineData("https://example.com/flows/one.arazzo.json", "../api.json", "https://example.com/api.json")]
+    public void Resolve_RelativeUrl_ResolvesOnlyAgainstAnAbsoluteBase(string? baseUri, string url, string expected)
+    {
+        // Act
+        var resolved = Internal.ArazzoLikeC4ViewBuilder.Resolve(baseUri, url);
+
+        // Assert
+        resolved.ShouldBe(expected);
+    }
+
+    [Fact]
+    public void Generate_BareOperationId_SkipsArazzoSourcesForTheFallback()
+    {
+        // Arrange
+        var workflow = Workflow("checkout", """
+            [
+              { "name": "flows", "url": "https://example.com/flows.arazzo.json", "type": "arazzo" },
+              { "name": "payments", "url": "https://example.com/openapi.json", "type": "openapi" }
+            ]
+            """, """[ { "stepId": "a", "operationId": "charge" } ]""");
+
+        // Act
+        var model = AsyncApiLikeC4Generator.Generate([], [workflow]);
+
+        // Assert
+        model.ShouldContain("client -> payments 'charge'");
+        model.ShouldNotContain("client -> flows");
+    }
+
+    [Fact]
+    public void Generate_SameActorTitledDifferentlyInTwoDocuments_IsAnElementEach()
+    {
+        // Arrange
+        var steps = """[ { "stepId": "a", "operationId": "x", "x-actor": "ops" } ]""";
+        var one = Workflow("one", OrdersSource, steps, "\"x-actors\": { \"ops\": { \"title\": \"Operations\" } },");
+        var two = Workflow("two", OrdersSource, steps, "\"x-actors\": { \"ops\": { \"title\": \"On-call\" } },");
+        var three = Workflow("three", OrdersSource, steps, "\"x-actors\": { \"ops\": { \"title\": \"Operations\" } },");
+
+        // Act
+        var model = AsyncApiLikeC4Generator.Generate([], [one, two, three]);
+
+        // Assert
+        model.Split("= arazzoActor 'Operations'").Length.ShouldBe(2);
+        model.ShouldContain("= arazzoActor 'On-call' {");
+        model.Split("= arazzoActor").Length.ShouldBe(3);
+    }
+
+    [Fact]
     public void Generate_SourceUrlWithWhitespace_HasNoLink()
     {
         // Arrange
