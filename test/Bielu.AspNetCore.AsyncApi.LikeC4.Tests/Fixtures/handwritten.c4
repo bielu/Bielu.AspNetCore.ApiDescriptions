@@ -1,0 +1,72 @@
+// A hand-written model of the shop, mapped to its AsyncAPI documents by metadata.
+specification {
+  element system
+  element service
+  element topic {
+    style {
+      shape queue
+    }
+  }
+  element database {
+    style {
+      shape storage
+    }
+  }
+}
+
+model {
+  shop = system 'Shop' {
+    orders = service 'Orders' {
+      metadata {
+        asyncapi 'orders'
+      }
+      api = service 'Orders API'
+    }
+    inventory = service 'Inventory' {
+      metadata {
+        asyncapi 'inventory'
+      }
+    }
+    ordersDb = database 'Orders database'
+  }
+  notifications = service 'Notifications' {
+    metadata {
+      asyncapi 'notifications'
+    }
+  }
+  billing = service 'Billing' {
+    metadata {
+      asyncapi 'billing'
+    }
+  }
+  ordersCreated = topic 'orders.created' {
+    metadata {
+      asyncapiChannel 'orders.created'
+    }
+  }
+  paymentsDone = topic 'payments.done' {
+    metadata {
+      asyncapiChannel 'payments.done'
+    }
+  }
+
+  // Backed: orders sends to orders.created, through a nested element.
+  shop.orders.api -> ordersCreated 'publishes OrderCreated'
+  // Backed: inventory receives from orders.created, drawn as a dependency.
+  shop.inventory -> ordersCreated 'subscribes'
+  // Backed: inventory sends InventoryReserved to orders through inventory.reserved, which the model leaves out.
+  shop.inventory -> shop.orders 'reserves stock'
+  // Not checked: the database stands for no AsyncAPI document.
+  shop.orders -> shop.ordersDb 'stores orders'
+  // Stale: orders sends nothing that notifications receives.
+  shop.orders -> notifications 'notifies'
+  // Not checked: payments.done is no channel of the documents, which is reported on its own.
+  shop.inventory -> paymentsDone 'listens'
+}
+
+views {
+  view index {
+    title 'Shop (hand-written)'
+    include *, shop.*, shop.orders.*
+  }
+}

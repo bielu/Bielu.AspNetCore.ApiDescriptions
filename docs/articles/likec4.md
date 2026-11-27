@@ -171,3 +171,74 @@ dotnet asyncapi likec4 --source "obj/*.asyncapi.json" --output architecture/asyn
 npx likec4 validate architecture
 git diff --exit-code architecture/asyncapi.c4   # fail when the committed model is out of date
 ```
+
+A model written by hand is checked against the documents with [`likec4 check`](#checking-a-hand-written-model).
+
+## Checking a hand-written model
+
+Teams often draw their architecture first, by hand, at a level the generated model does not: systems, containers,
+the databases next to them. `dotnet asyncapi likec4 check` keeps such a model honest against the AsyncAPI documents.
+Map its elements to them with the same metadata the generated model carries, then check it in CI:
+
+```likec4
+model {
+  shop = system 'Shop' {
+    orders = service 'Orders' {
+      metadata {
+        asyncapi 'orders'                // stands for the AsyncAPI document named orders
+      }
+      api = service 'Orders API'        // inside orders, so it stands for it too
+    }
+    inventory = service 'Inventory' {
+      metadata {
+        asyncapi 'inventory'
+      }
+    }
+  }
+  ordersCreated = topic 'orders.created' {
+    metadata {
+      asyncapiChannel 'orders.created'  // stands for the channel at this address
+    }
+  }
+
+  shop.orders.api -> ordersCreated 'publishes'
+  shop.inventory -> ordersCreated 'subscribes'
+}
+```
+
+```bash
+npx likec4 export json -o likec4.json architecture
+dotnet asyncapi likec4 check --model likec4.json   --source orders=obj/orders.asyncapi.json --source inventory=obj/inventory.asyncapi.json
+```
+
+The check reads the model as LikeC4 exports it, so it sees the whole workspace (every file, `extend` included) the
+way LikeC4 does. It reports, as errors:
+
+| Finding | When |
+| --- | --- |
+| a relationship with no operation behind it | a service–channel relationship whose service neither sends to nor receives from the channel, a service–service one where neither sends messages to a channel the other receives them from, or one between two channels |
+| a missing relationship | a service sends to or receives from a channel the model has, with no relationship between them; or two services exchange messages through a channel the model leaves out, with no relationship between them |
+| metadata naming nothing | `asyncapi` naming a document that is not checked, or `asyncapiChannel` an address no document declares |
+
+A hand-written model of the shop, with what the check finds marked in red:
+
+![A hand-written model: Shop holds Inventory, Orders (with Orders API inside) and the orders database; Billing and payments.done are marked 1 and 2, the notifies relationship from Orders to Notifications 3, and a missing StockLevelChanged relationship from Inventory to Notifications 4](../images/likec4/check-findings.jpg)
+
+1. `Billing` stands for an AsyncAPI document that is not checked.
+2. `payments.done` stands for an address no document declares.
+3. `notifies`: Orders sends nothing that Notifications receives.
+4. Inventory sends `StockLevelChanged` to Notifications through `inventory.stock-changed`, a channel the model leaves
+   out, and the model has no relationship between them.
+
+`Orders API -> orders.created` counts as a relationship of `Orders`, and `Orders -> Orders database` is not checked.
+
+Either direction of a relationship counts, since C4 models draw both data flow (`orders -> topic`) and dependency
+(`inventory -> topic 'subscribes'`). Relationships with elements that stand for neither, such as databases, are not
+checked. A document no element stands for is a warning, which `--strict` makes an error.
+
+The checker is in the package too, for a test of your own:
+
+```csharp
+var findings = LikeC4ModelChecker.Check(File.ReadAllText("likec4.json"), sources);
+findings.Where(finding => finding.Severity == LikeC4CheckSeverity.Error).ShouldBeEmpty();
+```

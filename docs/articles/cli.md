@@ -101,3 +101,20 @@ dotnet asyncapi likec4 --source orders=obj/orders.json --source "docs/*.asyncapi
 - `--arazzo [name=]<path|url>` - An Arazzo document whose workflows become dynamic views (repeatable), read the same way
 - `--link <name>=<url>` - Where readers find a document (default: its URL, or its path relative to the model)
 - `--output <path>` - The `.c4` file to write (required)
+
+### `likec4 check`
+
+Check a LikeC4 model, hand-written or not, against the AsyncAPI documents it describes: relationships with no
+operation behind them, operations the model does not draw, and metadata naming nothing. See
+[Checking a hand-written model](likec4.md#checking-a-hand-written-model).
+
+```bash
+npx likec4 export json -o likec4.json architecture
+dotnet asyncapi likec4 check --model likec4.json --source orders=obj/orders.json --source inventory=obj/inventory.json
+```
+
+**Options:**
+- `--model <path|url>` - The model, as `likec4 export json` writes it (required)
+- `--source [name=]<path|url>` - An AsyncAPI document, named the way the model's `asyncapi` metadata names it (required, repeatable; a path may be a glob)
+- `--strict` - Treat warnings (documents no element stands for) as errors
+- `--format <text|json>` - Output format (default: text)

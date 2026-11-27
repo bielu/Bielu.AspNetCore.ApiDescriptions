@@ -11,7 +11,6 @@ namespace Bielu.AspNetCore.AsyncApi.Cli.Commands;
 internal sealed class LikeC4CommandWorker
 {
     private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-    private static readonly string[] DocumentSuffixes = [".json", ".yaml", ".yml", ".asyncapi", ".arazzo"];
 
     private readonly LikeC4CommandContext _context;
     private readonly ICliLogger _logger;
@@ -44,36 +43,20 @@ internal sealed class LikeC4CommandWorker
         }
 
         var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(_context.OutputPath))!;
-        using var http = _httpHandler is null ? new HttpClient() : new HttpClient(_httpHandler, disposeHandler: false);
-        http.Timeout = TimeSpan.FromSeconds(30);
-
-        var sources = new List<AsyncApiLikeC4Source>();
-        foreach (var (name, location) in Expand(_context.Sources))
+        using var loader = new LikeC4DocumentLoader(_logger, _httpHandler);
+        if (loader.TryReadAll(_context.Sources) is not { } asyncApi || loader.TryReadAll(_context.Workflows) is not { } arazzo)
         {
-            if (!TryRead(http, location, out var content))
-            {
-                return CliExitCode.Failure;
-            }
-
-            sources.Add(new AsyncApiLikeC4Source(name, content)
-            {
-                Link = links.GetValueOrDefault(name) ?? DefaultLink(location, outputDirectory),
-            });
+            return CliExitCode.Failure;
         }
 
-        var workflows = new List<ArazzoLikeC4Source>();
-        foreach (var (name, location) in Expand(_context.Workflows))
+        var sources = asyncApi.Select(document => new AsyncApiLikeC4Source(document.Name, document.Content)
         {
-            if (!TryRead(http, location, out var content))
-            {
-                return CliExitCode.Failure;
-            }
-
-            workflows.Add(new ArazzoLikeC4Source(name, content)
-            {
-                Link = links.GetValueOrDefault(name) ?? DefaultLink(location, outputDirectory),
-            });
-        }
+            Link = links.GetValueOrDefault(document.Name) ?? LikeC4DocumentLoader.DefaultLink(document.Location, outputDirectory),
+        }).ToList();
+        var workflows = arazzo.Select(document => new ArazzoLikeC4Source(document.Name, document.Content)
+        {
+            Link = links.GetValueOrDefault(document.Name) ?? LikeC4DocumentLoader.DefaultLink(document.Location, outputDirectory),
+        }).ToList();
 
         if (sources.Count == 0 && workflows.Count == 0)
         {
@@ -98,53 +81,6 @@ internal sealed class LikeC4CommandWorker
         return CliExitCode.Success;
     }
 
-    /// <summary>
-    /// The documents to read, as <c>(name, path or URL)</c>: a named source as given, an unnamed one named after its
-    /// file, and an unnamed glob expanded into every file it matches.
-    /// </summary>
-    private static IEnumerable<(string Name, string Location)> Expand(IEnumerable<string> sources)
-    {
-        foreach (var source in sources)
-        {
-            var separator = source.IndexOf('=', StringComparison.Ordinal);
-            if (separator > 0 && !IsUrl(source[..separator]))
-            {
-                yield return (source[..separator], source[(separator + 1)..]);
-                continue;
-            }
-
-            var locations = IsUrl(source) ? [source] : CliFileResolver.ExpandFilePatterns([source]);
-            foreach (var location in locations)
-            {
-                yield return (NameOf(location), location);
-            }
-        }
-    }
-
-    /// <summary><c>obj/orders.asyncapi.json</c> → <c>orders</c>; a URL is named after its last segment the same way.</summary>
-    internal static string NameOf(string location)
-    {
-        var name = IsUrl(location) ? new Uri(location).Segments[^1].TrimEnd('/') : Path.GetFileName(location);
-        for (var trimmed = true; trimmed;)
-        {
-            trimmed = false;
-            foreach (var suffix in DocumentSuffixes)
-            {
-                if (name.Length > suffix.Length && name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                {
-                    name = name[..^suffix.Length];
-                    trimmed = true;
-                }
-            }
-        }
-
-        return name.Length > 0 ? name : location;
-    }
-
-    /// <summary>A URL links to itself; a file, by its path relative to the model, which LikeC4 resolves from there.</summary>
-    internal static string DefaultLink(string location, string outputDirectory) =>
-        IsUrl(location) ? location : Path.GetRelativePath(outputDirectory, Path.GetFullPath(location)).Replace('\\', '/');
-
     private bool TryReadLinks(out Dictionary<string, string> links)
     {
         links = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -162,24 +98,4 @@ internal sealed class LikeC4CommandWorker
 
         return true;
     }
-
-    private bool TryRead(HttpClient http, string location, out string content)
-    {
-        try
-        {
-            content = IsUrl(location)
-                ? http.GetStringAsync(location).GetAwaiter().GetResult()
-                : File.ReadAllText(location);
-            return true;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or HttpRequestException or TaskCanceledException)
-        {
-            _logger.Error($"Could not read '{location}': {ex.Message}");
-            content = string.Empty;
-            return false;
-        }
-    }
-
-    private static bool IsUrl(string value) =>
-        value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 }
