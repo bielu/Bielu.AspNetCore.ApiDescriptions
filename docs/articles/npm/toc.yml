@@ -2,6 +2,8 @@
   href: overview.md
 - name: Arazzo for Scalar
   href: scalar-arazzo.md
+- name: LikeC4 for Scalar
+  href: scalar-likec4.md
 - name: Arazzo in Scalar (ASP.NET Core) →
   href: ../arazzo/scalar.md
 - name: Scalar consoles (ASP.NET Core) →
