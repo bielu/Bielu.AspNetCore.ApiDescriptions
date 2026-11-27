@@ -201,7 +201,8 @@ public class JsonSourceResolverTests
                 "pathItems": {
                     "Pets": { "get": { "operationId": "listPets" } },
                     "Loop": { "$ref": "#/paths/~1loop" }
-                }
+                },
+                "schemas": { "Pet": { "properties": { "get": { "type": "string" } } } }
             }
         }
         """)!;
@@ -222,6 +223,7 @@ public class JsonSourceResolverTests
     [InlineData("/paths/~1pets", false)]
     [InlineData("/paths/~1loop/get", false)]
     [InlineData("/paths/~1outside/get", false)]
+    [InlineData("/components/schemas/Pet/properties/get", false)]
     public void OpenApi_TryResolveOperationPath_FollowsPathItemReferences(string pointer, bool expected)
     {
         new OpenApiJsonSourceResolver().TryResolveOperationPath(OpenApiWithPathItemReferences, pointer, out _).ShouldBe(expected);

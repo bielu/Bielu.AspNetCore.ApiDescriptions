@@ -11,7 +11,8 @@ namespace Bielu.Arazzo.SourceResolvers;
 /// <remarks>
 /// An <c>operationId</c> is searched for in every operation under <c>paths</c> and <c>webhooks</c>, following a
 /// Path Item's local <c>$ref</c>. An <c>operationPath</c> resolves when its pointer addresses an Operation Object:
-/// an HTTP method of a Path Item, such as <c>/paths/~1pets/get</c>, also through a Path Item's <c>$ref</c>.
+/// an HTTP method of a Path Item under <c>paths</c>, <c>webhooks</c> or <c>components/pathItems</c>, such as
+/// <c>/paths/~1pets/get</c>, also through a Path Item's <c>$ref</c>.
 /// </remarks>
 /// <example>
 /// <code>
@@ -76,7 +77,10 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         ArgumentNullException.ThrowIfNull(jsonPointer);
 
         operation = null;
-        if (JsonDocumentPointer.Tokens(jsonPointer) is not { Length: >= 2 } tokens || !Methods.Contains(tokens[^1]))
+        // An HTTP method of a Path Item: one under paths or webhooks, or a reusable one in components.pathItems.
+        // Any other object with a "get" key, such as a schema property, is no operation.
+        var tokens = JsonDocumentPointer.Tokens(jsonPointer);
+        if (tokens is not (["paths" or "webhooks", _, _] or ["components", "pathItems", _, _]) || !Methods.Contains(tokens[^1]))
         {
             return false;
         }
