@@ -1,6 +1,6 @@
 {
   "name": "@bielu/scalar-likec4",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "LikeC4 document type for the Scalar API Reference. Draws the views of a LikeC4 architecture model, from the layout `likec4 export json` writes, next to the API documents they describe.",
   "license": "MIT",
   "author": "Arkadiusz Biel",
