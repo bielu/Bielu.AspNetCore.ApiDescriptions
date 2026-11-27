@@ -1,5 +1,0 @@
----
-"bielu-aspnetcore-asyncapi": minor
----
-
-Add `Bielu.AspNetCore.AsyncApi.LikeC4`, a new package that generates a [LikeC4](https://likec4.dev) architecture model from AsyncAPI 2.x and 3.x documents (JSON or YAML). Every document becomes an `asyncapiService` element and every channel an `asyncapiChannel` element, one per address across all documents, so a service sending to an address and another receiving from it meet at one channel. A `send` operation is a relationship from the service to the channel, a `receive` one from the channel to the service, and each sender and receiver of the same messages are joined by an `asyncapiFlow`. The model has a view of the services and channels, one of the service flows, and one per service. Elements carry `asyncapi`, `asyncapiChannel` and `asyncapiOperation` metadata, and the generated file is meant to be extended from a file of your own (`extend <id> { … }`). The CLI gets a `dotnet asyncapi likec4 --source [name=]<path|url> --output <file.c4>` command.

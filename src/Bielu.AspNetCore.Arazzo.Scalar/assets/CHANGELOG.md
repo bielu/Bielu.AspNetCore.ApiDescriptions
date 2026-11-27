@@ -1,5 +1,11 @@
 # @bielu/scalar-arazzo
 
+## 1.3.1
+
+### Patch Changes
+
+- [#356](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/pull/356) [`da17d5f`](https://github.com/bielu/Bielu.AspNetCore.ApiDescriptions/commit/da17d5fed0c00a002d62445bde9fa1926131203e) Thanks [@bielu](https://github.com/bielu)! - A source description now finds its document when Scalar loaded that document from a different URL than the one the source names, as long as the document's `$self` (OpenAPI 3.2's canonical URI) is that URL. Behind a proxy or service discovery, for example Scalar in .NET Aspire loading `https://authservice/openapi/v1.json` while the Arazzo source names `https://localhost:7430/openapi/v1.json`, the source showed "Not loaded" and its steps did not resolve. A relative `$self` is resolved against where the document was loaded from.
+
 ## 1.3.0
 
 ### Minor Changes
