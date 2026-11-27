@@ -73,6 +73,20 @@ describe('LikeC4Document', () => {
     expect(sequence.attributes('aria-label')).toBe(shop.views!.arazzoPlaceOrder!.title)
   })
 
+  it('names a diagram after its view id when its title is blank', async () => {
+    // Arrange
+    const model = structuredClone(shop)
+    model.views!.asyncapiChannels!.title = '   '
+    model.views!.arazzoPlaceOrder!.title = ''
+
+    // Act
+    const view = await render(model)
+
+    // Assert
+    expect(view.find('svg[data-view-id="asyncapiChannels"]').attributes('aria-label')).toBe('asyncapiChannels')
+    expect(view.find('svg.bl-sequence[data-view-id="arazzoPlaceOrder"]').attributes('aria-label')).toBe('arazzoPlaceOrder')
+  })
+
   it('draws the tail arrowhead of a sequence step, as well as its head', async () => {
     // Arrange: the first step points both ways.
     const model = structuredClone(shop)

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { viewTitle } from '../helpers/navigation'
 import { drawOrder, isContainer, viewBounds } from '../helpers/view-layout'
 import type { LikeC4CustomColor, LikeC4View } from '../types'
 import LikeC4Edge from './LikeC4Edge.vue'
@@ -42,7 +43,7 @@ const opens = (viewId: string | null | undefined) =>
     class="bl-diagram"
     :data-view-id="view.id"
     :height="bounds.height + MARGIN * 2"
-    :aria-label="view.title ?? view.id"
+    :aria-label="viewTitle(view)"
     role="group"
     :viewBox="`${bounds.x - MARGIN} ${bounds.y - MARGIN} ${bounds.width + MARGIN * 2} ${bounds.height + MARGIN * 2}`"
     :width="bounds.width + MARGIN * 2"

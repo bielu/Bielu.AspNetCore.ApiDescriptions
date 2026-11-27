@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { lineColorOf } from '../helpers/colors'
 import { dashArray, edgeArrows, wrapText } from '../helpers/geometry'
 import { plainText } from '../helpers/markdown'
+import { viewTitle } from '../helpers/navigation'
 import { type SequenceStep, sequenceDiagram } from '../helpers/sequence'
 import { LABEL_FONTS } from '../helpers/view-layout'
 import type { LikeC4CustomColor, LikeC4Node, LikeC4View } from '../types'
@@ -100,7 +101,7 @@ const open = (viewId: string | null | undefined) => {
     class="bl-diagram bl-sequence"
     :data-view-id="view.id"
     :height="diagram.bounds.height + MARGIN * 2"
-    :aria-label="view.title ?? view.id"
+    :aria-label="viewTitle(view)"
     role="group"
     :viewBox="`${diagram.bounds.x - MARGIN} ${diagram.bounds.y - MARGIN} ${diagram.bounds.width + MARGIN * 2} ${diagram.bounds.height + MARGIN * 2}`"
     :width="diagram.bounds.width + MARGIN * 2"
