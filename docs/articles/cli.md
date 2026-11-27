@@ -87,7 +87,8 @@ dotnet asyncapi diff --base old.json --head new.json --fail-on-breaking
 
 ### `likec4`
 
-Generate a [LikeC4](https://likec4.dev) architecture model from AsyncAPI documents, one per service. See
+Generate a [LikeC4](https://likec4.dev) architecture model from AsyncAPI documents, one per service, with a dynamic
+view per workflow of any Arazzo documents. See
 [LikeC4 architecture models](likec4.md) for what the model contains.
 
 ```bash
@@ -95,7 +96,8 @@ dotnet asyncapi likec4 --source orders=obj/orders.json --source "docs/*.asyncapi
 ```
 
 **Options:**
-- `--source [name=]<path|url>` - An AsyncAPI document (required, repeatable). Without a name, the service is named after
+- `--source [name=]<path|url>` - An AsyncAPI document (repeatable; at least one `--source` or `--arazzo`). Without a name, the service is named after
   the file (`orders.asyncapi.json` → `orders`); a path may be a glob
-- `--link <name>=<url>` - Where readers find a service's document (default: its URL, or its path relative to the model)
+- `--arazzo [name=]<path|url>` - An Arazzo document whose workflows become dynamic views (repeatable), read the same way
+- `--link <name>=<url>` - Where readers find a document (default: its URL, or its path relative to the model)
 - `--output <path>` - The `.c4` file to write (required)

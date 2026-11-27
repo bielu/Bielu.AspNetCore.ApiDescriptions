@@ -3,7 +3,8 @@
 [LikeC4](https://likec4.dev) describes software architecture as code: elements, the relationships between them, and
 views, in `.c4` files that its tools render as diagrams, export (PNG, Mermaid, D2, draw.io) and check.
 `Bielu.AspNetCore.AsyncApi.LikeC4` writes such a model from your AsyncAPI documents, so the diagram of who sends
-what to whom follows the code instead of being drawn by hand.
+what to whom follows the code instead of being drawn by hand. Arazzo workflows over those services become
+[dynamic views](#arazzo-workflows-as-dynamic-views).
 
 ## Generating a model
 
@@ -82,6 +83,61 @@ The ids only change when the names and addresses they come from do, with one exc
 same (`orders-api` and `orders.api` are both `ordersApi`), the number goes to whichever is generated second, so
 reordering the sources swaps the ids, and an `extend ordersApi` of your own then describes the other service. Keep
 source names distinct after camelCasing.
+
+## Arazzo workflows as dynamic views
+
+Arazzo documents add a [dynamic view](https://likec4.dev/dsl/views/dynamic/) per workflow, drawn as a sequence
+diagram on the same elements:
+
+```bash
+dotnet asyncapi likec4   --source orders=obj/orders.asyncapi.json --source inventory=obj/inventory.asyncapi.json   --arazzo docs/checkout.arazzo.yaml   --output architecture/asyncapi.c4
+```
+
+```csharp
+var model = AsyncApiLikeC4Generator.Generate(
+    asyncApiSources,
+    [new ArazzoLikeC4Source("checkout", File.ReadAllText("checkout.arazzo.yaml"))]);
+```
+
+Each step is an arrow, in the order the workflow lists its steps:
+
+| Step | Arrow |
+| --- | --- |
+| an operation or channel of a source description that is one of the AsyncAPI documents | to or from the **channel** element: the workflow takes the other side of the service's operation (it sends what the service receives), or the side the step's `action` names |
+| any other operation (`operationId`, `operationPath`) | to the source description's element, labelled with the operation |
+| `workflowId` of a workflow in one of the Arazzo documents | a step that opens that workflow's view (`navigateTo`) |
+| `workflowId` of a workflow not given | to the Arazzo source description's element |
+
+A source description is one of the AsyncAPI documents when its `name` is the document's name, or its `url` is the
+document's link (`--link`, or the URL it was read from). Any other source description becomes an `arazzoSource`
+element (one per URL, a relative one resolved against the Arazzo document's `$self` or link), with its type
+(`OpenAPI`, `AsyncAPI`, `Arazzo`) as its technology. A bare `operationId` belongs to the AsyncAPI document that has
+the operation, else to the first source description that is not an Arazzo document. A step naming no source
+description that is in the document is left out.
+
+Arazzo has no field for who makes a step's call, so every arrow starts at the client (an `arazzoActor` element). As
+in the [Scalar Arazzo plugin's sequence view](arazzo/scalar.md), `x-actor` on a step or its workflow names someone
+else: a source description (its element), or anyone (an `arazzoActor` of their own). The document's `x-actors`
+registry titles and describes them, and its entry with `"client": true` names the client. Documents share an actor
+whose entries match; when two documents title or describe the same actor differently, each gets an element of its own:
+
+```yaml
+x-actors:
+  shopper: { title: Shopper, description: Buys things in the web shop., client: true }
+  warehouse: { title: Warehouse staff }
+workflows:
+  - workflowId: placeOrder
+    steps:
+      - stepId: restock
+        x-actor: warehouse
+        operationId: publishStockLevelChanged
+```
+
+A workflow's view is `arazzo<WorkflowId>` (`arazzoPlaceOrder`), titled by its `summary`; a step's `description`
+becomes its notes. LikeC4's browser shows these views as sequence diagrams; `likec4 export png --seq` renders them
+that way too:
+
+![The arazzoPlaceOrder view as a sequence: the shopper calls createPayment on payments, sends OrderCreated to orders.created, gets InventoryReserved delivered from inventory.reserved, StockLevelChanged is delivered to the warehouse staff, and the shopper runs Notify the shopper](../images/likec4/arazzo-place-order.jpg)
 
 ## Keeping your own descriptions
 

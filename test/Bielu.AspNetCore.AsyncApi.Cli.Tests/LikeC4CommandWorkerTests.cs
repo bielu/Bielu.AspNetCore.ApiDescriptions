@@ -69,7 +69,52 @@ public sealed class LikeC4CommandWorkerTests : IDisposable
         model.ShouldContain("inventory = asyncapiService 'Inventory'");
         model.ShouldContain("orders -[asyncapiFlow]-> inventory 'OrderCreated'");
         model.ShouldContain("link ../docs/orders.asyncapi.json 'AsyncAPI document'");
-        _info.ShouldContain(line => line.Contains("2 AsyncAPI document(s)"));
+        _info.ShouldContain(line => line.Contains("2 AsyncAPI and 0 Arazzo document(s)"));
+    }
+
+    [Fact]
+    public void Process_ArazzoDocument_AddsADynamicViewPerWorkflow()
+    {
+        // Arrange
+        var path = Path.Combine(_directory, "docs", "checkout.arazzo.yaml");
+        File.WriteAllText(path, """
+            arazzo: 1.1.0
+            info: { title: Checkout, version: '1' }
+            sourceDescriptions:
+              - { name: inventory, url: ./inventory.asyncapi.yaml, type: asyncapi }
+            workflows:
+              - workflowId: placeOrder
+                steps:
+                  - { stepId: announce, operationId: r }
+            """);
+        var context = new LikeC4CommandContext();
+        context.Sources.Add(Path.Combine(_directory, "docs", "*.asyncapi.*"));
+        context.Workflows.Add(path);
+
+        // Act
+        var exitCode = Run(context);
+
+        // Assert
+        exitCode.ShouldBe(0, string.Join('\n', _errors));
+        var model = File.ReadAllText(Output);
+        model.ShouldContain("dynamic view arazzoPlaceOrder {");
+        model.ShouldContain("client -> ordersCreated 'sends OrderCreated'");
+        _info.ShouldContain(line => line.Contains("2 AsyncAPI and 1 Arazzo document(s)"));
+    }
+
+    [Fact]
+    public void Process_UnreadableArazzoDocument_ReportsIt()
+    {
+        // Arrange
+        var context = new LikeC4CommandContext();
+        context.Workflows.Add(Path.Combine(_directory, "docs", "missing.arazzo.json"));
+
+        // Act
+        var exitCode = Run(context);
+
+        // Assert
+        exitCode.ShouldBe(1);
+        _errors.ShouldHaveSingleItem().ShouldContain("missing.arazzo.json");
     }
 
     [Fact]
@@ -151,7 +196,7 @@ public sealed class LikeC4CommandWorkerTests : IDisposable
 
         // Assert
         exitCode.ShouldBe(1);
-        _errors.ShouldBe(["No AsyncAPI documents found."]);
+        _errors.ShouldBe(["No AsyncAPI or Arazzo documents found."]);
     }
 
     [Fact]
@@ -210,6 +255,7 @@ public sealed class LikeC4CommandWorkerTests : IDisposable
     [InlineData("obj/orders.asyncapi.json", "orders")]
     [InlineData("orders.yaml", "orders")]
     [InlineData("orders.v1.yml", "orders.v1")]
+    [InlineData("checkout.arazzo.yaml", "checkout")]
     [InlineData("https://x.example.com/docs/inventory.json?raw=1", "inventory")]
     [InlineData("https://x.example.com/", "https://x.example.com/")]
     [InlineData(".json", ".json")]

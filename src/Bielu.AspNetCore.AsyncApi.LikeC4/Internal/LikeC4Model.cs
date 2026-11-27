@@ -14,6 +14,8 @@ internal sealed class LikeC4Model
     public List<LikeC4Relationship> Relationships { get; } = [];
 
     public List<LikeC4View> Views { get; } = [];
+
+    public List<LikeC4DynamicView> DynamicViews { get; } = [];
 }
 
 /// <summary>An element kind of the specification.</summary>
@@ -73,4 +75,22 @@ internal sealed record LikeC4View(
     IReadOnlyList<string> Exclude)
 {
     public string? Description { get; init; }
+}
+
+/// <summary>A dynamic view: steps between elements, in order, drawn as a sequence diagram.</summary>
+/// <param name="Id">The view's id.</param>
+/// <param name="Title">The view's title.</param>
+/// <param name="Steps">The steps, in order.</param>
+internal sealed record LikeC4DynamicView(string Id, string Title, IReadOnlyList<LikeC4DynamicStep> Steps)
+{
+    public string? Description { get; init; }
+}
+
+/// <summary>A step of a dynamic view.</summary>
+internal sealed record LikeC4DynamicStep(string Source, string Target, string Title)
+{
+    public string? Notes { get; init; }
+
+    /// <summary>The dynamic view the step opens, such as the workflow a step invokes.</summary>
+    public string? NavigateTo { get; init; }
 }

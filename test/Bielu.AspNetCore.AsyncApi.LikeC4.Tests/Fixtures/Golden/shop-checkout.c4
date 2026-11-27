@@ -1,0 +1,310 @@
+// Generated from AsyncAPI and Arazzo documents by Bielu.AspNetCore.AsyncApi.LikeC4. Do not edit: changes are lost when it
+// is generated again. Describe these elements further in a file of your own, with `extend <id> { ... }`.
+
+specification {
+  element asyncapiService {
+    notation 'AsyncAPI service'
+    style {
+      shape rectangle
+    }
+  }
+  element asyncapiChannel {
+    notation 'AsyncAPI channel'
+    style {
+      shape queue
+    }
+  }
+  element arazzoActor {
+    notation 'Who runs or takes part in an Arazzo workflow'
+    style {
+      shape person
+    }
+  }
+  element arazzoSource {
+    notation 'An Arazzo source description'
+    style {
+      shape rectangle
+    }
+  }
+  relationship asyncapiSend {
+    notation 'sends to a channel'
+    line solid
+  }
+  relationship asyncapiReceive {
+    notation 'delivers from a channel'
+    line dashed
+  }
+  relationship asyncapiFlow {
+    notation 'messages between services'
+    line dotted
+  }
+  tag asyncapi
+  tag arazzo
+}
+
+model {
+  orders = asyncapiService 'Orders API' {
+    #asyncapi
+    description '''
+      Takes orders and tells the rest of the shop about them.
+
+      See the [order lifecycle](https://example.com/orders) for the states an order goes through.
+    '''
+    link https://orders.example.com/asyncapi/v1.json 'AsyncAPI document'
+    metadata {
+      asyncapi 'orders'
+      version '1.2.0'
+    }
+  }
+
+  inventory = asyncapiService 'Inventory API' {
+    #asyncapi
+    metadata {
+      asyncapi 'inventory'
+      version '2.0.0'
+    }
+  }
+
+  notifications = asyncapiService 'Notifications' {
+    #asyncapi
+    description '''
+      Tells people when stock runs low.
+    '''
+    metadata {
+      asyncapi 'notifications'
+      version '1.0.0'
+    }
+  }
+
+  ordersCreated = asyncapiChannel 'Orders created' {
+    #asyncapi
+    description '''
+      An order was placed.
+    '''
+    technology 'kafka'
+    metadata {
+      asyncapiChannel 'orders.created'
+    }
+  }
+
+  inventoryReserved = asyncapiChannel 'inventory.reserved' {
+    #asyncapi
+    technology 'kafka'
+    metadata {
+      asyncapiChannel 'inventory.reserved'
+    }
+  }
+
+  inventoryStockChanged = asyncapiChannel 'inventory.stock-changed' {
+    #asyncapi
+    technology 'kafka'
+    metadata {
+      asyncapiChannel 'inventory.stock-changed'
+    }
+  }
+
+  notificationsInventoryAlerts = asyncapiChannel 'notifications/inventory-alerts' {
+    #asyncapi
+    description '''
+      It\'s where alerts go.
+    '''
+    technology 'wss'
+    metadata {
+      asyncapiChannel 'notifications/inventory-alerts'
+    }
+  }
+
+  shopper = arazzoActor 'Shopper' {
+    #arazzo
+    description '''
+      Buys things in the web shop.
+    '''
+    metadata {
+      arazzoActor 'shopper'
+    }
+  }
+
+  payments = arazzoSource 'payments' {
+    #arazzo
+    technology 'OpenAPI'
+    link https://payments.example.com/openapi.json
+    metadata {
+      arazzoSource 'payments'
+    }
+  }
+
+  warehouse = arazzoActor 'Warehouse staff' {
+    #arazzo
+    metadata {
+      arazzoActor 'warehouse'
+    }
+  }
+
+  notifier = arazzoActor 'notifier' {
+    #arazzo
+    metadata {
+      arazzoActor 'notifier'
+    }
+  }
+
+  orders -[asyncapiSend]-> ordersCreated 'sends OrderCreated' {
+    #asyncapi
+    description '''
+      Announces a new order.
+    '''
+    technology 'kafka'
+    metadata {
+      asyncapiOperation 'publishOrderCreated'
+    }
+  }
+  inventoryReserved -[asyncapiReceive]-> orders 'delivers InventoryReserved' {
+    #asyncapi
+    technology 'kafka'
+    metadata {
+      asyncapiOperation 'onInventoryReserved'
+    }
+  }
+  ordersCreated -[asyncapiReceive]-> inventory 'delivers OrderCreated' {
+    #asyncapi
+    technology 'kafka'
+    metadata {
+      asyncapiOperation 'onOrderCreated'
+    }
+  }
+  inventory -[asyncapiSend]-> inventoryReserved 'sends InventoryReserved' {
+    #asyncapi
+    technology 'kafka'
+    metadata {
+      asyncapiOperation 'publishInventoryReserved'
+    }
+  }
+  inventory -[asyncapiSend]-> inventoryStockChanged 'sends StockLevelChanged' {
+    #asyncapi
+    description '''
+      Stock level changed
+    '''
+    technology 'kafka'
+    metadata {
+      asyncapiOperation 'publishStockLevelChanged'
+    }
+  }
+  inventoryStockChanged -[asyncapiReceive]-> notifications 'delivers StockLevelChanged' {
+    #asyncapi
+    technology 'kafka'
+    metadata {
+      asyncapiOperation 'onStockLevelChanged'
+    }
+  }
+  notifications -[asyncapiSend]-> notificationsInventoryAlerts 'sends Low stock, OutOfStock' {
+    #asyncapi
+    description '''
+      Pushes an alert to the browser.
+    '''
+    technology 'wss'
+    metadata {
+      asyncapiOperation 'sendInventoryAlert'
+    }
+  }
+  orders -[asyncapiFlow]-> inventory 'OrderCreated' {
+    #asyncapi
+    description '''
+      Through Orders created.
+    '''
+    technology 'kafka'
+    metadata {
+      asyncapiChannel 'orders.created'
+    }
+  }
+  inventory -[asyncapiFlow]-> orders 'InventoryReserved' {
+    #asyncapi
+    description '''
+      Through inventory.reserved.
+    '''
+    technology 'kafka'
+    metadata {
+      asyncapiChannel 'inventory.reserved'
+    }
+  }
+  inventory -[asyncapiFlow]-> notifications 'StockLevelChanged' {
+    #asyncapi
+    description '''
+      Through inventory.stock-changed.
+    '''
+    technology 'kafka'
+    metadata {
+      asyncapiChannel 'inventory.stock-changed'
+    }
+  }
+}
+
+views {
+  view asyncapiChannels {
+    title 'AsyncAPI: services and channels'
+    description '''
+      Every service, the channels it sends to, and the channels that deliver to it.
+    '''
+    include element.kind = asyncapiService, element.kind = asyncapiChannel
+    exclude * -> * where kind is asyncapiFlow
+  }
+
+  view asyncapiServices {
+    title 'AsyncAPI: service flows'
+    description '''
+      The services, joined where one sends messages to a channel another receives from.
+    '''
+    include element.kind = asyncapiService
+  }
+
+  view asyncapiOrders of orders {
+    title 'Orders API'
+    description '''
+      The channels this service sends to and receives from.
+    '''
+    include *, -> orders ->
+    exclude * -> * where kind is asyncapiFlow
+  }
+
+  view asyncapiInventory of inventory {
+    title 'Inventory API'
+    description '''
+      The channels this service sends to and receives from.
+    '''
+    include *, -> inventory ->
+    exclude * -> * where kind is asyncapiFlow
+  }
+
+  view asyncapiNotifications of notifications {
+    title 'Notifications'
+    description '''
+      The channels this service sends to and receives from.
+    '''
+    include *, -> notifications ->
+    exclude * -> * where kind is asyncapiFlow
+  }
+
+  dynamic view arazzoPlaceOrder {
+    title 'Place an order'
+    description '''
+      The shopper pays, the order is announced, and stock is reserved for it.
+    '''
+    variant sequence
+    shopper -> payments 'createPayment' {
+      notes '''
+        Charges the shopper\'s card.
+      '''
+    }
+    shopper -> ordersCreated 'sends OrderCreated'
+    inventoryReserved -> shopper 'delivers InventoryReserved'
+    inventoryStockChanged -> warehouse 'delivers StockLevelChanged'
+    shopper -> shopper 'runs Notify the shopper' {
+      navigateTo arazzoNotifyShopper
+    }
+  }
+
+  dynamic view arazzoNotifyShopper {
+    title 'Notify the shopper'
+    variant sequence
+    notifier -> payments 'sendReceipt'
+    orders -> payments 'confirm'
+  }
+}

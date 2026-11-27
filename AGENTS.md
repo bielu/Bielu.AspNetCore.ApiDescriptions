@@ -23,7 +23,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.Avro` | Describes message payloads as Apache Avro schemas (`schemaFormat` `application/vnd.apache.avro`), converted from the generated JSON Schemas |
 | `Bielu.AspNetCore.AsyncApi.OpenApiSchema` | Describes message payloads as OpenAPI 3.0 Schema Objects (`schemaFormat` `application/vnd.oai.openapi;version=3.0.0`), converted from the generated JSON Schemas |
 | `Bielu.AspNetCore.AsyncApi.Protobuf` | Describes Protocol Buffers message payloads as `.proto` schemas (`schemaFormat` `application/vnd.google.protobuf`), rendered from the message descriptors |
-| `Bielu.AspNetCore.AsyncApi.LikeC4` | Generates a LikeC4 architecture model (`.c4`) from AsyncAPI documents: services, channels matched by address, sends/receives, the service-to-service flows they imply, and views. Framework-free; `dotnet asyncapi likec4` wraps it |
+| `Bielu.AspNetCore.AsyncApi.LikeC4` | Generates a LikeC4 architecture model (`.c4`) from AsyncAPI documents: services, channels matched by address, sends/receives, the service-to-service flows they imply, and views, plus a dynamic view per Arazzo workflow. Framework-free; `dotnet asyncapi likec4` wraps it |
 | `Bielu.AspNetCore.AsyncApi.CloudEvents` | Describes messages as CloudEvents 1.0: binary-mode `ce-*` headers per protocol binding, or the structured-mode `application/cloudevents+json` envelope |
 | `Bielu.AspNetCore.AsyncApi.Versioning` | API Versioning integration (`Asp.Versioning`) |
 | `Bielu.AspNetCore.AsyncApi.Wolverine` | Wolverine integration: builds channels and operations from Wolverine's message routing |
