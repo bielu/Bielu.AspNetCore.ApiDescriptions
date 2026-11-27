@@ -413,7 +413,8 @@ document name isn't a constant, or the step or its `AddAsyncApiSource` is writte
 ## CLI Tool: `dotnet arazzo`
 
 `Bielu.Arazzo.Cli` provides `validate`, `lint`, `diff` and `impact` commands for Arazzo documents — see the
-[CLI Tool](cli.md) article for details.
+[CLI Tool](cli.md) article for details. [Keeping workflows in step with the code](ci.md) shows how the
+analyzers, startup validation and these commands fit into a CI pipeline.
 
 ## What's next
 

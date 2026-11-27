@@ -5,6 +5,9 @@ documents, and for finding the workflows an API change affects. It is a separate
 NuGet, but it reuses the same underlying infrastructure (`Bielu.Cli.Shared`) and mirrors its command
 shapes and output formats.
 
+To run these commands in CI (failing a build on a stale workflow, or commenting the affected workflows on a
+pull request), see [Keeping workflows in step with the code](ci.md).
+
 ## Installation
 
 ```bash
