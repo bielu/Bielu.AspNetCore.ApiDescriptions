@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
+        <RootNamespace>Bielu.AspNetCore.AsyncApi.LikeC4</RootNamespace>
+        <IsAotCompatible>true</IsAotCompatible>
+        <Description>Generates a LikeC4 architecture model (.c4) from AsyncAPI documents: every service, the channels it sends to and receives from, the service-to-service flows they imply, and views of them. Framework-free.</Description>
+        <PackageTags>asyncapi;likec4;c4-model;architecture;architecture-as-code;diagrams</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.Spec.Shared\Bielu.Spec.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.AsyncApi.LikeC4.Tests" />
+    </ItemGroup>
+
+</Project>

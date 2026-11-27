@@ -84,3 +84,18 @@ dotnet asyncapi diff --base old.json --head new.json --fail-on-breaking
 - `--head <path>` - Path to the head (new) AsyncAPI document (required)
 - `--fail-on-breaking` - Exit with code 1 if breaking changes are detected
 - `--format <text|json|markdown>` - Output format (default: text)
+
+### `likec4`
+
+Generate a [LikeC4](https://likec4.dev) architecture model from AsyncAPI documents, one per service. See
+[LikeC4 architecture models](likec4.md) for what the model contains.
+
+```bash
+dotnet asyncapi likec4 --source orders=obj/orders.json --source "docs/*.asyncapi.yaml" --output architecture/asyncapi.c4
+```
+
+**Options:**
+- `--source [name=]<path|url>` - An AsyncAPI document (required, repeatable). Without a name, the service is named after
+  the file (`orders.asyncapi.json` → `orders`); a path may be a glob
+- `--link <name>=<url>` - Where readers find a service's document (default: its URL, or its path relative to the model)
+- `--output <path>` - The `.c4` file to write (required)

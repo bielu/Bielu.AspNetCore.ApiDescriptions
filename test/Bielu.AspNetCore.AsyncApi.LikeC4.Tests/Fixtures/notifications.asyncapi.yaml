@@ -1,0 +1,42 @@
+asyncapi: 2.6.0
+info:
+  title: Notifications
+  version: 1.0.0
+  description: Tells people when stock runs low.
+servers:
+  kafka:
+    url: kafka:9092
+    protocol: kafka
+  websocket:
+    url: wss://notifications.example.com
+    protocol: wss
+channels:
+  inventory.stock-changed:
+    servers: [kafka]
+    publish:
+      operationId: onStockLevelChanged
+      message:
+        $ref: '#/components/messages/StockLevelChanged'
+  notifications/inventory-alerts:
+    servers: [websocket]
+    description: It's where alerts go.
+    subscribe:
+      operationId: sendInventoryAlert
+      summary: Pushes an alert to the browser.
+      message:
+        oneOf:
+          - $ref: '#/components/messages/LowStock'
+          - $ref: '#/components/messages/OutOfStock'
+components:
+  messages:
+    StockLevelChanged:
+      name: StockLevelChanged
+      payload:
+        type: object
+    LowStock:
+      title: Low stock
+      payload:
+        type: object
+    OutOfStock:
+      payload:
+        type: object

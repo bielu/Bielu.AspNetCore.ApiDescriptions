@@ -10,8 +10,8 @@
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>dotnet-asyncapi</ToolCommandName>
         <PackageId>Bielu.AspNetCore.AsyncApi.Cli</PackageId>
-        <Description>CLI tool for generating AsyncAPI documents at build time from ASP.NET Core applications.</Description>
-        <PackageTags>asyncapi;cli;dotnet-tool;validate;diff;merge;documentation</PackageTags>
+        <Description>CLI tool for generating AsyncAPI documents at build time from ASP.NET Core applications, and for merging, validating, diffing and diagramming (LikeC4) them.</Description>
+        <PackageTags>asyncapi;cli;dotnet-tool;validate;diff;merge;likec4;documentation</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>
@@ -23,6 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.LikeC4\Bielu.AspNetCore.AsyncApi.LikeC4.csproj" />
         <ProjectReference Include="..\Bielu.AspNetCore.AsyncApi.Merger\Bielu.AspNetCore.AsyncApi.Merger.csproj" />
         <ProjectReference Include="..\Bielu.Cli.Shared\Bielu.Cli.Shared.csproj" />
     </ItemGroup>
