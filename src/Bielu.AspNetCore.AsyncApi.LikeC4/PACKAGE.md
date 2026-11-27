@@ -22,6 +22,7 @@ var model = AsyncApiLikeC4Generator.Generate(
     new AsyncApiLikeC4Source("orders", File.ReadAllText("orders.asyncapi.json")),
     new AsyncApiLikeC4Source("inventory", File.ReadAllText("inventory.asyncapi.yaml")),
 ]);
+Directory.CreateDirectory("architecture");
 File.WriteAllText("architecture/asyncapi.c4", model);
 ```
 

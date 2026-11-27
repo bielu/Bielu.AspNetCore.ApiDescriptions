@@ -6,8 +6,8 @@
 internal sealed class LikeC4CommandContext
 {
     /// <summary>
-    /// The AsyncAPI documents, each <c>[name=]&lt;path|url&gt;</c>. A path may be a glob; without a name, a document
-    /// is named after its file.
+    /// The AsyncAPI documents, each <c>[name=]&lt;path|url&gt;</c>. Without a name, a path may be a glob, and each
+    /// document is named after its file; a named path is read as it is.
     /// </summary>
     public List<string> Sources { get; } = [];
 

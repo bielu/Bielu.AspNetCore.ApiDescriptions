@@ -34,6 +34,7 @@ var model = AsyncApiLikeC4Generator.Generate(
     },
     new AsyncApiLikeC4Source("inventory", File.ReadAllText("inventory.asyncapi.json")),
 ]);
+Directory.CreateDirectory("architecture");
 File.WriteAllText("architecture/asyncapi.c4", model);
 ```
 
@@ -77,7 +78,10 @@ dashed, flows dotted.
 A service's id is its source name in camelCase (`orders-api` becomes `ordersApi`), and a channel's is its address
 the same way (`orders.created` becomes `ordersCreated`). An id that would be a LikeC4 keyword (`model`, `views`, …)
 or is already taken gets a number (`model2`), and one that would start with a digit is prefixed (`service1st…`).
-The ids only change when the names and addresses they come from do.
+The ids only change when the names and addresses they come from do, with one exception: when two names come out the
+same (`orders-api` and `orders.api` are both `ordersApi`), the number goes to whichever is generated second, so
+reordering the sources swaps the ids, and an `extend ordersApi` of your own then describes the other service. Keep
+source names distinct after camelCasing.
 
 ## Keeping your own descriptions
 

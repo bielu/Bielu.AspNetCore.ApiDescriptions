@@ -229,4 +229,28 @@ public class AsyncApiLikeC4GeneratorTests
         // Act & Assert
         Should.Throw<ArgumentNullException>(() => new AsyncApiLikeC4Source("shop", null!));
     }
+
+    [Fact]
+    public void Generate_SeveralOperationsOnOneChannel_FlowCarriesEveryMessage()
+    {
+        // Arrange
+        var sender = Document(
+            """{ "c": { "address": "x", "messages": { "created": { "name": "Created" }, "cancelled": { "name": "Cancelled" } } } }""",
+            """
+            {
+              "s1": { "action": "send", "channel": { "$ref": "#/channels/c" }, "messages": [{ "$ref": "#/channels/c/messages/created" }] },
+              "s2": { "action": "send", "channel": { "$ref": "#/channels/c" }, "messages": [{ "$ref": "#/channels/c/messages/cancelled" }] }
+            }
+            """);
+        var receiver = Document(
+            """{ "c": { "address": "x", "messages": { "created": { "name": "Created" }, "cancelled": { "name": "Cancelled" } } } }""",
+            """{ "r": { "action": "receive", "channel": { "$ref": "#/channels/c" } } }""");
+
+        // Act
+        var model = AsyncApiLikeC4Generator.Generate([Source("sender", sender), Source("receiver", receiver)]);
+
+        // Assert
+        model.Split("-[asyncapiFlow]->").Length.ShouldBe(2);
+        model.ShouldContain("sender -[asyncapiFlow]-> receiver 'Created, Cancelled'");
+    }
 }

@@ -36,7 +36,7 @@ internal static class AsyncApiDocumentReader
 
         var info = root["info"] as JsonObject;
         var servers = ReadServerProtocols(root);
-        var (channels, operations) = version.StartsWith("2.", StringComparison.Ordinal)
+        var (channels, operations) = IsVersion2(version)
             ? ReadVersion2(root, servers)
             : ReadVersion3(root, servers);
         return new AsyncApiServiceDescription(
@@ -80,8 +80,9 @@ internal static class AsyncApiDocumentReader
                 .Select(message => MessageName(root, message.Key, message.Value));
             channels.Add(new AsyncApiChannelDescription(
                 key,
-                // A 3.x channel without an address, or with a null one, has an unknown address.
-                Text(channel["address"]),
+                // A 3.x channel without an address, or with a null or empty one, has an unknown address. The address
+                // is the channel's identity, so it is read as written, whitespace and all.
+                channel["address"] is JsonValue address && address.TryGetValue<string>(out var text) && text.Length > 0 ? text : null,
                 Text(channel["title"]),
                 Text(channel["description"]),
                 Protocols(servers, serverNames),
@@ -178,16 +179,37 @@ internal static class AsyncApiDocumentReader
 
     /// <summary>
     /// A message's name: its <c>name</c>, else its <c>title</c>, else the key it is referenced by or listed under.
+    /// The name and title may come from its traits.
     /// </summary>
     private static string MessageName(JsonObject root, string? key, JsonNode? node)
     {
         var resolved = Resolve(root, node);
-        return Text(resolved?["name"])
-               ?? Text(resolved?["title"])
+        return MessageField(root, resolved, "name")
+               ?? MessageField(root, resolved, "title")
                ?? LastToken(Text(node?["$ref"]))
                ?? key
                ?? "message";
     }
+
+    /// <summary>
+    /// A message's <paramref name="field"/> after its traits are applied, in order. A 2.x trait is merged over the
+    /// message, so the last trait that sets the field wins; a 3.x message keeps its own value over any trait's.
+    /// </summary>
+    private static string? MessageField(JsonObject root, JsonNode? message, string field)
+    {
+        var own = Text(message?[field]);
+        if (own is not null && !IsVersion2(Text(root["asyncapi"])))
+        {
+            return own;
+        }
+
+        var fromTraits = (message?["traits"] as JsonArray ?? [])
+            .Select(trait => Text(Resolve(root, trait)?[field]))
+            .LastOrDefault(value => value is not null);
+        return fromTraits ?? own;
+    }
+
+    private static bool IsVersion2(string? version) => version?.StartsWith("2.", StringComparison.Ordinal) == true;
 
     /// <summary>The distinct, sorted protocols of the named servers, or of every server when none is named.</summary>
     private static IReadOnlyList<string> Protocols(Dictionary<string, string> servers, IEnumerable<string> names)
@@ -210,6 +232,7 @@ internal static class AsyncApiDocumentReader
     private static string? ChannelKey(string? reference)
     {
         const string prefix = "#/channels/";
+        reference = Decode(reference);
         if (reference is null || !reference.StartsWith(prefix, StringComparison.Ordinal))
         {
             return null;
@@ -241,6 +264,7 @@ internal static class AsyncApiDocumentReader
     /// <summary>Looks up a local <c>#/…</c> JSON Pointer in <paramref name="root"/>.</summary>
     private static JsonNode? Resolve(JsonObject root, string reference)
     {
+        reference = Uri.UnescapeDataString(reference);
         if (!reference.StartsWith("#/", StringComparison.Ordinal))
         {
             return null;
@@ -260,7 +284,13 @@ internal static class AsyncApiDocumentReader
     }
 
     private static string? LastToken(string? reference) =>
-        reference is null ? null : Unescape(reference[(reference.LastIndexOf('/') + 1)..]) is { Length: > 0 } token ? token : null;
+        Decode(reference) is not { } decoded ? null : Unescape(decoded[(decoded.LastIndexOf('/') + 1)..]) is { Length: > 0 } token ? token : null;
+
+    /// <summary>
+    /// Percent-decodes a reference: a JSON Pointer in a URI fragment is decoded before it is split into tokens, so
+    /// <c>#/channels/order%20events</c> points at the <c>order events</c> channel.
+    /// </summary>
+    private static string? Decode(string? reference) => reference is null ? null : Uri.UnescapeDataString(reference);
 
     private static string Unescape(string token) => token.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal);
 

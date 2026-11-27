@@ -122,12 +122,14 @@ internal static class AsyncApiLikeC4ModelBuilder
 
     /// <summary>
     /// A flow from every service that sends to a channel to every other service that receives from it, carrying the
-    /// messages both name. A sender and receiver that name messages but none in common do not meet.
+    /// messages both name. A sender and receiver that name messages but none in common do not meet. A service that
+    /// sends to a channel through several operations, or receives from it through several, meets the other in one
+    /// flow carrying every message, in the order the operations name them.
     /// </summary>
     private static IEnumerable<LikeC4Relationship> Flows(
         List<(string ServiceId, AsyncApiOperationDescription Operation, ChannelElement Channel)> operations)
     {
-        var seen = new HashSet<(string, string, ChannelElement)>();
+        var flows = new OrderedDictionary<(string Sender, string Receiver, ChannelElement Channel), List<string>>();
         foreach (var (sender, send, channel) in operations.Where(operation => operation.Operation.Action == AsyncApiOperationAction.Send))
         {
             foreach (var (receiver, receive, _) in operations.Where(operation =>
@@ -143,26 +145,31 @@ internal static class AsyncApiLikeC4ModelBuilder
                     continue;
                 }
 
-                if (!seen.Add((sender, receiver, channel)))
+                if (!flows.TryGetValue((sender, receiver, channel), out var flow))
                 {
-                    continue;
+                    flows.Add((sender, receiver, channel), flow = []);
                 }
 
-                var metadata = channel.Address is { } address
-                    ? new List<KeyValuePair<string, string>> { new(ChannelMetadataKey, address) }
-                    : [];
-                yield return new LikeC4Relationship(
-                    sender,
-                    receiver,
-                    FlowKind,
-                    messages.Count > 0 ? string.Join(", ", messages) : channel.Title)
-                {
-                    Description = $"Through {channel.Title}.",
-                    Technology = channel.Technology,
-                    Tags = [Tag],
-                    Metadata = metadata,
-                };
+                flow.AddRange(messages.Where(message => !flow.Contains(message, StringComparer.Ordinal)));
             }
+        }
+
+        foreach (var ((sender, receiver, channel), messages) in flows)
+        {
+            var metadata = channel.Address is { } address
+                ? new List<KeyValuePair<string, string>> { new(ChannelMetadataKey, address) }
+                : [];
+            yield return new LikeC4Relationship(
+                sender,
+                receiver,
+                FlowKind,
+                messages.Count > 0 ? string.Join(", ", messages) : channel.Title)
+            {
+                Description = $"Through {channel.Title}.",
+                Technology = channel.Technology,
+                Tags = [Tag],
+                Metadata = metadata,
+            };
         }
     }
 
@@ -222,7 +229,7 @@ internal static class AsyncApiLikeC4ModelBuilder
 
         public string Id { get; set; } = string.Empty;
 
-        public string Title => _title ?? Address ?? Key;
+        public string Title => _title ?? (string.IsNullOrWhiteSpace(Address) ? Key : Address);
 
         public string? Technology => _protocols.Count > 0 ? string.Join(", ", _protocols.Order(StringComparer.Ordinal)) : null;
 

@@ -145,4 +145,100 @@ public class AsyncApiDocumentReaderTests
         // Assert
         service.Channels.ShouldHaveSingleItem().Messages.ShouldBe(["inline"]);
     }
+
+    [Fact]
+    public void Read_PercentEncodedReference_IsDecodedBeforeItIsResolved()
+    {
+        // Arrange
+        var document = """
+            {
+              "asyncapi": "3.0.0",
+              "channels": { "order events": { "address": "orders", "messages": { "created": { "$ref": "#/components/messages/Order%20Created" } } } },
+              "operations": { "s": { "action": "send", "channel": { "$ref": "#/channels/order%20events" } } },
+              "components": { "messages": { "Order Created": { "payload": {} } } }
+            }
+            """;
+
+        // Act
+        var service = AsyncApiDocumentReader.Read(document);
+
+        // Assert
+        var operation = service.Operations.ShouldHaveSingleItem();
+        operation.ChannelKey.ShouldBe("order events");
+        operation.Messages.ShouldBe(["Order Created"]);
+    }
+
+    [Fact]
+    public void Read_ChannelAddress_KeepsItsWhitespace()
+    {
+        // Arrange
+        var document = """
+            {
+              "asyncapi": "3.0.0",
+              "channels": { "a": { "address": "orders" }, "b": { "address": "orders " }, "c": { "address": null }, "d": { "address": "" } }
+            }
+            """;
+
+        // Act
+        var service = AsyncApiDocumentReader.Read(document);
+
+        // Assert
+        service.Channels.Select(channel => channel.Address).ShouldBe(["orders", "orders ", null, null]);
+    }
+
+    [Fact]
+    public void Read_Version2MessageNamedByItsTraits_TakesTheLastTraitsName()
+    {
+        // Arrange
+        var document = """
+            {
+              "asyncapi": "2.6.0",
+              "channels": {
+                "orders": {
+                  "subscribe": {
+                    "message": {
+                      "oneOf": [
+                        { "traits": [{ "$ref": "#/components/messageTraits/created" }] },
+                        { "name": "Overridden", "traits": [{ "name": "First" }, { "name": "Cancelled" }] }
+                      ]
+                    }
+                  }
+                }
+              },
+              "components": { "messageTraits": { "created": { "name": "Created" } } }
+            }
+            """;
+
+        // Act
+        var service = AsyncApiDocumentReader.Read(document);
+
+        // Assert
+        service.Operations.ShouldHaveSingleItem().Messages.ShouldBe(["Created", "Cancelled"]);
+    }
+
+    [Fact]
+    public void Read_Version3MessageWithTraits_KeepsItsOwnNameOverTheTraits()
+    {
+        // Arrange
+        var document = """
+            {
+              "asyncapi": "3.0.0",
+              "channels": {
+                "c": {
+                  "address": "x",
+                  "messages": {
+                    "a": { "name": "Own", "traits": [{ "name": "Trait" }] },
+                    "b": { "traits": [{ "title": "Titled" }, { "name": "First" }, { "name": "Last" }] }
+                  }
+                }
+              }
+            }
+            """;
+
+        // Act
+        var service = AsyncApiDocumentReader.Read(document);
+
+        // Assert
+        service.Channels.ShouldHaveSingleItem().Messages.ShouldBe(["Own", "Last"]);
+    }
 }

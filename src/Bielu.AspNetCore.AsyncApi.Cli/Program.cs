@@ -449,7 +449,7 @@ static void PrintUsage()
     Console.WriteLine("  --format <text|json|markdown> Output format (default: text)");
     Console.WriteLine();
     Console.WriteLine("likec4 options:");
-    Console.WriteLine("  --source [name=]<path|url> An AsyncAPI document, one per service (required, repeatable; a path may be a glob)");
+    Console.WriteLine("  --source [name=]<path|url> An AsyncAPI document, one per service (required, repeatable; an unnamed path may be a glob)");
     Console.WriteLine("  --link <name>=<url>      Where readers find a service's document (default: its URL, or its path from the model)");
     Console.WriteLine("  --output <path>          The .c4 file to write (required)");
     Console.WriteLine();
