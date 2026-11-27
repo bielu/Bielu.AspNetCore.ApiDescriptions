@@ -7,6 +7,9 @@ export const ACTIVATION_WIDTH = 10
 /** How far right of its lifeline a self-step's loop reaches. */
 const LOOP_WIDTH = 44
 
+/** How wide a step's label may grow before it wraps. */
+export const STEP_LABEL_WIDTH = 260
+
 /** A lane: an actor's box at the top, and its lifeline down to the bottom of the view. */
 export type SequenceLane = { id: string; box: LikeC4Box; lifeline: { x: number; top: number; bottom: number } }
 
@@ -38,18 +41,27 @@ const isBox = (value: unknown): value is LikeC4Box => {
   return [box?.x, box?.y, box?.width, box?.height].every((part) => typeof part === 'number' && Number.isFinite(part))
 }
 
-/** The box the lanes cover, ports included. */
-const laneExtent = (actors: readonly LikeC4SequenceActor[]): LikeC4Box => {
-  const left = Math.min(...actors.map((actor) => actor.x))
-  const top = Math.min(...actors.map((actor) => actor.y))
-  const right = Math.max(...actors.map((actor) => actor.x + actor.width))
-  const bottom = Math.max(
-    ...actors.flatMap((actor) => [
-      actor.y + actor.height,
-      ...(actor.ports ?? []).map((port) => actor.y + port.cy + (port.height ?? 24) / 2),
+/**
+ * The box everything drawn covers: the lanes, the activation bars, the steps' routes, and their labels (a
+ * label beside a loop as wide as it may grow, since it reaches out to the right).
+ */
+const drawnExtent = (
+  actors: readonly LikeC4SequenceActor[],
+  activations: readonly LikeC4Box[],
+  steps: readonly SequenceStep[],
+): LikeC4Box => {
+  const boxes = [...actors, ...activations]
+  const xs = [
+    ...boxes.flatMap((box) => [box.x, box.x + box.width]),
+    ...steps.flatMap((step) => [
+      ...step.points.map((point) => point[0]),
+      step.label.anchor === 'start' ? step.label.x + STEP_LABEL_WIDTH : step.label.x,
     ]),
-  )
-  return { x: left, y: top, width: right - left, height: bottom - top }
+  ]
+  const ys = [...boxes.flatMap((box) => [box.y, box.y + box.height]), ...steps.flatMap((step) => step.points.map((point) => point[1]))]
+  const left = Math.min(...xs)
+  const top = Math.min(...ys)
+  return { x: left, y: top, width: Math.max(...xs) - left, height: Math.max(...ys) - top }
 }
 
 /**
@@ -63,9 +75,6 @@ export const sequenceDiagram = (view: LikeC4View): SequenceDiagram | undefined =
   if (!layout || actors.length === 0) {
     return undefined
   }
-  // The sequence's own extent, else the view's, else what its lanes cover, so lifelines always run downwards.
-  const bounds = isBox(layout.bounds) ? layout.bounds : isBox(view.bounds) ? view.bounds : laneExtent(actors)
-  const bottom = bounds.y + bounds.height
   const ports = new Map<string, { x: number; y: number; height: number; lane: string }>()
   const activations: LikeC4Box[] = []
   for (const actor of actors) {
@@ -77,11 +86,6 @@ export const sequenceDiagram = (view: LikeC4View): SequenceDiagram | undefined =
       activations.push({ x: x - ACTIVATION_WIDTH / 2, y: y - height / 2, width: ACTIVATION_WIDTH, height })
     }
   }
-  const lanes: SequenceLane[] = actors.map((actor) => ({
-    id: actor.id,
-    box: { x: actor.x, y: actor.y, width: actor.width, height: actor.height },
-    lifeline: { x: actor.x + actor.width / 2, top: actor.y + actor.height, bottom },
-  }))
   const edges = new Map((view.edges ?? []).map((edge) => [edge.id, edge]))
   const steps: SequenceStep[] = []
   ;(layout.steps ?? []).forEach((step, index) => {
@@ -123,6 +127,18 @@ export const sequenceDiagram = (view: LikeC4View): SequenceDiagram | undefined =
       label: { x: (from[0] + to[0]) / 2, y: Math.min(from[1], to[1]) - 8, anchor: 'middle' },
     })
   })
+  // The sequence's own extent, else the view's, else what is drawn, so lifelines always run downwards.
+  const bounds = isBox(layout.bounds)
+    ? layout.bounds
+    : isBox(view.bounds)
+      ? view.bounds
+      : drawnExtent(actors, activations, steps)
+  const bottom = bounds.y + bounds.height
+  const lanes: SequenceLane[] = actors.map((actor) => ({
+    id: actor.id,
+    box: { x: actor.x, y: actor.y, width: actor.width, height: actor.height },
+    lifeline: { x: actor.x + actor.width / 2, top: actor.y + actor.height, bottom },
+  }))
   const frames: SequenceDiagram['frames'] = [
     ...(layout.compounds ?? [])
       .filter((compound): compound is LikeC4Box & { id: string; origin?: string; depth?: number } => isBox(compound))

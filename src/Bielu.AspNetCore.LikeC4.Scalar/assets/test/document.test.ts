@@ -98,7 +98,12 @@ describe('LikeC4Document', () => {
 
     // Assert
     const step = view.find('svg.bl-sequence [data-edge-id="' + placeOrder.edges[0]!.id + '"]')
-    expect(step.findAll('.bl-edge-arrow')).toHaveLength(1)
+    const arrows = step.findAll('.bl-edge-arrow')
+    expect(arrows).toHaveLength(1)
+    // Its tip is the step's source end: the first point of its line.
+    const [source] = step.find('.bl-edge-line').attributes('points')!.split(' ')
+    const [x, y] = source!.split(',').map(Number)
+    expect(arrows[0]!.attributes('d')).toMatch(new RegExp('^M' + Math.round(x! * 10) / 10 + ',' + Math.round(y! * 10) / 10 + ' '))
     const other = view.find('svg.bl-sequence [data-edge-id="' + placeOrder.edges[1]!.id + '"]')
     expect(other.findAll('.bl-edge-arrow')).toHaveLength(1)
   })

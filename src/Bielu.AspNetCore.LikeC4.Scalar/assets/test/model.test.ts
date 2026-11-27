@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { plainText, renderMarkdown } from '../src/helpers/markdown'
 import { isLikeC4Model, toViewSections, traverseLikeC4Model, viewsOf } from '../src/helpers/navigation'
-import { sequenceDiagram } from '../src/helpers/sequence'
+import { STEP_LABEL_WIDTH, sequenceDiagram } from '../src/helpers/sequence'
 import { drawOrder, dynamicSteps, edgeLabel, isSequence, labelArea, nodeLabel, stepNumber, viewBounds } from '../src/helpers/view-layout'
 import handwrittenJson from './fixtures/handwritten.likec4.json'
 import shopJson from './fixtures/shop.likec4.json'
@@ -278,6 +278,38 @@ describe('sequenceDiagram', () => {
     // Assert
     expect(withViewBounds.lanes[0]!.lifeline).toEqual({ x: 50, top: 180, bottom: 600 })
     expect(withoutBounds.lanes[0]!.lifeline).toEqual({ x: 50, top: 180, bottom: 310 })
+  })
+
+  it('covers a self-step loop and its label when the layout has no bounds', () => {
+    // Arrange: a port at the right edge of its lane, and a step back to the same lane.
+    const actor = {
+      id: 'a',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 180,
+      ports: [
+        { id: 'out', cx: 100, cy: 220 },
+        { id: 'in', cx: 100, cy: 260 },
+      ],
+    }
+    const view: LikeC4View = {
+      id: 'v',
+      _type: 'dynamic',
+      variant: 'sequence',
+      edges: [{ id: 'step-01', source: 'a', target: 'a' }],
+      sequenceLayout: { actors: [actor], steps: [{ id: 'step-01', sourceHandle: 'out', targetHandle: 'in' }] },
+    }
+
+    // Act
+    const diagram = sequenceDiagram(view)!
+
+    // Assert
+    const step = diagram.steps[0]!
+    const right = diagram.bounds.x + diagram.bounds.width
+    expect(Math.max(...step.points.map((point) => point[0]))).toBeLessThanOrEqual(right)
+    expect(step.label.x + STEP_LABEL_WIDTH).toBeLessThanOrEqual(right)
+    expect(diagram.lanes[0]!.lifeline.bottom).toBe(272)
   })
 
   it('draws nothing without a sequence layout', () => {

@@ -5,7 +5,11 @@ import { lineColorOf } from '../helpers/colors'
 import { dashArray, edgeArrows, wrapText } from '../helpers/geometry'
 import { plainText } from '../helpers/markdown'
 import { viewTitle } from '../helpers/navigation'
-import { type SequenceStep, sequenceDiagram } from '../helpers/sequence'
+import {
+  type SequenceStep,
+  STEP_LABEL_WIDTH,
+  sequenceDiagram,
+} from '../helpers/sequence'
 import { LABEL_FONTS } from '../helpers/view-layout'
 import type { LikeC4CustomColor, LikeC4Node, LikeC4View } from '../types'
 import LikeC4NodeShape from './LikeC4Node.vue'
@@ -26,9 +30,6 @@ const emit = defineEmits<{ navigate: [viewId: string] }>()
 
 /** Room around the drawing, so outlines and arrowheads at its edge are not clipped. */
 const MARGIN = 16
-
-/** How wide a step's label may be before it wraps. */
-const LABEL_WIDTH = 260
 
 const diagram = computed(() => sequenceDiagram(props.view))
 
@@ -60,7 +61,7 @@ const steps = computed(() =>
     const color = lineColorOf(step.edge.color, props.customColors)
     const lines = wrapText(
       `${step.number}. ${step.edge.label ?? ''}`.trim(),
-      LABEL_WIDTH,
+      STEP_LABEL_WIDTH,
       LABEL_FONTS.step.size,
       2,
     )
