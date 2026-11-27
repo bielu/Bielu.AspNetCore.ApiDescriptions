@@ -42,21 +42,24 @@ const isBox = (value: unknown): value is LikeC4Box => {
 }
 
 /**
- * The box everything drawn covers: the lanes, the activation bars, the steps' routes, and their labels (a
- * label beside a loop as wide as it may grow, since it reaches out to the right).
+ * The box everything drawn covers: the lanes, the activation bars, the frames, the steps' routes, and their
+ * labels, each as wide as it may grow (`STEP_LABEL_WIDTH`): out to the right of a loop's, and to both sides
+ * of an arrow's centred one. A short label widens the box more than it needs, but none is clipped.
  */
 const drawnExtent = (
   actors: readonly LikeC4SequenceActor[],
   activations: readonly LikeC4Box[],
+  frames: readonly LikeC4Box[],
   steps: readonly SequenceStep[],
 ): LikeC4Box => {
-  const boxes = [...actors, ...activations]
+  const boxes = [...actors, ...activations, ...frames]
+  const labelSpan = (step: SequenceStep): number[] =>
+    step.label.anchor === 'start'
+      ? [step.label.x, step.label.x + STEP_LABEL_WIDTH]
+      : [step.label.x - STEP_LABEL_WIDTH / 2, step.label.x + STEP_LABEL_WIDTH / 2]
   const xs = [
     ...boxes.flatMap((box) => [box.x, box.x + box.width]),
-    ...steps.flatMap((step) => [
-      ...step.points.map((point) => point[0]),
-      step.label.anchor === 'start' ? step.label.x + STEP_LABEL_WIDTH : step.label.x,
-    ]),
+    ...steps.flatMap((step) => [...step.points.map((point) => point[0]), ...labelSpan(step)]),
   ]
   const ys = [...boxes.flatMap((box) => [box.y, box.y + box.height]), ...steps.flatMap((step) => step.points.map((point) => point[1]))]
   const left = Math.min(...xs)
@@ -127,18 +130,6 @@ export const sequenceDiagram = (view: LikeC4View): SequenceDiagram | undefined =
       label: { x: (from[0] + to[0]) / 2, y: Math.min(from[1], to[1]) - 8, anchor: 'middle' },
     })
   })
-  // The sequence's own extent, else the view's, else what is drawn, so lifelines always run downwards.
-  const bounds = isBox(layout.bounds)
-    ? layout.bounds
-    : isBox(view.bounds)
-      ? view.bounds
-      : drawnExtent(actors, activations, steps)
-  const bottom = bounds.y + bounds.height
-  const lanes: SequenceLane[] = actors.map((actor) => ({
-    id: actor.id,
-    box: { x: actor.x, y: actor.y, width: actor.width, height: actor.height },
-    lifeline: { x: actor.x + actor.width / 2, top: actor.y + actor.height, bottom },
-  }))
   const frames: SequenceDiagram['frames'] = [
     ...(layout.compounds ?? [])
       .filter((compound): compound is LikeC4Box & { id: string; origin?: string; depth?: number } => isBox(compound))
@@ -148,5 +139,17 @@ export const sequenceDiagram = (view: LikeC4View): SequenceDiagram | undefined =
       .filter((area): area is LikeC4Box & { parallelPrefix?: string } => isBox(area))
       .map((area, index) => ({ ...area, id: area.parallelPrefix ?? `parallel-${index}`, kind: 'parallel' as const })),
   ]
+  // The sequence's own extent, else the view's, else what is drawn, so lifelines always run downwards.
+  const bounds = isBox(layout.bounds)
+    ? layout.bounds
+    : isBox(view.bounds)
+      ? view.bounds
+      : drawnExtent(actors, activations, frames, steps)
+  const bottom = bounds.y + bounds.height
+  const lanes: SequenceLane[] = actors.map((actor) => ({
+    id: actor.id,
+    box: { x: actor.x, y: actor.y, width: actor.width, height: actor.height },
+    lifeline: { x: actor.x + actor.width / 2, top: actor.y + actor.height, bottom },
+  }))
   return { bounds, lanes, activations, steps, frames }
 }

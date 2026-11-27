@@ -312,6 +312,32 @@ describe('sequenceDiagram', () => {
     expect(diagram.lanes[0]!.lifeline.bottom).toBe(272)
   })
 
+  it('covers a centred step label and the frames when the layout has no bounds', () => {
+    // Arrange: two narrow lanes, a step between them, and a parallel block reaching below the lanes.
+    const lane = (id: string, x: number) => ({ id, x, y: 0, width: 20, height: 40, ports: [{ id: id + '-port', cx: 10, cy: 60 }] })
+    const view: LikeC4View = {
+      id: 'v',
+      _type: 'dynamic',
+      variant: 'sequence',
+      edges: [{ id: 'step-01', source: 'a', target: 'b' }],
+      sequenceLayout: {
+        actors: [lane('a', 0), lane('b', 100)],
+        steps: [{ id: 'step-01', sourceHandle: 'a-port', targetHandle: 'b-port' }],
+        parallelAreas: [{ x: -10, y: 50, width: 140, height: 200, parallelPrefix: 'step-01.' }],
+      },
+    }
+
+    // Act
+    const diagram = sequenceDiagram(view)!
+
+    // Assert
+    const label = diagram.steps[0]!.label
+    expect(label.anchor).toBe('middle')
+    expect(diagram.bounds.x).toBeLessThanOrEqual(label.x - STEP_LABEL_WIDTH / 2)
+    expect(diagram.bounds.x + diagram.bounds.width).toBeGreaterThanOrEqual(label.x + STEP_LABEL_WIDTH / 2)
+    expect(diagram.lanes[0]!.lifeline.bottom).toBe(250)
+  })
+
   it('draws nothing without a sequence layout', () => {
     // Act & Assert
     expect(sequenceDiagram(shop.views!.index!)).toBeUndefined()
