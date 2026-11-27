@@ -333,6 +333,67 @@ public class JsonSourceResolverTests
         resolver.TryResolveOperationPath(document, "/channels/orders/publish", out _).ShouldBeTrue();
     }
 
+    private static readonly JsonNode OpenApiWithCallbacks = JsonNode.Parse("""
+        {
+            "openapi": "3.1.0",
+            "paths": {
+                "/subscribe": {
+                    "post": {
+                        "operationId": "subscribe",
+                        "callbacks": {
+                            "event": { "{$request.body#/callbackUrl}": { "post": { "operationId": "receiveEvent" } } },
+                            "shared": { "$ref": "#/components/callbacks/Shared" }
+                        }
+                    }
+                }
+            },
+            "components": {
+                "callbacks": {
+                    "Shared": { "{$request.body#/url}": { "$ref": "#/components/pathItems/Echo" } }
+                },
+                "pathItems": {
+                    "Echo": {
+                        "put": {
+                            "operationId": "echo",
+                            "callbacks": { "again": { "$ref": "#/components/callbacks/Shared" } }
+                        }
+                    }
+                }
+            }
+        }
+        """)!;
+
+    [Theory]
+    [InlineData("subscribe")]
+    [InlineData("receiveEvent")]
+    [InlineData("echo")]
+    public void OpenApi_TryResolveOperation_FindsCallbackOperations(string operationId)
+    {
+        // The Echo callback leads back to itself, so this also shows the walk ends.
+        new OpenApiJsonSourceResolver().TryResolveOperation(OpenApiWithCallbacks, operationId, out var operation).ShouldBeTrue();
+        operation!["operationId"]!.GetValue<string>().ShouldBe(operationId);
+    }
+
+    [Fact]
+    public void OpenApi_TryResolveOperation_UnknownIdAmongCyclicCallbacks_ReturnsFalse()
+    {
+        new OpenApiJsonSourceResolver().TryResolveOperation(OpenApiWithCallbacks, "nope", out _).ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData("/paths/~1subscribe/post/callbacks/event/{$request.body#~1callbackUrl}/post", true)]
+    [InlineData("/paths/~1subscribe/post/callbacks/shared/{$request.body#~1url}/put", true)]
+    [InlineData("/paths/~1subscribe/post/callbacks/shared/{$request.body#~1url}/put/callbacks/again/{$request.body#~1url}/put", true)]
+    [InlineData("/components/callbacks/Shared/{$request.body#~1url}/put", true)]
+    [InlineData("/paths/~1subscribe/post/callbacks/event/{$request.body#~1callbackUrl}/get", false)]
+    [InlineData("/paths/~1subscribe/post/callbacks/event", false)]
+    [InlineData("/paths/~1subscribe/post/callbacks/missing/x/post", false)]
+    [InlineData("/paths/~1subscribe/post/responses/200/get", false)]
+    public void OpenApi_TryResolveOperationPath_ResolvesCallbackOperations(string pointer, bool expected)
+    {
+        new OpenApiJsonSourceResolver().TryResolveOperationPath(OpenApiWithCallbacks, pointer, out _).ShouldBe(expected);
+    }
+
     [Fact]
     public void Resolvers_ThrowForNullArguments()
     {

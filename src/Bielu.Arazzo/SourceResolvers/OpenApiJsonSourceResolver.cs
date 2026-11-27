@@ -9,11 +9,12 @@ namespace Bielu.Arazzo.SourceResolvers;
 /// document is a file, such as one written at build time, rather than a live app's.
 /// </summary>
 /// <remarks>
-/// An <c>operationId</c> is searched for in every operation under <c>paths</c> and <c>webhooks</c>, following a
-/// Path Item's local <c>$ref</c>. An <c>operationPath</c> resolves when its pointer addresses an Operation Object:
-/// an HTTP method of a Path Item under <c>paths</c>, <c>webhooks</c> or <c>components/pathItems</c>, such as
-/// <c>/paths/~1pets/get</c>, or one of its OpenAPI 3.2 <c>additionalOperations</c>, also through a Path Item's
-/// <c>$ref</c>.
+/// An <c>operationId</c> is searched for in every operation under <c>paths</c> and <c>webhooks</c>, and in the
+/// callbacks of those operations, following local <c>$ref</c>s of Path Items and callbacks. An <c>operationPath</c>
+/// resolves when its pointer addresses an Operation Object: an HTTP method of a Path Item under <c>paths</c>,
+/// <c>webhooks</c>, <c>components/pathItems</c> or <c>components/callbacks</c>, such as <c>/paths/~1pets/get</c>,
+/// or one of its OpenAPI 3.2 <c>additionalOperations</c>, and from there into a callback's Path Item
+/// (<c>…/post/callbacks/onEvent/{$request.body#~1url}/post</c>), also through <c>$ref</c>s.
 /// </remarks>
 /// <example>
 /// <code>
@@ -30,6 +31,7 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
     };
 
     private const string AdditionalOperations = "additionalOperations";
+    private const string Callbacks = "callbacks";
 
     /// <inheritdoc />
     public override string SourceType => ArazzoSourceDescriptionType.OpenApi.Value;
@@ -40,12 +42,14 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(operationId);
 
+        operation = null;
         if (document is not JsonObject root)
         {
-            operation = null;
             return false;
         }
 
+        // Every Path Item is visited once, so a callback that leads back to a Path Item already seen ends there.
+        var visited = new HashSet<JsonObject>(ReferenceEqualityComparer.Instance);
         foreach (var section in new[] { "paths", "webhooks" })
         {
             if (root[section] is not JsonObject pathItems)
@@ -55,13 +59,8 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
 
             foreach (var (_, pathItem) in pathItems)
             {
-                // OpenAPI 3.1 lets a Path Item be a $ref, such as to #/components/pathItems/Pets.
-                if (pathItem is not JsonObject item || JsonDocumentPointer.FollowLocalReferences(document, item) is not { } methods)
-                {
-                    continue;
-                }
-
-                if (Operations(methods).FirstOrDefault(candidate => HasOperationId(candidate, operationId)) is { } found)
+                if (pathItem is JsonObject item
+                    && Operations(root, item, visited).FirstOrDefault(candidate => HasOperationId(candidate, operationId)) is { } found)
                 {
                     operation = found;
                     return true;
@@ -69,31 +68,61 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
             }
         }
 
-        operation = null;
         return false;
     }
 
     /// <summary>
-    /// A Path Item's Operation Objects: its HTTP methods, and the ones OpenAPI 3.2 keys by method name under
-    /// <c>additionalOperations</c>. A value that is not an object, as in a malformed document, is skipped.
+    /// A Path Item's Operation Objects (its HTTP methods and the ones OpenAPI 3.2 keys under
+    /// <c>additionalOperations</c>), then, depth first, the operations of their callbacks' Path Items. Local
+    /// <c>$ref</c>s of Path Items and callbacks are followed; a value that is not an object, as in a malformed
+    /// document, is skipped.
     /// </summary>
-    private static IEnumerable<JsonObject> Operations(JsonObject pathItem)
+    private static IEnumerable<JsonObject> Operations(JsonNode root, JsonObject pathItem, HashSet<JsonObject> visited)
     {
-        foreach (var (method, candidate) in pathItem)
+        // OpenAPI 3.1 lets a Path Item be a $ref, such as to #/components/pathItems/Pets.
+        if (JsonDocumentPointer.FollowLocalReferences(root, pathItem) is not { } item || !visited.Add(item))
+        {
+            yield break;
+        }
+
+        var operations = new List<JsonObject>();
+        foreach (var (method, candidate) in item)
         {
             if (Methods.Contains(method) && candidate is JsonObject operation)
             {
-                yield return operation;
+                operations.Add(operation);
             }
         }
 
-        if (pathItem[AdditionalOperations] is JsonObject additional)
+        if (item[AdditionalOperations] is JsonObject additional)
         {
-            foreach (var (_, candidate) in additional)
+            operations.AddRange(additional.Select(pair => pair.Value).OfType<JsonObject>());
+        }
+
+        foreach (var operation in operations)
+        {
+            yield return operation;
+            if (operation[Callbacks] is not JsonObject callbacks)
             {
-                if (candidate is JsonObject operation)
+                continue;
+            }
+
+            foreach (var (_, callback) in callbacks)
+            {
+                if (callback is not JsonObject entry || JsonDocumentPointer.FollowLocalReferences(root, entry) is not { } resolved)
                 {
-                    yield return operation;
+                    continue;
+                }
+
+                foreach (var (_, callbackPathItem) in resolved)
+                {
+                    if (callbackPathItem is JsonObject inner)
+                    {
+                        foreach (var nested in Operations(root, inner, visited))
+                        {
+                            yield return nested;
+                        }
+                    }
                 }
             }
         }
@@ -111,31 +140,78 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         ArgumentNullException.ThrowIfNull(jsonPointer);
 
         operation = null;
-        // An HTTP method of a Path Item: one under paths or webhooks, or a reusable one in components.pathItems.
-        // Any other object with a "get" key, such as a schema property, is no operation.
-        // OpenAPI 3.2 keys any other method under the Path Item's additionalOperations, such as .../additionalOperations/COPY.
-        var tokens = JsonDocumentPointer.Tokens(jsonPointer);
-        var (pathItemTokens, keys) = tokens switch
-        {
-            ["paths" or "webhooks", _, var method] when Methods.Contains(method) => (tokens[..2], new[] { method }),
-            ["components", "pathItems", _, var method] when Methods.Contains(method) => (tokens[..3], new[] { method }),
-            ["paths" or "webhooks", _, AdditionalOperations, var method] => (tokens[..2], new[] { AdditionalOperations, method }),
-            ["components", "pathItems", _, AdditionalOperations, var method] => (tokens[..3], new[] { AdditionalOperations, method }),
-            _ => ((string[]?)null, (string[]?)null),
-        };
-        if (pathItemTokens is null || keys is null)
+        if (JsonDocumentPointer.Tokens(jsonPointer) is not { } tokens)
         {
             return false;
         }
 
-        // The operation in the Path Item the pointer starts with, which may be a $ref to another.
-        if (JsonDocumentPointer.EvaluateObject(document, pathItemTokens) is { } pathItem
-            && JsonDocumentPointer.FollowLocalReferences(document, pathItem) is { } resolved
-            && JsonDocumentPointer.EvaluateObject(resolved, keys) is { } found)
+        // Where a Path Item may start: under paths or webhooks, reusable in components.pathItems, or inside a
+        // reusable callback in components.callbacks. Any other object with a "get" key, such as a schema
+        // property, is no operation.
+        var start = tokens switch
         {
-            operation = found;
+            ["paths" or "webhooks", _, ..] => 2,
+            ["components", "pathItems", _, ..] => 3,
+            ["components", Callbacks, _, _, ..] => 4,
+            _ => 0,
+        };
+        if (start == 0 || JsonDocumentPointer.EvaluateObject(document, tokens[..start]) is not { } pathItem)
+        {
+            return false;
         }
 
+        operation = OperationIn(document, pathItem, tokens[start..]);
         return operation is not null;
+    }
+
+    /// <summary>
+    /// The operation <paramref name="rest"/> names in <paramref name="pathItem"/>: an HTTP method, or
+    /// <c>additionalOperations/{method}</c>, optionally followed by <c>callbacks/{name}/{expression}</c> and the
+    /// same again in that callback's Path Item. Path Items and callbacks may be local <c>$ref</c>s.
+    /// </summary>
+    private static JsonObject? OperationIn(JsonNode root, JsonObject pathItem, ReadOnlySpan<string> rest)
+    {
+        // Each step goes one Path Item deeper, so the pointer's own length bounds the walk: no cycle can loop it.
+        while (true)
+        {
+            if (JsonDocumentPointer.FollowLocalReferences(root, pathItem) is not { } item)
+            {
+                return null;
+            }
+
+            JsonObject? operation;
+            int used;
+            if (rest.Length >= 1 && Methods.Contains(rest[0]))
+            {
+                operation = item[rest[0]] as JsonObject;
+                used = 1;
+            }
+            else if (rest.Length >= 2 && rest[0] == AdditionalOperations)
+            {
+                operation = (item[AdditionalOperations] as JsonObject)?[rest[1]] as JsonObject;
+                used = 2;
+            }
+            else
+            {
+                return null;
+            }
+
+            rest = rest[used..];
+            if (operation is null || rest.Length == 0)
+            {
+                return operation;
+            }
+
+            if (rest.Length < 4
+                || rest[0] != Callbacks
+                || (operation[Callbacks] as JsonObject)?[rest[1]] is not JsonObject callback
+                || JsonDocumentPointer.FollowLocalReferences(root, callback)?[rest[2]] is not JsonObject next)
+            {
+                return null;
+            }
+
+            pathItem = next;
+            rest = rest[3..];
+        }
     }
 }
