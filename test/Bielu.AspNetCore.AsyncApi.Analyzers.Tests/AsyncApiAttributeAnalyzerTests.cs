@@ -115,6 +115,45 @@ public class TestHub
     }
 
     [Fact]
+    public async Task BASYNC005_InvalidHeadersType_ReportsWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Attributes;
+using System;
+
+[AsyncApi]
+public class TestHub
+{
+    [Channel(""test"")]
+    [Message(typeof(string), HeadersType = typeof(IntPtr))]
+    public void SendMessage() {}
+}
+";
+        var diagnostics = await GetDiagnosticsAsync(testCode);
+        diagnostics.ShouldContain(d => d.Id == "BASYNC005" && d.GetMessage().Contains("nint"));
+    }
+
+    [Fact]
+    public async Task BASYNC005_InvalidChannelParameterType_ReportsWarning()
+    {
+        var testCode = @"
+using Bielu.AspNetCore.AsyncApi.Attributes;
+using System;
+
+[AsyncApi]
+public class TestHub
+{
+    [Channel(""users/{userId}"")]
+    [ChannelParameter(""userId"", typeof(UIntPtr))]
+    [Message(typeof(string))]
+    public void SendMessage() {}
+}
+";
+        var diagnostics = await GetDiagnosticsAsync(testCode);
+        diagnostics.ShouldContain(d => d.Id == "BASYNC005" && d.GetMessage().Contains("nuint"));
+    }
+
+    [Fact]
     public async Task BASYNC004_UnusedDocumentName_ReportsInfo()
     {
         var testCode = @"
