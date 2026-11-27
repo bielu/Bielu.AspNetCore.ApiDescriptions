@@ -35,20 +35,32 @@ public sealed class AsyncApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(operationId);
 
-        if (document["operations"] is JsonObject operations &&
-            operations.TryGetPropertyValue(operationId, out var candidate) && candidate is JsonObject)
+        operation = null;
+        if (document is not JsonObject root)
         {
-            operation = candidate;
+            return false;
+        }
+
+        if (root["operations"] is JsonObject operations &&
+            operations.TryGetPropertyValue(operationId, out var candidate) && candidate is JsonObject found &&
+            JsonDocumentPointer.FollowLocalReferences(root, found) is { } resolved)
+        {
+            operation = resolved;
             return true;
         }
 
-        if (document["channels"] is JsonObject channels)
+        if (root["channels"] is JsonObject channels)
         {
             foreach (var (_, channel) in channels)
             {
+                if (channel is not JsonObject item || JsonDocumentPointer.FollowLocalReferences(root, item) is not { } resolvedChannel)
+                {
+                    continue;
+                }
+
                 foreach (var key in Version2OperationKeys)
                 {
-                    if (channel?[key] is JsonObject version2Operation &&
+                    if (resolvedChannel[key] is JsonObject version2Operation &&
                         version2Operation["operationId"] is JsonValue id &&
                         id.TryGetValue<string>(out var value) &&
                         string.Equals(value, operationId, StringComparison.Ordinal))
@@ -77,7 +89,7 @@ public sealed class AsyncApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
             ["channels", _, "publish" or "subscribe"] or ["components", "channels", _, "publish" or "subscribe"] => true,
             _ => false,
         };
-        operation = isOperation ? JsonDocumentPointer.EvaluateObject(document, tokens!) : null;
+        operation = isOperation ? Target(document, tokens!) : null;
         return operation is not null;
     }
 
@@ -89,7 +101,32 @@ public sealed class AsyncApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
 
         var tokens = JsonDocumentPointer.Tokens(jsonPointer);
         var isChannel = tokens is ["channels", _] or ["components", "channels", _];
-        channel = isChannel ? JsonDocumentPointer.EvaluateObject(document, tokens!) : null;
+        channel = isChannel ? Target(document, tokens!) : null;
         return channel is not null;
+    }
+
+    /// <summary>
+    /// The object the tokens address, with local <c>$ref</c>s on the channel and the operation followed, such as a
+    /// channel that is <c>{ "$ref": "#/components/channels/orders" }</c>; <see langword="null"/> when a reference
+    /// points at nothing, outside the document, or back into its chain.
+    /// </summary>
+    private static JsonObject? Target(JsonNode document, string[] tokens)
+    {
+        // An AsyncAPI 2 operation sits inside its channel, which may itself be a $ref: resolve that first.
+        var (channelTokens, rest) = tokens is [.., "publish" or "subscribe"] ? (tokens[..^1], tokens[^1..]) : (tokens, []);
+        if (JsonDocumentPointer.EvaluateObject(document, channelTokens) is not { } target
+            || JsonDocumentPointer.FollowLocalReferences(document, target) is not { } resolved)
+        {
+            return null;
+        }
+
+        if (rest.Length == 0)
+        {
+            return resolved;
+        }
+
+        return JsonDocumentPointer.EvaluateObject(resolved, rest) is { } inner
+            ? JsonDocumentPointer.FollowLocalReferences(document, inner)
+            : null;
     }
 }

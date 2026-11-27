@@ -282,4 +282,20 @@ public class ValidateSourceReferencesTests : IDisposable
         errors.ShouldContain(line => line.Contains("Source 'bad' url './bad%00.json' is not a usable local path"));
         errors.ShouldContain(line => line.Contains("$sourceDescriptions.shop.missing") && line.Contains("did not resolve"));
     }
+
+    [Fact]
+    public void Process_SourceWithMalformedOperations_ReportsTheStepInsteadOfThrowing()
+    {
+        // Arrange: a Path Item whose "get" is a Boolean, not an Operation Object.
+        var path = Path.Combine(_tempDir, "malformed.json");
+        File.WriteAllText(path, """{ "openapi": "3.1.0", "paths": { "/pets": { "get": true } } }""");
+        var context = Context(c => c.Sources["shop"] = path);
+
+        // Act
+        var (exitCode, _, errors) = Run(context);
+
+        // Assert
+        exitCode.ShouldBe(1);
+        errors.ShouldContain(line => line.Contains("checkout.order") && line.Contains("createOrder"));
+    }
 }

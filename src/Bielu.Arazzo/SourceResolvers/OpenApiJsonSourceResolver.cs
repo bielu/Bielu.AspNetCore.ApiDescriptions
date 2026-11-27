@@ -12,7 +12,8 @@ namespace Bielu.Arazzo.SourceResolvers;
 /// An <c>operationId</c> is searched for in every operation under <c>paths</c> and <c>webhooks</c>, following a
 /// Path Item's local <c>$ref</c>. An <c>operationPath</c> resolves when its pointer addresses an Operation Object:
 /// an HTTP method of a Path Item under <c>paths</c>, <c>webhooks</c> or <c>components/pathItems</c>, such as
-/// <c>/paths/~1pets/get</c>, also through a Path Item's <c>$ref</c>.
+/// <c>/paths/~1pets/get</c>, or one of its OpenAPI 3.2 <c>additionalOperations</c>, also through a Path Item's
+/// <c>$ref</c>.
 /// </remarks>
 /// <example>
 /// <code>
@@ -28,6 +29,8 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         "get", "put", "post", "delete", "options", "head", "patch", "trace", "query",
     };
 
+    private const string AdditionalOperations = "additionalOperations";
+
     /// <inheritdoc />
     public override string SourceType => ArazzoSourceDescriptionType.OpenApi.Value;
 
@@ -37,9 +40,15 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(operationId);
 
+        if (document is not JsonObject root)
+        {
+            operation = null;
+            return false;
+        }
+
         foreach (var section in new[] { "paths", "webhooks" })
         {
-            if (document[section] is not JsonObject pathItems)
+            if (root[section] is not JsonObject pathItems)
             {
                 continue;
             }
@@ -52,16 +61,10 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
                     continue;
                 }
 
-                foreach (var (method, candidate) in methods)
+                if (Operations(methods).FirstOrDefault(candidate => HasOperationId(candidate, operationId)) is { } found)
                 {
-                    if (Methods.Contains(method) &&
-                        candidate?["operationId"] is JsonValue id &&
-                        id.TryGetValue<string>(out var value) &&
-                        string.Equals(value, operationId, StringComparison.Ordinal))
-                    {
-                        operation = candidate;
-                        return true;
-                    }
+                    operation = found;
+                    return true;
                 }
             }
         }
@@ -69,6 +72,37 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         operation = null;
         return false;
     }
+
+    /// <summary>
+    /// A Path Item's Operation Objects: its HTTP methods, and the ones OpenAPI 3.2 keys by method name under
+    /// <c>additionalOperations</c>. A value that is not an object, as in a malformed document, is skipped.
+    /// </summary>
+    private static IEnumerable<JsonObject> Operations(JsonObject pathItem)
+    {
+        foreach (var (method, candidate) in pathItem)
+        {
+            if (Methods.Contains(method) && candidate is JsonObject operation)
+            {
+                yield return operation;
+            }
+        }
+
+        if (pathItem[AdditionalOperations] is JsonObject additional)
+        {
+            foreach (var (_, candidate) in additional)
+            {
+                if (candidate is JsonObject operation)
+                {
+                    yield return operation;
+                }
+            }
+        }
+    }
+
+    private static bool HasOperationId(JsonObject operation, string operationId) =>
+        operation["operationId"] is JsonValue id &&
+        id.TryGetValue<string>(out var value) &&
+        string.Equals(value, operationId, StringComparison.Ordinal);
 
     /// <inheritdoc />
     public override bool TryResolveOperationPath(JsonNode document, string jsonPointer, out JsonNode? operation)
@@ -79,15 +113,25 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         operation = null;
         // An HTTP method of a Path Item: one under paths or webhooks, or a reusable one in components.pathItems.
         // Any other object with a "get" key, such as a schema property, is no operation.
+        // OpenAPI 3.2 keys any other method under the Path Item's additionalOperations, such as .../additionalOperations/COPY.
         var tokens = JsonDocumentPointer.Tokens(jsonPointer);
-        if (tokens is not (["paths" or "webhooks", _, _] or ["components", "pathItems", _, _]) || !Methods.Contains(tokens[^1]))
+        var (pathItemTokens, keys) = tokens switch
+        {
+            ["paths" or "webhooks", _, var method] when Methods.Contains(method) => (tokens[..2], new[] { method }),
+            ["components", "pathItems", _, var method] when Methods.Contains(method) => (tokens[..3], new[] { method }),
+            ["paths" or "webhooks", _, AdditionalOperations, var method] => (tokens[..2], new[] { AdditionalOperations, method }),
+            ["components", "pathItems", _, AdditionalOperations, var method] => (tokens[..3], new[] { AdditionalOperations, method }),
+            _ => ((string[]?)null, (string[]?)null),
+        };
+        if (pathItemTokens is null || keys is null)
         {
             return false;
         }
 
-        // The method of the Path Item the rest of the pointer addresses, which may be a $ref to another.
-        if (JsonDocumentPointer.EvaluateObject(document, tokens[..^1]) is { } pathItem
-            && JsonDocumentPointer.FollowLocalReferences(document, pathItem)?[tokens[^1]] is JsonObject found)
+        // The operation in the Path Item the pointer starts with, which may be a $ref to another.
+        if (JsonDocumentPointer.EvaluateObject(document, pathItemTokens) is { } pathItem
+            && JsonDocumentPointer.FollowLocalReferences(document, pathItem) is { } resolved
+            && JsonDocumentPointer.EvaluateObject(resolved, keys) is { } found)
         {
             operation = found;
         }

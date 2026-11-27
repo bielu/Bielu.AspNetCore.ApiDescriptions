@@ -230,6 +230,110 @@ public class JsonSourceResolverTests
     }
 
     [Fact]
+    public void Resolvers_MalformedDocuments_ResolveNothingInsteadOfThrowing()
+    {
+        // Arrange: operations and channels that are not objects, and documents that are not objects at all.
+        var openApi = JsonNode.Parse("""{ "openapi": "3.1.0", "paths": { "/pets": { "get": true }, "/x": [] } }""")!;
+        var asyncApi = JsonNode.Parse("""{ "asyncapi": "2.6.0", "operations": { "o": 1 }, "channels": { "c": true, "d": { "publish": "x" } } }""")!;
+        var array = JsonNode.Parse("[]")!;
+
+        // Act & Assert
+        new OpenApiJsonSourceResolver().TryResolveOperation(openApi, "listPets", out _).ShouldBeFalse();
+        new OpenApiJsonSourceResolver().TryResolveOperation(array, "listPets", out _).ShouldBeFalse();
+        new AsyncApiJsonSourceResolver().TryResolveOperation(asyncApi, "o", out _).ShouldBeFalse();
+        new AsyncApiJsonSourceResolver().TryResolveOperation(array, "o", out _).ShouldBeFalse();
+    }
+
+    private static readonly JsonNode OpenApi32 = JsonNode.Parse("""
+        {
+            "openapi": "3.2.0",
+            "paths": { "/pets": { "additionalOperations": { "COPY": { "operationId": "copyPet" } } } },
+            "components": { "pathItems": { "Pets": { "additionalOperations": { "LINK": { "operationId": "linkPet" } } } } }
+        }
+        """)!;
+
+    [Fact]
+    public void OpenApi_TryResolveOperation_FindsAdditionalOperations()
+    {
+        new OpenApiJsonSourceResolver().TryResolveOperation(OpenApi32, "copyPet", out var operation).ShouldBeTrue();
+        operation!["operationId"]!.GetValue<string>().ShouldBe("copyPet");
+    }
+
+    [Theory]
+    [InlineData("/paths/~1pets/additionalOperations/COPY", true)]
+    [InlineData("/components/pathItems/Pets/additionalOperations/LINK", true)]
+    [InlineData("/paths/~1pets/additionalOperations/MOVE", false)]
+    [InlineData("/paths/~1pets/additionalOperations", false)]
+    public void OpenApi_TryResolveOperationPath_ResolvesAdditionalOperations(string pointer, bool expected)
+    {
+        new OpenApiJsonSourceResolver().TryResolveOperationPath(OpenApi32, pointer, out _).ShouldBe(expected);
+    }
+
+    private static readonly JsonNode AsyncApiWithReferences = JsonNode.Parse("""
+        {
+            "asyncapi": "3.0.0",
+            "channels": {
+                "orders": { "$ref": "#/components/channels/orders" },
+                "dangling": { "$ref": "#/components/channels/missing" },
+                "loop": { "$ref": "#/channels/loop" }
+            },
+            "operations": {
+                "placeOrder": { "$ref": "#/components/operations/placeOrder" },
+                "broken": { "$ref": "other.yaml#/operations/x" }
+            },
+            "components": {
+                "channels": { "orders": { "address": "orders" } },
+                "operations": { "placeOrder": { "action": "send" } }
+            }
+        }
+        """)!;
+
+    [Theory]
+    [InlineData("/channels/orders", true)]
+    [InlineData("/channels/dangling", false)]
+    [InlineData("/channels/loop", false)]
+    public void AsyncApi_TryResolveChannelPath_FollowsLocalReferences(string pointer, bool expected)
+    {
+        new AsyncApiJsonSourceResolver().TryResolveChannelPath(AsyncApiWithReferences, pointer, out _).ShouldBe(expected);
+    }
+
+    [Theory]
+    [InlineData("/operations/placeOrder", true)]
+    [InlineData("/operations/broken", false)]
+    public void AsyncApi_TryResolveOperationPath_FollowsLocalReferences(string pointer, bool expected)
+    {
+        new AsyncApiJsonSourceResolver().TryResolveOperationPath(AsyncApiWithReferences, pointer, out _).ShouldBe(expected);
+    }
+
+    [Fact]
+    public void AsyncApi_TryResolveOperation_FollowsLocalReferences()
+    {
+        // Act & Assert
+        var resolver = new AsyncApiJsonSourceResolver();
+        resolver.TryResolveOperation(AsyncApiWithReferences, "placeOrder", out var operation).ShouldBeTrue();
+        operation!["action"]!.GetValue<string>().ShouldBe("send");
+        resolver.TryResolveOperation(AsyncApiWithReferences, "broken", out _).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void AsyncApi2_ChannelReference_IsFollowedForItsOperations()
+    {
+        // Arrange
+        var document = JsonNode.Parse("""
+            {
+                "asyncapi": "2.6.0",
+                "channels": { "orders": { "$ref": "#/components/channels/orders" } },
+                "components": { "channels": { "orders": { "publish": { "operationId": "placeOrder" } } } }
+            }
+            """)!;
+
+        // Act & Assert
+        var resolver = new AsyncApiJsonSourceResolver();
+        resolver.TryResolveOperation(document, "placeOrder", out _).ShouldBeTrue();
+        resolver.TryResolveOperationPath(document, "/channels/orders/publish", out _).ShouldBeTrue();
+    }
+
+    [Fact]
     public void Resolvers_ThrowForNullArguments()
     {
         var openApi = new OpenApiJsonSourceResolver();

@@ -53,7 +53,9 @@ public static partial class ArazzoReferenceValidator
         ArgumentNullException.ThrowIfNull(workspace);
 
         var declared = document.SourceDescriptions.Select(source => source.Name).ToHashSet(StringComparer.Ordinal);
-        var registered = workspace.SourceNames.ToList();
+        // A bare operationId is looked up in the sources the document declares and the workspace has a document
+        // for: a document registered under a name the document doesn't declare is not one of its sources.
+        var registered = workspace.SourceNames.Where(declared.Contains).ToList();
         var errors = new List<ArazzoError>();
 
         for (var w = 0; w < document.Workflows.Count; w++)

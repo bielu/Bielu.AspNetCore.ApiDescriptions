@@ -180,6 +180,34 @@ public class ArazzoReferenceValidatorTests
     }
 
     [Fact]
+    public void Validate_BareOperationIdOnlyInAnUndeclaredSource_ReportsIt()
+    {
+        // Arrange: getPet exists only in 'pets', which the workspace has but the document no longer declares.
+        var document = Document(new ArazzoStep { StepId = "get", OperationId = "getPet" });
+        document.SourceDescriptions.RemoveAt(0);
+
+        // Act
+        var error = ArazzoReferenceValidator.Validate(document, Workspace()).ShouldHaveSingleItem();
+
+        // Assert
+        error.Message.ShouldContain("operationId 'getPet' did not resolve against any registered source");
+    }
+
+    [Fact]
+    public void Validate_BareOperationIdWithOnlyUndeclaredSourcesRegistered_IsSkipped()
+    {
+        // Arrange: the only registered document is 'pets', which the document doesn't declare.
+        var document = Document(new ArazzoStep { StepId = "get", OperationId = "anything" });
+        document.SourceDescriptions.RemoveAt(0);
+
+        // Act
+        var errors = ArazzoReferenceValidator.Validate(document, Workspace(withAsyncApi: false));
+
+        // Assert
+        errors.ShouldBeEmpty();
+    }
+
+    [Fact]
     public void Validate_DeclaredSourceWithoutDocument_IsSkipped()
     {
         // Arrange

@@ -79,8 +79,17 @@ internal static class SourceReferenceChecker
             workspace.RegisterDocument(source.Name, type, sourceDocument);
         }
 
-        errors.AddRange(ArazzoReferenceValidator.Validate(document, workspace)
-            .Select(error => new DiagnosticItem(error.Message, error.Path)));
+        try
+        {
+            errors.AddRange(ArazzoReferenceValidator.Validate(document, workspace)
+                .Select(error => new DiagnosticItem(error.Message, error.Path)));
+        }
+        catch (InvalidOperationException ex)
+        {
+            // The resolvers skip values of the wrong kind, but a source file is user input: one shaped in a way they
+            // don't expect is reported against this document rather than ending the run.
+            errors.Add(new DiagnosticItem($"The step references could not be checked against the source documents: {ex.Message}", null));
+        }
         return new Result(errors, ArazzoReferenceValidator.UncheckedSources(document, workspace), used);
     }
 
