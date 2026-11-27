@@ -18,12 +18,18 @@ export const renderMarkdown = (value: LikeC4Text | null | undefined): string => 
   return DOMPurify.sanitize(marked.parse(markdown, { async: false, gfm: true }))
 }
 
-/** A LikeC4 text as one line of plain text, for a diagram label or a tooltip: Markdown marks dropped. */
+/**
+ * A LikeC4 text as one line of plain text, for a diagram label or a tooltip: Markdown marks dropped from
+ * Markdown, while plain text (`txt`) keeps every character and only has its whitespace collapsed.
+ */
 export const plainText = (value: LikeC4Text | null | undefined): string => {
   if (!value) {
     return ''
   }
-  const text = typeof value === 'string' ? value : (value.txt ?? value.md ?? '')
+  if (typeof value === 'object' && typeof value.md !== 'string') {
+    return (value.txt ?? '').replace(/\s+/g, ' ').trim()
+  }
+  const text = typeof value === 'string' ? value : value.md!
   return text
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')

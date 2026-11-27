@@ -186,6 +186,16 @@ describe('viewBounds', () => {
     })
     expect(viewBounds({ id: 'empty' })).toEqual({ x: 0, y: 0, width: 1, height: 1 })
   })
+
+  it('uses the sequence layout bounds only for a view drawn as a sequence', () => {
+    // Arrange
+    const placeOrder = shop.views!.arazzoPlaceOrder as LikeC4View
+    const asDiagram = { ...placeOrder, variant: 'diagram' as const, bounds: { x: 0, y: 0, width: 900, height: 700 } }
+
+    // Act & Assert
+    expect(viewBounds(placeOrder)).toEqual(placeOrder.sequenceLayout!.bounds)
+    expect(viewBounds(asDiagram)).toEqual(asDiagram.bounds)
+  })
 })
 
 describe('sequenceDiagram', () => {
@@ -256,6 +266,20 @@ describe('sequenceDiagram', () => {
     ])
   })
 
+  it('runs lifelines to the view bottom, else past the lanes, when the layout has no bounds', () => {
+    // Arrange
+    const actor = { id: 'a', x: 0, y: 0, width: 100, height: 180, ports: [{ id: 'p', cx: 50, cy: 300, height: 20 }] }
+    const view: LikeC4View = { id: 'v', _type: 'dynamic', variant: 'sequence', sequenceLayout: { actors: [actor] } }
+
+    // Act
+    const withViewBounds = sequenceDiagram({ ...view, bounds: { x: 0, y: 0, width: 100, height: 600 } })!
+    const withoutBounds = sequenceDiagram(view)!
+
+    // Assert
+    expect(withViewBounds.lanes[0]!.lifeline).toEqual({ x: 50, top: 180, bottom: 600 })
+    expect(withoutBounds.lanes[0]!.lifeline).toEqual({ x: 50, top: 180, bottom: 310 })
+  })
+
   it('draws nothing without a sequence layout', () => {
     // Act & Assert
     expect(sequenceDiagram(shop.views!.index!)).toBeUndefined()
@@ -282,6 +306,7 @@ describe('markdown', () => {
     // Act & Assert
     expect(plainText({ md: 'See [the docs](https://x) for **more**\n\nnext' })).toBe('See the docs for more next')
     expect(plainText('plain')).toBe('plain')
+    expect(plainText({ txt: 'C# uses  order_id > 0\n*now*' })).toBe('C# uses order_id > 0 *now*')
     expect(plainText(null)).toBe('')
   })
 })

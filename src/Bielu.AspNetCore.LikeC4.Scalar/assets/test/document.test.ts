@@ -60,6 +60,35 @@ describe('LikeC4Document', () => {
     expect(channels.attributes('viewBox')).toBe(`-16 -16 ${layout.bounds!.width + 32} ${layout.bounds!.height + 32}`)
   })
 
+  it('names each diagram after its view, as a group that keeps its links', async () => {
+    // Act
+    const view = await render(shop)
+
+    // Assert
+    const channels = view.find('svg[data-view-id="asyncapiChannels"]')
+    expect(channels.attributes('role')).toBe('group')
+    expect(channels.attributes('aria-label')).toBe(shop.views!.asyncapiChannels!.title)
+    const sequence = view.find('svg.bl-sequence[data-view-id="arazzoPlaceOrder"]')
+    expect(sequence.attributes('role')).toBe('group')
+    expect(sequence.attributes('aria-label')).toBe(shop.views!.arazzoPlaceOrder!.title)
+  })
+
+  it('draws the tail arrowhead of a sequence step, as well as its head', async () => {
+    // Arrange: the first step points both ways.
+    const model = structuredClone(shop)
+    const placeOrder = model.views!.arazzoPlaceOrder!
+    placeOrder.edges = placeOrder.edges!.map((edge, index) => (index === 0 ? { ...edge, head: 'none', tail: 'normal' } : edge))
+
+    // Act
+    const view = await render(model)
+
+    // Assert
+    const step = view.find('svg.bl-sequence [data-edge-id="' + placeOrder.edges[0]!.id + '"]')
+    expect(step.findAll('.bl-edge-arrow')).toHaveLength(1)
+    const other = view.find('svg.bl-sequence [data-edge-id="' + placeOrder.edges[1]!.id + '"]')
+    expect(other.findAll('.bl-edge-arrow')).toHaveLength(1)
+  })
+
   it('draws sends solid and deliveries dashed, as the generated specification says', async () => {
     // Act
     const view = await render(shop)

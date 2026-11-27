@@ -90,6 +90,14 @@ describe('arrowHead', () => {
     expect(arrowHead([0, 0], [0, 100], 'none')).toBeUndefined()
   })
 
+  it('draws a crow head as an open crow foot, its prongs spreading at the end point', () => {
+    // Act
+    const arrow = arrowHead([0, 0], [20, 0], 'crow')
+
+    // Assert
+    expect(arrow).toEqual({ path: 'M20,4.5 L10,0 L20,-4.5 M10,0 L20,0', filled: false })
+  })
+
   it('still points somewhere when the line has no length', () => {
     // Act
     const arrow = arrowHead([5, 5], [5, 5], undefined)

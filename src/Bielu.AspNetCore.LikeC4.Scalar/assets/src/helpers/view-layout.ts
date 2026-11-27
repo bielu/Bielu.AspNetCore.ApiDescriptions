@@ -118,9 +118,12 @@ export const drawOrder = (nodes: readonly LikeC4Node[]): LikeC4Node[] =>
     return containerA - containerB || (a.level ?? 0) - (b.level ?? 0)
   })
 
-/** The area a view covers: LikeC4's `bounds`, else what its nodes cover. */
+/**
+ * The area a view covers: LikeC4's `bounds` (its sequence layout's, for a view drawn as a sequence), else what
+ * its nodes cover.
+ */
 export const viewBounds = (view: LikeC4View): LikeC4Box => {
-  const bounds = view.sequenceLayout?.bounds ?? view.bounds
+  const bounds = (isSequence(view) ? view.sequenceLayout?.bounds : undefined) ?? view.bounds
   if (bounds && bounds.width > 0 && bounds.height > 0) {
     return bounds
   }

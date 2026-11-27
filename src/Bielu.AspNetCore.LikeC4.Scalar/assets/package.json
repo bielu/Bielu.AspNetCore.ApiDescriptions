@@ -50,6 +50,7 @@
     "build:library": "vite build --config vite.config.library.ts",
     "pretypecheck": "npm run build:core",
     "typecheck": "vue-tsc --noEmit && vue-tsc -p tsconfig.contract.json",
+    "pretest": "npm run build:core",
     "test": "vitest run",
     "dev": "vite build --watch",
     "postbuild": "node scripts/check-package.mjs"

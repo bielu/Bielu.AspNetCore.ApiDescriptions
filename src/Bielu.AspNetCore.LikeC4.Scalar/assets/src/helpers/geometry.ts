@@ -127,7 +127,7 @@ export const ARROW_LENGTH = 10
 /**
  * The arrowhead at `tip`, pointing away from `from` (the last control point before it). `head` is LikeC4's
  * arrow type: `none` draws nothing, `onormal`, `odiamond` and `open` draw an outline, `diamond` a filled
- * diamond, `vee` an open V, and anything else LikeC4's default filled triangle.
+ * diamond, `vee` an open V, `crow` a crow's foot, and anything else LikeC4's default filled triangle.
  */
 export const arrowHead = (from: Point, tip: Point, head: string | undefined): ArrowHead | undefined => {
   if (head === 'none') {
@@ -156,6 +156,12 @@ export const arrowHead = (from: Point, tip: Point, head: string | undefined): Ar
     case 'vee':
     case 'open':
       return { path: `M${point(ARROW_LENGTH, half)} L${point(0, 0)} L${point(ARROW_LENGTH, -half)}`, filled: false }
+    case 'crow':
+      // Three prongs from a point on the line, spreading out to the end it reaches.
+      return {
+        path: `M${point(0, half)} L${point(ARROW_LENGTH, 0)} L${point(0, -half)} M${point(ARROW_LENGTH, 0)} L${point(0, 0)}`,
+        filled: false,
+      }
     default:
       return { path: `M${point(0, 0)} L${point(ARROW_LENGTH, half)} L${point(ARROW_LENGTH, -half)} Z`, filled: head !== 'onormal' }
   }

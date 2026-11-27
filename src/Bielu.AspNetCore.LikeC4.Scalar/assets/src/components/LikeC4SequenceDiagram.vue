@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import { lineColorOf } from '../helpers/colors'
-import { arrowHead, dashArray, wrapText } from '../helpers/geometry'
+import { dashArray, edgeArrows, wrapText } from '../helpers/geometry'
 import { plainText } from '../helpers/markdown'
 import { type SequenceStep, sequenceDiagram } from '../helpers/sequence'
 import { LABEL_FONTS } from '../helpers/view-layout'
@@ -67,11 +67,7 @@ const steps = computed(() =>
     return {
       ...step,
       color,
-      arrow: arrowHead(
-        step.points[step.points.length - 2]!,
-        step.points[step.points.length - 1]!,
-        step.edge.head,
-      ),
+      arrows: edgeArrows(step.points, step.edge.head, step.edge.tail),
       // A label above its arrow grows upwards; a loop's grows downwards beside it.
       lines: lines.map((text, index) => ({
         text,
@@ -104,7 +100,8 @@ const open = (viewId: string | null | undefined) => {
     class="bl-diagram bl-sequence"
     :data-view-id="view.id"
     :height="diagram.bounds.height + MARGIN * 2"
-    role="img"
+    :aria-label="view.title ?? view.id"
+    role="group"
     :viewBox="`${diagram.bounds.x - MARGIN} ${diagram.bounds.y - MARGIN} ${diagram.bounds.width + MARGIN * 2} ${diagram.bounds.height + MARGIN * 2}`"
     :width="diagram.bounds.width + MARGIN * 2"
     xmlns="http://www.w3.org/2000/svg">
@@ -171,12 +168,11 @@ const open = (viewId: string | null | undefined) => {
         :stroke="step.color"
         :stroke-dasharray="dashArray(step.edge.line)" />
       <path
-        v-if="step.arrow"
+        v-for="(arrow, arrowIndex) in step.arrows"
+        :key="arrowIndex"
         class="bl-edge-arrow"
-        :d="step.arrow.path"
-        :fill="
-          step.arrow.filled ? step.color : 'var(--scalar-background-1, #fff)'
-        "
+        :d="arrow.path"
+        :fill="arrow.filled ? step.color : 'var(--scalar-background-1, #fff)'"
         :stroke="step.color" />
       <text
         v-for="(line, index) in step.lines"

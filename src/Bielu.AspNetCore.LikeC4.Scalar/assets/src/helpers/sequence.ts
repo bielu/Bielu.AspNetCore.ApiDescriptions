@@ -1,4 +1,4 @@
-import type { LikeC4Box, LikeC4Edge, LikeC4SequenceLayout, LikeC4View } from '../types'
+import type { LikeC4Box, LikeC4Edge, LikeC4SequenceActor, LikeC4SequenceLayout, LikeC4View } from '../types'
 import { stepNumber } from './view-layout'
 
 /** How wide an activation bar (the box on a lifeline where a step starts or ends) is drawn. */
@@ -38,6 +38,20 @@ const isBox = (value: unknown): value is LikeC4Box => {
   return [box?.x, box?.y, box?.width, box?.height].every((part) => typeof part === 'number' && Number.isFinite(part))
 }
 
+/** The box the lanes cover, ports included. */
+const laneExtent = (actors: readonly LikeC4SequenceActor[]): LikeC4Box => {
+  const left = Math.min(...actors.map((actor) => actor.x))
+  const top = Math.min(...actors.map((actor) => actor.y))
+  const right = Math.max(...actors.map((actor) => actor.x + actor.width))
+  const bottom = Math.max(
+    ...actors.flatMap((actor) => [
+      actor.y + actor.height,
+      ...(actor.ports ?? []).map((port) => actor.y + port.cy + (port.height ?? 24) / 2),
+    ]),
+  )
+  return { x: left, y: top, width: right - left, height: bottom - top }
+}
+
 /**
  * Turns LikeC4's sequence layout into what the view draws. LikeC4 places each lane and, on it, a port for each
  * step's end (`cx`/`cy`, relative to the lane's box); a step goes from its source port to its target port.
@@ -49,7 +63,8 @@ export const sequenceDiagram = (view: LikeC4View): SequenceDiagram | undefined =
   if (!layout || actors.length === 0) {
     return undefined
   }
-  const bounds = isBox(layout.bounds) ? layout.bounds : { x: 0, y: 0, width: 1, height: 1 }
+  // The sequence's own extent, else the view's, else what its lanes cover, so lifelines always run downwards.
+  const bounds = isBox(layout.bounds) ? layout.bounds : isBox(view.bounds) ? view.bounds : laneExtent(actors)
   const bottom = bounds.y + bounds.height
   const ports = new Map<string, { x: number; y: number; height: number; lane: string }>()
   const activations: LikeC4Box[] = []

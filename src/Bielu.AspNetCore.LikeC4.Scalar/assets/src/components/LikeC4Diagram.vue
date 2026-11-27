@@ -42,7 +42,8 @@ const opens = (viewId: string | null | undefined) =>
     class="bl-diagram"
     :data-view-id="view.id"
     :height="bounds.height + MARGIN * 2"
-    role="img"
+    :aria-label="view.title ?? view.id"
+    role="group"
     :viewBox="`${bounds.x - MARGIN} ${bounds.y - MARGIN} ${bounds.width + MARGIN * 2} ${bounds.height + MARGIN * 2}`"
     :width="bounds.width + MARGIN * 2"
     xmlns="http://www.w3.org/2000/svg">
