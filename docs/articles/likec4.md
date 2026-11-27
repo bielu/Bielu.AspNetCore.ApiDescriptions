@@ -216,7 +216,7 @@ way LikeC4 does. It reports, as errors:
 
 | Finding | When |
 | --- | --- |
-| a relationship with no operation behind it | a service–channel relationship whose service neither sends to nor receives from the channel, or a service–service one where neither sends messages to a channel the other receives them from |
+| a relationship with no operation behind it | a service–channel relationship whose service neither sends to nor receives from the channel, a service–service one where neither sends messages to a channel the other receives them from, or one between two channels |
 | a missing relationship | a service sends to or receives from a channel the model has, with no relationship between them; or two services exchange messages through a channel the model leaves out, with no relationship between them |
 | metadata naming nothing | `asyncapi` naming a document that is not checked, or `asyncapiChannel` an address no document declares |
 

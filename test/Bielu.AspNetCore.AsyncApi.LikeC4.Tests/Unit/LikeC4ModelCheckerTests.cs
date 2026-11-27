@@ -200,6 +200,34 @@ public class LikeC4ModelCheckerTests
     }
 
     [Fact]
+    public void Check_RelationshipBetweenTwoChannels_IsStale()
+    {
+        // Arrange
+        var orders = """
+            {
+              "asyncapi": "3.0.0",
+              "info": { "title": "Orders", "version": "1" },
+              "channels": { "audit": { "address": "orders.audit" }, "archive": { "address": "orders.archive" } }
+            }
+            """;
+        var elements = """
+            {
+              "orders": { "title": "Orders", "metadata": { "asyncapi": "orders" } },
+              "audit": { "title": "orders.audit", "metadata": { "asyncapiChannel": "orders.audit" } },
+              "archive": { "title": "orders.archive", "metadata": { "asyncapiChannel": "orders.archive" } }
+            }
+            """;
+        var relations = """{ "a": { "source": { "model": "audit" }, "target": { "model": "archive" } } }""";
+
+        // Act
+        var findings = LikeC4ModelChecker.Check(Model(elements, relations), [new("orders", orders)]);
+
+        // Assert
+        findings.ShouldHaveSingleItem().Message.ShouldBe(
+            "The relationship 'orders.audit' -> 'orders.archive' has no AsyncAPI operation behind it: an operation connects a service to a channel, never two channels.");
+    }
+
+    [Fact]
     public void Check_FlowDrawnTheOtherWayRound_IsBacked()
     {
         // Arrange: drawn as a dependency, inventory on orders.

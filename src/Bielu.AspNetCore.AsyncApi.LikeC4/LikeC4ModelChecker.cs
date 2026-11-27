@@ -87,13 +87,18 @@ public static class LikeC4ModelChecker
                 (PartyKind.Service, PartyKind.Channel) => operations.Any(operation => operation.Service == from && operation.Channel == to),
                 (PartyKind.Channel, PartyKind.Service) => operations.Any(operation => operation.Service == to && operation.Channel == from),
                 (PartyKind.Service, PartyKind.Service) => flows.Any(flow => (flow.From == from && flow.To == to) || (flow.From == to && flow.To == from)),
-                _ => true,
+
+                // An operation is a service's on a channel: nothing in a document connects two channels.
+                _ => false,
             };
             if (!backed)
             {
-                var reason = from.Kind == PartyKind.Service && to.Kind == PartyKind.Service
-                    ? "neither sends messages to a channel the other receives them from"
-                    : $"{(from.Kind == PartyKind.Service ? from : to)} neither sends to nor receives from {(from.Kind == PartyKind.Channel ? from : to)}";
+                var reason = (from.Kind, to.Kind) switch
+                {
+                    (PartyKind.Service, PartyKind.Service) => "neither sends messages to a channel the other receives them from",
+                    (PartyKind.Channel, PartyKind.Channel) => "an operation connects a service to a channel, never two channels",
+                    _ => $"{(from.Kind == PartyKind.Service ? from : to)} neither sends to nor receives from {(from.Kind == PartyKind.Channel ? from : to)}",
+                };
                 findings.Add(new LikeC4CheckFinding(
                     LikeC4CheckSeverity.Error,
                     $"The relationship {Describe(relation, titles)} has no AsyncAPI operation behind it: {reason}.",
