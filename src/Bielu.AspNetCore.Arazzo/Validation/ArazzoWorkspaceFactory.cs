@@ -21,10 +21,10 @@ internal sealed class ArazzoWorkspaceFactory(
     /// mistyped document name, or a source type with no provider) is skipped rather than throwing; instead a
     /// contextual message naming the Arazzo document, source-description name, source type, and requested document
     /// name is appended to <paramref name="errors"/>, so every misconfigured source in the document is reported in
-    /// one pass. The returned <c>FailedSourceNames</c> lets the caller skip re-reporting steps that target one of
-    /// these sources as a separate "did not resolve" failure — the root-cause message above already covers them.
+    /// one pass. Such a source has no document in the returned workspace, so the reference validator skips the steps
+    /// that target it rather than reporting each one as a separate "did not resolve" failure.
     /// </summary>
-    public async Task<(ArazzoWorkspace Workspace, HashSet<string> FailedSourceNames)> CreateAsync(
+    public async Task<ArazzoWorkspace> CreateAsync(
         List<string> errors, CancellationToken cancellationToken)
     {
         var options = optionsMonitor.Get(documentName);
@@ -37,7 +37,6 @@ internal sealed class ArazzoWorkspaceFactory(
         // Newest first: a provider added after AddArazzo is asked before the built-in one for its type.
         var providersByType = documentProviders.Reverse()
             .ToLookup(provider => provider.SourceType, StringComparer.Ordinal);
-        var failedSourceNames = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var wiring in options.SourceWirings)
         {
@@ -49,7 +48,6 @@ internal sealed class ArazzoWorkspaceFactory(
                 continue;
             }
 
-            failedSourceNames.Add(wiring.SourceName);
             errors.Add(providersByType.Contains(sourceType)
                 ? $"{documentName}: source '{wiring.SourceName}' ({sourceType}) references document " +
                   $"'{wiring.DocumentName}', but no {sourceType} document of that name is registered" +
@@ -58,7 +56,7 @@ internal sealed class ArazzoWorkspaceFactory(
                   $"{nameof(IArazzoSourceDocumentProvider)} is registered for that type.");
         }
 
-        return (workspace, failedSourceNames);
+        return workspace;
     }
 
     private static async Task<object?> GetDocumentAsync(

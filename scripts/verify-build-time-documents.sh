@@ -7,7 +7,8 @@
 # document name, `v1`. Three things are checked:
 #   1. one build writes all three documents, under three distinct file names (OpenAPI keeps `v1`; AsyncAPI and
 #      Arazzo get a prefix because the name is taken);
-#   2. each file is the right kind of document and passes its own validator; and
+#   2. each file is the right kind of document and passes its own validator, and the Arazzo workflow resolves
+#      against the OpenAPI and AsyncAPI files (dotnet-arazzo validate --source); and
 #   3. a stale Arazzo reference (a channel the app does not have) fails the build instead of shipping a workflow
 #      that points at nothing. The tool boots the app, so Arazzo's startup validation runs, and the build has to
 #      surface it.
@@ -53,7 +54,10 @@ if [ -n "$unexpected" ]; then
 fi
 
 echo "==> Validating the Arazzo and AsyncAPI documents with their CLIs"
-dotnet run --project src/Bielu.Arazzo.Cli -c Release -f net10.0 -- validate --file "$WORK/docs/${NAME}_arazzo-v1.json"
+# --source also resolves every step against the OpenAPI and AsyncAPI files the same build wrote, which is
+# the check consumers run in CI when their app can't start there.
+dotnet run --project src/Bielu.Arazzo.Cli -c Release -f net10.0 -- validate --file "$WORK/docs/${NAME}_arazzo-v1.json" \
+  --source orders="$WORK/docs/$NAME.json" --source events="$WORK/docs/${NAME}_asyncapi-v1.json"
 dotnet run --project src/Bielu.AspNetCore.AsyncApi.Cli -c Release -f net10.0 -- validate --file "$WORK/docs/${NAME}_asyncapi-v1.json"
 
 echo "==> A stale Arazzo reference must fail the build"
