@@ -337,11 +337,15 @@ public class JsonSourceResolverTests
         {
             "openapi": "3.1.0",
             "paths": {
+                "x-internal": { "get": { "operationId": "hidden" } },
                 "/subscribe": {
                     "post": {
                         "operationId": "subscribe",
                         "callbacks": {
-                            "event": { "{$request.body#/callbackUrl}": { "post": { "operationId": "receiveEvent" } } },
+                            "event": {
+                                "{$request.body#/callbackUrl}": { "post": { "operationId": "receiveEvent" } },
+                                "x-example": { "post": { "operationId": "ghost" } }
+                            },
                             "shared": { "$ref": "#/components/callbacks/Shared" }
                         }
                     }
@@ -349,7 +353,10 @@ public class JsonSourceResolverTests
             },
             "components": {
                 "callbacks": {
-                    "Shared": { "{$request.body#/url}": { "$ref": "#/components/pathItems/Echo" } }
+                    "Shared": {
+                        "{$request.body#/url}": { "$ref": "#/components/pathItems/Echo" },
+                        "x-example": { "post": { "operationId": "ghostToo" } }
+                    }
                 },
                 "pathItems": {
                     "Echo": {
@@ -374,10 +381,15 @@ public class JsonSourceResolverTests
         operation!["operationId"]!.GetValue<string>().ShouldBe(operationId);
     }
 
-    [Fact]
-    public void OpenApi_TryResolveOperation_UnknownIdAmongCyclicCallbacks_ReturnsFalse()
+    [Theory]
+    [InlineData("nope")]
+    [InlineData("ghost")]
+    [InlineData("ghostToo")]
+    [InlineData("hidden")]
+    public void OpenApi_TryResolveOperation_UnknownIdOrOneUnderAnExtension_ReturnsFalse(string operationId)
     {
-        new OpenApiJsonSourceResolver().TryResolveOperation(OpenApiWithCallbacks, "nope", out _).ShouldBeFalse();
+        // ghost, ghostToo and hidden sit under x- extensions of a callback, a reusable callback and the Paths Object.
+        new OpenApiJsonSourceResolver().TryResolveOperation(OpenApiWithCallbacks, operationId, out _).ShouldBeFalse();
     }
 
     [Theory]
@@ -389,6 +401,9 @@ public class JsonSourceResolverTests
     [InlineData("/paths/~1subscribe/post/callbacks/event", false)]
     [InlineData("/paths/~1subscribe/post/callbacks/missing/x/post", false)]
     [InlineData("/paths/~1subscribe/post/responses/200/get", false)]
+    [InlineData("/paths/~1subscribe/post/callbacks/event/x-example/post", false)]
+    [InlineData("/components/callbacks/Shared/x-example/post", false)]
+    [InlineData("/paths/x-internal/get", false)]
     public void OpenApi_TryResolveOperationPath_ResolvesCallbackOperations(string pointer, bool expected)
     {
         new OpenApiJsonSourceResolver().TryResolveOperationPath(OpenApiWithCallbacks, pointer, out _).ShouldBe(expected);

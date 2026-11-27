@@ -57,9 +57,10 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
                 continue;
             }
 
-            foreach (var (_, pathItem) in pathItems)
+            foreach (var (key, pathItem) in pathItems)
             {
-                if (pathItem is JsonObject item
+                if (!IsExtension(key)
+                    && pathItem is JsonObject item
                     && Operations(root, item, visited).FirstOrDefault(candidate => HasOperationId(candidate, operationId)) is { } found)
                 {
                     operation = found;
@@ -114,9 +115,9 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
                     continue;
                 }
 
-                foreach (var (_, callbackPathItem) in resolved)
+                foreach (var (expression, callbackPathItem) in resolved)
                 {
-                    if (callbackPathItem is JsonObject inner)
+                    if (!IsExtension(expression) && callbackPathItem is JsonObject inner)
                     {
                         foreach (var nested in Operations(root, inner, visited))
                         {
@@ -127,6 +128,12 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
             }
         }
     }
+
+    /// <summary>
+    /// Whether a key of a Paths or Callback Object is a specification extension (<c>x-…</c>) rather than a path or
+    /// a callback expression: its value may be any object, which is no Path Item.
+    /// </summary>
+    private static bool IsExtension(string key) => key.StartsWith("x-", StringComparison.Ordinal);
 
     private static bool HasOperationId(JsonObject operation, string operationId) =>
         operation["operationId"] is JsonValue id &&
@@ -150,9 +157,10 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         // property, is no operation.
         var start = tokens switch
         {
-            ["paths" or "webhooks", _, ..] => 2,
+            ["paths", var path, ..] when !IsExtension(path) => 2,
+            ["webhooks", _, ..] => 2,
             ["components", "pathItems", _, ..] => 3,
-            ["components", Callbacks, _, _, ..] => 4,
+            ["components", Callbacks, _, var expression, ..] when !IsExtension(expression) => 4,
             _ => 0,
         };
         if (start == 0 || JsonDocumentPointer.EvaluateObject(document, tokens[..start]) is not { } pathItem)
@@ -204,6 +212,7 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
 
             if (rest.Length < 4
                 || rest[0] != Callbacks
+                || IsExtension(rest[2])
                 || (operation[Callbacks] as JsonObject)?[rest[1]] is not JsonObject callback
                 || JsonDocumentPointer.FollowLocalReferences(root, callback)?[rest[2]] is not JsonObject next)
             {
