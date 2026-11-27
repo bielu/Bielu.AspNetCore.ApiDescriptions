@@ -50,7 +50,7 @@ public class LikeC4ModelCheckerTests
         findings.Select(finding => (finding.Severity, finding.Message, finding.Location)).ShouldBe(
         [
             (LikeC4CheckSeverity.Error, "Element 'billing' stands for AsyncAPI document 'billing', which is not one of the documents checked.", "element billing"),
-            (LikeC4CheckSeverity.Error, "Element 'paymentsDone' stands for channel 'payments.done', which no AsyncAPI document sends to or receives from.", "element paymentsDone"),
+            (LikeC4CheckSeverity.Error, "Element 'paymentsDone' stands for channel 'payments.done', which no AsyncAPI document declares.", "element paymentsDone"),
             (LikeC4CheckSeverity.Error, "The relationship 'Orders' -> 'Notifications' (notifies) has no AsyncAPI operation behind it: neither sends messages to a channel the other receives them from.", "relation " + RelationId(model, "shop.orders", "notifications")),
             (LikeC4CheckSeverity.Error, "Service 'inventory' sends StockLevelChanged to service 'notifications' through channel 'inventory.stock-changed', but the model has no relationship between them.", null),
         ]);
@@ -91,6 +91,112 @@ public class LikeC4ModelCheckerTests
         // Assert
         findings.ShouldHaveSingleItem().Message.ShouldBe(
             "Service 'orders' sends OrderCreated to service 'inventory' through channel 'orders.created', but the model has no relationship between them.");
+    }
+
+    [Fact]
+    public void Check_FlowThroughAnOmittedChannelBesideAModelledOne_ReportsTheMissingRelationship()
+    {
+        // Arrange: orders sends to inventory through two channels; the model draws only the first.
+        var orders = """
+            {
+              "asyncapi": "3.0.0",
+              "info": { "title": "Orders", "version": "1" },
+              "channels": {
+                "created": { "address": "orders.created", "messages": { "m": { "name": "OrderCreated" } } },
+                "cancelled": { "address": "orders.cancelled", "messages": { "m": { "name": "OrderCancelled" } } }
+              },
+              "operations": {
+                "publishCreated": { "action": "send", "channel": { "$ref": "#/channels/created" } },
+                "publishCancelled": { "action": "send", "channel": { "$ref": "#/channels/cancelled" } }
+              }
+            }
+            """;
+        var inventory = """
+            {
+              "asyncapi": "3.0.0",
+              "info": { "title": "Inventory", "version": "1" },
+              "channels": {
+                "created": { "address": "orders.created", "messages": { "m": { "name": "OrderCreated" } } },
+                "cancelled": { "address": "orders.cancelled", "messages": { "m": { "name": "OrderCancelled" } } }
+              },
+              "operations": {
+                "onCreated": { "action": "receive", "channel": { "$ref": "#/channels/created" } },
+                "onCancelled": { "action": "receive", "channel": { "$ref": "#/channels/cancelled" } }
+              }
+            }
+            """;
+        var elements = """
+            {
+              "orders": { "title": "Orders", "metadata": { "asyncapi": "orders" } },
+              "inventory": { "title": "Inventory", "metadata": { "asyncapi": "inventory" } },
+              "ordersCreated": { "title": "orders.created", "metadata": { "asyncapiChannel": "orders.created" } }
+            }
+            """;
+        var relations = """
+            {
+              "a": { "source": { "model": "orders" }, "target": { "model": "ordersCreated" } },
+              "b": { "source": { "model": "ordersCreated" }, "target": { "model": "inventory" } }
+            }
+            """;
+
+        // Act
+        var findings = LikeC4ModelChecker.Check(Model(elements, relations), [new("orders", orders), new("inventory", inventory)]);
+
+        // Assert
+        findings.ShouldHaveSingleItem().Message.ShouldBe(
+            "Service 'orders' sends OrderCancelled to service 'inventory' through channel 'orders.cancelled', but the model has no relationship between them.");
+    }
+
+    [Fact]
+    public void Check_ChannelDeclaredButUsedByNoOperation_IsKnown()
+    {
+        // Arrange: the generator draws a declared channel even when no operation uses it.
+        var orders = """
+            {
+              "asyncapi": "3.0.0",
+              "info": { "title": "Orders", "version": "1" },
+              "channels": { "audit": { "address": "orders.audit" } }
+            }
+            """;
+        var elements = """
+            {
+              "orders": { "title": "Orders", "metadata": { "asyncapi": "orders" } },
+              "ordersAudit": { "title": "orders.audit", "metadata": { "asyncapiChannel": "orders.audit" } }
+            }
+            """;
+
+        // Act
+        var findings = LikeC4ModelChecker.Check(Model(elements), [new("orders", orders)]);
+
+        // Assert
+        findings.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Check_RelationshipToADeclaredChannelWithoutAnOperation_IsStale()
+    {
+        // Arrange
+        var orders = """
+            {
+              "asyncapi": "3.0.0",
+              "info": { "title": "Orders", "version": "1" },
+              "channels": { "audit": { "address": "orders.audit" } }
+            }
+            """;
+        var elements = """
+            {
+              "orders": { "title": "Orders", "metadata": { "asyncapi": "orders" } },
+              "ordersAudit": { "title": "orders.audit", "metadata": { "asyncapiChannel": "orders.audit" } }
+            }
+            """;
+        var relations = """{ "a": { "source": { "model": "orders" }, "target": { "model": "ordersAudit" } } }""";
+
+        // Act
+        var findings = LikeC4ModelChecker.Check(Model(elements, relations), [new("orders", orders)]);
+
+        // Assert
+        findings.ShouldHaveSingleItem().Message.ShouldBe(
+            "The relationship 'Orders' -> 'orders.audit' has no AsyncAPI operation behind it: service 'orders' neither sends to nor receives from channel 'orders.audit'.");
     }
 
     [Fact]

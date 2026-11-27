@@ -218,14 +218,14 @@ way LikeC4 does. It reports, as errors:
 | --- | --- |
 | a relationship with no operation behind it | a service–channel relationship whose service neither sends to nor receives from the channel, or a service–service one where neither sends messages to a channel the other receives them from |
 | a missing relationship | a service sends to or receives from a channel the model has, with no relationship between them; or two services exchange messages through a channel the model leaves out, with no relationship between them |
-| metadata naming nothing | `asyncapi` naming a document that is not checked, or `asyncapiChannel` an address no document uses |
+| metadata naming nothing | `asyncapi` naming a document that is not checked, or `asyncapiChannel` an address no document declares |
 
 A hand-written model of the shop, with what the check finds marked in red:
 
 ![A hand-written model: Shop holds Inventory, Orders (with Orders API inside) and the orders database; Billing and payments.done are marked 1 and 2, the notifies relationship from Orders to Notifications 3, and a missing StockLevelChanged relationship from Inventory to Notifications 4](../images/likec4/check-findings.jpg)
 
 1. `Billing` stands for an AsyncAPI document that is not checked.
-2. `payments.done` stands for an address no document uses.
+2. `payments.done` stands for an address no document declares.
 3. `notifies`: Orders sends nothing that Notifications receives.
 4. Inventory sends `StockLevelChanged` to Notifications through `inventory.stock-changed`, a channel the model leaves
    out, and the model has no relationship between them.

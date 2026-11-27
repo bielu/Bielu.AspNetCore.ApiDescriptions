@@ -50,7 +50,9 @@ public static class LikeC4ModelChecker
         }
 
         var export = LikeC4ModelExport.Read(model);
-        var operations = list.SelectMany(source => Operations(source)).ToList();
+        var documents = list.Select(Read).ToList();
+        var operations = documents.SelectMany(document => document.Operations).ToList();
+        var addresses = documents.SelectMany(document => document.Addresses).ToHashSet(StringComparer.Ordinal);
         var flows = Flows(operations);
         var findings = new List<LikeC4CheckFinding>();
 
@@ -58,7 +60,7 @@ public static class LikeC4ModelChecker
         var own = new Dictionary<string, Party>(StringComparer.Ordinal);
         foreach (var element in export.Elements)
         {
-            if (Mapping(element, list, operations, findings) is { } party)
+            if (Mapping(element, list, addresses, findings) is { } party)
             {
                 own[element.Id] = party;
             }
@@ -114,9 +116,11 @@ public static class LikeC4ModelChecker
             }
         }
 
-        foreach (var flow in flows.DistinctBy(flow => (flow.From, flow.To)))
+        // Only flows through channels the model leaves out need a service-to-service relationship: filter those first,
+        // so a modelled channel between two services does not hide another, omitted one between them.
+        foreach (var flow in flows.Where(flow => !modelled.Contains(flow.Channel)).DistinctBy(flow => (flow.From, flow.To)))
         {
-            if (modelled.Contains(flow.From) && modelled.Contains(flow.To) && !modelled.Contains(flow.Channel) && !drawn.Contains((flow.From, flow.To)))
+            if (modelled.Contains(flow.From) && modelled.Contains(flow.To) && !drawn.Contains((flow.From, flow.To)))
             {
                 findings.Add(new LikeC4CheckFinding(
                     LikeC4CheckSeverity.Error,
@@ -143,7 +147,7 @@ public static class LikeC4ModelChecker
     private static Party? Mapping(
         LikeC4ExportElement element,
         List<AsyncApiLikeC4Source> sources,
-        List<Operation> operations,
+        HashSet<string> addresses,
         List<LikeC4CheckFinding> findings)
     {
         if (element.Metadata.TryGetValue(AsyncApiLikeC4ModelBuilder.ServiceMetadataKey, out var name))
@@ -162,14 +166,15 @@ public static class LikeC4ModelChecker
 
         if (element.Metadata.TryGetValue(AsyncApiLikeC4ModelBuilder.ChannelMetadataKey, out var address))
         {
-            if (operations.Any(operation => operation.Channel.Name == address))
+            // A channel a document declares is known even when no operation uses it: the generator draws it too.
+            if (addresses.Contains(address))
             {
                 return Party.ForChannel(address);
             }
 
             findings.Add(new LikeC4CheckFinding(
                 LikeC4CheckSeverity.Error,
-                $"Element '{element.Id}' stands for channel '{address}', which no AsyncAPI document sends to or receives from.",
+                $"Element '{element.Id}' stands for channel '{address}', which no AsyncAPI document declares.",
                 "element " + element.Id));
         }
 
@@ -193,8 +198,8 @@ public static class LikeC4ModelChecker
         }
     }
 
-    /// <summary>The operations of a document on channels with a known address.</summary>
-    private static IEnumerable<Operation> Operations(AsyncApiLikeC4Source source)
+    /// <summary>The channel addresses a document declares, and its operations on channels with a known address.</summary>
+    private static (IReadOnlyCollection<string> Addresses, List<Operation> Operations) Read(AsyncApiLikeC4Source source)
     {
         AsyncApiServiceDescription service;
         try
@@ -209,13 +214,16 @@ public static class LikeC4ModelChecker
         var addresses = service.Channels
             .Where(channel => channel.Address is not null)
             .ToDictionary(channel => channel.Key, channel => channel.Address!, StringComparer.Ordinal);
+        var operations = new List<Operation>();
         foreach (var operation in service.Operations)
         {
             if (addresses.TryGetValue(operation.ChannelKey, out var address))
             {
-                yield return new Operation(Party.Service(source.Name), Party.ForChannel(address), operation.Action, operation.Key, operation.Messages);
+                operations.Add(new Operation(Party.Service(source.Name), Party.ForChannel(address), operation.Action, operation.Key, operation.Messages));
             }
         }
+
+        return (addresses.Values, operations);
     }
 
     /// <summary>Every sender of a channel to every other service receiving the same messages from it.</summary>
