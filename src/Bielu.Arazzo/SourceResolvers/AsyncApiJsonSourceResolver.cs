@@ -10,8 +10,10 @@ namespace Bielu.Arazzo.SourceResolvers;
 /// </summary>
 /// <remarks>
 /// An <c>operationId</c> is an AsyncAPI 3 operation's key under <c>operations</c>, or, in an AsyncAPI 2 document,
-/// the <c>operationId</c> of a channel's <c>publish</c> or <c>subscribe</c> operation. A pointer resolves when it
-/// addresses an object in the document.
+/// the <c>operationId</c> of a channel's <c>publish</c> or <c>subscribe</c> operation. An <c>operationPath</c>
+/// resolves when it addresses an operation (<c>/operations/onSignup</c>, <c>/components/operations/…</c>, or an
+/// AsyncAPI 2 channel's <c>/channels/orders/publish</c>), and a <c>channelPath</c> when it addresses a channel
+/// (<c>/channels/…</c> or <c>/components/channels/…</c>).
 /// </remarks>
 /// <example>
 /// <code>
@@ -68,7 +70,14 @@ public sealed class AsyncApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(jsonPointer);
 
-        operation = JsonDocumentPointer.EvaluateObject(document, jsonPointer);
+        var tokens = JsonDocumentPointer.Tokens(jsonPointer);
+        var isOperation = tokens switch
+        {
+            ["operations", _] or ["components", "operations", _] => true,
+            ["channels", _, "publish" or "subscribe"] or ["components", "channels", _, "publish" or "subscribe"] => true,
+            _ => false,
+        };
+        operation = isOperation ? JsonDocumentPointer.EvaluateObject(document, tokens!) : null;
         return operation is not null;
     }
 
@@ -78,7 +87,9 @@ public sealed class AsyncApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(jsonPointer);
 
-        channel = JsonDocumentPointer.EvaluateObject(document, jsonPointer);
+        var tokens = JsonDocumentPointer.Tokens(jsonPointer);
+        var isChannel = tokens is ["channels", _] or ["components", "channels", _];
+        channel = isChannel ? JsonDocumentPointer.EvaluateObject(document, tokens!) : null;
         return channel is not null;
     }
 }

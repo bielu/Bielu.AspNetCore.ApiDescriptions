@@ -9,8 +9,9 @@ namespace Bielu.Arazzo.SourceResolvers;
 /// document is a file, such as one written at build time, rather than a live app's.
 /// </summary>
 /// <remarks>
-/// An <c>operationId</c> is searched for in every operation under <c>paths</c> and <c>webhooks</c>. An
-/// <c>operationPath</c> resolves when its pointer addresses an object, such as <c>/paths/~1pets/get</c>.
+/// An <c>operationId</c> is searched for in every operation under <c>paths</c> and <c>webhooks</c>, following a
+/// Path Item's local <c>$ref</c>. An <c>operationPath</c> resolves when its pointer addresses an Operation Object:
+/// an HTTP method of a Path Item, such as <c>/paths/~1pets/get</c>, also through a Path Item's <c>$ref</c>.
 /// </remarks>
 /// <example>
 /// <code>
@@ -44,7 +45,8 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
 
             foreach (var (_, pathItem) in pathItems)
             {
-                if (pathItem is not JsonObject methods)
+                // OpenAPI 3.1 lets a Path Item be a $ref, such as to #/components/pathItems/Pets.
+                if (pathItem is not JsonObject item || JsonDocumentPointer.FollowLocalReferences(document, item) is not { } methods)
                 {
                     continue;
                 }
@@ -73,7 +75,19 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(jsonPointer);
 
-        operation = JsonDocumentPointer.EvaluateObject(document, jsonPointer);
+        operation = null;
+        if (JsonDocumentPointer.Tokens(jsonPointer) is not { Length: >= 2 } tokens || !Methods.Contains(tokens[^1]))
+        {
+            return false;
+        }
+
+        // The method of the Path Item the rest of the pointer addresses, which may be a $ref to another.
+        if (JsonDocumentPointer.EvaluateObject(document, tokens[..^1]) is { } pathItem
+            && JsonDocumentPointer.FollowLocalReferences(document, pathItem)?[tokens[^1]] is JsonObject found)
+        {
+            operation = found;
+        }
+
         return operation is not null;
     }
 }

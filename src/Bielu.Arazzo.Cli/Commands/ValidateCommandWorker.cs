@@ -45,6 +45,7 @@ internal sealed class ValidateCommandWorker
         }
 
         var reports = new List<FileDiagnosticReport>();
+        var usedSources = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var file in files)
         {
@@ -59,7 +60,21 @@ internal sealed class ValidateCommandWorker
                 continue;
             }
 
-            reports.Add(ValidateFile(file, _context, _logger));
+            reports.Add(ValidateFile(file, _context, _logger, usedSources));
+        }
+
+        // A --source no document declares is a typo or a stale mapping: its file is never opened, so the steps
+        // it was meant for would pass unchecked.
+        var unused = _context.Sources.Keys.Where(name => !usedSources.Contains(name)).ToList();
+        if (unused.Count > 0)
+        {
+            reports.Add(new FileDiagnosticReport
+            {
+                FilePath = "--source",
+                Errors = unused
+                    .Select(name => new DiagnosticItem($"--source '{name}' is not a source description of any document validated.", null))
+                    .ToList(),
+            });
         }
 
         ValidateReportWriter.Write(reports, _context.Format, _context.Strict, _logger);
@@ -67,7 +82,7 @@ internal sealed class ValidateCommandWorker
         return ValidateReportWriter.HasFailures(reports, _context.Strict) ? CliExitCode.Failure : CliExitCode.Success;
     }
 
-    private static FileDiagnosticReport ValidateFile(string file, ValidateCommandContext context, ICliLogger logger)
+    private static FileDiagnosticReport ValidateFile(string file, ValidateCommandContext context, ICliLogger logger, HashSet<string> usedSources)
     {
         string content;
         try
@@ -108,6 +123,7 @@ internal sealed class ValidateCommandWorker
             if (context.Sources.Count > 0 || context.ResolveLocalSources)
             {
                 var references = SourceReferenceChecker.Check(result.Document, file, context);
+                usedSources.UnionWith(references.UsedSources);
                 errors.AddRange(references.Errors);
                 if (references.UncheckedSources.Count > 0 && !string.Equals(context.Format, "json", StringComparison.OrdinalIgnoreCase))
                 {

@@ -26,7 +26,8 @@ dotnet arazzo validate --file ./workflows/*.yaml --strict
 **Options:**
 - `--file <path>` - Path or glob to Arazzo document(s) (required, repeatable)
 - `--source <name>=<path>` - Check step references against the OpenAPI/AsyncAPI file (JSON or YAML) for
-  the source description `<name>` (repeatable)
+  the source description `<name>` (repeatable). A `<name>` that none of the documents validated declares is
+  an error, so a typo can't leave its steps unchecked
 - `--resolve-local-sources` - Also load every source description whose `url` is a relative path to an
   existing file, resolved from the Arazzo document's folder
 - `--strict` - Treat warnings as errors
@@ -35,7 +36,9 @@ dotnet arazzo validate --file ./workflows/*.yaml --strict
 #### Checking references against the source documents
 
 With `--source` or `--resolve-local-sources`, `validate` also checks that every step's `operationId`,
-`operationPath` and `channelPath` exists in the document it targets. It is the same check
+`operationPath` and `channelPath` exists in the document it targets: an `operationPath` must address an
+operation (an OpenAPI Path Item's method, following a Path Item `$ref`; an AsyncAPI operation), and a
+`channelPath` a channel. It is the same check
 `Bielu.AspNetCore.Arazzo` runs at startup (`ValidateSourceReferencesOnStartup`), run against files instead
 of a live app. That makes it usable where the app can't start, and for Arazzo documents written by hand or
 kept in another repository.

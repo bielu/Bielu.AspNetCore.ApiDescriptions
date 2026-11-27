@@ -62,6 +62,8 @@ public class JsonSourceResolverTests
     [InlineData("/paths/~1pets~1{id}/delete", true)]
     [InlineData("/paths/~1pets/post", false)]
     [InlineData("/paths/~1pets/summary", false)]
+    [InlineData("/paths/~1pets", false)]
+    [InlineData("/webhooks/newPet/post", true)]
     [InlineData("/paths/~2pets/get", false)]
     [InlineData("paths/~1pets/get", false)]
     [InlineData("", false)]
@@ -116,14 +118,113 @@ public class JsonSourceResolverTests
         new AsyncApiJsonSourceResolver().TryResolveOperationPath(AsyncApi3, "/operations/0", out _).ShouldBeFalse();
     }
 
+    [Theory]
+    [InlineData("/operations/onSignup", true)]
+    [InlineData("/components/operations/audit", true)]
+    [InlineData("/channels/user~1signedup", false)]
+    [InlineData("/components/channels/shared", false)]
+    [InlineData("/info", false)]
+    public void AsyncApi3_TryResolveOperationPath_AcceptsOnlyOperations(string pointer, bool expected)
+    {
+        // Arrange
+        var document = JsonNode.Parse("""
+            {
+                "asyncapi": "3.0.0",
+                "info": { "title": "t" },
+                "channels": { "user/signedup": { "address": "user/signedup" } },
+                "operations": { "onSignup": { "action": "receive" } },
+                "components": { "channels": { "shared": {} }, "operations": { "audit": { "action": "send" } } }
+            }
+            """)!;
+
+        // Act & Assert
+        new AsyncApiJsonSourceResolver().TryResolveOperationPath(document, pointer, out _).ShouldBe(expected);
+    }
+
+    [Theory]
+    [InlineData("/channels/orders/publish", true)]
+    [InlineData("/channels/orders/subscribe", true)]
+    [InlineData("/channels/orders", false)]
+    public void AsyncApi2_TryResolveOperationPath_AcceptsChannelOperations(string pointer, bool expected)
+    {
+        new AsyncApiJsonSourceResolver().TryResolveOperationPath(AsyncApi2, pointer, out _).ShouldBe(expected);
+    }
+
+    [Theory]
+    [InlineData("/channels/user~1signedup", true)]
+    [InlineData("/components/channels/shared", true)]
+    [InlineData("/operations/onSignup", false)]
+    [InlineData("/tags/0", false)]
+    public void AsyncApi_TryResolveChannelPath_AcceptsOnlyChannels(string pointer, bool expected)
+    {
+        // Arrange
+        var document = JsonNode.Parse("""
+            {
+                "asyncapi": "3.0.0",
+                "tags": [ { "name": "a" } ],
+                "channels": { "user/signedup": { "address": "user/signedup" } },
+                "operations": { "onSignup": { "action": "receive" } },
+                "components": { "channels": { "shared": {} } }
+            }
+            """)!;
+
+        // Act & Assert
+        new AsyncApiJsonSourceResolver().TryResolveChannelPath(document, pointer, out _).ShouldBe(expected);
+    }
+
     [Fact]
     public void Pointer_IntoArray_UsesIndex()
     {
         var document = JsonNode.Parse("""{ "tags": [ { "name": "a" } ] }""")!;
-        new AsyncApiJsonSourceResolver().TryResolveChannelPath(document, "/tags/0", out var tag).ShouldBeTrue();
-        tag!["name"]!.GetValue<string>().ShouldBe("a");
-        new AsyncApiJsonSourceResolver().TryResolveChannelPath(document, "/tags/1", out _).ShouldBeFalse();
-        new AsyncApiJsonSourceResolver().TryResolveChannelPath(document, "/tags/-1", out _).ShouldBeFalse();
+        JsonDocumentPointer.EvaluateObject(document, "/tags/0")!["name"]!.GetValue<string>().ShouldBe("a");
+        JsonDocumentPointer.EvaluateObject(document, "/tags/1").ShouldBeNull();
+        JsonDocumentPointer.EvaluateObject(document, "/tags/-1").ShouldBeNull();
+    }
+
+    [Fact]
+    public void Pointer_WithMalformedEscape_HasNoTokens()
+    {
+        JsonDocumentPointer.Tokens("/a~2b").ShouldBeNull();
+        JsonDocumentPointer.Tokens("a").ShouldBeNull();
+        JsonDocumentPointer.Tokens("/a~1b/c~0d").ShouldBe(["a/b", "c~d"]);
+    }
+
+    private static readonly JsonNode OpenApiWithPathItemReferences = JsonNode.Parse("""
+        {
+            "openapi": "3.1.0",
+            "paths": {
+                "/pets": { "$ref": "#/components/pathItems/Pets" },
+                "/loop": { "$ref": "#/components/pathItems/Loop" },
+                "/outside": { "$ref": "other.json#/Pets" }
+            },
+            "components": {
+                "pathItems": {
+                    "Pets": { "get": { "operationId": "listPets" } },
+                    "Loop": { "$ref": "#/paths/~1loop" }
+                }
+            }
+        }
+        """)!;
+
+    [Fact]
+    public void OpenApi_TryResolveOperation_FollowsPathItemReferences()
+    {
+        // Act & Assert
+        var resolver = new OpenApiJsonSourceResolver();
+        resolver.TryResolveOperation(OpenApiWithPathItemReferences, "listPets", out var operation).ShouldBeTrue();
+        operation!["operationId"]!.GetValue<string>().ShouldBe("listPets");
+        resolver.TryResolveOperation(OpenApiWithPathItemReferences, "nope", out _).ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData("/paths/~1pets/get", true)]
+    [InlineData("/components/pathItems/Pets/get", true)]
+    [InlineData("/paths/~1pets", false)]
+    [InlineData("/paths/~1loop/get", false)]
+    [InlineData("/paths/~1outside/get", false)]
+    public void OpenApi_TryResolveOperationPath_FollowsPathItemReferences(string pointer, bool expected)
+    {
+        new OpenApiJsonSourceResolver().TryResolveOperationPath(OpenApiWithPathItemReferences, pointer, out _).ShouldBe(expected);
     }
 
     [Fact]

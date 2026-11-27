@@ -22,7 +22,8 @@ internal static class SourceReferenceChecker
     /// <summary>The outcome for one Arazzo file.</summary>
     /// <param name="Errors">Unresolved references, and source files that couldn't be loaded.</param>
     /// <param name="UncheckedSources">Declared sources no file was given for, whose steps were skipped.</param>
-    public sealed record Result(List<DiagnosticItem> Errors, IReadOnlyList<string> UncheckedSources);
+    /// <param name="UsedSources">The <c>--source</c> names this document declares, so the mapping was used.</param>
+    public sealed record Result(List<DiagnosticItem> Errors, IReadOnlyList<string> UncheckedSources, IReadOnlyList<string> UsedSources);
 
     public static Result Check(ArazzoDocument document, string arazzoFilePath, ValidateCommandContext context)
     {
@@ -31,20 +32,30 @@ internal static class SourceReferenceChecker
         workspace.RegisterResolver(new AsyncApiJsonSourceResolver());
 
         var errors = new List<DiagnosticItem>();
+        var used = new List<string>();
         var baseDirectory = Path.GetDirectoryName(Path.GetFullPath(arazzoFilePath)) ?? Directory.GetCurrentDirectory();
 
         for (var i = 0; i < document.SourceDescriptions.Count; i++)
         {
             var source = document.SourceDescriptions[i];
-            var path = context.Sources.TryGetValue(source.Name, out var given)
-                ? given
-                : context.ResolveLocalSources ? LocalPath(source.Url, baseDirectory) : null;
+            var pointer = $"/sourceDescriptions/{i}";
+            string? path = null;
+            if (context.Sources.TryGetValue(source.Name, out var given))
+            {
+                used.Add(source.Name);
+                path = given;
+            }
+            else if (context.ResolveLocalSources && !TryLocalPath(source.Url, baseDirectory, out path, out var pathError))
+            {
+                errors.Add(new DiagnosticItem($"Source '{source.Name}' url '{source.Url}' is not a usable local path: {pathError}", pointer));
+                continue;
+            }
+
             if (path is null)
             {
                 continue;
             }
 
-            var pointer = $"/sourceDescriptions/{i}";
             if (!TryLoad(path, out var sourceDocument, out var loadError))
             {
                 errors.Add(new DiagnosticItem($"Source '{source.Name}' could not be loaded from '{path}': {loadError}", pointer));
@@ -70,19 +81,34 @@ internal static class SourceReferenceChecker
 
         errors.AddRange(ArazzoReferenceValidator.Validate(document, workspace)
             .Select(error => new DiagnosticItem(error.Message, error.Path)));
-        return new Result(errors, ArazzoReferenceValidator.UncheckedSources(document, workspace));
+        return new Result(errors, ArazzoReferenceValidator.UncheckedSources(document, workspace), used);
     }
 
-    /// <summary>A source url that names a file relative to the Arazzo document, or <see langword="null"/> for a URL.</summary>
-    private static string? LocalPath(string url, string baseDirectory)
+    /// <summary>
+    /// The file a source url names relative to the Arazzo document (<see langword="null"/> for a URL, or a file that
+    /// isn't there), or <see langword="false"/> with <paramref name="error"/> when the url is no valid path at all.
+    /// </summary>
+    private static bool TryLocalPath(string url, string baseDirectory, out string? path, out string error)
     {
+        path = null;
+        error = string.Empty;
         if (string.IsNullOrEmpty(url) || Uri.TryCreate(url, UriKind.Absolute, out var absolute) && !absolute.IsFile)
         {
-            return null;
+            return true;
         }
 
-        var path = Path.GetFullPath(Path.Combine(baseDirectory, Uri.UnescapeDataString(url)));
-        return File.Exists(path) ? path : null;
+        try
+        {
+            var full = Path.GetFullPath(Path.Combine(baseDirectory, Uri.UnescapeDataString(url)));
+            path = File.Exists(full) ? full : null;
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            // Such as a NUL, which %00 decodes to.
+            error = ex.Message;
+            return false;
+        }
     }
 
     private static string? SniffType(JsonNode document) => document switch

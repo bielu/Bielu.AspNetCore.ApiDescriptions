@@ -149,22 +149,19 @@ public static partial class ArazzoReferenceValidator
     }
 
     /// <summary>
-    /// Whether a reference into <paramref name="sourceName"/> can be resolved: only when the workspace has its
-    /// document. A declared source without one is skipped; an undeclared source is reported.
+    /// Whether a reference into <paramref name="sourceName"/> can be resolved: only when the document declares
+    /// the source and the workspace has its document. An undeclared source is always reported, even when the
+    /// workspace has a document of that name; a declared source without one is skipped.
     /// </summary>
     private static bool ShouldResolve(string sourceName, string reference, string field, StepContext context)
     {
-        if (context.Workspace.TryGetDocument(sourceName, out _))
-        {
-            return true;
-        }
-
         if (!context.Declared.Contains(sourceName))
         {
             context.Add(field, $"{reference} names source '{sourceName}', which the document doesn't declare.");
+            return false;
         }
 
-        return false;
+        return context.Workspace.TryGetDocument(sourceName, out _);
     }
 
     private sealed record StepContext(

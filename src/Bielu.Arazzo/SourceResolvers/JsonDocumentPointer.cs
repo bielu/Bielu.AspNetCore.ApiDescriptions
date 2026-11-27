@@ -10,23 +10,41 @@ namespace Bielu.Arazzo.SourceResolvers;
 internal static class JsonDocumentPointer
 {
     /// <summary>Returns the object the pointer addresses, or <see langword="null"/> when it addresses nothing or a non-object.</summary>
-    public static JsonObject? EvaluateObject(JsonNode? root, string pointer)
+    public static JsonObject? EvaluateObject(JsonNode? root, string pointer) =>
+        root is not null && Tokens(pointer) is { } tokens ? EvaluateObject(root, tokens) : null;
+
+    /// <summary>
+    /// The pointer's reference tokens, decoded, or <see langword="null"/> when it is not a pointer (empty, not
+    /// starting with <c>/</c>, or with a malformed <c>~</c> escape).
+    /// </summary>
+    public static string[]? Tokens(string pointer)
     {
         // Uri.UnescapeDataString leaves a malformed escape as it is rather than throwing.
         var decoded = Uri.UnescapeDataString(pointer);
-        if (root is null || decoded.Length == 0 || decoded[0] != '/')
+        if (decoded.Length == 0 || decoded[0] != '/')
         {
             return null;
         }
 
-        var current = root;
-        foreach (var rawToken in decoded[1..].Split('/'))
+        var raw = decoded[1..].Split('/');
+        var tokens = new string[raw.Length];
+        for (var i = 0; i < raw.Length; i++)
         {
-            if (!TryUnescape(rawToken, out var token))
+            if (!TryUnescape(raw[i], out tokens[i]))
             {
                 return null;
             }
+        }
 
+        return tokens;
+    }
+
+    /// <summary>Returns the object <paramref name="tokens"/> address, or <see langword="null"/> when they address nothing or a non-object.</summary>
+    public static JsonObject? EvaluateObject(JsonNode root, IEnumerable<string> tokens)
+    {
+        JsonNode? current = root;
+        foreach (var token in tokens)
+        {
             current = current switch
             {
                 JsonObject obj when obj.TryGetPropertyValue(token, out var child) => child,
@@ -42,6 +60,30 @@ internal static class JsonDocumentPointer
         }
 
         return current as JsonObject;
+    }
+
+    /// <summary>
+    /// <paramref name="node"/> with its local <c>$ref</c>s (<c>#/…</c>) followed to the object they end at, or
+    /// <see langword="null"/> when one points at nothing, outside the document, or back into the chain.
+    /// </summary>
+    public static JsonObject? FollowLocalReferences(JsonNode root, JsonObject node)
+    {
+        var seen = new HashSet<JsonObject>(ReferenceEqualityComparer.Instance);
+        var current = node;
+        while (current["$ref"] is JsonValue reference)
+        {
+            if (!seen.Add(current)
+                || !reference.TryGetValue<string>(out var target)
+                || !target.StartsWith("#/", StringComparison.Ordinal)
+                || EvaluateObject(root, target[1..]) is not { } next)
+            {
+                return null;
+            }
+
+            current = next;
+        }
+
+        return current;
     }
 
     private static bool TryUnescape(string rawToken, out string token)

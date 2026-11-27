@@ -166,6 +166,20 @@ public class ArazzoReferenceValidatorTests
     }
 
     [Fact]
+    public void Validate_UndeclaredSourceTheWorkspaceRegisters_ReportsIt()
+    {
+        // Arrange: the workspace has 'pets', and getPet exists in it, but the document no longer declares 'pets'.
+        var document = Document(new ArazzoStep { StepId = "get", OperationId = "$sourceDescriptions.pets.getPet" });
+        document.SourceDescriptions.RemoveAt(0);
+
+        // Act
+        var error = ArazzoReferenceValidator.Validate(document, Workspace()).ShouldHaveSingleItem();
+
+        // Assert
+        error.Message.ShouldContain("names source 'pets', which the document doesn't declare");
+    }
+
+    [Fact]
     public void Validate_DeclaredSourceWithoutDocument_IsSkipped()
     {
         // Arrange
