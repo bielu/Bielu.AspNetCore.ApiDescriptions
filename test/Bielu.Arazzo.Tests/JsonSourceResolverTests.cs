@@ -351,6 +351,7 @@ public class JsonSourceResolverTests
                     }
                 }
             },
+            "webhooks": { "x-order": { "post": { "operationId": "orderReceived" } } },
             "components": {
                 "callbacks": {
                     "Shared": {
@@ -374,6 +375,7 @@ public class JsonSourceResolverTests
     [InlineData("subscribe")]
     [InlineData("receiveEvent")]
     [InlineData("echo")]
+    [InlineData("orderReceived")]
     public void OpenApi_TryResolveOperation_FindsCallbackOperations(string operationId)
     {
         // The Echo callback leads back to itself, so this also shows the walk ends.
@@ -404,6 +406,7 @@ public class JsonSourceResolverTests
     [InlineData("/paths/~1subscribe/post/callbacks/event/x-example/post", false)]
     [InlineData("/components/callbacks/Shared/x-example/post", false)]
     [InlineData("/paths/x-internal/get", false)]
+    [InlineData("/webhooks/x-order/post", true)]
     public void OpenApi_TryResolveOperationPath_ResolvesCallbackOperations(string pointer, bool expected)
     {
         new OpenApiJsonSourceResolver().TryResolveOperationPath(OpenApiWithCallbacks, pointer, out _).ShouldBe(expected);

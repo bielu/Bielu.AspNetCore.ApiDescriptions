@@ -59,7 +59,8 @@ public sealed class OpenApiJsonSourceResolver : ArazzoSourceResolver<JsonNode>
 
             foreach (var (key, pathItem) in pathItems)
             {
-                if (!IsExtension(key)
+                // The Paths Object allows x- extensions; webhooks is a plain map, where x-order is just a name.
+                if (!(section == "paths" && IsExtension(key))
                     && pathItem is JsonObject item
                     && Operations(root, item, visited).FirstOrDefault(candidate => HasOperationId(candidate, operationId)) is { } found)
                 {
