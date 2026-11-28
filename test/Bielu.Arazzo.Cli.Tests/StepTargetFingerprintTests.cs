@@ -259,6 +259,28 @@ public class StepTargetFingerprintTests
     }
 
     [Fact]
+    public void Of_FollowsDynamicReferences()
+    {
+        // Arrange
+        static string Schema(string type) => $$"""
+            {
+                "target": { "schema": { "$ref": "#/defs/List" } },
+                "defs": { "List": {
+                    "$id": "https://example.com/list",
+                    "type": "array",
+                    "items": { "$dynamicRef": "#item" },
+                    "$defs": { "Item": { "$dynamicAnchor": "item", "type": "{{type}}" } }
+                } }
+            }
+            """;
+        var document = JsonNode.Parse(Schema("string"))!;
+
+        // Act & Assert
+        Of(Schema("string")).ShouldNotBe(Of(Schema("integer")));
+        StepTargetFingerprint.Of(document["target"], document).Complete.ShouldBeTrue();
+    }
+
+    [Fact]
     public void Of_AnchorInAnExample_IsNotADeclaration()
     {
         // Arrange

@@ -47,6 +47,11 @@ internal static class StepTargetFingerprint
 
     private const string Responses = "responses";
 
+    // A $dynamicRef is followed to the anchor it names in its own resource, its initial target in JSON Schema
+    // 2020-12. An outer resource's $dynamicAnchor can take its place when validating, so a recursive schema
+    // extended that way is compared through the schema it extends.
+    private static readonly string[] ReferenceKeywords = ["$ref", "$dynamicRef"];
+
     private const string Links = "links";
 
     private const string AdditionalOperations = "additionalOperations";
@@ -138,16 +143,20 @@ internal static class StepTargetFingerprint
                 case JsonObject obj:
                     _builder.Append('{');
                     var isDefinition = mode is Mode.Definition or Mode.Link;
-                    var reference = isDefinition ? Reference(obj, mode) : null;
-                    if (reference is not null)
+                    var followed = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (var keyword in ReferenceKeywords)
                     {
-                        // Keywords beside a $ref, such as a JSON Schema 2020-12 maxLength, constrain it too.
-                        _builder.Append("\"$ref\":").Append(reference).Append(',');
+                        if (isDefinition && Reference(obj, keyword, mode) is { } reference)
+                        {
+                            // Keywords beside a $ref, such as a JSON Schema 2020-12 maxLength, constrain it too.
+                            _builder.Append(Quote(keyword)).Append(':').Append(reference).Append(',');
+                            followed.Add(keyword);
+                        }
                     }
 
                     foreach (var (key, value) in obj
                                  .Where(p => isDefinition
-                                     ? !IsIgnored(p.Key) && (reference is null || p.Key != "$ref")
+                                     ? !IsIgnored(p.Key) && !followed.Contains(p.Key)
                                      : mode != Mode.Responses || !p.Key.StartsWith("x-", StringComparison.Ordinal))
                                  .OrderBy(p => p.Key, StringComparer.Ordinal))
                     {
@@ -201,13 +210,13 @@ internal static class StepTargetFingerprint
         };
 
         /// <summary>
-        /// The number standing for the definition <paramref name="obj"/>'s <c>$ref</c> points at, or
-        /// <see langword="null"/> when it has none, or one that can't be followed: a reference into another
+        /// The number standing for the definition <paramref name="obj"/>'s <paramref name="keyword"/> points at,
+        /// or <see langword="null"/> when it has none, or one that can't be followed: a reference into another
         /// document or to nothing is then written as it stands.
         /// </summary>
-        private string? Reference(JsonObject obj, Mode mode)
+        private string? Reference(JsonObject obj, string keyword, Mode mode)
         {
-            if (obj["$ref"] is not JsonValue value || !value.TryGetValue<string>(out var reference) || !reference.StartsWith('#'))
+            if (obj[keyword] is not JsonValue value || !value.TryGetValue<string>(out var reference) || !reference.StartsWith('#'))
             {
                 return null;
             }
