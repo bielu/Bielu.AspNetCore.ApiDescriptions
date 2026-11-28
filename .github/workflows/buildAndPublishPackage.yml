@@ -17,13 +17,20 @@ permissions:
   contents: read
 
 # The npm packages live at src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets (@bielu/scalar-signalr),
-# src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets (@bielu/scalar-grpc) and
-# src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets (@bielu/scalar-broker) and
+# src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets (@bielu/scalar-grpc),
+# src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets (@bielu/scalar-broker),
 # src/Bielu.AspNetCore.Arazzo.Scalar/assets (@bielu/scalar-arazzo) and
 # src/Bielu.AspNetCore.LikeC4.Scalar/assets (@bielu/scalar-likec4); the changeset workspace
-# root is the repository root (package.json + .changeset). The reusable templates take a single npm
-# working-directory, so each package after the first gets its own npm-only job next to each combined
-# job, chained so the publishes stay serialised.
+# root is the repository root (package.json + .changeset).
+#
+# Every path (PR, stable, beta, manual release) runs the same three stages:
+#   1. the npm packages, one matrix entry each, in parallel: built on a PR, built and published otherwise;
+#   2. the NuGet build, once all of them succeeded, embedding the bundles they packed (`npm-bundles`)
+#      instead of building them again inside `dotnet build`;
+#   3. the NuGet push (publishNuget*), after that build.
+# So a NuGet package never reaches nuget.org before the npm version its .Aspire CDN URL pins, and it
+# embeds the exact bytes npm published. Adding a package is one matrix line per path plus one
+# `npm-bundles` line per NuGet job.
 #
 # NOTE: reusable-workflow refs use @main here. Pin them to the merged
 # bielu/bielu.GithubActions.Templates commit SHA before relying on this in anger, the same way the
@@ -71,82 +78,54 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-  # Pull request: build the NuGet and npm packages for validation, publish nothing.
-  ci:
+  # Pull request: build every npm package, in parallel, for validation; nothing is published. The
+  # NuGet build below embeds the bundles they pack.
+  ciNpm:
     needs: pr-changes
     if: github.event_name == 'pull_request' && needs.pr-changes.outputs.skip != 'true'
     permissions:
       contents: read
       pull-requests: write
+    strategy:
+      # One failed package does not cancel the others; the NuGet job still waits for all of them.
+      fail-fast: false
+      matrix:
+        include:
+          - { package: '@bielu/scalar-signalr', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets, artifact: npm-scalar-signalr }
+          - { package: '@bielu/scalar-grpc', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets, artifact: npm-scalar-grpc }
+          - { package: '@bielu/scalar-broker', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets, artifact: npm-scalar-broker }
+          - { package: '@bielu/scalar-arazzo', dir: src/Bielu.AspNetCore.Arazzo.Scalar/assets, artifact: npm-scalar-arazzo }
+          - { package: '@bielu/scalar-likec4', dir: src/Bielu.AspNetCore.LikeC4.Scalar/assets, artifact: npm-scalar-likec4 }
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
+    with:
+      suffix: "pr"
+      build-nuget: false
+      working-directory: ${{ matrix.dir }}
+      artifact-name: ${{ matrix.artifact }}
+
+  # Pull request: build and test the NuGet packages, embedding the npm bundles ciNpm packed.
+  ci:
+    needs: [pr-changes, ciNpm]
+    if: github.event_name == 'pull_request' && needs.pr-changes.outputs.skip != 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/buildNugetPackageNoSchema.yml@feat/npm-bundles
     with:
       suffix: "pr"
       # net10.0 + net11.0: SDK 11 builds both, and the net10.0 test runs need the .NET 10 runtime.
       dotnet-version: |
         10.0.x
         11.0.x
-      generate-schema: false
       # Total line coverage across every test project, merged by ReportGenerator. Raise it when the
       # suite gets past the next step; never lower it to land a change. See "Code coverage" in AGENTS.md.
       minimum-line-coverage: 91
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
-      artifact-name: npm-scalar-signalr
-
-  # Pull request: build the second npm package (@bielu/scalar-grpc); NuGet is already covered by `ci`.
-  ciGrpcNpm:
-    needs: pr-changes
-    if: github.event_name == 'pull_request' && needs.pr-changes.outputs.skip != 'true'
-    permissions:
-      contents: read
-      pull-requests: write
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
-    with:
-      suffix: "pr"
-      build-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
-      artifact-name: npm-scalar-grpc
-
-  # Pull request: build the third npm package (@bielu/scalar-broker); NuGet is already covered by `ci`.
-  ciBrokerNpm:
-    needs: pr-changes
-    if: github.event_name == 'pull_request' && needs.pr-changes.outputs.skip != 'true'
-    permissions:
-      contents: read
-      pull-requests: write
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
-    with:
-      suffix: "pr"
-      build-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
-      artifact-name: npm-scalar-broker
-
-  # Pull request: build the fourth npm package (@bielu/scalar-arazzo), the Arazzo document type.
-  ciArazzoNpm:
-    needs: pr-changes
-    if: github.event_name == 'pull_request' && needs.pr-changes.outputs.skip != 'true'
-    permissions:
-      contents: read
-      pull-requests: write
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
-    with:
-      suffix: "pr"
-      build-nuget: false
-      working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
-      artifact-name: npm-scalar-arazzo
-
-  # Pull request: build the fifth npm package (@bielu/scalar-likec4), the LikeC4 document type.
-  ciLikeC4Npm:
-    needs: pr-changes
-    if: github.event_name == 'pull_request' && needs.pr-changes.outputs.skip != 'true'
-    permissions:
-      contents: read
-      pull-requests: write
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/ciCombined.yml@main
-    with:
-      suffix: "pr"
-      build-nuget: false
-      working-directory: src/Bielu.AspNetCore.LikeC4.Scalar/assets
-      artifact-name: npm-scalar-likec4
+      npm-bundles: |
+        npm-scalar-signalr=src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+        npm-scalar-grpc=src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+        npm-scalar-broker=src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
+        npm-scalar-arazzo=src/Bielu.AspNetCore.Arazzo.Scalar/assets
+        npm-scalar-likec4=src/Bielu.AspNetCore.LikeC4.Scalar/assets
 
   # Pull request: require a changeset so the version bump + changelog are recorded.
   # Pull request: the Scalar plugins' Vue components are formatted with Scalar's own Prettier setup
@@ -371,18 +350,40 @@ jobs:
     with:
       working-directory: .
 
-  # Version PR merged (no changesets left): publish the NuGet + npm packages at the versions the
-  # Version PR committed. While changesets pre mode is active (.changeset/pre.json — no stable
-  # release until the upstream Scalar plugins PR merges), those versions are `-preview.N`
-  # prereleases; after `changeset pre exit` they become stable. Both publish steps are idempotent
-  # (NuGet --skip-duplicate; npm skips already-published versions), so re-running on later
-  # non-changeset pushes is a safe no-op.
-  releaseStable:
+  # Version PR merged (no changesets left): publish the npm packages at the versions the Version PR
+  # committed, in parallel. Each publish is idempotent (npm skips already-published versions), so
+  # re-running on later non-changeset pushes, or re-running one failed entry, is a safe no-op.
+  releaseStableNpm:
     needs: version
     if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
     # npm publishes via trusted publishing (OIDC): the trusted publisher on npmjs.com
     # references this repo + this workflow file, and the job must mint an OIDC token.
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      # One failed package does not cancel the others; the NuGet job still waits for all of them.
+      fail-fast: false
+      matrix:
+        include:
+          - { package: '@bielu/scalar-signalr', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets, artifact: npm-scalar-signalr }
+          - { package: '@bielu/scalar-grpc', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets, artifact: npm-scalar-grpc }
+          - { package: '@bielu/scalar-broker', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets, artifact: npm-scalar-broker }
+          - { package: '@bielu/scalar-arazzo', dir: src/Bielu.AspNetCore.Arazzo.Scalar/assets, artifact: npm-scalar-arazzo }
+          - { package: '@bielu/scalar-likec4', dir: src/Bielu.AspNetCore.LikeC4.Scalar/assets, artifact: npm-scalar-likec4 }
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    with:
+      publish-nuget: false
+      working-directory: ${{ matrix.dir }}
+      artifact-name: ${{ matrix.artifact }}
+
+  # Version PR merged: build the NuGet packages once every npm package is published, embedding those
+  # bundles. While changesets pre mode is active (.changeset/pre.json) the versions are `-preview.N`
+  # prereleases; after `changeset pre exit` they become stable.
+  releaseStable:
+    needs: [version, releaseStableNpm]
+    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
     permissions:
       contents: read
       id-token: write
@@ -392,78 +393,28 @@ jobs:
         10.0.x
         11.0.x
       generate-schema: false
+      publish-npm: false
       # Pushed by publishNugetStable instead: nuget.org trusted publishing only accepts a token minted
       # by a job declared in this repository's workflow, not inside the template's.
       push-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
-      artifact-name: npm-scalar-signalr
+      npm-bundles: |
+        npm-scalar-signalr=src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+        npm-scalar-grpc=src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+        npm-scalar-broker=src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
+        npm-scalar-arazzo=src/Bielu.AspNetCore.Arazzo.Scalar/assets
+        npm-scalar-likec4=src/Bielu.AspNetCore.LikeC4.Scalar/assets
 
-  # Pushes the NuGet package releaseStable built. The nuget.org trusted publishing policy references
-  # this repo + this workflow file.
+  # Pushes the NuGet packages releaseStable built (NuGet --skip-duplicate makes a re-run a no-op). The
+  # nuget.org trusted publishing policy references this repo + this workflow file.
   publishNugetStable:
     needs: releaseStable
+    if: always() && !cancelled() && needs.releaseStable.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: bielu/bielu.GithubActions.Templates/.github/actions/publish-nuget@main
-
-  # Version PR merged: publish the second npm package (@bielu/scalar-grpc); NuGet is published by
-  # publishNugetStable above (publish-nuget: false avoids a double publish).
-  releaseStableGrpcNpm:
-    needs: [version, releaseStable]
-    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
-      artifact-name: npm-scalar-grpc
-
-  # Version PR merged: publish the third npm package (@bielu/scalar-broker). Chained after the gRPC
-  # job rather than run beside it so the npm publishes stay serialised, as they already were.
-  releaseStableBrokerNpm:
-    needs: [version, releaseStableGrpcNpm]
-    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
-      artifact-name: npm-scalar-broker
-
-  # Version PR merged: publish the fourth npm package (@bielu/scalar-arazzo), chained after the
-  # broker job so the npm publishes stay serialised.
-  releaseStableArazzoNpm:
-    needs: [version, releaseStableBrokerNpm]
-    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
-      artifact-name: npm-scalar-arazzo
-
-  # Version PR merged: publish the fifth npm package (@bielu/scalar-likec4), chained after the
-  # Arazzo job so the npm publishes stay serialised.
-  releaseStableLikeC4Npm:
-    needs: [version, releaseStableArazzoNpm]
-    if: github.event_name == 'push' && needs.version.outputs.hasChangesets == 'false'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.LikeC4.Scalar/assets
-      artifact-name: npm-scalar-likec4
 
   # Record-keeping: tag + GitHub Release for the shared NuGet version, when not already present.
   # Release notes are the version's section of CHANGELOG.md (written by the changeset adapter in
@@ -555,32 +506,65 @@ jobs:
 
   # In-flight prereleases: publish a beta of main while a release is still pending (changesets not yet
   # merged), and on manual dispatch. Skipped on the Version-PR-merge commit so it does not shadow the
-  # stable release.
-  releaseBeta:
+  # stable release. `always()` is needed because `version` is skipped on workflow_dispatch, but it also
+  # switches off the implicit "all needs succeeded" gate, so the dependencies that matter are re-asserted.
+  releaseBetaNpm:
     needs: [version, betaVersions]
     if: >-
       always() && !cancelled() && needs.betaVersions.result == 'success'
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      # One failed package does not cancel the others; the NuGet job still waits for all of them.
+      fail-fast: false
+      matrix:
+        include:
+          - { package: '@bielu/scalar-signalr', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets, artifact: npm-scalar-signalr }
+          - { package: '@bielu/scalar-grpc', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets, artifact: npm-scalar-grpc }
+          - { package: '@bielu/scalar-broker', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets, artifact: npm-scalar-broker }
+          - { package: '@bielu/scalar-arazzo', dir: src/Bielu.AspNetCore.Arazzo.Scalar/assets, artifact: npm-scalar-arazzo }
+          - { package: '@bielu/scalar-likec4', dir: src/Bielu.AspNetCore.LikeC4.Scalar/assets, artifact: npm-scalar-likec4 }
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    with:
+      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)[matrix.package] }}
+      publish-nuget: false
+      working-directory: ${{ matrix.dir }}
+      artifact-name: ${{ matrix.artifact }}
+
+  # The beta NuGet packages, built once every beta npm package is published, embedding those bundles.
+  releaseBeta:
+    needs: [version, betaVersions, releaseBetaNpm]
+    if: >-
+      always() && !cancelled()
+      && needs.betaVersions.result == 'success' && needs.releaseBetaNpm.result == 'success'
       && (github.event_name == 'workflow_dispatch'
           || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
     permissions:
       contents: read
       id-token: write
-    # No `suffix:` here on purpose — the overrides below already carry the `-beta.<stamp>` part, and
-    # a suffix would take precedence over them in the build templates.
+    # No `suffix:` here on purpose: the override below already carries the `-beta.<stamp>` part, and a
+    # suffix would take precedence over it in the build templates.
     with:
       nuget-version-override: ${{ needs.betaVersions.outputs.nuget }}
-      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-signalr'] }}
       # net10.0 + net11.0: SDK 11 builds both, and the net10.0 test runs need the .NET 10 runtime.
       dotnet-version: |
         10.0.x
         11.0.x
       generate-schema: false
+      publish-npm: false
       push-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
-      artifact-name: npm-scalar-signalr
+      npm-bundles: |
+        npm-scalar-signalr=src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+        npm-scalar-grpc=src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+        npm-scalar-broker=src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
+        npm-scalar-arazzo=src/Bielu.AspNetCore.Arazzo.Scalar/assets
+        npm-scalar-likec4=src/Bielu.AspNetCore.LikeC4.Scalar/assets
 
-  # Pushes the beta NuGet package releaseBeta built (see publishNugetStable).
+  # Pushes the beta NuGet packages releaseBeta built (see publishNugetStable).
   publishNugetBeta:
     needs: releaseBeta
     if: always() && !cancelled() && needs.releaseBeta.result == 'success'
@@ -590,85 +574,6 @@ jobs:
       id-token: write
     steps:
       - uses: bielu/bielu.GithubActions.Templates/.github/actions/publish-nuget@main
-
-  # In-flight prereleases for the second npm package (@bielu/scalar-grpc).
-  releaseBetaGrpcNpm:
-    needs: [version, betaVersions, releaseBeta]
-    # `always()` is needed because `version` is skipped on workflow_dispatch, but it also switches
-    # off the implicit "all needs succeeded" gate — so the dependencies that matter are re-asserted
-    # by hand, or this would publish a beta of @bielu/scalar-grpc after releaseBeta had failed.
-    if: >-
-      always() && !cancelled()
-      && needs.betaVersions.result == 'success' && needs.releaseBeta.result == 'success'
-      && (github.event_name == 'workflow_dispatch'
-          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-grpc'] }}
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
-      artifact-name: npm-scalar-grpc
-
-  # In-flight prereleases for the third npm package (@bielu/scalar-broker).
-  releaseBetaBrokerNpm:
-    needs: [version, betaVersions, releaseBetaGrpcNpm]
-    # Chained after the gRPC job so npm publishes stay serialised. The same `always()` caveat as
-    # releaseBetaGrpcNpm applies, so the dependencies that matter are re-asserted by hand.
-    if: >-
-      always() && !cancelled()
-      && needs.betaVersions.result == 'success' && needs.releaseBetaGrpcNpm.result == 'success'
-      && (github.event_name == 'workflow_dispatch'
-          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-broker'] }}
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
-      artifact-name: npm-scalar-broker
-
-  # In-flight prereleases for the fourth npm package (@bielu/scalar-arazzo), chained after the broker
-  # job. The same `always()` caveat applies, so the dependencies that matter are re-asserted by hand.
-  releaseBetaArazzoNpm:
-    needs: [version, betaVersions, releaseBetaBrokerNpm]
-    if: >-
-      always() && !cancelled()
-      && needs.betaVersions.result == 'success' && needs.releaseBetaBrokerNpm.result == 'success'
-      && (github.event_name == 'workflow_dispatch'
-          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-arazzo'] }}
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
-      artifact-name: npm-scalar-arazzo
-
-  # In-flight prereleases for the fifth npm package (@bielu/scalar-likec4), chained after the Arazzo
-  # job. The same `always()` caveat applies, so the dependencies that matter are re-asserted by hand.
-  releaseBetaLikeC4Npm:
-    needs: [version, betaVersions, releaseBetaArazzoNpm]
-    if: >-
-      always() && !cancelled()
-      && needs.betaVersions.result == 'success' && needs.releaseBetaArazzoNpm.result == 'success'
-      && (github.event_name == 'workflow_dispatch'
-          || (github.event_name == 'push' && needs.version.outputs.hasChangesets == 'true'))
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      npm-version-override: ${{ fromJSON(needs.betaVersions.outputs.versions)['@bielu/scalar-likec4'] }}
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.LikeC4.Scalar/assets
-      artifact-name: npm-scalar-likec4
 
   # Record-keeping for interim betas: surface each published beta build as a GitHub prerelease,
   # using the exact `-beta.<stamp>` version that was packed (release.yml's nuget-version output,
@@ -704,7 +609,30 @@ jobs:
 
   # Manual GitHub Release (escape hatch): build and publish stable packages. Independent of the
   # changeset-driven path above and idempotent, so the two cannot double-publish.
+  releaseNpm:
+    if: github.event_name == 'release'
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      # One failed package does not cancel the others; the NuGet job still waits for all of them.
+      fail-fast: false
+      matrix:
+        include:
+          - { package: '@bielu/scalar-signalr', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets, artifact: npm-scalar-signalr }
+          - { package: '@bielu/scalar-grpc', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets, artifact: npm-scalar-grpc }
+          - { package: '@bielu/scalar-broker', dir: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets, artifact: npm-scalar-broker }
+          - { package: '@bielu/scalar-arazzo', dir: src/Bielu.AspNetCore.Arazzo.Scalar/assets, artifact: npm-scalar-arazzo }
+          - { package: '@bielu/scalar-likec4', dir: src/Bielu.AspNetCore.LikeC4.Scalar/assets, artifact: npm-scalar-likec4 }
+    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
+    with:
+      publish-nuget: false
+      working-directory: ${{ matrix.dir }}
+      artifact-name: ${{ matrix.artifact }}
+
+  # Manual GitHub Release: the NuGet packages, once every npm package is published.
   release:
+    needs: releaseNpm
     if: github.event_name == 'release'
     uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
     permissions:
@@ -716,59 +644,22 @@ jobs:
         10.0.x
         11.0.x
       generate-schema: false
+      publish-npm: false
       push-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+      npm-bundles: |
+        npm-scalar-signalr=src/Bielu.AspNetCore.AsyncApi.Scalar.SignalR/assets
+        npm-scalar-grpc=src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
+        npm-scalar-broker=src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
+        npm-scalar-arazzo=src/Bielu.AspNetCore.Arazzo.Scalar/assets
+        npm-scalar-likec4=src/Bielu.AspNetCore.LikeC4.Scalar/assets
 
-  # Manual GitHub Release: push the NuGet package `release` built (see publishNugetStable).
+  # Manual GitHub Release: push the NuGet packages `release` built (see publishNugetStable).
   publishNugetRelease:
     needs: release
+    if: always() && !cancelled() && needs.release.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: bielu/bielu.GithubActions.Templates/.github/actions/publish-nuget@main
-
-  # Manual GitHub Release: the second npm package (@bielu/scalar-grpc).
-  releaseGrpcNpm:
-    if: github.event_name == 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Grpc/assets
-
-  # Manual GitHub Release: the third npm package (@bielu/scalar-broker).
-  releaseBrokerNpm:
-    if: github.event_name == 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.AsyncApi.Scalar.Broker/assets
-
-  # Manual GitHub Release: the fourth npm package (@bielu/scalar-arazzo).
-  releaseArazzoNpm:
-    if: github.event_name == 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.Arazzo.Scalar/assets
-
-  # Manual GitHub Release: the fifth npm package (@bielu/scalar-likec4).
-  releaseLikeC4Npm:
-    if: github.event_name == 'release'
-    uses: bielu/bielu.GithubActions.Templates/.github/workflows/release.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      publish-nuget: false
-      working-directory: src/Bielu.AspNetCore.LikeC4.Scalar/assets
