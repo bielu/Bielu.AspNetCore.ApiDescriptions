@@ -1,1 +1,16 @@
 ﻿#nullable enable
+Bielu.Arazzo.ArazzoWorkspace.SourceNames.get -> System.Collections.Generic.IEnumerable<string!>!
+Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver
+Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.AsyncApiJsonSourceResolver() -> void
+Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver
+Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver.OpenApiJsonSourceResolver() -> void
+Bielu.Arazzo.Validation.ArazzoReferenceValidator
+override Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.SourceType.get -> string!
+override Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.TryResolveChannelPath(System.Text.Json.Nodes.JsonNode! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? channel) -> bool
+override Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.TryResolveOperation(System.Text.Json.Nodes.JsonNode! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+override Bielu.Arazzo.SourceResolvers.AsyncApiJsonSourceResolver.TryResolveOperationPath(System.Text.Json.Nodes.JsonNode! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+override Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver.SourceType.get -> string!
+override Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver.TryResolveOperation(System.Text.Json.Nodes.JsonNode! document, string! operationId, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+override Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver.TryResolveOperationPath(System.Text.Json.Nodes.JsonNode! document, string! jsonPointer, out System.Text.Json.Nodes.JsonNode? operation) -> bool
+static Bielu.Arazzo.Validation.ArazzoReferenceValidator.UncheckedSources(Bielu.Arazzo.Models.ArazzoDocument! document, Bielu.Arazzo.ArazzoWorkspace! workspace) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Bielu.Arazzo.Validation.ArazzoReferenceValidator.Validate(Bielu.Arazzo.Models.ArazzoDocument! document, Bielu.Arazzo.ArazzoWorkspace! workspace) -> System.Collections.Generic.IReadOnlyList<Bielu.Arazzo.Validation.ArazzoError!>!

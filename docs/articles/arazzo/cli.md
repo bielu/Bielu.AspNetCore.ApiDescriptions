@@ -25,8 +25,42 @@ dotnet arazzo validate --file ./workflows/*.yaml --strict
 
 **Options:**
 - `--file <path>` - Path or glob to Arazzo document(s) (required, repeatable)
+- `--source <name>=<path>` - Check step references against the OpenAPI/AsyncAPI file (JSON or YAML) for
+  the source description `<name>` (repeatable). A `<name>` that none of the documents validated declares is
+  an error, so a typo can't leave its steps unchecked
+- `--resolve-local-sources` - Also load every source description whose `url` is a relative path to an
+  existing file, resolved from the Arazzo document's folder
 - `--strict` - Treat warnings as errors
 - `--format <text|json>` - Output format (default: text)
+
+#### Checking references against the source documents
+
+With `--source` or `--resolve-local-sources`, `validate` also checks that every step's `operationId`,
+`operationPath` and `channelPath` exists in the document it targets: an `operationPath` must address an
+operation (an OpenAPI Path Item's method, following a Path Item `$ref`; an AsyncAPI operation), and a
+`channelPath` a channel. It is the same check
+`Bielu.AspNetCore.Arazzo` runs at startup (`ValidateSourceReferencesOnStartup`), run against files instead
+of a live app. That makes it usable where the app can't start, and for Arazzo documents written by hand or
+kept in another repository.
+
+```bash
+# The documents an app writes at build time
+dotnet arazzo validate --file obj/docs/MyApp_arazzo-v1.json \
+  --source shop=obj/docs/MyApp.json \
+  --source events=obj/docs/MyApp_asyncapi-v1.json
+
+# A hand-written document whose sourceDescriptions point at files next to it
+dotnet arazzo validate --file api/checkout.arazzo.yaml --resolve-local-sources
+```
+
+```text
+error:   Error: checkout.notify: channelPath '{$sourceDescriptions.events.url}#/channels/orders' did not resolve. (at /workflows/0/steps/1/channelPath)
+```
+
+A source's kind comes from its `type`, or, when it has none, from the document's `openapi`/`asyncapi`
+field. An AsyncAPI `operationId` is an AsyncAPI 3 `operations` key or an AsyncAPI 2 `publish`/`subscribe`
+`operationId`. A declared source with no file, such as another service's API reached by URL, is skipped,
+and the text output lists it. A reference to a source the document doesn't declare is always an error.
 
 ### `lint`
 
@@ -44,9 +78,8 @@ dotnet arazzo lint --file ./workflows/*.yaml
 - `--strict` - Treat warnings as errors
 - `--format <text|json>` - Output format (default: text)
 
-Reference resolution against the actual source documents (does this `operationId` really exist in the
-linked OpenAPI/AsyncAPI document?) needs a running app and is `Bielu.AspNetCore.Arazzo`'s
-`IArazzoSourceResolver` territory — `lint` only checks what can be determined from the document itself.
+`lint` only checks what can be determined from the document itself. Whether an `operationId` really exists
+in the linked OpenAPI/AsyncAPI document is checked by `validate --source` (see above).
 
 ### `diff`
 
