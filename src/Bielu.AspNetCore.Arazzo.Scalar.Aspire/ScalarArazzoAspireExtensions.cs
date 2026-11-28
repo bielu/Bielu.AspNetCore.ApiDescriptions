@@ -1,4 +1,5 @@
 ﻿using Aspire.Hosting.ApplicationModel;
+using Bielu.AspNetCore.Scalar.Plugins;
 using Microsoft.Extensions.DependencyInjection;
 using Scalar.Aspire;
 
@@ -100,67 +101,17 @@ public static class ScalarArazzoAspireExtensions
         ArgumentException.ThrowIfNullOrEmpty(arazzo.PluginUrl, nameof(configure));
 
         // The options the module reads, by their JavaScript names; unset ones are left out.
-        var moduleOptions = new List<KeyValuePair<string, string>>();
-        foreach (var (name, value) in new[]
-        {
+        var moduleOptions = ScalarPluginOptions.SpecificationExtensions(
+        [
             (nameof(ScalarArazzoAspireOptions.EndLabelExtension), arazzo.EndLabelExtension),
             (nameof(ScalarArazzoAspireOptions.PagesExtension), arazzo.PagesExtension),
             (nameof(ScalarArazzoAspireOptions.PageExtension), arazzo.PageExtension),
             (nameof(ScalarArazzoAspireOptions.LabelExtension), arazzo.LabelExtension),
             (nameof(ScalarArazzoAspireOptions.ActorExtension), arazzo.ActorExtension),
             (nameof(ScalarArazzoAspireOptions.ActorsExtension), arazzo.ActorsExtension),
-        })
-        {
-            if (value is null)
-            {
-                continue;
-            }
+        ], nameof(configure));
 
-            if (!IsSpecificationExtension(value))
-            {
-                throw new ArgumentException(
-                    $"{name} '{value}' is not a specification extension: it must be 'x-' followed by a name.",
-                    nameof(configure));
-            }
-
-            moduleOptions.Add(new(char.ToLowerInvariant(name[0]) + name[1..], value));
-        }
-
-        return builder.WithArazzo(WithQuery(arazzo.PluginUrl, moduleOptions));
-    }
-
-    /// <summary>
-    /// Whether a name is a specification extension: <c>x-</c> followed by at least one character. The npm
-    /// package and <c>Bielu.AspNetCore.Arazzo.Scalar</c> apply the same rule.
-    /// </summary>
-    internal static bool IsSpecificationExtension(string value) =>
-        value.Length > 2 && value.StartsWith("x-", StringComparison.Ordinal);
-
-    /// <summary>
-    /// Sets <paramref name="parameters" /> in the query string of <paramref name="url" />, replacing any of the
-    /// same name and keeping the others and the fragment. A URL without parameters to set is returned as it is.
-    /// </summary>
-    internal static string WithQuery(string url, IReadOnlyList<KeyValuePair<string, string>> parameters)
-    {
-        if (parameters.Count == 0)
-        {
-            return url;
-        }
-
-        var hash = url.IndexOf('#', StringComparison.Ordinal);
-        var fragment = hash >= 0 ? url[hash..] : string.Empty;
-        var beforeFragment = hash >= 0 ? url[..hash] : url;
-        var question = beforeFragment.IndexOf('?', StringComparison.Ordinal);
-        var path = question >= 0 ? beforeFragment[..question] : beforeFragment;
-        var query = question >= 0 ? beforeFragment[(question + 1)..] : string.Empty;
-
-        var names = parameters.Select(parameter => parameter.Key).ToHashSet(StringComparer.Ordinal);
-        var kept = query
-            .Split('&', StringSplitOptions.RemoveEmptyEntries)
-            .Where(pair => !names.Contains(Uri.UnescapeDataString(pair.Split('=', 2)[0])));
-        var added = parameters.Select(parameter => $"{Uri.EscapeDataString(parameter.Key)}={Uri.EscapeDataString(parameter.Value)}");
-
-        return $"{path}?{string.Join('&', kept.Concat(added))}{fragment}";
+        return builder.WithArazzo(ScalarPluginOptions.WithQuery(arazzo.PluginUrl, moduleOptions));
     }
 
     /// <summary>

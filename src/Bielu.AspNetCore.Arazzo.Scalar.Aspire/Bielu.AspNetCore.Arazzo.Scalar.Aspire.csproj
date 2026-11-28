@@ -20,4 +20,9 @@
     </PropertyGroup>
     <Import Project="..\Bielu.AspNetCore.AsyncApi.Scalar\build\ScalarPluginBundleVersion.targets" />
 
+    <!-- Validates the plugin options and passes them to the bundle, shared with the other document-type plugins. -->
+    <ItemGroup>
+        <ProjectReference Include="..\Bielu.AspNetCore.Scalar.Plugins.Shared\Bielu.AspNetCore.Scalar.Plugins.Shared.csproj" />
+    </ItemGroup>
+
 </Project>
