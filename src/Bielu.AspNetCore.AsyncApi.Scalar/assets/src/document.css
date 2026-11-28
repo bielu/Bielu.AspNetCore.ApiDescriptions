@@ -1,0 +1,75 @@
+/*
+ * The document layout the document-type plugins share (@bielu/scalar-arazzo, @bielu/scalar-likec4): the page
+ * width and padding, the header's kicker, title and muted text, Markdown blocks and each section's heading,
+ * matching Scalar's own reference pages.
+ *
+ *   @import "@bielu/scalar-core/tailwind.css";
+ *   @import "@bielu/scalar-core/document.css";
+ *
+ * They are utilities, not selectors: each plugin keeps its own prefixed classes (`.bielu-arazzo .ba-title`) and
+ * `@apply`s them, so no markup changes and every rule stays under the plugin's root. Font sizes stay plain CSS,
+ * because Scalar's `--scalar-small`/`--scalar-mini` are not the variables its `text-*` utilities use.
+ */
+
+/* The root element: Scalar's page width and padding, narrower below 1000px. */
+@utility plugin-document {
+  @apply block;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 48px 60px 96px;
+  @apply text-c-1 font-sans;
+  font-size: var(--scalar-paragraph, 16px);
+  line-height: 1.5;
+  @media (max-width: 1000px) {
+    padding: 24px 16px 64px;
+  }
+}
+
+@utility plugin-code {
+  @apply font-code;
+  font-size: var(--scalar-small, 13px);
+}
+
+@utility plugin-link {
+  @apply text-c-accent break-all;
+}
+
+/* The small line above a title: the document's version, or a section's kind. */
+@utility plugin-kicker {
+  font-size: var(--scalar-mini, 12px);
+  @apply font-medium text-c-2;
+}
+
+@utility plugin-title {
+  margin: 4px 0 8px;
+  font-size: var(--scalar-heading-1, 32px);
+  @apply font-bold;
+}
+
+@utility plugin-muted {
+  @apply text-c-3;
+  font-size: var(--scalar-small, 13px);
+}
+
+/* Rendered Markdown, without the outer margins of its first and last block. */
+@utility plugin-markdown {
+  @apply text-c-2;
+  & :first-child {
+    @apply mt-0;
+  }
+  & :last-child {
+    @apply mb-0;
+  }
+}
+
+/* A section of the document (a workflow, a view), set off by a rule above it. */
+@utility plugin-section {
+  @apply mt-12 pt-8 border-t border-t-border;
+  scroll-margin-top: var(--refs-viewport-offset, 0px);
+}
+
+@utility plugin-section-title {
+  margin: 4px 0 8px;
+  font-size: var(--scalar-heading-2, 24px);
+  @apply font-bold;
+}

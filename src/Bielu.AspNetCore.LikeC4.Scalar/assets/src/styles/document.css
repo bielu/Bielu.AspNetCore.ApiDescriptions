@@ -1,37 +1,23 @@
 /* The root element, the model's header, each view's section and a dynamic view's step list. */
+/* The shared layout is @bielu/scalar-core's document.css; the rules here add what is LikeC4's own. */
 .bielu-likec4 {
-  @apply block text-c-1 font-sans;
-  max-width: 1360px;
-  margin: 0 auto;
-  padding: 48px 60px 96px;
-  font-size: var(--scalar-paragraph, 16px);
-  line-height: 1.5;
-}
-@media (max-width: 1000px) {
-  .bielu-likec4 {
-    padding: 24px 16px 64px;
-  }
+  @apply plugin-document;
 }
 .bielu-likec4 code {
-  @apply font-code;
-  font-size: var(--scalar-small, 13px);
+  @apply plugin-code;
 }
 .bielu-likec4 a {
-  @apply text-c-accent break-all;
+  @apply plugin-link;
 }
 .bielu-likec4 .bl-kicker,
 .bielu-likec4 .bl-view-kicker {
-  font-size: var(--scalar-mini, 12px);
-  @apply font-medium text-c-2;
+  @apply plugin-kicker;
 }
 .bielu-likec4 .bl-title {
-  margin: 4px 0 8px;
-  font-size: var(--scalar-heading-1, 32px);
-  @apply font-bold;
+  @apply plugin-title;
 }
 .bielu-likec4 .bl-muted {
-  @apply text-c-3;
-  font-size: var(--scalar-small, 13px);
+  @apply plugin-muted;
 }
 .bielu-likec4 .bl-note,
 .bielu-likec4 .bl-render-error {
@@ -41,22 +27,13 @@
   border-color: var(--scalar-color-red, #ef4444);
 }
 .bielu-likec4 .bl-markdown {
-  @apply text-c-2;
-}
-.bielu-likec4 .bl-markdown :first-child {
-  @apply mt-0;
-}
-.bielu-likec4 .bl-markdown :last-child {
-  @apply mb-0;
+  @apply plugin-markdown;
 }
 .bielu-likec4 .bl-view {
-  @apply mt-12 pt-8 border-t border-t-border;
-  scroll-margin-top: var(--refs-viewport-offset, 0px);
+  @apply plugin-section;
 }
 .bielu-likec4 .bl-view-title {
-  margin: 4px 0 8px;
-  font-size: var(--scalar-heading-2, 24px);
-  @apply font-bold;
+  @apply plugin-section-title;
 }
 .bielu-likec4 .bl-links {
   @apply flex flex-wrap gap-3 p-0;

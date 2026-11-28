@@ -1,63 +1,39 @@
 /* The root element, the document header, workflows and the step list. */
+/* The shared layout is @bielu/scalar-core's document.css; the rules here add what is Arazzo's own. */
 .bielu-arazzo {
-  @apply block;
-  max-width: 1360px;
-  margin: 0 auto;
-  padding: 48px 60px 96px;
-  @apply text-c-1 font-sans;
-  font-size: var(--scalar-paragraph, 16px);
-  line-height: 1.5;
+  @apply plugin-document;
   /* The workflow layout switches to two columns on the element's own width, not the viewport's. */
   container: bielu-arazzo / inline-size;
 }
-@media (max-width: 1000px) {
-  .bielu-arazzo {
-    padding: 24px 16px 64px;
-  }
-}
 .bielu-arazzo code,
 .bielu-arazzo pre {
-  @apply font-code;
-  font-size: var(--scalar-small, 13px);
+  @apply plugin-code;
 }
 .bielu-arazzo a {
-  @apply text-c-accent break-all;
+  @apply plugin-link;
 }
 .bielu-arazzo .ba-kicker {
-  font-size: var(--scalar-mini, 12px);
-  @apply font-medium text-c-2;
+  @apply plugin-kicker;
   letter-spacing: normal;
 }
 .bielu-arazzo .ba-title {
-  margin: 4px 0 8px;
-  font-size: var(--scalar-heading-1, 32px);
-  @apply font-bold;
+  @apply plugin-title;
 }
 .bielu-arazzo .ba-summary {
   @apply text-c-2;
   margin: 0 0 8px;
 }
 .bielu-arazzo .ba-muted {
-  @apply text-c-3;
-  font-size: var(--scalar-small, 13px);
+  @apply plugin-muted;
 }
 .bielu-arazzo .ba-markdown {
-  @apply text-c-2;
-}
-.bielu-arazzo .ba-markdown :first-child {
-  @apply mt-0;
-}
-.bielu-arazzo .ba-markdown :last-child {
-  @apply mb-0;
+  @apply plugin-markdown;
 }
 .bielu-arazzo .ba-workflow {
-  @apply mt-12 pt-8 border-t border-t-border;
-  scroll-margin-top: var(--refs-viewport-offset, 0px);
+  @apply plugin-section;
 }
 .bielu-arazzo .ba-workflow-title {
-  margin: 4px 0 8px;
-  font-size: var(--scalar-heading-2, 24px);
-  @apply font-bold;
+  @apply plugin-section-title;
 }
 .bielu-arazzo .ba-steps {
   @apply p-0;

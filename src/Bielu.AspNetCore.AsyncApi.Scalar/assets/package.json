@@ -22,7 +22,8 @@
       "default": "./dist/document-type.js"
     },
     "./vite": "./vite.mjs",
-    "./tailwind.css": "./src/tailwind.css"
+    "./tailwind.css": "./src/tailwind.css",
+    "./document.css": "./src/document.css"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
