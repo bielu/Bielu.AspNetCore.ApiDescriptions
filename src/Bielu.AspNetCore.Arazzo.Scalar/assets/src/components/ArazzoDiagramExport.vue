@@ -2,13 +2,8 @@
 import { ScalarDropdown, ScalarDropdownItem } from '@scalar/components/dropdown'
 import { ref } from 'vue'
 
-import {
-  downloadBlob,
-  safeName,
-  standaloneSvg,
-  svgToPng,
-  toMermaid,
-} from '../helpers/diagram-export'
+import { downloadBlob, standaloneSvg, svgToPng } from '@bielu/scalar-graph'
+import { safeName, toMermaid } from '../helpers/diagram-export'
 import type { WorkflowLayout } from '../helpers/workflow-graph'
 
 /**

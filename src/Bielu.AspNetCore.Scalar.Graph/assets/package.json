@@ -1,0 +1,12 @@
+{
+  "name": "@bielu/scalar-graph",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Diagram primitives shared by the Bielu Scalar document-type plugins (@bielu/scalar-arazzo, @bielu/scalar-likec4): edge paths, arrowheads, text fitting, pan and zoom, SVG/PNG export. Ships TypeScript source that each plugin's Vite build compiles and inlines - never published.",
+  "license": "MIT",
+  "author": "Arkadiusz Biel",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

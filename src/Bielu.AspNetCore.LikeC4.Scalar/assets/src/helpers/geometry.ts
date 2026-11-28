@@ -1,8 +1,12 @@
 /**
  * The geometry the views are drawn with. LikeC4 has already laid every view out (boxes, edge routes, label
- * boxes), so nothing here places anything: it turns those coordinates into SVG paths.
+ * boxes), so nothing here places anything: it turns those coordinates into SVG paths. The shapes are LikeC4's; edge
+ * paths, arrowheads and text wrapping are @bielu/scalar-graph's, with LikeC4's `[x, y]` points converted here.
  */
 
+import { type ArrowHead, edgeArrows as graphEdgeArrows, type Point as GraphPoint, splinePath } from '@bielu/scalar-graph'
+
+/** A point as LikeC4 writes it. */
 type Point = [number, number]
 
 /** The outline of a node's shape, in the node's own coordinates, plus the decoration lines some shapes have. */
@@ -98,136 +102,17 @@ export const shapeGeometry = (shape: string | undefined, width: number, height: 
   }
 }
 
+/** LikeC4 writes points as `[x, y]` tuples; @bielu/scalar-graph takes `{ x, y }`. */
+const toPoints = (points: readonly Point[] | undefined): GraphPoint[] | undefined => points?.map(([x, y]) => ({ x, y }))
+
 /**
  * The SVG path of an edge's route. LikeC4 writes it as Graphviz does, a cubic Bézier spline: the start point,
  * then three points per segment. A route that is not one is drawn through its points as straight lines.
  */
-export const edgePath = (points: readonly Point[] | undefined): string => {
-  if (!points || points.length < 2) {
-    return ''
-  }
-  const [start, ...rest] = points
-  const at = (point: Point) => `${round(point[0])},${round(point[1])}`
-  if (rest.length % 3 !== 0) {
-    return `M${at(start!)} ${rest.map((point) => `L${at(point)}`).join(' ')}`
-  }
-  const segments: string[] = []
-  for (let index = 0; index < rest.length; index += 3) {
-    segments.push(`C${at(rest[index]!)} ${at(rest[index + 1]!)} ${at(rest[index + 2]!)}`)
-  }
-  return `M${at(start!)} ${segments.join(' ')}`
-}
+export const edgePath = (points: readonly Point[] | undefined): string => splinePath(toPoints(points))
 
-/** An arrowhead, drawn at the end of a line, and whether it is filled (`normal`) or outlined (`onormal`). */
-export type ArrowHead = { path: string; filled: boolean }
+/** The arrowhead at the target end of an edge's route, and at its source end for a `tail` (LikeC4's arrow types). */
+export const edgeArrows = (points: readonly Point[] | undefined, head: string | undefined, tail: string | undefined): ArrowHead[] =>
+  graphEdgeArrows(toPoints(points), head, tail)
 
-/** How long an arrowhead is, along its line. */
-export const ARROW_LENGTH = 10
-
-/**
- * The arrowhead at `tip`, pointing away from `from` (the last control point before it). `head` is LikeC4's
- * arrow type: `none` draws nothing, `onormal`, `odiamond` and `open` draw an outline, `diamond` a filled
- * diamond, `vee` an open V, `crow` a crow's foot, and anything else LikeC4's default filled triangle.
- */
-export const arrowHead = (from: Point, tip: Point, head: string | undefined): ArrowHead | undefined => {
-  if (head === 'none') {
-    return undefined
-  }
-  let dx = tip[0] - from[0]
-  let dy = tip[1] - from[1]
-  const length = Math.hypot(dx, dy)
-  if (length === 0) {
-    dx = 1
-    dy = 0
-  } else {
-    dx /= length
-    dy /= length
-  }
-  const point = (along: number, across: number): string =>
-    `${round(tip[0] - dx * along - dy * across)},${round(tip[1] - dy * along + dx * across)}`
-  const half = ARROW_LENGTH * 0.45
-  switch (head) {
-    case 'diamond':
-    case 'odiamond':
-      return {
-        path: `M${point(0, 0)} L${point(ARROW_LENGTH * 0.7, half)} L${point(ARROW_LENGTH * 1.4, 0)} L${point(ARROW_LENGTH * 0.7, -half)} Z`,
-        filled: head === 'diamond',
-      }
-    case 'vee':
-    case 'open':
-      return { path: `M${point(ARROW_LENGTH, half)} L${point(0, 0)} L${point(ARROW_LENGTH, -half)}`, filled: false }
-    case 'crow':
-      // Three prongs from a point on the line, spreading out to the end it reaches.
-      return {
-        path: `M${point(0, half)} L${point(ARROW_LENGTH, 0)} L${point(0, -half)} M${point(ARROW_LENGTH, 0)} L${point(0, 0)}`,
-        filled: false,
-      }
-    default:
-      return { path: `M${point(0, 0)} L${point(ARROW_LENGTH, half)} L${point(ARROW_LENGTH, -half)} Z`, filled: head !== 'onormal' }
-  }
-}
-
-/** The arrowhead at the target end of an edge's route, and at its source end for a `tail`. */
-export const edgeArrows = (
-  points: readonly Point[] | undefined,
-  head: string | undefined,
-  tail: string | undefined,
-): ArrowHead[] => {
-  if (!points || points.length < 2) {
-    return []
-  }
-  const arrows: (ArrowHead | undefined)[] = [arrowHead(points[points.length - 2]!, points[points.length - 1]!, head)]
-  if (tail && tail !== 'none') {
-    arrows.push(arrowHead(points[1]!, points[0]!, tail))
-  }
-  return arrows.filter((arrow): arrow is ArrowHead => arrow !== undefined)
-}
-
-/** The `stroke-dasharray` of a LikeC4 line style. */
-export const dashArray = (line: string | undefined): string | undefined =>
-  line === 'dashed' ? '6 5' : line === 'dotted' ? '1.5 4' : undefined
-
-/** About how wide a character of the diagram font is, as a share of its size. */
-const CHARACTER_WIDTH = 0.56
-
-/**
- * Wraps `text` into lines at most `width` wide at `fontSize`, breaking between words (a word longer than a
- * line is broken itself), and keeps at most `maxLines`, ending the last with an ellipsis when text is left over.
- * SVG text does not wrap, and the widths are estimated rather than measured, so the view draws the same
- * before it is on the page and in an exported file.
- */
-export const wrapText = (text: string, width: number, fontSize: number, maxLines = Number.POSITIVE_INFINITY): string[] => {
-  const perLine = Math.max(1, Math.floor(width / (fontSize * CHARACTER_WIDTH)))
-  const words = text.split(/\s+/).filter(Boolean)
-  const lines: string[] = []
-  let current = ''
-  for (const word of words) {
-    let rest = word
-    while (rest.length > perLine) {
-      if (current) {
-        lines.push(current)
-        current = ''
-      }
-      lines.push(rest.slice(0, perLine))
-      rest = rest.slice(perLine)
-    }
-    if (!current) {
-      current = rest
-    } else if (current.length + 1 + rest.length <= perLine) {
-      current = `${current} ${rest}`
-    } else {
-      lines.push(current)
-      current = rest
-    }
-  }
-  if (current) {
-    lines.push(current)
-  }
-  if (lines.length <= maxLines) {
-    return lines
-  }
-  const kept = lines.slice(0, maxLines)
-  const last = kept[maxLines - 1]!
-  kept[maxLines - 1] = `${last.length >= perLine ? last.slice(0, Math.max(0, perLine - 1)) : last}…`
-  return kept
-}
+export { dashArray, wrapText } from '@bielu/scalar-graph'

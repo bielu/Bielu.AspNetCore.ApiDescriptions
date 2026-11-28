@@ -22,6 +22,8 @@
         <ScalarPluginBundlePath Condition="'$(ScalarPluginBundlePath)' == ''">$(ScalarPluginAssetsDir)/dist/plugin.js</ScalarPluginBundlePath>
         <ScalarPluginBundleLogicalName Condition="'$(ScalarPluginBundleLogicalName)' == ''">$(RootNamespace).plugin.js</ScalarPluginBundleLogicalName>
         <ScalarCoreAssetsDir>$(MSBuildThisFileDirectory)../assets</ScalarCoreAssetsDir>
+        <!-- The private diagram primitives (@bielu/scalar-graph) the document-type plugins inline. -->
+        <ScalarGraphAssetsDir>$(MSBuildThisFileDirectory)../../Bielu.AspNetCore.Scalar.Graph/assets</ScalarGraphAssetsDir>
         <!-- The assets packages are npm workspaces; the authoritative manifest, lockfile and the
              hoisted node_modules all live at the repo root (this file is at src/<Scalar>/build/). -->
         <ScalarWorkspaceRoot>$(MSBuildThisFileDirectory)../../..</ScalarWorkspaceRoot>
@@ -40,6 +42,8 @@
         <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/tsconfig.json" />
         <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/tsconfig.plugin.json" />
         <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/vite.mjs" />
+        <ScalarPluginAssetSource Include="$(ScalarGraphAssetsDir)/src/**/*" />
+        <ScalarPluginAssetSource Include="$(ScalarGraphAssetsDir)/package.json" />
     </ItemGroup>
 
     <!--

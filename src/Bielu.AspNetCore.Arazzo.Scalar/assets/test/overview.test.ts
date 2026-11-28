@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { INITIAL_PAN_ZOOM, MAX_SCALE, panBy, zoomAt } from '../src/helpers/pan-zoom'
+import { INITIAL_PAN_ZOOM, MAX_SCALE, panBy, zoomAt } from '@bielu/scalar-graph'
 import {
   buildWorkflowGraph,
   FAILURE_NODE_ID,

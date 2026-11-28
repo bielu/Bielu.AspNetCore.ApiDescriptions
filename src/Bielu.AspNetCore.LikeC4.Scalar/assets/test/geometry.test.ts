@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { lineColorOf, paletteOf } from '../src/helpers/colors'
-import { arrowHead, dashArray, edgeArrows, edgePath, queueCap, shapeGeometry, wrapText } from '../src/helpers/geometry'
+import { arrowHead } from '@bielu/scalar-graph'
+import { dashArray, edgeArrows, edgePath, queueCap, shapeGeometry, wrapText } from '../src/helpers/geometry'
 
 describe('shapeGeometry', () => {
   it.each(['rectangle', 'person', 'queue', 'cylinder', 'storage', 'browser', 'mobile', 'component', 'bucket', 'document'])(
@@ -75,7 +76,7 @@ describe('edgePath', () => {
 describe('arrowHead', () => {
   it('points a filled triangle along the line, its tip on the end point', () => {
     // Act
-    const arrow = arrowHead([0, 0], [100, 0], 'normal')
+    const arrow = arrowHead({ x: 0, y: 0 }, { x: 100, y: 0 }, 'normal')
 
     // Assert
     expect(arrow).toEqual({ path: 'M100,0 L90,4.5 L90,-4.5 Z', filled: true })
@@ -83,16 +84,16 @@ describe('arrowHead', () => {
 
   it('outlines an onormal head, draws a vee open, and leaves out none', () => {
     // Act & Assert
-    expect(arrowHead([0, 0], [0, 100], 'onormal')?.filled).toBe(false)
-    expect(arrowHead([0, 0], [0, 100], 'vee')?.path).not.toContain('Z')
-    expect(arrowHead([0, 0], [0, 100], 'diamond')).toMatchObject({ filled: true })
-    expect(arrowHead([0, 0], [0, 100], 'odiamond')).toMatchObject({ filled: false })
-    expect(arrowHead([0, 0], [0, 100], 'none')).toBeUndefined()
+    expect(arrowHead({ x: 0, y: 0 }, { x: 0, y: 100 }, 'onormal')?.filled).toBe(false)
+    expect(arrowHead({ x: 0, y: 0 }, { x: 0, y: 100 }, 'vee')?.path).not.toContain('Z')
+    expect(arrowHead({ x: 0, y: 0 }, { x: 0, y: 100 }, 'diamond')).toMatchObject({ filled: true })
+    expect(arrowHead({ x: 0, y: 0 }, { x: 0, y: 100 }, 'odiamond')).toMatchObject({ filled: false })
+    expect(arrowHead({ x: 0, y: 0 }, { x: 0, y: 100 }, 'none')).toBeUndefined()
   })
 
   it('draws a crow head as an open crow foot, its prongs spreading at the end point', () => {
     // Act
-    const arrow = arrowHead([0, 0], [20, 0], 'crow')
+    const arrow = arrowHead({ x: 0, y: 0 }, { x: 20, y: 0 }, 'crow')
 
     // Assert
     expect(arrow).toEqual({ path: 'M20,4.5 L10,0 L20,-4.5 M10,0 L20,0', filled: false })
@@ -100,7 +101,7 @@ describe('arrowHead', () => {
 
   it('still points somewhere when the line has no length', () => {
     // Act
-    const arrow = arrowHead([5, 5], [5, 5], undefined)
+    const arrow = arrowHead({ x: 5, y: 5 }, { x: 5, y: 5 }, undefined)
 
     // Assert
     expect(arrow?.path).toBe('M5,5 L-5,9.5 L-5,0.5 Z')

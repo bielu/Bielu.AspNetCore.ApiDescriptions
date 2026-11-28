@@ -33,6 +33,7 @@ The solution is `src/Bielu.AspNetCore.AsyncApi.slnx`. Source lives under `src/`,
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.Sse` | Server-Sent Events (SSE) protocol bindings |
 | `Bielu.AspNetCore.AsyncApi.Extensions.Protocols.WebRtc` | WebRTC protocol bindings |
 | `Bielu.AspNetCore.AsyncApi.Scalar` | Shared Scalar console-plugin infrastructure (+ private `@bielu/scalar-core` npm package) |
+| `Bielu.AspNetCore.Scalar.Graph` | Not a .NET project: only `assets/`, the private `@bielu/scalar-graph` npm package of diagram primitives (edge paths, arrowheads, text fitting, pan/zoom, SVG/PNG export) the Arazzo and LikeC4 plugins share. Ships TypeScript source, inlined by each plugin's Vite build; no build step of its own |
 | `Bielu.AspNetCore.AsyncApi.Scalar.SignalR` (+ `.Aspire`) | Interactive SignalR console for Scalar (`@bielu/scalar-signalr` bundle) |
 | `Bielu.AspNetCore.AsyncApi.Scalar.Grpc` (+ `.Aspire`) | Interactive gRPC-Web console for Scalar (`@bielu/scalar-grpc` bundle + protobuf descriptor endpoint) |
 | `Bielu.AspNetCore.AsyncApi.Scalar.Broker` | Interactive Kafka/MQTT/AMQP console for Scalar (`@bielu/scalar-broker` bundle + an opt-in server-side publish/tail bridge, since no browser speaks these protocols). No `.Aspire` companion: a CDN-loaded plugin would have no bridge to talk to |

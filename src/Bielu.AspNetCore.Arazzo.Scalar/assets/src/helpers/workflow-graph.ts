@@ -1,4 +1,5 @@
 import dagre from '@dagrejs/dagre'
+import { truncate } from '@bielu/scalar-graph'
 import type { ArazzoCriterion, ArazzoDocument, ArazzoFailureAction, ArazzoStep, ArazzoSuccessAction, ArazzoWorkflow } from '../types'
 import { effectiveFailureActions, effectiveSuccessActions, isUnconditional, reachableActions } from './actions'
 import { labelOf, pageOf, pageRegistry, pageTitle, type PagesConfig } from './pages'
@@ -733,8 +734,7 @@ const nodeHeight = (node: WorkflowGraphNode): number => (node.subtitle ? SUBTITL
 /** Long conditions are cut, so a single arrow cannot stretch the whole diagram sideways. */
 export const MAX_EDGE_LABEL_LENGTH = 48
 
-export const truncateLabel = (label: string): string =>
-  label.length > MAX_EDGE_LABEL_LENGTH ? `${label.slice(0, MAX_EDGE_LABEL_LENGTH - 1)}…` : label
+export const truncateLabel = (label: string): string => truncate(label, MAX_EDGE_LABEL_LENGTH)
 
 /**
  * The badge a step that retries itself carries: "↻ ≤ 3× 2s" for one retry, "↻ 2 retries" for several (the
