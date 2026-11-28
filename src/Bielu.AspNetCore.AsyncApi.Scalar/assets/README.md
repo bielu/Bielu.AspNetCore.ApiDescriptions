@@ -26,6 +26,10 @@ parts from here, through subpaths the console plugins never import:
   Scalar `documentTypes` entry rendering the plugin's element, and the tagged plugin factory.
 - **`@bielu/scalar-core/markdown`** — `renderMarkdown`, CommonMark through marked and DOMPurify.
   A subpath, so marked and DOMPurify stay out of the console bundles.
+- **`@bielu/scalar-core/document.css`** — the shared document layout as Tailwind utilities
+  (`plugin-document`, `plugin-title`, `plugin-kicker`, `plugin-muted`, `plugin-markdown`,
+  `plugin-section`, `plugin-section-title`, `plugin-code`, `plugin-link`). Each plugin `@apply`s them
+  in its own prefixed selectors, so its markup and class names stay its own.
 - **`@bielu/scalar-core/vite`** — `scalarPluginBuild`, the Vite config for the three bundles
   (`plugin.js`, `scalar-plugin.mjs`, `index.mjs`), picked by `vite build --mode`.
 - **`tsconfig.plugin.json`** — the shared compiler options, extended by relative path.

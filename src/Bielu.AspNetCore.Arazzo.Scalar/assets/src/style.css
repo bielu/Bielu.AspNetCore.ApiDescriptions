@@ -18,6 +18,7 @@
  * order.
  */
 @import "@bielu/scalar-core/tailwind.css";
+@import "@bielu/scalar-core/document.css";
 
 @import "./styles/document.css";
 @import "./styles/targets.css";
