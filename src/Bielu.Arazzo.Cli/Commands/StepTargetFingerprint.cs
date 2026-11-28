@@ -24,6 +24,8 @@ namespace Bielu.Arazzo.Cli.Commands;
 /// <para>
 /// Documentation-only keywords (<c>description</c>, <c>summary</c>, <c>title</c>, examples, <c>externalDocs</c>
 /// and <c>x-</c> extensions) are left out: rewording a description doesn't change what a step sends or receives.
+/// Names chosen by the author, such as property names, and literal values, such as a <c>const</c> or the values
+/// of an <c>enum</c>, are kept as they stand, whatever they are called.
 /// </para>
 /// </remarks>
 internal static class StepTargetFingerprint
@@ -45,6 +47,21 @@ internal static class StepTargetFingerprint
 
     private const string AdditionalOperations = "additionalOperations";
 
+    // JSON Schema keywords whose value is data compared as a whole, so nothing in it is a keyword or a reference.
+    private static readonly HashSet<string> Literals = new(StringComparer.Ordinal) { "const", "enum" };
+
+    private enum Mode
+    {
+        /// <summary>An object of the specification or a schema: documentation keywords are left out.</summary>
+        Definition,
+
+        /// <summary>A map whose keys are names chosen by the author; its values are definitions.</summary>
+        Names,
+
+        /// <summary>A literal value, written as it stands.</summary>
+        Literal,
+    }
+
     /// <summary>The fingerprint of <paramref name="target"/>, a node of <paramref name="document"/>.</summary>
     /// <returns>
     /// The fingerprint, and whether it is complete: a definition nested deeper than the traversal limit is cut
@@ -53,7 +70,7 @@ internal static class StepTargetFingerprint
     public static Result Of(JsonNode? target, JsonNode document)
     {
         var writer = new Writer(document);
-        writer.Write(target, 0, membersAreNames: false);
+        writer.Write(target, 0, Mode.Definition);
         writer.WriteInheritedParameters(target);
         writer.WriteDefinitions();
         return new Result(writer.ToString(), writer.Complete);
@@ -66,13 +83,17 @@ internal static class StepTargetFingerprint
     {
         private readonly StringBuilder _builder = new();
         private readonly Dictionary<string, int> _ids = new(StringComparer.Ordinal);
-        private readonly List<JsonObject> _definitions = [];
+        private readonly List<JsonNode> _definitions = [];
+
+        // In OpenAPI, a Response's or an Encoding's headers map header names, which may well start with x-, to
+        // Header Objects. In AsyncAPI, a message's headers is a schema, whose keywords are filtered as usual.
+        private readonly bool _isOpenApi = document is JsonObject root && (root.ContainsKey("openapi") || root.ContainsKey("swagger"));
 
         public bool Complete { get; private set; } = true;
 
         public override string ToString() => _builder.ToString();
 
-        public void Write(JsonNode? node, int depth, bool membersAreNames)
+        public void Write(JsonNode? node, int depth, Mode mode)
         {
             if (depth > MaxDepth)
             {
@@ -85,7 +106,7 @@ internal static class StepTargetFingerprint
             {
                 case JsonObject obj:
                     _builder.Append('{');
-                    var reference = membersAreNames ? null : Reference(obj);
+                    var reference = mode == Mode.Definition ? Reference(obj) : null;
                     if (reference is not null)
                     {
                         // Keywords beside a $ref, such as a JSON Schema 2020-12 maxLength, constrain it too.
@@ -93,11 +114,11 @@ internal static class StepTargetFingerprint
                     }
 
                     foreach (var (key, value) in obj
-                                 .Where(p => membersAreNames || (!IsIgnored(p.Key) && (reference is null || p.Key != "$ref")))
+                                 .Where(p => mode != Mode.Definition || (!IsIgnored(p.Key) && (reference is null || p.Key != "$ref")))
                                  .OrderBy(p => p.Key, StringComparer.Ordinal))
                     {
                         _builder.Append(Quote(key)).Append(':');
-                        Write(value, depth + 1, !membersAreNames && NameMaps.Contains(key));
+                        Write(value, depth + 1, ChildMode(mode, key));
                         _builder.Append(',');
                     }
 
@@ -107,7 +128,7 @@ internal static class StepTargetFingerprint
                     _builder.Append('[');
                     foreach (var item in array)
                     {
-                        Write(item, depth + 1, membersAreNames: false);
+                        Write(item, depth + 1, mode == Mode.Literal ? Mode.Literal : Mode.Definition);
                         _builder.Append(',');
                     }
 
@@ -121,6 +142,16 @@ internal static class StepTargetFingerprint
                     break;
             }
         }
+
+        /// <summary>How the value under <paramref name="key"/> of an object written in <paramref name="mode"/> is written.</summary>
+        private Mode ChildMode(Mode mode, string key) => mode switch
+        {
+            Mode.Literal => Mode.Literal,
+            Mode.Names => Mode.Definition,
+            _ when Literals.Contains(key) => Mode.Literal,
+            _ when NameMaps.Contains(key) || (_isOpenApi && key == "headers") => Mode.Names,
+            _ => Mode.Definition,
+        };
 
         /// <summary>
         /// The number standing for the definition <paramref name="obj"/>'s <c>$ref</c> points at, or
@@ -136,7 +167,8 @@ internal static class StepTargetFingerprint
 
             if (!_ids.TryGetValue(reference, out var id))
             {
-                if (JsonDocumentPointer.EvaluateObject(document, reference[1..]) is not { } resolved)
+                // Any node: a boolean JSON Schema such as true is a definition too.
+                if (JsonDocumentPointer.Evaluate(document, reference[1..]) is not { } resolved)
                 {
                     return null;
                 }
@@ -155,8 +187,7 @@ internal static class StepTargetFingerprint
         /// </summary>
         public void WriteInheritedParameters(JsonNode? target)
         {
-            if (document is not JsonObject root || !(root.ContainsKey("openapi") || root.ContainsKey("swagger")) ||
-                target is not JsonObject operation || operation.Parent is not JsonObject parent)
+            if (!_isOpenApi || target is not JsonObject operation || operation.Parent is not JsonObject parent)
             {
                 return;
             }
@@ -183,7 +214,7 @@ internal static class StepTargetFingerprint
             _builder.Append("\ninherited parameters=[");
             foreach (var parameter in applicable)
             {
-                Write(parameter, 1, membersAreNames: false);
+                Write(parameter, 1, Mode.Definition);
                 _builder.Append(',');
             }
 
@@ -203,7 +234,7 @@ internal static class StepTargetFingerprint
             for (var i = 0; i < _definitions.Count; i++)
             {
                 _builder.Append("\n#").Append(i).Append('=');
-                Write(_definitions[i], 0, membersAreNames: false);
+                Write(_definitions[i], 0, Mode.Definition);
             }
         }
     }

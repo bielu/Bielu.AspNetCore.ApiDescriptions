@@ -40,7 +40,16 @@ internal static class JsonDocumentPointer
     }
 
     /// <summary>Returns the object <paramref name="tokens"/> address, or <see langword="null"/> when they address nothing or a non-object.</summary>
-    public static JsonObject? EvaluateObject(JsonNode root, IEnumerable<string> tokens)
+    public static JsonObject? EvaluateObject(JsonNode root, IEnumerable<string> tokens) => Evaluate(root, tokens) as JsonObject;
+
+    /// <summary>
+    /// Returns the node the pointer addresses, of any kind, such as a boolean JSON Schema, or
+    /// <see langword="null"/> when it addresses nothing or a JSON <c>null</c>.
+    /// </summary>
+    public static JsonNode? Evaluate(JsonNode? root, string pointer) =>
+        root is not null && Tokens(pointer) is { } tokens ? Evaluate(root, tokens) : null;
+
+    private static JsonNode? Evaluate(JsonNode root, IEnumerable<string> tokens)
     {
         JsonNode? current = root;
         foreach (var token in tokens)
@@ -59,7 +68,7 @@ internal static class JsonDocumentPointer
             }
         }
 
-        return current as JsonObject;
+        return current;
     }
 
     /// <summary>

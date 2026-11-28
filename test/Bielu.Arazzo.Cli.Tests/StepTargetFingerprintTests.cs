@@ -111,6 +111,46 @@ public class StepTargetFingerprintTests
         StepTargetFingerprint.Of(document["target"], document).Complete.ShouldBeFalse();
     }
 
+    [Theory]
+    [InlineData("""{ "const": { "description": "A" } }""", """{ "const": { "description": "B" } }""")]
+    [InlineData("""{ "enum": [ { "title": "A" } ] }""", """{ "enum": [ { "title": "B" } ] }""")]
+    [InlineData("""{ "const": { "$ref": "#/defs/a" } }""", """{ "const": { "$ref": "#/defs/b" } }""")]
+    public void Of_KeepsLiteralValuesAsTheyStand(string before, string after)
+    {
+        // The two $refs resolve to the same schema, but in a const they are data, not references.
+        static string With(string target) => $$"""{ "target": {{target}}, "defs": { "a": true, "b": true } }""";
+        Of(With(before)).ShouldNotBe(Of(With(after)));
+    }
+
+    [Fact]
+    public void Of_FollowsReferencesToBooleanSchemas()
+    {
+        Of("""{ "target": { "schema": { "$ref": "#/defs/allowed" } }, "defs": { "allowed": true } }""")
+            .ShouldNotBe(Of("""{ "target": { "schema": { "$ref": "#/defs/allowed" } }, "defs": { "allowed": false } }"""));
+    }
+
+    [Fact]
+    public void Of_OpenApiResponseHeaders_KeepsHeaderNamesLikeExtensions()
+    {
+        static string Response(string type) => $$"""
+            {
+                "openapi": "3.1.0",
+                "target": { "responses": { "200": { "headers": { "x-request-id": { "description": "d", "schema": { "type": "{{type}}" } } } } } }
+            }
+            """;
+
+        Of(Response("string")).ShouldNotBe(Of(Response("integer")));
+        Of(Response("string")).ShouldNotContain("\"description\"");
+    }
+
+    [Fact]
+    public void Of_AsyncApiMessageHeaders_AreASchema()
+    {
+        // In AsyncAPI, headers is a schema: its description is documentation, not a header called "description".
+        Of("""{ "asyncapi": "3.0.0", "target": { "headers": { "type": "object", "description": "a" } } }""")
+            .ShouldBe(Of("""{ "asyncapi": "3.0.0", "target": { "headers": { "type": "object", "description": "b" } } }"""));
+    }
+
     [Fact]
     public void Of_IncludesKeywordsBesideAReference()
     {
