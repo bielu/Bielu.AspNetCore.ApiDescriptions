@@ -212,16 +212,20 @@ internal static class StepTargetFingerprint
                 return null;
             }
 
-            if (!_ids.TryGetValue(reference, out var id))
+            // In a JSON Schema resource, one that declares an $id, a fragment is relative to that resource, not
+            // to the document, so the same "#/$defs/Value" in two resources means two definitions.
+            var resource = ResourceOf(obj);
+            var key = resource is null ? reference : resource.GetPath() + reference;
+            if (!_ids.TryGetValue(key, out var id))
             {
                 // Any node: a boolean JSON Schema such as true is a definition too.
-                if (Resolve(reference[1..]) is not { } resolved)
+                if (Resolve(reference[1..], resource) is not { } resolved)
                 {
                     return null;
                 }
 
                 id = _definitions.Count;
-                _ids[reference] = id;
+                _ids[key] = id;
                 // Written as the reference's context would write it, such as a Link Object reached from links.
                 _definitions.Add((resolved, mode));
             }
@@ -230,49 +234,87 @@ internal static class StepTargetFingerprint
         }
 
         /// <summary>
-        /// The node a local reference's <paramref name="fragment"/> addresses: a JSON Pointer, or a plain name a
-        /// JSON Schema declares as its <c>$anchor</c> or <c>$dynamicAnchor</c>.
+        /// The node a local reference's <paramref name="fragment"/> addresses within <paramref name="resource"/>,
+        /// or the document when <see langword="null"/>: a JSON Pointer, or a plain name a JSON Schema declares as
+        /// its <c>$anchor</c> or <c>$dynamicAnchor</c>.
         /// </summary>
-        private JsonNode? Resolve(string fragment)
+        private JsonNode? Resolve(string fragment, JsonObject? resource)
         {
             if (fragment.Length == 0 || fragment[0] == '/')
             {
-                return JsonDocumentPointer.Evaluate(document, fragment);
+                var resolved = JsonDocumentPointer.Evaluate(resource ?? document, fragment);
+
+                // A pointer that addresses nothing in the document is written as it stands, as validate reports it.
+                // Within a schema resource it may be meant relative to the document instead: it can't be followed
+                // either way, so the fingerprint can't vouch for what it points at.
+                if (resolved is null && resource is not null)
+                {
+                    Complete = false;
+                }
+
+                return resolved;
             }
 
             var anchors = new List<JsonObject>();
-            FindAnchors(document, fragment, anchors);
+            FindAnchors(resource ?? document, fragment, anchors, resource ?? document);
             if (anchors.Count == 1)
             {
                 return anchors[0];
             }
 
-            // Not found, or declared in several schema resources, which only their $id tells apart: the definition
-            // behind the reference can't be followed, so the fingerprint can't vouch it is unchanged.
+            // Not found, or declared twice in one resource: the definition behind the reference can't be followed,
+            // so the fingerprint can't vouch it is unchanged.
             Complete = false;
             return null;
         }
 
-        private static void FindAnchors(JsonNode? node, string name, List<JsonObject> anchors)
+        /// <summary>The closest schema resource, one that declares an <c>$id</c>, that <paramref name="node"/> is in.</summary>
+        private static JsonObject? ResourceOf(JsonNode node)
+        {
+            for (var current = node; current is not null; current = current.Parent)
+            {
+                if (current is JsonObject obj && obj["$id"] is JsonValue id && id.TryGetValue<string>(out _))
+                {
+                    return obj;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Adds the schemas under <paramref name="node"/> that declare the anchor <paramref name="name"/>, skipping
+        /// data that only looks like a schema, such as an example or a const, and resources nested in
+        /// <paramref name="resource"/>, whose anchors are their own.
+        /// </summary>
+        private static void FindAnchors(JsonNode? node, string name, List<JsonObject> anchors, JsonNode resource)
         {
             switch (node)
             {
                 case JsonObject obj:
+                    if (!ReferenceEquals(obj, resource) && obj.ContainsKey("$id"))
+                    {
+                        return;
+                    }
+
                     if (IsAnchor(obj, "$anchor", name) || IsAnchor(obj, "$dynamicAnchor", name))
                     {
                         anchors.Add(obj);
                     }
 
-                    foreach (var (_, value) in obj)
+                    foreach (var (key, value) in obj)
                     {
-                        FindAnchors(value, name, anchors);
+                        if (!IsIgnored(key) && !Literals.Contains(key))
+                        {
+                            FindAnchors(value, name, anchors, resource);
+                        }
                     }
 
                     break;
                 case JsonArray array:
                     foreach (var item in array)
                     {
-                        FindAnchors(item, name, anchors);
+                        FindAnchors(item, name, anchors, resource);
                     }
 
                     break;

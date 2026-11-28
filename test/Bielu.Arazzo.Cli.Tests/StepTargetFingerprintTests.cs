@@ -215,6 +215,46 @@ public class StepTargetFingerprintTests
         Of(Operation("string")).ShouldNotBe(Of(Operation("integer")));
     }
 
+    [Fact]
+    public void Of_ResolvesFragmentsWithinTheirSchemaResource()
+    {
+        // Arrange: "#/$defs/Value" is relative to the Box resource, not to the OpenAPI document.
+        static string Operation(string type) => $$"""
+            {
+                "openapi": "3.1.0",
+                "target": { "schema": { "$ref": "#/components/schemas/Box/$defs/Entry" } },
+                "components": { "schemas": { "Box": {
+                    "$id": "https://example.com/box",
+                    "$defs": {
+                        "Entry": { "$ref": "#Item" },
+                        "Item": { "$anchor": "Item", "$ref": "#/$defs/Value" },
+                        "Value": { "type": "{{type}}" }
+                    }
+                } } }
+            }
+            """;
+        var document = JsonNode.Parse(Operation("string"))!;
+
+        // Act & Assert
+        Of(Operation("string")).ShouldNotBe(Of(Operation("integer")));
+        StepTargetFingerprint.Of(document["target"], document).Complete.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Of_AnchorInAnExample_IsNotADeclaration()
+    {
+        // Arrange
+        var document = JsonNode.Parse("""
+            {
+                "target": { "schema": { "$ref": "#Item" } },
+                "a": { "$anchor": "Item", "type": "string", "examples": [ { "$anchor": "Item" } ], "const": { "$anchor": "Item" } }
+            }
+            """)!;
+
+        // Act & Assert
+        StepTargetFingerprint.Of(document["target"], document).Complete.ShouldBeTrue();
+    }
+
     [Theory]
     [InlineData("""{ "target": { "schema": { "$ref": "#Missing" } } }""")]
     [InlineData("""{ "target": { "schema": { "$ref": "#Item" } }, "a": { "$anchor": "Item" }, "b": { "$anchor": "Item" } }""")]
