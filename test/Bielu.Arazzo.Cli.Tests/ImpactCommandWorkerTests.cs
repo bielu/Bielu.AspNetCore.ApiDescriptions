@@ -158,7 +158,7 @@ public class ImpactCommandWorkerTests : IDisposable
     {
         // Arrange: the base lacks the audit channel, the head adds it.
         var context = (Action<ImpactCommandContext>)(c =>
-            c.BaseSources["events"] = Write("base-asyncapi-old.json", BaseAsyncApi.Replace(",\n        \"audit\": { \"address\": \"audit\" }", "")));
+            c.BaseSources["events"] = Write("base-asyncapi-old.json", BaseAsyncApi.ReplaceLineEndings("\n").Replace(",\n        \"audit\": { \"address\": \"audit\" }", "")));
 
         // Act
         var (exitCode, info, _, _) = Run(BaseAsyncApi, configure: context);
