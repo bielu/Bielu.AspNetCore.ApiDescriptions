@@ -43,6 +43,23 @@ internal sealed class ImpactCommandWorker
             return CliExitCode.Failure;
         }
 
+        // A misspelled name would otherwise match no source description, leave both sides empty and report no
+        // changes, whatever the files hold.
+        var declared = document.SourceDescriptions.Select(source => source.Name).ToHashSet(StringComparer.Ordinal);
+        var unknown = _context.BaseSources.Keys.Concat(_context.HeadSources.Keys)
+            .Where(name => !declared.Contains(name))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (unknown.Count > 0)
+        {
+            foreach (var name in unknown)
+            {
+                _logger.Error($"Source '{name}' isn't declared in {_context.File}. Declared sources: {string.Join(", ", declared.Order(StringComparer.Ordinal))}.");
+            }
+
+            return CliExitCode.Failure;
+        }
+
         foreach (var name in _context.BaseSources.Keys.Except(_context.HeadSources.Keys)
                      .Concat(_context.HeadSources.Keys.Except(_context.BaseSources.Keys)))
         {
@@ -102,12 +119,24 @@ internal sealed class ImpactCommandWorker
                     }
 
                     break;
-                case (ArazzoStepTargetStatus.Resolved, ArazzoStepTargetStatus.Resolved)
-                    when !string.Equals(Fingerprint(old, baseWorkspace), Fingerprint(current, headWorkspace), StringComparison.Ordinal):
-                    changes.Add(new DocumentChange(
-                        location,
-                        $"The {Kind(current)} '{current.Reference}' targets changed in source '{current.SourceName}'. Review the step's parameters, request body, success criteria and outputs.",
-                        ChangeSeverity.NonBreaking));
+                case (ArazzoStepTargetStatus.Resolved, ArazzoStepTargetStatus.Resolved):
+                    var (oldFingerprint, newFingerprint) = (Fingerprint(old, baseWorkspace), Fingerprint(current, headWorkspace));
+                    if (!oldFingerprint.Complete || !newFingerprint.Complete)
+                    {
+                        // Cut short, two fingerprints can match although the definitions differ: say so, not "no change".
+                        changes.Add(new DocumentChange(
+                            location,
+                            $"'{current.Reference}' targets a {Kind(current)} in source '{current.SourceName}' nested too deeply to compare. Review the step against it.",
+                            ChangeSeverity.NonBreaking));
+                    }
+                    else if (!string.Equals(oldFingerprint.Value, newFingerprint.Value, StringComparison.Ordinal))
+                    {
+                        changes.Add(new DocumentChange(
+                            location,
+                            $"The {Kind(current)} '{current.Reference}' targets changed in source '{current.SourceName}'. Review the step's parameters, request body, success criteria and outputs.",
+                            ChangeSeverity.NonBreaking));
+                    }
+
                     break;
             }
         }
@@ -118,11 +147,11 @@ internal sealed class ImpactCommandWorker
     private static string Kind(ArazzoStepTarget target) =>
         target.Path.EndsWith("/channelPath", StringComparison.Ordinal) ? "channel" : "operation";
 
-    private static string Fingerprint(ArazzoStepTarget target, ArazzoWorkspace workspace) =>
+    private static StepTargetFingerprint.Result Fingerprint(ArazzoStepTarget target, ArazzoWorkspace workspace) =>
         target.SourceName is not null && workspace.TryGetDocument(target.SourceName, out var document) &&
         document is System.Text.Json.Nodes.JsonNode root
             ? StepTargetFingerprint.Of(target.Target, root)
-            : string.Empty;
+            : new StepTargetFingerprint.Result(string.Empty, Complete: true);
 
     private ArazzoDocument? ReadDocument()
     {

@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Nodes;
 using Bielu.Arazzo.Cli.Commands;
+using Bielu.Arazzo.Validation;
 using Shouldly;
 using Xunit;
 
@@ -154,6 +156,26 @@ public class ImpactCommandWorkerTests : IDisposable
     }
 
     [Fact]
+    public void Process_SourceNameTheDocumentDoesNotDeclare_FailsInsteadOfComparingNothing()
+    {
+        // Arrange: "shpo" is a typo for "shop" on both sides.
+        var context = (Action<ImpactCommandContext>)(c =>
+        {
+            c.BaseSources["shpo"] = c.BaseSources["shop"];
+            c.HeadSources["shpo"] = c.HeadSources["shop"];
+            c.BaseSources.Remove("shop");
+            c.HeadSources.Remove("shop");
+        });
+
+        // Act
+        var (exitCode, _, _, errors) = Run(BaseAsyncApi, configure: context);
+
+        // Assert
+        exitCode.ShouldBe(1);
+        errors.ShouldHaveSingleItem().ShouldContain("Source 'shpo' isn't declared");
+    }
+
+    [Fact]
     public void Process_ReferenceThatNowResolves_IsNonBreaking()
     {
         // Arrange: the base lacks the audit channel, the head adds it.
@@ -239,6 +261,31 @@ public class ImpactCommandWorkerTests : IDisposable
         // Assert
         exitCode.ShouldBe(1);
         errors.ShouldNotBeEmpty();
+    }
+
+    [Fact]
+    public void Compare_DefinitionTooDeepToFingerprint_IsListedForReview()
+    {
+        // Arrange: the same operation on both sides, nested inline deeper than the fingerprint follows.
+        var operation = new JsonObject { ["type"] = "string" };
+        for (var i = 0; i < 70; i++)
+        {
+            operation = new JsonObject { ["items"] = operation };
+        }
+
+        var document = new JsonObject { ["openapi"] = "3.1.0", ["op"] = operation };
+        var workspace = new ArazzoWorkspace();
+        workspace.RegisterResolver(new Bielu.Arazzo.SourceResolvers.OpenApiJsonSourceResolver());
+        workspace.RegisterDocument("shop", "openapi", document);
+        var target = new ArazzoStepTarget(
+            "checkout", "order", "/workflows/0/steps/0/operationId", "createOrder", "shop", ArazzoStepTargetStatus.Resolved, operation, null);
+        var worker = new ImpactCommandWorker(new ImpactCommandContext(), _ => { }, _ => { }, _ => { });
+
+        // Act
+        var change = worker.Compare([target], workspace, [target], workspace).ShouldHaveSingleItem();
+
+        // Assert
+        change.Message.ShouldContain("nested too deeply to compare");
     }
 
     [Fact]

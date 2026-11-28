@@ -13,7 +13,7 @@ public class StepTargetFingerprintTests
     private static string Of(string json)
     {
         var document = JsonNode.Parse(json)!;
-        return StepTargetFingerprint.Of(document["target"], document);
+        return StepTargetFingerprint.Of(document["target"], document).Value;
     }
 
     [Fact]
@@ -47,14 +47,123 @@ public class StepTargetFingerprintTests
     public void Of_StopsAtCyclicReferences()
     {
         var fingerprint = Of("""{ "target": { "$ref": "#/defs/node" }, "defs": { "node": { "properties": { "next": { "$ref": "#/defs/node" } } } } }""");
-        fingerprint.ShouldContain("\"$ref\":\"#/defs/node\"");
+        fingerprint.ShouldBe("{\"$ref\":\"#0\",}\n#0={\"properties\":{\"next\":{\"$ref\":\"#0\",},},}");
+    }
+
+    [Fact]
+    public void Of_WritesASharedDefinitionOnce()
+    {
+        // Arrange: S0 to S18, each with three properties referencing the next. Inlined, that is 3^18 copies of S18.
+        var schemas = new JsonObject();
+        for (var i = 0; i < 19; i++)
+        {
+            var next = new JsonObject { ["$ref"] = $"#/defs/S{i + 1}" };
+            schemas[$"S{i}"] = i == 18
+                ? new JsonObject { ["type"] = "string" }
+                : new JsonObject { ["properties"] = new JsonObject { ["a"] = next.DeepClone(), ["b"] = next.DeepClone(), ["c"] = next } };
+        }
+
+        var document = new JsonObject { ["target"] = new JsonObject { ["$ref"] = "#/defs/S0" }, ["defs"] = schemas };
+
+        // Act
+        var result = StepTargetFingerprint.Of(document["target"], document);
+
+        // Assert
+        result.Complete.ShouldBeTrue();
+        result.Value.Length.ShouldBeLessThan(5_000);
+        result.Value.ShouldContain("#18={\"type\":\"string\",}");
+    }
+
+    [Fact]
+    public void Of_IgnoresARenamedComponent()
+    {
+        Of("""{ "target": { "$ref": "#/defs/a" }, "defs": { "a": { "type": "string" } } }""")
+            .ShouldBe(Of("""{ "target": { "$ref": "#/defs/b" }, "defs": { "b": { "type": "string" } } }"""));
+    }
+
+    [Fact]
+    public void Of_ReferenceChainLongerThanTheDepthLimit_StillSeesItsEnd()
+    {
+        // Arrange: 70 schemas, each only a $ref to the next, and a last one that differs.
+        static string Chain(string last)
+        {
+            var defs = string.Join(", ", Enumerable.Range(0, 70).Select(i => $"\"s{i}\": {{ \"$ref\": \"#/defs/s{i + 1}\" }}"));
+            return $$"""{ "target": { "$ref": "#/defs/s0" }, "defs": { {{defs}}, "s70": { "type": "{{last}}" } } }""";
+        }
+
+        // Act & Assert
+        Of(Chain("string")).ShouldNotBe(Of(Chain("integer")));
+    }
+
+    [Fact]
+    public void Of_NestingDeeperThanTheLimit_IsIncomplete()
+    {
+        // Arrange: 70 objects nested inline, with no $ref to break them up.
+        var node = new JsonObject { ["type"] = "string" };
+        for (var i = 0; i < 70; i++)
+        {
+            node = new JsonObject { ["items"] = node };
+        }
+
+        var document = new JsonObject { ["target"] = node };
+
+        // Act & Assert
+        StepTargetFingerprint.Of(document["target"], document).Complete.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Of_IncludesKeywordsBesideAReference()
+    {
+        Of("""{ "target": { "$ref": "#/defs/a", "maxLength": 20 }, "defs": { "a": { "type": "string" } } }""")
+            .ShouldNotBe(Of("""{ "target": { "$ref": "#/defs/a", "maxLength": 5 }, "defs": { "a": { "type": "string" } } }"""));
+    }
+
+    [Fact]
+    public void Of_KeepsAsyncApiMessageIdsNamedLikeDocumentationKeywords()
+    {
+        Of("""{ "target": { "messages": { "description": { "$ref": "#/m/a" } } }, "m": { "a": { "payload": { "type": "string" } } } }""")
+            .ShouldNotBe(Of("""{ "target": { "messages": { "description": { "$ref": "#/m/a" } } }, "m": { "a": { "payload": { "type": "integer" } } } }"""));
+    }
+
+    [Fact]
+    public void Of_OpenApiOperation_IncludesThePathItemParametersItDoesNotOverride()
+    {
+        // Arrange
+        static string Operation(string idType, string pathLimitType) => $$"""
+            {
+                "openapi": "3.1.0",
+                "paths": {
+                    "/orders/{id}": {
+                        "parameters": [
+                            { "name": "id", "in": "path", "schema": { "type": "{{idType}}" } },
+                            { "name": "limit", "in": "query", "schema": { "type": "{{pathLimitType}}" } }
+                        ],
+                        "get": { "parameters": [ { "name": "limit", "in": "query", "schema": { "type": "integer" } } ] },
+                        "additionalOperations": { "COPY": { } }
+                    }
+                }
+            }
+            """;
+        static StepTargetFingerprint.Result Get(string json, string method)
+        {
+            var document = JsonNode.Parse(json)!;
+            var pathItem = document["paths"]!["/orders/{id}"]!;
+            return StepTargetFingerprint.Of(method == "COPY" ? pathItem["additionalOperations"]!["COPY"] : pathItem[method], document);
+        }
+
+        // Act & Assert: a path-level parameter counts, also for an additional operation; one the operation
+        // overrides, as get does limit, doesn't.
+        Get(Operation("string", "integer"), "get").Value.ShouldNotBe(Get(Operation("integer", "integer"), "get").Value);
+        Get(Operation("string", "integer"), "get").Value.ShouldBe(Get(Operation("string", "boolean"), "get").Value);
+        Get(Operation("string", "integer"), "COPY").Value.ShouldNotBe(Get(Operation("integer", "integer"), "COPY").Value);
+        Get(Operation("string", "integer"), "COPY").Value.ShouldNotBe(Get(Operation("string", "boolean"), "COPY").Value);
     }
 
     [Fact]
     public void Of_LeavesUnresolvableAndExternalReferencesAsWritten()
     {
         Of("""{ "target": { "a": { "$ref": "#/missing" }, "b": { "$ref": "other.json#/x" } } }""")
-            .ShouldBe("{\"a\":{\"$ref\":\"#/missing\"},\"b\":{\"$ref\":\"other.json#/x\"},}");
+            .ShouldBe("{\"a\":{\"$ref\":\"#/missing\",},\"b\":{\"$ref\":\"other.json#/x\",},}");
     }
 
     [Fact]

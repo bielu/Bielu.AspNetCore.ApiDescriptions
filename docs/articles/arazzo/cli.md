@@ -112,8 +112,11 @@ documents before the change (`--base`) and after it (`--head`):
 | doesn't resolve | doesn't resolve | A warning: the workflow was already broken, which `validate --source` reports |
 
 A definition counts as changed after its local `$ref`s are followed, so a payload schema edited under
-`components` is caught at the step that sends or receives it. Property order and documentation-only keywords
-(`description`, `summary`, `title`, examples, `externalDocs`, `x-` extensions) are ignored.
+`components` is caught at the step that sends or receives it, and so is a keyword written beside a `$ref`.
+An OpenAPI operation's definition includes the Path Item parameters it doesn't override. Property order,
+component names and documentation-only keywords (`description`, `summary`, `title`, examples,
+`externalDocs`, `x-` extensions) are ignored. A definition nested more than 64 levels deep without a `$ref`
+can't be compared in full, so its step is listed for review.
 
 ```bash
 dotnet arazzo impact --file checkout.arazzo.json \
@@ -137,5 +140,5 @@ info:   - checkout.order: The operation '$sourceDescriptions.shop.createOrder' t
 - `--format <text|json|markdown>` - Output format (default: text); `markdown` suits a pull-request comment
 
 A source given only with `--base` or only with `--head` can't be compared, so its steps are skipped with a
-warning. An unqualified `operationId` is looked up in every source given, so qualify it
+warning. A name the Arazzo document doesn't declare is an error. An unqualified `operationId` is looked up in every source given, so qualify it
 (`$sourceDescriptions.<name>.<operationId>`) or pass every source it might live in.
