@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SchemaPropertyRow } from '../helpers/format'
-import { renderMarkdown } from '../helpers/markdown'
+import { renderMarkdown } from '@bielu/scalar-core/markdown'
 
 /** A JSON Schema's properties as a list; an object property's own properties fold out beneath it. */
 defineProps<{

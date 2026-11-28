@@ -46,14 +46,14 @@
     "build:core": "cd ../../Bielu.AspNetCore.AsyncApi.Scalar/assets && npm run build",
     "prebuild": "npm run build:core",
     "build": "vite build && npm run build:module && npm run build:library && vue-tsc -p tsconfig.json",
-    "build:module": "vite build --config vite.config.module.ts",
-    "build:library": "vite build --config vite.config.library.ts",
+    "build:module": "vite build --mode module",
+    "build:library": "vite build --mode library",
     "pretypecheck": "npm run build:core",
     "typecheck": "vue-tsc --noEmit && vue-tsc -p tsconfig.contract.json",
     "pretest": "npm run build:core",
     "test": "vitest run",
     "dev": "vite build --watch",
-    "postbuild": "node scripts/check-package.mjs"
+    "postbuild": "node ../../Bielu.AspNetCore.AsyncApi.Scalar/assets/scripts/check-plugin-package.mjs createLikeC4Plugin"
   },
   "dependencies": {
     "dompurify": "^3.2.6",

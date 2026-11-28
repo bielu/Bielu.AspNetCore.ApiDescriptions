@@ -19,6 +19,19 @@ Shared internals for the Bielu Scalar AsyncAPI console plugins (`@bielu/scalar-s
 - **Styling** (`tailwind.css`) — the shared Tailwind CSS v4 entry, built on Scalar's own
   `@scalar/themes` theme. See [Styling a console](#styling-a-console).
 
+The document-type plugins (`@bielu/scalar-arazzo`, `@bielu/scalar-likec4`) also take their shared
+parts from here, through subpaths the console plugins never import:
+
+- **`@bielu/scalar-core/document-type`** — `documentTypeOf` and `createDocumentTypePlugin`: the
+  Scalar `documentTypes` entry rendering the plugin's element, and the tagged plugin factory.
+- **`@bielu/scalar-core/markdown`** — `renderMarkdown`, CommonMark through marked and DOMPurify.
+  A subpath, so marked and DOMPurify stay out of the console bundles.
+- **`@bielu/scalar-core/vite`** — `scalarPluginBuild`, the Vite config for the three bundles
+  (`plugin.js`, `scalar-plugin.mjs`, `index.mjs`), picked by `vite build --mode`.
+- **`tsconfig.plugin.json`** — the shared compiler options, extended by relative path.
+- **`scripts/check-plugin-package.mjs <factoryExport>`** — the `postbuild` check that packs the
+  package and resolves its exports as a consumer would.
+
 ## This package is private
 
 It is **not published to npm**. The plugin packages depend on it with a `file:` link in their

@@ -38,6 +38,8 @@
         <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/src/**/*" />
         <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/package.json" />
         <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/tsconfig.json" />
+        <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/tsconfig.plugin.json" />
+        <ScalarPluginAssetSource Include="$(ScalarCoreAssetsDir)/vite.mjs" />
     </ItemGroup>
 
     <!--
