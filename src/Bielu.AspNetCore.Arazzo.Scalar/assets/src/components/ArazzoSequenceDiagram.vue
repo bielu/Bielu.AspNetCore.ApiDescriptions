@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { truncate } from '@bielu/scalar-graph'
 import { computed, nextTick, useId } from 'vue'
 import { goToAnchor } from '../helpers/navigation'
 import {
@@ -47,8 +48,7 @@ const MIN_SCALE = 0.85
 
 const markerId = `ba-seq-${useId()}`
 
-const cut = (text: string, length = MAX_LABEL): string =>
-  text.length > length ? `${text.slice(0, length - 1)}…` : text
+const cut = (text: string, length = MAX_LABEL): string => truncate(text, length)
 
 const laneX = computed(
   () =>

@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import {
+  INITIAL_PAN_ZOOM,
+  panBy,
+  panZoomForKey,
+  type PanZoomState,
+  roundedPolylinePath,
+  zoomAt,
+} from '@bielu/scalar-graph'
+import {
   computed,
   nextTick,
   onBeforeUnmount,
@@ -9,13 +17,6 @@ import {
   watch,
 } from 'vue'
 import { expandStepEvent, STEP_REVEAL_EVENT } from '../helpers/navigation'
-import {
-  INITIAL_PAN_ZOOM,
-  panBy,
-  panZoomForKey,
-  type PanZoomState,
-  zoomAt,
-} from '../helpers/pan-zoom'
 import { specLabel } from '../helpers/target-spec'
 import {
   type LaidOutEdge,
@@ -422,25 +423,8 @@ const openStep = async (node: LaidOutNode) => {
     ?.focus({ preventScroll: true })
 }
 
-/** A path through dagre's bend points, with each corner rounded by a quadratic curve. */
-const edgePath = (edge: LaidOutEdge): string => {
-  const [first, ...rest] = edge.points
-  if (!first) {
-    return ''
-  }
-  if (rest.length < 2) {
-    return `M${first.x},${first.y}${rest.map((point) => ` L${point.x},${point.y}`).join('')}`
-  }
-  let path = `M${first.x},${first.y}`
-  for (let index = 0; index < rest.length - 1; index++) {
-    const corner = rest[index]!
-    const next = rest[index + 1]!
-    const mid = { x: (corner.x + next.x) / 2, y: (corner.y + next.y) / 2 }
-    path += ` Q${corner.x},${corner.y} ${mid.x},${mid.y}`
-  }
-  const last = rest[rest.length - 1]!
-  return `${path} L${last.x},${last.y}`
-}
+/** A path through dagre's bend points, with each corner rounded. */
+const edgePath = (edge: LaidOutEdge): string => roundedPolylinePath(edge.points)
 
 const specName = (family: NonNullable<LaidOutNode['spec']>): string =>
   family === 'arazzo' ? 'Workflow' : specLabel({ family, version: undefined })

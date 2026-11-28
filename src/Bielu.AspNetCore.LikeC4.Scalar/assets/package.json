@@ -62,6 +62,7 @@
   },
   "devDependencies": {
     "@bielu/scalar-core": "file:../../Bielu.AspNetCore.AsyncApi.Scalar/assets",
+    "@bielu/scalar-graph": "file:../../Bielu.AspNetCore.Scalar.Graph/assets",
     "@scalar/types": "^0.30.0",
     "@tailwindcss/vite": "^4.3.5",
     "@vitejs/plugin-vue": "^5.2.1",
