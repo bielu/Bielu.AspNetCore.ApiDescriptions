@@ -115,8 +115,9 @@ A definition counts as changed after its local `$ref`s are followed, so a payloa
 `components` is caught at the step that sends or receives it, and so is a keyword written beside a `$ref`.
 An OpenAPI operation's definition includes the Path Item parameters it doesn't override. Property order,
 component names and documentation-only keywords (`description`, `summary`, `title`, examples,
-`externalDocs`, `x-` extensions) are ignored. A definition nested more than 64 levels deep without a `$ref`
-can't be compared in full, so its step is listed for review.
+`externalDocs`, `x-` extensions) are ignored. A `$ref` to a JSON Schema `$anchor`, such as `#Item`, is followed
+too. A definition nested more than 64 levels deep without a `$ref`, or behind a `#name` reference that no
+single anchor declares, can't be compared in full, so its step is listed for review.
 
 ```bash
 dotnet arazzo impact --file checkout.arazzo.json \

@@ -200,6 +200,34 @@ public class StepTargetFingerprintTests
     }
 
     [Fact]
+    public void Of_FollowsReferencesToAnchors()
+    {
+        // Arrange
+        static string Operation(string type) => $$"""
+            {
+                "openapi": "3.1.0",
+                "target": { "schema": { "$ref": "#Item" } },
+                "components": { "schemas": { "Item": { "$anchor": "Item", "type": "{{type}}" } } }
+            }
+            """;
+
+        // Act & Assert
+        Of(Operation("string")).ShouldNotBe(Of(Operation("integer")));
+    }
+
+    [Theory]
+    [InlineData("""{ "target": { "schema": { "$ref": "#Missing" } } }""")]
+    [InlineData("""{ "target": { "schema": { "$ref": "#Item" } }, "a": { "$anchor": "Item" }, "b": { "$anchor": "Item" } }""")]
+    public void Of_AnchorThatCannotBeFollowed_IsIncomplete(string json)
+    {
+        // Arrange
+        var document = JsonNode.Parse(json)!;
+
+        // Act & Assert
+        StepTargetFingerprint.Of(document["target"], document).Complete.ShouldBeFalse();
+    }
+
+    [Fact]
     public void Of_FollowsReferencesToBooleanSchemas()
     {
         Of("""{ "target": { "schema": { "$ref": "#/defs/allowed" } }, "defs": { "allowed": true } }""")

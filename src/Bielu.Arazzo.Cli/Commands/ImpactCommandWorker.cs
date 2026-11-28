@@ -126,7 +126,7 @@ internal sealed class ImpactCommandWorker
                         // Cut short, two fingerprints can match although the definitions differ: say so, not "no change".
                         changes.Add(new DocumentChange(
                             location,
-                            $"'{current.Reference}' targets a {Kind(current)} in source '{current.SourceName}' nested too deeply to compare. Review the step against it.",
+                            $"'{current.Reference}' targets a {Kind(current)} in source '{current.SourceName}' that can't be compared in full: nested too deeply, or behind a reference that can't be followed. Review the step against it.",
                             ChangeSeverity.NonBreaking));
                     }
                     else if (!string.Equals(oldFingerprint.Value, newFingerprint.Value, StringComparison.Ordinal))

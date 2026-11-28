@@ -285,7 +285,7 @@ public class ImpactCommandWorkerTests : IDisposable
         var change = worker.Compare([target], workspace, [target], workspace).ShouldHaveSingleItem();
 
         // Assert
-        change.Message.ShouldContain("nested too deeply to compare");
+        change.Message.ShouldContain("can't be compared in full");
     }
 
     [Fact]

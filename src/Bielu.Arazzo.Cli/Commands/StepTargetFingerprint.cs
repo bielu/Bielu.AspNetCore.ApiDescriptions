@@ -215,7 +215,7 @@ internal static class StepTargetFingerprint
             if (!_ids.TryGetValue(reference, out var id))
             {
                 // Any node: a boolean JSON Schema such as true is a definition too.
-                if (JsonDocumentPointer.Evaluate(document, reference[1..]) is not { } resolved)
+                if (Resolve(reference[1..]) is not { } resolved)
                 {
                     return null;
                 }
@@ -228,6 +228,59 @@ internal static class StepTargetFingerprint
 
             return $"\"#{id}\"";
         }
+
+        /// <summary>
+        /// The node a local reference's <paramref name="fragment"/> addresses: a JSON Pointer, or a plain name a
+        /// JSON Schema declares as its <c>$anchor</c> or <c>$dynamicAnchor</c>.
+        /// </summary>
+        private JsonNode? Resolve(string fragment)
+        {
+            if (fragment.Length == 0 || fragment[0] == '/')
+            {
+                return JsonDocumentPointer.Evaluate(document, fragment);
+            }
+
+            var anchors = new List<JsonObject>();
+            FindAnchors(document, fragment, anchors);
+            if (anchors.Count == 1)
+            {
+                return anchors[0];
+            }
+
+            // Not found, or declared in several schema resources, which only their $id tells apart: the definition
+            // behind the reference can't be followed, so the fingerprint can't vouch it is unchanged.
+            Complete = false;
+            return null;
+        }
+
+        private static void FindAnchors(JsonNode? node, string name, List<JsonObject> anchors)
+        {
+            switch (node)
+            {
+                case JsonObject obj:
+                    if (IsAnchor(obj, "$anchor", name) || IsAnchor(obj, "$dynamicAnchor", name))
+                    {
+                        anchors.Add(obj);
+                    }
+
+                    foreach (var (_, value) in obj)
+                    {
+                        FindAnchors(value, name, anchors);
+                    }
+
+                    break;
+                case JsonArray array:
+                    foreach (var item in array)
+                    {
+                        FindAnchors(item, name, anchors);
+                    }
+
+                    break;
+            }
+        }
+
+        private static bool IsAnchor(JsonObject obj, string keyword, string name) =>
+            obj[keyword] is JsonValue value && value.TryGetValue<string>(out var anchor) && anchor == name;
 
         /// <summary>
         /// For an OpenAPI operation, the parameters of its Path Item that it doesn't override by name and location:
