@@ -18,6 +18,7 @@
     <ItemGroup>
         <InternalsVisibleTo Include="Bielu.Arazzo.Readers" />
         <InternalsVisibleTo Include="Bielu.Arazzo.Tests" />
+        <InternalsVisibleTo Include="Bielu.Arazzo.Cli" />
     </ItemGroup>
 
 </Project>

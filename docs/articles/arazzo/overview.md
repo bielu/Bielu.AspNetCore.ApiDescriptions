@@ -412,7 +412,7 @@ document name isn't a constant, or the step or its `AddAsyncApiSource` is writte
 
 ## CLI Tool: `dotnet arazzo`
 
-`Bielu.Arazzo.Cli` provides `validate`, `lint`, and `diff` commands for Arazzo documents — see the
+`Bielu.Arazzo.Cli` provides `validate`, `lint`, `diff` and `impact` commands for Arazzo documents — see the
 [CLI Tool](cli.md) article for details.
 
 ## Architecture diagrams: LikeC4

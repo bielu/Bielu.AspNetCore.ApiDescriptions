@@ -240,5 +240,55 @@ public class ArazzoReferenceValidatorTests
         Should.Throw<ArgumentNullException>(() => ArazzoReferenceValidator.Validate(Document(), null!));
         Should.Throw<ArgumentNullException>(() => ArazzoReferenceValidator.UncheckedSources(null!, Workspace()));
         Should.Throw<ArgumentNullException>(() => ArazzoReferenceValidator.UncheckedSources(Document(), null!));
+        Should.Throw<ArgumentNullException>(() => ArazzoReferenceValidator.ResolveStepTargets(null!, Workspace()));
+        Should.Throw<ArgumentNullException>(() => ArazzoReferenceValidator.ResolveStepTargets(Document(), null!));
+    }
+
+    [Fact]
+    public void ResolveStepTargets_ReportsWhatEachStepResolvedTo()
+    {
+        // Arrange
+        var document = Document(
+            new ArazzoStep { StepId = "bare", OperationId = "publishOrder" },
+            new ArazzoStep { StepId = "channel", ChannelPath = "{$sourceDescriptions.events.url}#/channels/orders" },
+            new ArazzoStep { StepId = "missing", OperationId = "$sourceDescriptions.pets.nope" },
+            new ArazzoStep { StepId = "nested", WorkflowId = "other" });
+
+        // Act
+        var targets = ArazzoReferenceValidator.ResolveStepTargets(document, Workspace());
+
+        // Assert
+        targets.Count.ShouldBe(3);
+        targets[0].ShouldSatisfyAllConditions(
+            t => t.Status.ShouldBe(ArazzoStepTargetStatus.Resolved),
+            t => t.SourceName.ShouldBe("events"),
+            t => t.Target!["action"]!.GetValue<string>().ShouldBe("send"),
+            t => t.Path.ShouldBe("/workflows/0/steps/0/operationId"));
+        targets[1].ShouldSatisfyAllConditions(
+            t => t.Status.ShouldBe(ArazzoStepTargetStatus.Resolved),
+            t => t.Target!["address"]!.GetValue<string>().ShouldBe("orders"),
+            t => t.Reference.ShouldBe("{$sourceDescriptions.events.url}#/channels/orders"));
+        targets[2].ShouldSatisfyAllConditions(
+            t => t.Status.ShouldBe(ArazzoStepTargetStatus.Unresolved),
+            t => t.SourceName.ShouldBe("pets"),
+            t => t.Target.ShouldBeNull(),
+            t => t.Message.ShouldBe("operationId '$sourceDescriptions.pets.nope' did not resolve."));
+    }
+
+    [Fact]
+    public void ResolveStepTargets_SourceWithoutDocument_IsSkipped()
+    {
+        // Arrange
+        var document = Document(
+            new ArazzoStep { StepId = "qualified", OperationId = "$sourceDescriptions.pets.getPet" },
+            new ArazzoStep { StepId = "bare", OperationId = "getPet" });
+
+        // Act
+        var targets = ArazzoReferenceValidator.ResolveStepTargets(document, Workspace(withOpenApi: false, withAsyncApi: false));
+
+        // Assert
+        targets.ShouldAllBe(t => t.Status == ArazzoStepTargetStatus.Skipped && t.Message == null);
+        targets[0].SourceName.ShouldBe("pets");
+        targets[1].SourceName.ShouldBeNull();
     }
 }
