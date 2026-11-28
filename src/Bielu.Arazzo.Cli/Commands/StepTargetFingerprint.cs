@@ -43,10 +43,9 @@ internal static class StepTargetFingerprint
     {
         "properties", "patternProperties", "$defs", "definitions", "dependentSchemas", "dependencies",
         "messages", "parameters", "callbacks", "encoding", "variables",
-
-        // Status codes, among them "default", which there is a Response Object rather than a schema's default value.
-        "responses",
     };
+
+    private const string Responses = "responses";
 
     private const string Links = "links";
 
@@ -68,6 +67,12 @@ internal static class StepTargetFingerprint
 
         /// <summary>A map whose keys are names chosen by the author; its values are definitions.</summary>
         Names,
+
+        /// <summary>
+        /// A Responses Object: status codes, among them <c>default</c>, which there is a Response Object rather
+        /// than a schema's default value, to definitions. Its <c>x-</c> extensions are left out.
+        /// </summary>
+        Responses,
 
         /// <summary>An OpenAPI <c>links</c> map: link names to Link Objects.</summary>
         LinkNames,
@@ -141,7 +146,9 @@ internal static class StepTargetFingerprint
                     }
 
                     foreach (var (key, value) in obj
-                                 .Where(p => !isDefinition || (!IsIgnored(p.Key) && (reference is null || p.Key != "$ref")))
+                                 .Where(p => isDefinition
+                                     ? !IsIgnored(p.Key) && (reference is null || p.Key != "$ref")
+                                     : mode != Mode.Responses || !p.Key.StartsWith("x-", StringComparison.Ordinal))
                                  .OrderBy(p => p.Key, StringComparer.Ordinal))
                     {
                         _builder.Append(Quote(key)).Append(':');
@@ -174,12 +181,13 @@ internal static class StepTargetFingerprint
         private Mode ChildMode(Mode mode, string key) => mode switch
         {
             Mode.Literal => Mode.Literal,
-            Mode.Names => Mode.Definition,
+            Mode.Names or Mode.Responses => Mode.Definition,
             Mode.LinkNames => Mode.Link,
             Mode.Link when key is "parameters" or "requestBody" => Mode.Literal,
             _ when Literals.Contains(key) => Mode.Literal,
             _ when key == Security => Mode.Security,
             _ when _isOpenApi && key == Links => Mode.LinkNames,
+            _ when key == Responses => Mode.Responses,
             _ when NameMaps.Contains(key) || (_isOpenApi && key == "headers") => Mode.Names,
             _ => Mode.Definition,
         };

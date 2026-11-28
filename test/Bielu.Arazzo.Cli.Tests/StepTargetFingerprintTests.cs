@@ -176,6 +176,18 @@ public class StepTargetFingerprintTests
     }
 
     [Fact]
+    public void Of_OpenApiResponsesExtension_IsLeftOut()
+    {
+        // Arrange: an extension on the Responses Object is metadata, not a status code.
+        static string Operation(string note) => $$"""
+            { "openapi": "3.1.0", "target": { "responses": { "200": { "description": "OK" }, "x-note": "{{note}}" } } }
+            """;
+
+        // Act & Assert
+        Of(Operation("A")).ShouldBe(Of(Operation("B")));
+    }
+
+    [Fact]
     public void Of_AsyncApiSecuritySchemes_AreFollowedAndFiltered()
     {
         // In AsyncAPI 3, security lists Security Scheme Objects or $refs to them: definitions, not requirements.
