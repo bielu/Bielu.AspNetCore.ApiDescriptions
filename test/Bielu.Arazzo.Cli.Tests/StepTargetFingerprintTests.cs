@@ -122,6 +122,31 @@ public class StepTargetFingerprintTests
         Of(With(before)).ShouldNotBe(Of(With(after)));
     }
 
+    [Theory]
+    [InlineData("""{ "dependentRequired": { "description": ["a"] } }""", """{ "dependentRequired": { "description": ["b"] } }""")]
+    [InlineData("""{ "dependencies": { "description": ["a"] } }""", """{ "dependencies": { "description": ["b"] } }""")]
+    [InlineData("""{ "discriminator": { "propertyName": "kind", "mapping": { "description": "#/defs/a" } } }""", """{ "discriminator": { "propertyName": "kind", "mapping": { "description": "#/defs/b" } } }""")]
+    [InlineData("""{ "default": { "title": "a" } }""", """{ "default": { "title": "b" } }""")]
+    [InlineData("""{ "security": [ { "description": ["read"] } ] }""", """{ "security": [ { "description": ["write"] } ] }""")]
+    [InlineData("""{ "variables": { "description": { "default": "a" } } }""", """{ "variables": { "description": { "default": "b" } } }""")]
+    public void Of_KeepsNamesAndDataNamedLikeDocumentationKeywords(string before, string after)
+    {
+        static string With(string target) => $$"""{ "target": {{target}}, "defs": { "a": true, "b": true } }""";
+        Of(With(before)).ShouldNotBe(Of(With(after)));
+    }
+
+    [Fact]
+    public void Of_AsyncApiSecuritySchemes_AreFollowedAndFiltered()
+    {
+        // In AsyncAPI 3, security lists Security Scheme Objects or $refs to them: definitions, not requirements.
+        static string Operation(string type, string description) => $$"""
+            { "target": { "security": [ { "$ref": "#/defs/s" } ] }, "defs": { "s": { "type": "{{type}}", "description": "{{description}}" } } }
+            """;
+
+        Of(Operation("httpApiKey", "a")).ShouldNotBe(Of(Operation("userPassword", "a")));
+        Of(Operation("httpApiKey", "a")).ShouldBe(Of(Operation("httpApiKey", "b")));
+    }
+
     [Fact]
     public void Of_FollowsReferencesToBooleanSchemas()
     {

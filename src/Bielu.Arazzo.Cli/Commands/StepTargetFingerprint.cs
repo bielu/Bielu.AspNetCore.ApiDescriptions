@@ -41,14 +41,20 @@ internal static class StepTargetFingerprint
     // ids, not keywords: a property or message called "description" is data and must not be dropped.
     private static readonly HashSet<string> NameMaps = new(StringComparer.Ordinal)
     {
-        "properties", "patternProperties", "$defs", "definitions", "dependentSchemas",
-        "messages", "parameters", "callbacks", "links", "encoding",
+        "properties", "patternProperties", "$defs", "definitions", "dependentSchemas", "dependencies",
+        "messages", "parameters", "callbacks", "links", "encoding", "variables",
     };
 
     private const string AdditionalOperations = "additionalOperations";
 
-    // JSON Schema keywords whose value is data compared as a whole, so nothing in it is a keyword or a reference.
-    private static readonly HashSet<string> Literals = new(StringComparer.Ordinal) { "const", "enum" };
+    // Keywords whose value is data compared as a whole, so nothing in it is a keyword or a reference: JSON Schema
+    // values and the property names dependentRequired maps, and the schema names of a discriminator's mapping.
+    private static readonly HashSet<string> Literals = new(StringComparer.Ordinal)
+    {
+        "const", "enum", "default", "dependentRequired", "mapping",
+    };
+
+    private const string Security = "security";
 
     private enum Mode
     {
@@ -60,6 +66,12 @@ internal static class StepTargetFingerprint
 
         /// <summary>A literal value, written as it stands.</summary>
         Literal,
+
+        /// <summary>
+        /// A <c>security</c> array: a Security Requirement Object, mapping scheme names to scopes, is a literal;
+        /// an AsyncAPI 3 Security Scheme Object or a <c>$ref</c> to one is a definition.
+        /// </summary>
+        Security,
     }
 
     /// <summary>The fingerprint of <paramref name="target"/>, a node of <paramref name="document"/>.</summary>
@@ -128,7 +140,7 @@ internal static class StepTargetFingerprint
                     _builder.Append('[');
                     foreach (var item in array)
                     {
-                        Write(item, depth + 1, mode == Mode.Literal ? Mode.Literal : Mode.Definition);
+                        Write(item, depth + 1, ItemMode(mode, item));
                         _builder.Append(',');
                     }
 
@@ -149,7 +161,16 @@ internal static class StepTargetFingerprint
             Mode.Literal => Mode.Literal,
             Mode.Names => Mode.Definition,
             _ when Literals.Contains(key) => Mode.Literal,
+            _ when key == Security => Mode.Security,
             _ when NameMaps.Contains(key) || (_isOpenApi && key == "headers") => Mode.Names,
+            _ => Mode.Definition,
+        };
+
+        /// <summary>How an item of an array written in <paramref name="mode"/> is written.</summary>
+        private static Mode ItemMode(Mode mode, JsonNode? item) => mode switch
+        {
+            Mode.Literal => Mode.Literal,
+            Mode.Security when item is JsonObject obj && !obj.ContainsKey("$ref") && obj["type"] is not JsonValue => Mode.Literal,
             _ => Mode.Definition,
         };
 
