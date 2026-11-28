@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>$(BieluTargetFrameworks)</TargetFrameworks>
+        <IsAotCompatible>true</IsAotCompatible>
+        <PackageId>Bielu.AspNetCore.Scalar.Plugins.Shared</PackageId>
+        <RootNamespace>Bielu.AspNetCore.Scalar.Plugins</RootNamespace>
+        <Description>Shared internals for the Bielu Scalar document-type plugin packages (Arazzo, LikeC4) and their Aspire helpers: validating and passing a plugin's options to its bundle. Framework-free; not useful on its own.</Description>
+        <PackageTags>scalar;api-reference;plugin;infrastructure</PackageTags>
+    </PropertyGroup>
+
+    <!-- The helpers are internal: only the plugin packages (Scalar.AspNetCore and Aspire sides) use them. -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="Bielu.AspNetCore.Arazzo.Scalar" />
+        <InternalsVisibleTo Include="Bielu.AspNetCore.Arazzo.Scalar.Aspire" />
+        <InternalsVisibleTo Include="Bielu.AspNetCore.LikeC4.Scalar" />
+        <InternalsVisibleTo Include="Bielu.AspNetCore.LikeC4.Scalar.Aspire" />
+        <InternalsVisibleTo Include="Bielu.AspNetCore.Scalar.Plugins.Shared.Tests" />
+    </ItemGroup>
+
+</Project>

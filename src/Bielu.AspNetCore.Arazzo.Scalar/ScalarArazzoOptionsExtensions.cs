@@ -1,5 +1,5 @@
-﻿using System.Text.Json;
-using Bielu.AspNetCore.AsyncApi.Scalar;
+﻿using Bielu.AspNetCore.AsyncApi.Scalar;
+using Bielu.AspNetCore.Scalar.Plugins;
 using Scalar.AspNetCore;
 
 namespace Bielu.AspNetCore.Arazzo.Scalar;
@@ -82,40 +82,16 @@ public static class ScalarArazzoOptionsExtensions
         configure(arazzo);
         ArgumentException.ThrowIfNullOrEmpty(arazzo.AssetsPath, nameof(configure));
         // The options the bundle reads, by their JavaScript names; unset ones are left out.
-        var bundleOptions = new Dictionary<string, string>();
-        foreach (var (name, value) in new[]
-        {
-            ("endLabelExtension", arazzo.EndLabelExtension),
-            ("pagesExtension", arazzo.PagesExtension),
-            ("pageExtension", arazzo.PageExtension),
-            ("labelExtension", arazzo.LabelExtension),
-            ("actorExtension", arazzo.ActorExtension),
-            ("actorsExtension", arazzo.ActorsExtension),
-        })
-        {
-            if (value is null)
-            {
-                continue;
-            }
-
-            // The same rule as the npm package and the Aspire helper: 'x-' followed by a name.
-            if (value.Length <= 2 || !value.StartsWith("x-", StringComparison.Ordinal))
-            {
-                var property = char.ToUpperInvariant(name[0]) + name[1..];
-                throw new ArgumentException(
-                    $"{property} '{value}' is not a specification extension: it must be 'x-' followed by a name.",
-                    nameof(configure));
-            }
-
-            bundleOptions[name] = value;
-        }
-
-        if (bundleOptions.Count > 0)
-        {
-            // JsonSerializer escapes <, > and & by default, so a value cannot close the script element.
-            var json = JsonSerializer.Serialize(bundleOptions);
-            options.HeadContent = (options.HeadContent ?? string.Empty) + $"<script>window.{GlobalVariableName} = {json};</script>";
-        }
+        var bundleOptions = ScalarPluginOptions.SpecificationExtensions(
+        [
+            (nameof(ScalarArazzoOptions.EndLabelExtension), arazzo.EndLabelExtension),
+            (nameof(ScalarArazzoOptions.PagesExtension), arazzo.PagesExtension),
+            (nameof(ScalarArazzoOptions.PageExtension), arazzo.PageExtension),
+            (nameof(ScalarArazzoOptions.LabelExtension), arazzo.LabelExtension),
+            (nameof(ScalarArazzoOptions.ActorExtension), arazzo.ActorExtension),
+            (nameof(ScalarArazzoOptions.ActorsExtension), arazzo.ActorsExtension),
+        ], nameof(configure));
+        options.HeadContent = (options.HeadContent ?? string.Empty) + ScalarPluginOptions.ToGlobalScript(GlobalVariableName, bundleOptions);
 
         return options.WithArazzo(arazzo.AssetsPath);
     }

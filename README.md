@@ -190,7 +190,7 @@ Run the app and open `/asyncapi/v1.json` for the document or `/scalar` for the U
 | [`Bielu.AspNetCore.ApiDescriptions`](https://www.nuget.org/packages/Bielu.AspNetCore.ApiDescriptions/) | Build-time generation shared by every document family; comes in with `Bielu.AspNetCore.AsyncApi` and `Bielu.AspNetCore.ApiCatalog` |
 | [`Bielu.AspNetCore.ApiDescriptions.Mcp`](https://www.nuget.org/packages/Bielu.AspNetCore.ApiDescriptions.Mcp/) | Experimental: the app's API descriptions as Model Context Protocol tools and resources (`WithApiDescriptions`) |
 
-`Bielu.Spec.Shared` and `Bielu.Cli.Shared` hold internals shared by the packages above and are not meant to be referenced
+`Bielu.Spec.Shared`, `Bielu.Cli.Shared` and `Bielu.AspNetCore.Scalar.Plugins.Shared` hold internals shared by the packages above and are not meant to be referenced
 directly.
 
 ## Examples

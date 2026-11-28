@@ -84,7 +84,7 @@
         <_PackageIconPath>$(MSBuildThisFileDirectory)../assets/logo.png</_PackageIconPath>
         <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.Arazzo')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.Arazzo'))">arazzo</_PackageIconFamily>
         <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Extensions.Protocols'))">protocol-bindings</_PackageIconFamily>
-        <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Scalar'))">scalar-consoles</_PackageIconFamily>
+        <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Scalar')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.Scalar.Plugins'))">scalar-consoles</_PackageIconFamily>
         <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.Overlay')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Overlay')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.Arazzo.Overlay'))">overlay</_PackageIconFamily>
         <_PackageIconFamily Condition="$(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Cli')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.Templates')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.AsyncApi.ApiDescription.Server')) or $(MSBuildProjectName.StartsWith('Bielu.AspNetCore.ApiDescriptions')) or $(MSBuildProjectName.StartsWith('Bielu.Spec.Shared')) or $(MSBuildProjectName.StartsWith('Bielu.Cli.Shared'))">api-tooling</_PackageIconFamily>
         <_PackageIconPath Condition="'$(_PackageIconFamily)' != ''">$(MSBuildThisFileDirectory)../assets/icons/$(_PackageIconFamily).png</_PackageIconPath>
