@@ -240,6 +240,12 @@ internal static class StepTargetFingerprint
         /// </summary>
         private JsonNode? Resolve(string fragment, JsonObject? resource)
         {
+            // "#" in a schema resource is the resource itself, as in a recursive schema.
+            if (fragment.Length == 0 && resource is not null)
+            {
+                return resource;
+            }
+
             if (fragment.Length == 0 || fragment[0] == '/')
             {
                 var resolved = JsonDocumentPointer.Evaluate(resource ?? document, fragment);

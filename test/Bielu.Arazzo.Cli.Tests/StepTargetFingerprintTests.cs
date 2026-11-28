@@ -241,6 +241,24 @@ public class StepTargetFingerprintTests
     }
 
     [Fact]
+    public void Of_EmptyFragmentInAResource_IsTheResource()
+    {
+        // Arrange: a recursive schema whose child is the schema itself.
+        static string Tree(string type) => $$"""
+            {
+                "target": { "schema": { "$ref": "#/defs/Tree" } },
+                "defs": { "Tree": { "$id": "https://example.com/tree", "type": "{{type}}", "properties": { "child": { "$ref": "#" } } } }
+            }
+            """;
+        var document = JsonNode.Parse(Tree("object"))!;
+
+        // Act & Assert
+        StepTargetFingerprint.Of(document["target"], document).Complete.ShouldBeTrue();
+        Of(Tree("object")).ShouldBe(Of(Tree("object")));
+        Of(Tree("object")).ShouldNotBe(Of(Tree("array")));
+    }
+
+    [Fact]
     public void Of_AnchorInAnExample_IsNotADeclaration()
     {
         // Arrange
