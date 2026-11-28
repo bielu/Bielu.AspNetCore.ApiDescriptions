@@ -14,7 +14,7 @@ import {
 } from '../helpers/diagnostics-scope'
 import { useExpressionScope } from '../helpers/expression-scope'
 import { outputsAnchor, stepOutputConsumers } from '../helpers/expressions'
-import { renderMarkdown } from '../helpers/markdown'
+import { renderMarkdown } from '@bielu/scalar-core/markdown'
 import {
   resolveReusables,
   resolveReusablesWithReference,

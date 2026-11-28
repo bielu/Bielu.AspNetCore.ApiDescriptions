@@ -1,4 +1,4 @@
-import { defineComponent, h } from 'vue'
+import { createDocumentTypePlugin, documentTypeOf } from '@bielu/scalar-core/document-type'
 import { isArazzoDocument, traverseArazzoDocument } from './helpers/navigation'
 import { type ArazzoPluginOptions, PLUGIN_OPTIONS_GLOBAL, resolvePluginOptions } from './helpers/plugin-options'
 import { installCrossDocumentHistory } from './helpers/target-link'
@@ -46,14 +46,12 @@ export type ApiReferencePlugin = () => {
 }
 
 /** The Arazzo document type: claims `arazzo: "1.x"` documents before the OpenAPI pipeline sees them. */
-export const arazzoDocumentType: ArazzoDocumentType = {
+export const arazzoDocumentType: ArazzoDocumentType = documentTypeOf({
   type: ARAZZO_DOCUMENT_TYPE,
+  elementTag: ARAZZO_DOCUMENT_TAG,
   detect: isArazzoDocument,
   traverse: traverseArazzoDocument,
-  // A tag name, so Scalar's own Vue renders a plain element and our Web Component (with its own
-  // Vue) takes over; Scalar sets the content props on it as DOM properties.
-  content: { component: ARAZZO_DOCUMENT_TAG },
-}
+})
 
 /**
  * Creates the Arazzo plugin for the Scalar API Reference. It needs `@scalar/api-reference` 1.80.0 or later
@@ -70,22 +68,9 @@ export const createArazzoPlugin = (options?: ArazzoPluginOptions, moduleUrl?: st
   if (typeof window !== 'undefined') {
     installCrossDocumentHistory()
   }
-  const plugin: ApiReferencePlugin = () => ({
-    name: ARAZZO_PLUGIN_NAME,
-    extensions: [],
-    documentTypes: [{
-      ...arazzoDocumentType,
-      content: {
-        component: defineComponent({
-          inheritAttrs: false,
-          setup(_, { attrs }) {
-            return () => h(ARAZZO_DOCUMENT_TAG, { ...attrs, arazzoOptions: resolvedOptions })
-          },
-        }),
-      },
-    }],
+  // The content renders the element with the resolved options next to Scalar's props.
+  return createDocumentTypePlugin(ARAZZO_PLUGIN_NAME, arazzoDocumentType, {
+    elementTag: ARAZZO_DOCUMENT_TAG,
+    props: { arazzoOptions: resolvedOptions },
   })
-  // Tag the factory so a page-level hook can detect an already-registered plugin without invoking it.
-  ;(plugin as { pluginName?: string }).pluginName = ARAZZO_PLUGIN_NAME
-  return plugin
 }

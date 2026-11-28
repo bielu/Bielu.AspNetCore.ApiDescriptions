@@ -24,7 +24,7 @@ import {
 import { exampleWithCheck } from '../helpers/example-input'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
 import { resolveLocalRef } from '../helpers/extensions'
-import { renderMarkdown } from '../helpers/markdown'
+import { renderMarkdown } from '@bielu/scalar-core/markdown'
 import { STEP_EXPAND_EVENT, type WorkflowView } from '../helpers/navigation'
 import { buildDataFlowGraph } from '../helpers/data-flow'
 import { buildSequence } from '../helpers/sequence'

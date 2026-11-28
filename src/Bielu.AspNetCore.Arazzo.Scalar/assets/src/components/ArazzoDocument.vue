@@ -8,7 +8,7 @@ import {
   ref,
   watch,
 } from 'vue'
-import { renderMarkdown } from '../helpers/markdown'
+import { renderMarkdown } from '@bielu/scalar-core/markdown'
 import { type DocumentWatch, watchDocuments } from '../helpers/document-watch'
 import {
   componentsEntryId,

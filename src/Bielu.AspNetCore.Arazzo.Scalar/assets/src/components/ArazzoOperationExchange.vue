@@ -2,7 +2,7 @@
 import { Badge as ScalarBadge } from '@scalar/blocks/shared'
 import { computed } from 'vue'
 import { formatValue, schemaPropertyRows } from '../helpers/format'
-import { renderMarkdown } from '../helpers/markdown'
+import { renderMarkdown } from '@bielu/scalar-core/markdown'
 import {
   operationRequestBody,
   operationResponses,

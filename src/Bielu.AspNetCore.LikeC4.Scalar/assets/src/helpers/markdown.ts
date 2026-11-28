@@ -1,5 +1,4 @@
-import DOMPurify from 'dompurify'
-import { marked } from 'marked'
+import { renderMarkdown as renderCommonMark } from '@bielu/scalar-core/markdown'
 import type { LikeC4Text } from '../types'
 
 /**
@@ -14,8 +13,7 @@ export const renderMarkdown = (value: LikeC4Text | null | undefined): string => 
   if (typeof value === 'object' && typeof value.md !== 'string') {
     return escapeHtml(value.txt ?? '').replace(/\n/g, '<br>')
   }
-  const markdown = typeof value === 'string' ? value : value.md!
-  return DOMPurify.sanitize(marked.parse(markdown, { async: false, gfm: true }))
+  return renderCommonMark(typeof value === 'string' ? value : value.md!)
 }
 
 /**

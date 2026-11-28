@@ -1,3 +1,4 @@
+import { createDocumentTypePlugin, documentTypeOf } from '@bielu/scalar-core/document-type'
 import { isLikeC4Model, traverseLikeC4Model } from './helpers/navigation'
 import type { PluginNavigationEntry } from './types'
 
@@ -43,27 +44,16 @@ export type ApiReferencePlugin = () => {
 }
 
 /** The LikeC4 document type: claims the JSON `likec4 export json` writes before the OpenAPI pipeline sees it. */
-export const likeC4DocumentType: LikeC4DocumentType = {
+export const likeC4DocumentType: LikeC4DocumentType = documentTypeOf({
   type: LIKEC4_DOCUMENT_TYPE,
+  elementTag: LIKEC4_DOCUMENT_TAG,
   detect: isLikeC4Model,
   traverse: traverseLikeC4Model,
-  // A tag name, so Scalar's own Vue renders a plain element and our Web Component (with its own
-  // Vue) takes over; Scalar sets the content props on it as DOM properties.
-  content: { component: LIKEC4_DOCUMENT_TAG },
-}
+})
 
 /**
  * Creates the LikeC4 plugin for the Scalar API Reference. It needs `@scalar/api-reference` 1.80.0 or later
  * (plugin `documentTypes`, scalar/scalar#10816); older versions ignore the field, and would then render a
  * LikeC4 source as an empty OpenAPI document.
  */
-export const createLikeC4Plugin = (): ApiReferencePlugin => {
-  const plugin: ApiReferencePlugin = () => ({
-    name: LIKEC4_PLUGIN_NAME,
-    extensions: [],
-    documentTypes: [likeC4DocumentType],
-  })
-  // Tag the factory so a page-level hook can detect an already-registered plugin without invoking it.
-  ;(plugin as { pluginName?: string }).pluginName = LIKEC4_PLUGIN_NAME
-  return plugin
-}
+export const createLikeC4Plugin = (): ApiReferencePlugin => createDocumentTypePlugin(LIKEC4_PLUGIN_NAME, likeC4DocumentType)
