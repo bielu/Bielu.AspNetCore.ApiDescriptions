@@ -42,8 +42,13 @@ internal static class StepTargetFingerprint
     private static readonly HashSet<string> NameMaps = new(StringComparer.Ordinal)
     {
         "properties", "patternProperties", "$defs", "definitions", "dependentSchemas", "dependencies",
-        "messages", "parameters", "callbacks", "links", "encoding", "variables",
+        "messages", "parameters", "callbacks", "encoding", "variables",
+
+        // Status codes, among them "default", which there is a Response Object rather than a schema's default value.
+        "responses",
     };
+
+    private const string Links = "links";
 
     private const string AdditionalOperations = "additionalOperations";
 
@@ -63,6 +68,15 @@ internal static class StepTargetFingerprint
 
         /// <summary>A map whose keys are names chosen by the author; its values are definitions.</summary>
         Names,
+
+        /// <summary>An OpenAPI <c>links</c> map: link names to Link Objects.</summary>
+        LinkNames,
+
+        /// <summary>
+        /// An OpenAPI Link Object: a definition, except that its <c>parameters</c> and <c>requestBody</c> hold
+        /// constants or runtime expressions, which are literals.
+        /// </summary>
+        Link,
 
         /// <summary>A literal value, written as it stands.</summary>
         Literal,
@@ -95,7 +109,7 @@ internal static class StepTargetFingerprint
     {
         private readonly StringBuilder _builder = new();
         private readonly Dictionary<string, int> _ids = new(StringComparer.Ordinal);
-        private readonly List<JsonNode> _definitions = [];
+        private readonly List<(JsonNode Node, Mode Mode)> _definitions = [];
 
         // In OpenAPI, a Response's or an Encoding's headers map header names, which may well start with x-, to
         // Header Objects. In AsyncAPI, a message's headers is a schema, whose keywords are filtered as usual.
@@ -118,7 +132,8 @@ internal static class StepTargetFingerprint
             {
                 case JsonObject obj:
                     _builder.Append('{');
-                    var reference = mode == Mode.Definition ? Reference(obj) : null;
+                    var isDefinition = mode is Mode.Definition or Mode.Link;
+                    var reference = isDefinition ? Reference(obj, mode) : null;
                     if (reference is not null)
                     {
                         // Keywords beside a $ref, such as a JSON Schema 2020-12 maxLength, constrain it too.
@@ -126,7 +141,7 @@ internal static class StepTargetFingerprint
                     }
 
                     foreach (var (key, value) in obj
-                                 .Where(p => mode != Mode.Definition || (!IsIgnored(p.Key) && (reference is null || p.Key != "$ref")))
+                                 .Where(p => !isDefinition || (!IsIgnored(p.Key) && (reference is null || p.Key != "$ref")))
                                  .OrderBy(p => p.Key, StringComparer.Ordinal))
                     {
                         _builder.Append(Quote(key)).Append(':');
@@ -160,8 +175,11 @@ internal static class StepTargetFingerprint
         {
             Mode.Literal => Mode.Literal,
             Mode.Names => Mode.Definition,
+            Mode.LinkNames => Mode.Link,
+            Mode.Link when key is "parameters" or "requestBody" => Mode.Literal,
             _ when Literals.Contains(key) => Mode.Literal,
             _ when key == Security => Mode.Security,
+            _ when _isOpenApi && key == Links => Mode.LinkNames,
             _ when NameMaps.Contains(key) || (_isOpenApi && key == "headers") => Mode.Names,
             _ => Mode.Definition,
         };
@@ -179,7 +197,7 @@ internal static class StepTargetFingerprint
         /// <see langword="null"/> when it has none, or one that can't be followed: a reference into another
         /// document or to nothing is then written as it stands.
         /// </summary>
-        private string? Reference(JsonObject obj)
+        private string? Reference(JsonObject obj, Mode mode)
         {
             if (obj["$ref"] is not JsonValue value || !value.TryGetValue<string>(out var reference) || !reference.StartsWith('#'))
             {
@@ -196,7 +214,8 @@ internal static class StepTargetFingerprint
 
                 id = _definitions.Count;
                 _ids[reference] = id;
-                _definitions.Add(resolved);
+                // Written as the reference's context would write it, such as a Link Object reached from links.
+                _definitions.Add((resolved, mode));
             }
 
             return $"\"#{id}\"";
@@ -255,7 +274,7 @@ internal static class StepTargetFingerprint
             for (var i = 0; i < _definitions.Count; i++)
             {
                 _builder.Append("\n#").Append(i).Append('=');
-                Write(_definitions[i], 0, Mode.Definition);
+                Write(_definitions[i].Node, 0, _definitions[i].Mode);
             }
         }
     }

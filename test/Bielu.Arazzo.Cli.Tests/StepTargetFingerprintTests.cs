@@ -135,6 +135,46 @@ public class StepTargetFingerprintTests
         Of(With(before)).ShouldNotBe(Of(With(after)));
     }
 
+    [Theory]
+    [InlineData("parameters", """{ "filter": { "description": "A" } }""", """{ "filter": { "description": "B" } }""")]
+    [InlineData("requestBody", """{ "title": "A" }""", """{ "title": "B" }""")]
+    public void Of_OpenApiLinks_KeepTheirConstants(string field, string before, string after)
+    {
+        // Arrange: the link inline, and the same link reached through a $ref.
+        static string Inline(string field, string value) => $$"""
+            { "openapi": "3.1.0", "target": { "responses": { "200": { "links": { "next": { "operationId": "o", "{{field}}": {{value}} } } } } } }
+            """;
+        static string Referenced(string field, string value) => $$"""
+            {
+                "openapi": "3.1.0",
+                "target": { "responses": { "200": { "links": { "next": { "$ref": "#/components/links/Next" } } } } },
+                "components": { "links": { "Next": { "operationId": "o", "description": "d", "{{field}}": {{value}} } } }
+            }
+            """;
+
+        // Act & Assert
+        Of(Inline(field, before)).ShouldNotBe(Of(Inline(field, after)));
+        Of(Referenced(field, before)).ShouldNotBe(Of(Referenced(field, after)));
+        Of(Referenced(field, before)).ShouldNotContain("\"d\"");
+    }
+
+    [Fact]
+    public void Of_OpenApiDefaultResponse_IsFollowedLikeAnyResponse()
+    {
+        // Arrange: default is a status code here, not a schema's default value.
+        static string Operation(string type) => $$"""
+            {
+                "openapi": "3.1.0",
+                "target": { "responses": { "default": { "$ref": "#/components/responses/Error" } } },
+                "components": { "responses": { "Error": { "description": "e", "content": { "application/json": { "schema": { "type": "{{type}}" } } } } } }
+            }
+            """;
+
+        // Act & Assert
+        Of(Operation("object")).ShouldNotBe(Of(Operation("string")));
+        Of(Operation("object")).ShouldNotContain("\"e\"");
+    }
+
     [Fact]
     public void Of_AsyncApiSecuritySchemes_AreFollowedAndFiltered()
     {
